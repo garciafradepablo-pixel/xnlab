@@ -42,13 +42,23 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
     : world?.color.deep?.replace(",1)", ",0.05)") ?? "rgba(0,0,0,0.05)";
   const m = world?.motion;
 
-  // Shared chrome sphere PNG used across the universe — same physical object,
-  // different energies (each Core tints it via mix-blend overlay below).
+  // Shared chrome sphere PNG used as fallback when a Core has no native orb.
   const SHARED_ORB = "/images/worlds/central.png";
   const orbImage = image ?? world?.image ?? SHARED_ORB;
-  // Crimson dark tint for the Central Core; world.color.hex for each Core
-  const tintColor = isCentral ? "#a8332a" : world?.color.hex;
-  const tintOpacity = isCentral ? 0.55 : world?.slug === "luxury-lifestyle-brands" || world?.slug === "architecture-spatial-design" ? 0.32 : 0.5;
+  // When the Core supplies its own PNG, the image already carries the colour
+  // and the chrome tint would over-saturate it. Tint only when we are
+  // displaying the shared chrome fallback.
+  const usesOwnImage = Boolean(image ?? world?.image);
+  const tintColor = isCentral
+    ? "#a8332a"
+    : usesOwnImage
+    ? null
+    : world?.color.hex;
+  const tintOpacity = isCentral
+    ? 0.55
+    : world?.slug === "luxury-lifestyle-brands" || world?.slug === "architecture-spatial-design"
+    ? 0.32
+    : 0.5;
 
   // Per-pulse animation for the orb itself
   const breatheScale = m?.breatheScale ?? (isCentral ? [1, 1.025] : [1, 1.03]);
@@ -153,8 +163,9 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
               />
             )}
             {/* Subtle warm highlight pass — lifts the chrome so it does not
-                disappear into the tint. Especially helpful on darker Cores. */}
-            {!isCentral && (
+                disappear into the tint. Only useful on the chrome fallback;
+                a Core's own PNG already carries its highlights. */}
+            {!isCentral && !usesOwnImage && (
               <div
                 aria-hidden
                 style={{

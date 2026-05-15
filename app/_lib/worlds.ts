@@ -56,6 +56,7 @@ export const worlds: World[] = [
   {
     slug: "hospitality-experience",
     number: "01",
+    image: "/images/worlds/hospitality-experience.png",
     color: {
       name: "Amber Gold",
       hex: "#d8932a",
@@ -116,6 +117,7 @@ export const worlds: World[] = [
   {
     slug: "nightlife-cultural-events",
     number: "02",
+    image: "/images/worlds/nightlife-cultural-events.png",
     color: {
       name: "Electric Violet",
       hex: "#7a3dff",
@@ -176,6 +178,7 @@ export const worlds: World[] = [
   {
     slug: "luxury-lifestyle-brands",
     number: "03",
+    image: "/images/worlds/luxury-lifestyle-brands.png",
     color: {
       name: "Ivory Pearl",
       hex: "#e8e2d2",
@@ -236,6 +239,7 @@ export const worlds: World[] = [
   {
     slug: "architecture-spatial-design",
     number: "04",
+    image: "/images/worlds/architecture-spatial-design.png",
     color: {
       name: "Mineral Stone Grey",
       hex: "#8a8a86",
@@ -296,6 +300,7 @@ export const worlds: World[] = [
   {
     slug: "music-cultural-artists",
     number: "05",
+    image: "/images/worlds/music-cultural-artists.png",
     color: {
       name: "Midnight Indigo",
       hex: "#2c3a8a",
@@ -344,6 +349,7 @@ export const worlds: World[] = [
   {
     slug: "cultural-digital-worlds",
     number: "06",
+    image: "/images/worlds/cultural-digital-worlds.png",
     color: {
       name: "Iridescent Cyan",
       hex: "#46d6ce",
