@@ -272,9 +272,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               <Orb central size={260} />
             </motion.div>
 
-            {/* Hover label — "Lab X" appears centred on the orb,
-                right over the X. Static wrapper owns the centring,
-                motion paragraph owns only opacity + scale. */}
+            {/* Hover label — "Lab X" appears centred on the orb, over
+                the X. A soft dark radial backdrop ensures the white
+                type reads even when the underlying orb is bright. */}
             <div
               aria-hidden
               style={{
@@ -285,24 +285,40 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 pointerEvents: "none",
               }}
             >
-              <motion.p
+              <motion.div
                 animate={{ opacity: centralHover ? 1 : 0, scale: centralHover ? 1 : 0.92 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                style={{
-                  margin: 0,
-                  fontSize: "clamp(10px, 0.8vw, 11.5px)",
-                  letterSpacing: "0.42em",
-                  textTransform: "uppercase",
-                  color: "white",
-                  fontWeight: 600,
-                  textAlign: "center",
-                  lineHeight: 1.35,
-                  whiteSpace: "nowrap",
-                  textShadow: "0 1px 14px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.8)",
-                }}
+                style={{ position: "relative", display: "inline-block" }}
               >
-                Lab&nbsp;X
-              </motion.p>
+                <span
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: "-60% -40%",
+                    background:
+                      "radial-gradient(ellipse at center, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 45%, transparent 75%)",
+                    filter: "blur(6px)",
+                    pointerEvents: "none",
+                  }}
+                />
+                <p
+                  style={{
+                    position: "relative",
+                    margin: 0,
+                    fontSize: "clamp(10px, 0.8vw, 11.5px)",
+                    letterSpacing: "0.42em",
+                    textTransform: "uppercase",
+                    color: "white",
+                    fontWeight: 600,
+                    textAlign: "center",
+                    lineHeight: 1.35,
+                    whiteSpace: "nowrap",
+                    textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                  }}
+                >
+                  Lab&nbsp;X
+                </p>
+              </motion.div>
             </div>
           </Link>
         </motion.div>
@@ -388,10 +404,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   <Orb world={w} size={120} />
                 </motion.div>
 
-                {/* Hover label — centred ON the orb, right over the
-                    X. White, bold, all six Cores read with the same
-                    weight. The text overflows the orb on long titles
-                    by design; the dimmed neighbours leave room for it. */}
+                {/* Hover label — centred ON the orb, over the X. Same
+                    soft dark radial backdrop as the Central Core so the
+                    white type reads on every Core colour. The text
+                    overflows the orb on long titles by design; dimmed
+                    neighbours leave room. */}
                 <div
                   aria-hidden
                   style={{
@@ -403,23 +420,39 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     pointerEvents: "none",
                   }}
                 >
-                  <motion.p
+                  <motion.div
                     animate={{ opacity: isHover ? 1 : 0, scale: isHover ? 1 : 0.92 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    style={{
-                      margin: 0,
-                      fontSize: "clamp(10px, 0.78vw, 11.5px)",
-                      letterSpacing: "0.26em",
-                      textTransform: "uppercase",
-                      color: "white",
-                      fontWeight: 600,
-                      textAlign: "center",
-                      lineHeight: 1.35,
-                      textShadow: "0 1px 14px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.8)",
-                    }}
+                    style={{ position: "relative" }}
                   >
-                    {w.title[lang]}
-                  </motion.p>
+                    <span
+                      aria-hidden
+                      style={{
+                        position: "absolute",
+                        inset: "-60% -20%",
+                        background:
+                          "radial-gradient(ellipse at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 50%, transparent 78%)",
+                        filter: "blur(6px)",
+                        pointerEvents: "none",
+                      }}
+                    />
+                    <p
+                      style={{
+                        position: "relative",
+                        margin: 0,
+                        fontSize: "clamp(10px, 0.78vw, 11.5px)",
+                        letterSpacing: "0.26em",
+                        textTransform: "uppercase",
+                        color: "white",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        lineHeight: 1.35,
+                        textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                      }}
+                    >
+                      {w.title[lang]}
+                    </p>
+                  </motion.div>
                 </div>
               </Link>
             </motion.div>
