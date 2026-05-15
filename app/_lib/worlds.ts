@@ -13,6 +13,10 @@ export type WorldSlug =
 export type World = {
   slug: WorldSlug;
   number: string; // "01"..."06"
+  // Optional path to a transparent PNG that represents this Core.
+  // Default expectation: /images/worlds/<slug>.png
+  // If absent, the Orb component falls back to a CSS gradient sphere.
+  image?: string;
   // The visible color and gradient stops used for the placeholder orb,
   // dust particles, accents and any tinted overlays on that world's page.
   color: {
@@ -23,8 +27,8 @@ export type World = {
     deep: string; // outer fade (close to background dark)
     glow: string; // box-shadow glow rgba
   };
-  // Movement personality. Used by the placeholder orb to give each Core
-  // its own behaviour: nightlife vibrates, architecture is almost still, etc.
+  // Movement personality. Used by the orb to give each Core its own
+  // behaviour: nightlife vibrates, architecture is almost still, etc.
   motion: {
     breatheScale: [number, number]; // [from, to]
     breatheDuration: number; // seconds

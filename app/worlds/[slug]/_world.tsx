@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../../_lib/atoms";
 import { Magnetic } from "../../_lib/chrome";
+import { WordmarkLink } from "../../_lib/wordmark";
 import { Orb } from "../../_lib/orb";
 import type { World } from "../../_lib/worlds";
 import { worlds } from "../../_lib/worlds";
@@ -80,7 +81,7 @@ export default function WorldDetail({ world }: { world: World }) {
             padding: "0 clamp(20px,5vw,56px)",
           }}
         >
-          <Link href="/" style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.42em", color: "white", textTransform: "uppercase", textDecoration: "none" }}>XNLAB</Link>
+          <WordmarkLink />
           <Link href="/worlds" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>{t.back}</Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}

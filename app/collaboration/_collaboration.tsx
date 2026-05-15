@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
+import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
   eyebrow: "Collaboration · 002",
@@ -136,7 +137,7 @@ export default function Collaboration() {
     >
       <header style={{ position: "fixed", top: 0, left: 0, right: 0, zIndex: 200, borderBottom: "1px solid rgba(255,255,255,0.06)", background: "rgba(4,3,2,0.92)", backdropFilter: "blur(28px)", WebkitBackdropFilter: "blur(28px)" }}>
         <nav style={{ maxWidth: 1600, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, padding: "0 clamp(20px,5vw,56px)" }}>
-          <Link href="/" style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.42em", color: "white", textTransform: "uppercase", textDecoration: "none" }}>XNLAB</Link>
+          <WordmarkLink />
           <Link href="/" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>{t.back}</Link>
           <button onClick={() => setLang(lang === "en" ? "es" : "en")} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>

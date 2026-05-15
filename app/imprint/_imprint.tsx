@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
+import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
   eyebrow: "Colophon",
@@ -161,9 +162,7 @@ export default function Imprint() {
             padding: "0 clamp(20px,5vw,56px)",
           }}
         >
-          <Link href="/" style={{ fontSize: 14, fontWeight: 500, letterSpacing: "0.42em", color: "white", textTransform: "uppercase", textDecoration: "none" }}>
-            XNLAB
-          </Link>
+          <WordmarkLink />
           <Link href="/" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>
             {t.back}
           </Link>

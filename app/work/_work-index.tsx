@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Project } from "./data";
 import { ts, tsS, serif, W, R, useLang } from "../_lib/atoms";
+import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
   eyebrow: "Selected Works",
@@ -173,19 +174,7 @@ export default function WorkIndex({ projects }: { projects: Project[] }) {
             padding: "0 clamp(20px,5vw,56px)",
           }}
         >
-          <Link
-            href="/"
-            style={{
-              fontSize: 14,
-              fontWeight: 500,
-              letterSpacing: "0.42em",
-              color: "white",
-              textTransform: "uppercase",
-              textDecoration: "none",
-            }}
-          >
-            XNLAB
-          </Link>
+          <WordmarkLink />
           <Link
             href="/"
             style={{
