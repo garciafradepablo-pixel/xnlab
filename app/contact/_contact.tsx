@@ -354,11 +354,10 @@ export default function Contact() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(48px,6vw,96px)",
-          gridTemplateColumns: "1fr",
         }}
       >
         <form onSubmit={onSubmit} noValidate style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }}>
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
             <R>
               <label style={labelStyle} htmlFor="name">
                 {t.fields.name}
@@ -394,7 +393,7 @@ export default function Contact() {
             </R>
           </div>
 
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
             <R delay={0.1}>
               <label style={labelStyle} htmlFor="brand">
                 {t.fields.brand}
@@ -428,7 +427,7 @@ export default function Contact() {
             </R>
           </div>
 
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
             <R delay={0.12}>
               <label style={labelStyle} htmlFor="world">
                 {t.fields.world}
@@ -489,7 +488,7 @@ export default function Contact() {
             </R>
           </div>
 
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
             <R delay={0.135}>
               <label style={labelStyle} htmlFor="projectType">
                 {t.fields.projectType}
@@ -633,11 +632,10 @@ export default function Contact() {
             style={{
               display: "grid",
               gap: "clamp(24px,3vw,40px)",
-              gridTemplateColumns: "1fr",
               paddingTop: "clamp(48px,6vw,80px)",
               borderTop: "1px solid rgba(255,255,255,0.06)",
             }}
-            className="md:grid-cols-[minmax(160px,220px)_1fr]"
+            className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
           >
             <p style={labelStyle}>{t.studioLabel}</p>
             <div>

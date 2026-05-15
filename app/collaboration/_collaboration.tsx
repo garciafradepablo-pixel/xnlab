@@ -196,12 +196,11 @@ export default function Collaboration() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr",
                 gap: "clamp(28px,3vw,48px)",
                 padding: "clamp(40px,5vw,72px) 0",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
               }}
-              className="md:grid-cols-[minmax(140px,200px)_1fr]"
+              className="grid-cols-1 md:grid-cols-[minmax(140px,200px)_1fr]"
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p

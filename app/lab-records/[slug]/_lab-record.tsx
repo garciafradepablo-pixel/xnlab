@@ -181,10 +181,9 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr",
               gap: "clamp(24px,3vw,40px)",
             }}
-            className="md:grid-cols-[minmax(160px,220px)_1fr]"
+            className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
           >
             <p style={labelStyle}>{t.relatedWorld}</p>
             <div>

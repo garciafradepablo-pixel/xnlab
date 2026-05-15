@@ -223,12 +223,11 @@ export default function WorldDetail({ world }: { world: World }) {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr",
                 gap: "clamp(24px,3vw,40px)",
                 padding: "clamp(28px,3.5vw,52px) 0",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
               }}
-              className="md:grid-cols-[minmax(140px,200px)_1fr]"
+              className="grid-cols-1 md:grid-cols-[minmax(140px,200px)_1fr]"
             >
               <p style={labelStyle}>{row.label}</p>
               <p
@@ -276,10 +275,9 @@ export default function WorldDetail({ world }: { world: World }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr",
             gap: "clamp(28px,3vw,48px)",
           }}
-          className="md:grid-cols-[minmax(140px,200px)_1fr]"
+          className="grid-cols-1 md:grid-cols-[minmax(140px,200px)_1fr]"
         >
           <R>
             <p style={labelStyle}>{t.practice}</p>

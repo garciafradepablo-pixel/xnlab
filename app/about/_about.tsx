@@ -260,9 +260,8 @@ export default function About() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(40px,5vw,72px)",
-          gridTemplateColumns: "1fr",
         }}
-        className="md:grid-cols-[minmax(160px,220px)_1fr]"
+        className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
       >
         <R>
           <p
@@ -317,9 +316,8 @@ export default function About() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(40px,5vw,72px)",
-          gridTemplateColumns: "1fr",
         }}
-        className="md:grid-cols-[minmax(160px,220px)_1fr]"
+        className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
       >
         <R>
           <p
@@ -388,9 +386,8 @@ export default function About() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(40px,5vw,72px)",
-          gridTemplateColumns: "1fr",
         }}
-        className="md:grid-cols-[minmax(160px,220px)_1fr]"
+        className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
       >
         <R>
           <p

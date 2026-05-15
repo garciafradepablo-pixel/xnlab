@@ -194,12 +194,11 @@ export default function Atmospheres() {
               transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: i * 0.04 }}
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr",
                 gap: "clamp(28px,3vw,48px)",
                 padding: "clamp(48px,6vw,88px) 0",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
               }}
-              className="md:grid-cols-[minmax(160px,220px)_1fr]"
+              className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p

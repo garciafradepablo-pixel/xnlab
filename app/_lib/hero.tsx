@@ -21,16 +21,20 @@ type HeroCopy = {
 // centre so the row reads as an arc. Sizes shrink outward; the centre
 // is clearly the largest. Each Core arrives with its own entry vector
 // for a 3D, abstract assembly.
+// Sizes and spacing chosen so the whole dome fits at 375px viewport
+// without orb collisions: central radius + inner radius <= UNIT, and
+// outer mult*UNIT + outer radius <= half-viewport at the smallest
+// supported width.
 const PLAN = [
-  { idx: 0, mult: -3, dy: "9%",   size: "clamp(52px,5.4vw,68px)", entry: { x: -180, y: 14,  scale: 0.30, blur: 22 }, delay: 2.05 },
-  { idx: 1, mult: -2, dy: "5%",   size: "clamp(56px,5.8vw,76px)", entry: { x: -40,  y: -56, scale: 1.55, blur: 20 }, delay: 1.85 },
-  { idx: 2, mult: -1, dy: "1.5%", size: "clamp(60px,6.2vw,84px)", entry: { x: 30,   y: 64,  scale: 0.5,  blur: 14 }, delay: 1.65 },
-  { idx: 3, mult: 1,  dy: "1.5%", size: "clamp(60px,6.2vw,84px)", entry: { x: -30,  y: -64, scale: 1.55, blur: 16 }, delay: 1.75 },
-  { idx: 4, mult: 2,  dy: "5%",   size: "clamp(56px,5.8vw,76px)", entry: { x: 40,   y: 56,  scale: 0.45, blur: 14 }, delay: 1.95 },
-  { idx: 5, mult: 3,  dy: "9%",   size: "clamp(52px,5.4vw,68px)", entry: { x: 180,  y: -14, scale: 0.3,  blur: 22 }, delay: 2.15 },
+  { idx: 0, mult: -3, dy: "9%",   size: "clamp(30px,4.6vw,68px)", entry: { x: -180, y: 14,  scale: 0.30, blur: 22 }, delay: 2.05 },
+  { idx: 1, mult: -2, dy: "5%",   size: "clamp(34px,5vw,76px)",   entry: { x: -40,  y: -56, scale: 1.55, blur: 20 }, delay: 1.85 },
+  { idx: 2, mult: -1, dy: "1.5%", size: "clamp(40px,5.6vw,84px)", entry: { x: 30,   y: 64,  scale: 0.5,  blur: 14 }, delay: 1.65 },
+  { idx: 3, mult: 1,  dy: "1.5%", size: "clamp(40px,5.6vw,84px)", entry: { x: -30,  y: -64, scale: 1.55, blur: 16 }, delay: 1.75 },
+  { idx: 4, mult: 2,  dy: "5%",   size: "clamp(34px,5vw,76px)",   entry: { x: 40,   y: 56,  scale: 0.45, blur: 14 }, delay: 1.95 },
+  { idx: 5, mult: 3,  dy: "9%",   size: "clamp(30px,4.6vw,68px)", entry: { x: 180,  y: -14, scale: 0.3,  blur: 22 }, delay: 2.15 },
 ];
-const UNIT = "clamp(82px,11vw,160px)";
-const CENTRAL_SIZE = "clamp(130px,13vw,180px)";
+const UNIT = "clamp(54px,9.2vw,160px)";
+const CENTRAL_SIZE = "clamp(72px,11.5vw,180px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -351,19 +355,20 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   <Orb world={w} size={120} />
                 </motion.div>
 
-                {/* Single label below — number + full title in core colour.
-                    Wraps to two lines on long titles, centred under orb. */}
+                {/* Single label — appears only on hover so the dome stays
+                    clean on mobile (no overlap, no clutter). Number +
+                    full title rendered in the Core's colour. */}
                 <motion.div
                   aria-hidden
-                  animate={{ opacity: isHover ? 1 : 0.6, y: isHover ? -1 : 0 }}
+                  animate={{ opacity: isHover ? 1 : 0, y: isHover ? -1 : 4 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   style={{
                     position: "absolute",
                     left: "50%",
-                    top: "calc(100% + 14px)",
+                    top: "calc(100% + 12px)",
                     transform: "translateX(-50%)",
-                    width: "clamp(120px, 14vw, 180px)",
-                    fontSize: "clamp(9px, 0.7vw, 10.5px)",
+                    width: "clamp(140px, 16vw, 200px)",
+                    fontSize: "clamp(9px, 0.72vw, 11px)",
                     letterSpacing: "0.24em",
                     textTransform: "uppercase",
                     color: w.color.hex,
@@ -371,7 +376,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     textAlign: "center",
                     lineHeight: 1.4,
                     pointerEvents: "none",
-                    textShadow: "0 1px 12px rgba(0,0,0,0.85)",
+                    textShadow: "0 1px 14px rgba(0,0,0,0.9)",
                   }}
                 >
                   {w.number} · {w.title[lang]}

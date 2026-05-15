@@ -254,12 +254,11 @@ export default function Process() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr",
                 gap: "clamp(28px,3vw,48px)",
                 padding: "clamp(40px,5vw,72px) 0",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
               }}
-              className="md:grid-cols-[minmax(120px,180px)_1fr]"
+              className="grid-cols-1 md:grid-cols-[minmax(120px,180px)_1fr]"
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p
@@ -360,10 +359,9 @@ export default function Process() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr",
             gap: "clamp(36px,5vw,72px)",
           }}
-          className="md:grid-cols-[minmax(160px,220px)_1fr]"
+          className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
         >
           <R>
             <p style={labelStyle}>{t.deliverablesLabel}</p>

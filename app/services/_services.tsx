@@ -484,12 +484,11 @@ export default function Services() {
             <article
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr",
                 gap: "clamp(28px,3vw,48px)",
                 padding: "clamp(40px,5vw,72px) 0",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
               }}
-              className="md:grid-cols-[minmax(140px,200px)_1fr]"
+              className="grid-cols-1 md:grid-cols-[minmax(140px,200px)_1fr]"
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p
@@ -563,9 +562,8 @@ export default function Services() {
                   style={{
                     display: "grid",
                     gap: "clamp(16px,2vw,28px)",
-                    gridTemplateColumns: "1fr",
                   }}
-                  className="md:grid-cols-2"
+                  className="grid-cols-1 md:grid-cols-2"
                 >
                   <div>
                     <p style={{ ...labelStyle, marginBottom: 8 }}>{t.outcomesLabel}</p>
@@ -688,10 +686,9 @@ export default function Services() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr",
             gap: "clamp(20px,2.5vw,32px)",
           }}
-          className="md:grid-cols-2"
+          className="grid-cols-1 md:grid-cols-2"
         >
           {t.pillars.map((p, i) => (
             <R key={p.title} delay={0.05 * i}>
@@ -766,12 +763,11 @@ export default function Services() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr",
                   gap: "clamp(8px,1.5vw,20px)",
                   padding: "clamp(24px,3vw,36px) 0",
                   borderTop: "1px solid rgba(255,255,255,0.06)",
                 }}
-                className="md:grid-cols-[minmax(220px,320px)_1fr]"
+                className="grid-cols-1 md:grid-cols-[minmax(220px,320px)_1fr]"
               >
                 <dt
                   style={{
