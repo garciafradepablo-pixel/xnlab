@@ -153,14 +153,28 @@ export default function Manifesto() {
           textAlign: "center",
         }}
       >
+        {/* Deep red-tinted radial glow centred on the headline */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 55% 50% at 50% 45%, rgba(80,20,15,0.45) 0%, rgba(20,8,8,0.2) 38%, transparent 72%)",
+            pointerEvents: "none",
+          }}
+        />
+        <Dust count={16} opacity={0.09} />
         <p
           style={{
             fontSize: 10,
             fontWeight: 500,
             letterSpacing: "0.42em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(255,255,255,0.55)",
             marginBottom: 36,
+            position: "relative",
+            zIndex: 5,
           }}
         >
           {t.eyebrow}

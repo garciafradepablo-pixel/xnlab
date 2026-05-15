@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
@@ -148,7 +149,19 @@ export default function Collaboration() {
       </header>
 
       <section style={{ position: "relative", padding: "clamp(140px,18vh,200px) clamp(24px,7vw,96px) clamp(56px,8vw,96px)", maxWidth: 1120, margin: "0 auto" }}>
-        <Dust count={8} opacity={0.06} />
+        {/* Cool atmospheric backdrop — steel/stone tint */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 65% 55% at 50% 38%, rgba(30,40,55,0.5) 0%, rgba(12,18,28,0.22) 38%, transparent 72%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <Dust count={12} opacity={0.07} />
         <p style={{ ...labelStyle, marginBottom: 28, position: "relative", zIndex: 5 }}>{t.eyebrow}</p>
         <h1
           style={{
@@ -236,6 +249,46 @@ export default function Collaboration() {
             </div>
           </R>
         ))}
+      </section>
+
+      {/* Atmospheric image break before the closing CTA */}
+      <section style={{ position: "relative", minHeight: "clamp(55svh,68vh,78svh)", overflow: "hidden" }}>
+        <Image
+          src="/images/06_spatial_green.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center 40%" }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to bottom, rgba(6,6,6,1) 0%, rgba(4,3,2,0.22) 18%, rgba(4,3,2,0.5) 60%, rgba(6,6,6,1) 100%)",
+          }}
+        />
+        <Dust count={8} opacity={0.07} />
+        <div style={{ position: "relative", zIndex: 5, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "clamp(55svh,68vh,78svh)", padding: "0 clamp(24px,5vw,72px)", textAlign: "center" }}>
+          <R>
+            <p
+              style={{
+                fontFamily: serif,
+                fontStyle: "italic",
+                fontSize: "clamp(1.6rem,3.6vw,3.4rem)",
+                lineHeight: 1.22,
+                color: "rgba(255,255,255,0.86)",
+                maxWidth: 1000,
+                textShadow: tsS,
+              }}
+            >
+              {lang === "en"
+                ? "“We say yes slowly. When we do, we mean it for a year.”"
+                : "“Decimos sí despacio. Cuando lo decimos, lo mantenemos un año.”"}
+            </p>
+          </R>
+        </div>
       </section>
 
       <section style={{ padding: "clamp(80px,11vw,160px) clamp(20px,5vw,64px)", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.06)", position: "relative" }}>

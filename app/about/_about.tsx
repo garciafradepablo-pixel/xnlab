@@ -151,14 +151,26 @@ export default function About() {
           margin: "0 auto",
         }}
       >
-        <Dust count={8} opacity={0.06} />
+        {/* Atmospheric backdrop — soft warm radial centred on the headline */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 60% 50% at 50% 40%, rgba(60,40,28,0.55) 0%, rgba(20,12,8,0.25) 35%, transparent 70%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <Dust count={14} opacity={0.08} />
         <p
           style={{
             fontSize: 10,
             fontWeight: 500,
             letterSpacing: "0.42em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.5)",
+            color: "rgba(255,255,255,0.55)",
             marginBottom: 28,
             position: "relative",
             zIndex: 5,
@@ -203,7 +215,7 @@ export default function About() {
         </R>
       </section>
 
-      <section style={{ position: "relative", height: "clamp(45svh,55vh,65vh)", overflow: "hidden" }}>
+      <section style={{ position: "relative", minHeight: "clamp(60svh,72vh,82svh)", overflow: "hidden" }}>
         <Image
           src="/images/02_worldbuilding_floating.jpg"
           alt=""
@@ -216,9 +228,29 @@ export default function About() {
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to bottom, rgba(6,6,6,1) 0%, rgba(4,3,2,0.05) 25%, rgba(4,3,2,0.05) 75%, rgba(6,6,6,1) 100%)",
+              "linear-gradient(to bottom, rgba(6,6,6,1) 0%, rgba(4,3,2,0.18) 18%, rgba(4,3,2,0.4) 60%, rgba(6,6,6,1) 100%)",
           }}
         />
+        <Dust count={8} opacity={0.07} />
+        <div style={{ position: "relative", zIndex: 5, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "clamp(60svh,72vh,82svh)", padding: "0 clamp(24px,5vw,72px)", textAlign: "center" }}>
+          <R>
+            <p
+              style={{
+                fontFamily: serif,
+                fontStyle: "italic",
+                fontSize: "clamp(1.6rem,3.6vw,3.4rem)",
+                lineHeight: 1.22,
+                color: "rgba(255,255,255,0.88)",
+                maxWidth: 940,
+                textShadow: tsS,
+              }}
+            >
+              {lang === "en"
+                ? "We build worlds for brands that want to be felt — not described."
+                : "Construimos mundos para marcas que quieren ser sentidas — no descritas."}
+            </p>
+          </R>
+        </div>
       </section>
 
       <section
@@ -322,6 +354,31 @@ export default function About() {
             </R>
           ))}
         </ul>
+      </section>
+
+      {/* Pull quote between Beliefs and Practice */}
+      <section style={{ padding: "clamp(40px,6vw,80px) clamp(24px,7vw,96px) clamp(60px,8vw,100px)", textAlign: "center", position: "relative" }}>
+        <Dust count={6} opacity={0.05} />
+        <R>
+          <p
+            style={{
+              fontFamily: serif,
+              fontStyle: "italic",
+              fontSize: "clamp(1.7rem,4vw,3.4rem)",
+              lineHeight: 1.22,
+              color: "rgba(255,255,255,0.78)",
+              maxWidth: 1000,
+              margin: "0 auto",
+              textShadow: tsS,
+              position: "relative",
+              zIndex: 5,
+            }}
+          >
+            {lang === "en"
+              ? "“A studio is not what it says. It is what it makes you remember.”"
+              : "“Un estudio no es lo que dice. Es lo que te hace recordar.”"}
+          </p>
+        </R>
       </section>
 
       <section

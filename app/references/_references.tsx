@@ -154,6 +154,30 @@ const labelStyle: React.CSSProperties = {
   color: "rgba(255,255,255,0.45)",
 };
 
+// Subtle hue per category so the list reads with visual rhythm.
+// Each tint is muted enough to read as a label, not a UI badge.
+function categoryColor(cat: string): string {
+  switch (cat) {
+    case "Book":
+      return "rgba(216,147,42,0.85)"; // amber
+    case "Architect":
+      return "rgba(190,190,180,0.7)"; // stone
+    case "Film":
+    case "Director":
+      return "rgba(120,140,255,0.8)"; // indigo
+    case "Hotel":
+      return "rgba(216,147,42,0.85)"; // amber
+    case "Artist":
+      return "rgba(120,255,240,0.7)"; // cyan
+    case "Perfumer":
+      return "rgba(170,110,255,0.8)"; // violet
+    case "Designer":
+      return "rgba(232,226,210,0.7)"; // pearl
+    default:
+      return "rgba(255,255,255,0.45)";
+  }
+}
+
 export default function References() {
   const [lang, setLang] = useLang();
   const t = lang === "en" ? en : es;
@@ -192,7 +216,19 @@ export default function References() {
       </header>
 
       <section style={{ position: "relative", padding: "clamp(140px,18vh,200px) clamp(24px,7vw,96px) clamp(56px,8vw,96px)", maxWidth: 1120, margin: "0 auto" }}>
-        <Dust count={8} opacity={0.06} />
+        {/* Library — cool, cerebral radial */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 65% 55% at 50% 38%, rgba(35,40,55,0.45) 0%, rgba(14,16,24,0.2) 38%, transparent 72%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <Dust count={12} opacity={0.07} />
         <p style={{ ...labelStyle, marginBottom: 28, position: "relative", zIndex: 5 }}>{t.eyebrow}</p>
         <h1
           style={{
@@ -235,7 +271,7 @@ export default function References() {
               className="md:grid-cols-[minmax(140px,200px)_1fr]"
             >
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <p style={labelStyle}>{r.category[lang]}</p>
+                <p style={{ ...labelStyle, color: categoryColor(r.category.en) }}>{r.category[lang]}</p>
                 {r.meta && (
                   <p style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", letterSpacing: "0.08em" }}>{r.meta}</p>
                 )}

@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
@@ -190,7 +191,19 @@ export default function Process() {
           margin: "0 auto",
         }}
       >
-        <Dust count={8} opacity={0.06} />
+        {/* Warm radial backdrop for the hero */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 65% 55% at 50% 38%, rgba(70,45,20,0.5) 0%, rgba(22,14,8,0.22) 38%, transparent 72%)",
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+        <Dust count={14} opacity={0.08} />
         <p style={{ ...labelStyle, marginBottom: 28, position: "relative", zIndex: 5 }}>{t.eyebrow}</p>
         <h1
           style={{
@@ -288,6 +301,46 @@ export default function Process() {
             </div>
           </R>
         ))}
+      </section>
+
+      {/* Atmospheric image break — bridge between movements and deliverables */}
+      <section style={{ position: "relative", minHeight: "clamp(55svh,68vh,78svh)", overflow: "hidden" }}>
+        <Image
+          src="/images/08_reflective_table.jpg"
+          alt=""
+          fill
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center 30%" }}
+        />
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(to bottom, rgba(6,6,6,1) 0%, rgba(4,3,2,0.18) 18%, rgba(4,3,2,0.45) 60%, rgba(6,6,6,1) 100%)",
+          }}
+        />
+        <Dust count={8} opacity={0.07} />
+        <div style={{ position: "relative", zIndex: 5, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "clamp(55svh,68vh,78svh)", padding: "0 clamp(24px,5vw,72px)", textAlign: "center" }}>
+          <R>
+            <p
+              style={{
+                fontFamily: serif,
+                fontStyle: "italic",
+                fontSize: "clamp(1.6rem,3.6vw,3.4rem)",
+                lineHeight: 1.22,
+                color: "rgba(255,255,255,0.86)",
+                maxWidth: 1000,
+                textShadow: tsS,
+              }}
+            >
+              {lang === "en"
+                ? "“We do not finish a project. We tune it until the room agrees with itself.”"
+                : "“No terminamos un proyecto. Lo afinamos hasta que la habitación se pone de acuerdo consigo misma.”"}
+            </p>
+          </R>
+        </div>
       </section>
 
       <section
