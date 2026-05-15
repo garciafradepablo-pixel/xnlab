@@ -6,10 +6,27 @@ body {
   background: #060606;
   color: #f0ece4;
   overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Smarter line breaks on headings (Safari 17.4+, Chrome 114+, Firefox 121+) */
+h1, h2, h3 {
+  text-wrap: balance;
+}
+
+/* Pretty paragraphs avoid orphans/runts where supported */
+p {
+  text-wrap: pretty;
+}
+
+/* Prevent absurd long-word overflow on narrow viewports */
+h1, h2, h3, p {
+  overflow-wrap: break-word;
 }
 
 /* Custom cursor only for true mouse users — touch/pen/keyboard get the native cursor */
@@ -37,4 +54,18 @@ body {
   outline: 1px solid rgba(255, 255, 255, 0.6);
   outline-offset: 3px;
   border-radius: 2px;
+}
+
+/* Cinematic selection colour */
+::selection {
+  background: rgba(230, 205, 165, 0.32);
+  color: white;
+}
+
+/* Smooth scroll for in-page anchors, respecting reduced-motion */
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
