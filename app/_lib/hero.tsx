@@ -25,7 +25,10 @@ type HeroCopy = {
 // weight (same size), and the Central Core is just barely larger — the
 // only differentiator is a hair of scale and the subtle warm halo that
 // already lives behind the wordmark. Less is more. Subtle arc only.
-const ORB_SIZE = "clamp(54px,6.4vw,104px)";
+// Sizes and spacing scale with the viewport. The mins were chosen so the
+// outermost orb (mult ±3) fits inside a 375px viewport with breathing
+// room: 3·UNIT + ORB/2 must stay under half-viewport minus padding.
+const ORB_SIZE = "clamp(36px,6.4vw,100px)";
 const PLAN = [
   { idx: 0, mult: -3, dy: "3.5%", delay: 1.95 },
   { idx: 1, mult: -2, dy: "2%",   delay: 1.85 },
@@ -34,8 +37,8 @@ const PLAN = [
   { idx: 4, mult: 2,  dy: "2%",   delay: 1.9  },
   { idx: 5, mult: 3,  dy: "3.5%", delay: 2.0  },
 ];
-const UNIT = "clamp(70px,8.5vw,150px)";
-const CENTRAL_SIZE = "clamp(68px,7.8vw,128px)";
+const UNIT = "clamp(50px,8.5vw,145px)";
+const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -214,59 +217,65 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         />
       </motion.div>
 
-      {/* LAYER 2B — Central Core, the dome's apex. Now an actual orb,
-          notably larger than the six flanking Cores, and interactive. */}
-      <motion.div
+      {/* LAYER 2B — Central Core, the dome's apex. A static wrapper holds
+          the anchor + centring transform; the motion child carries the
+          parallax. Mixing `x` motion values with `translate(-50%, -50%)`
+          on the same element caused Framer to drop the centering, which
+          shoved the orb to the right. Splitting them fixes that. */}
+      <div
         style={{
           position: "absolute",
           zIndex: 8,
-          x: sphX,
-          y: sphY,
           left: "50%",
           top: "26%",
-          translateX: "-50%",
-          translateY: "-50%",
           width: CENTRAL_SIZE,
           height: CENTRAL_SIZE,
+          transform: "translate(-50%, -50%)",
           pointerEvents: "auto",
         }}
-        initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
-        animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-        transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.55 }}
       >
-        <Link
-          href="/worlds"
-          aria-label={lang === "en" ? "The Universe" : "El Universo"}
-          onMouseEnter={() => setCentralHover(true)}
-          onMouseLeave={() => setCentralHover(false)}
-          onFocus={() => setCentralHover(true)}
-          onBlur={() => setCentralHover(false)}
-          style={{
-            display: "block",
-            width: "100%",
-            height: "100%",
-            textDecoration: "none",
-            color: "inherit",
-            outline: "none",
-          }}
+        <motion.div
+          style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
+          initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+          transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.55 }}
         >
-          <motion.div
-            animate={{
-              scale: centralHover ? 1.18 : 1,
-              y: [0, -4, 0],
+          <Link
+            href="/worlds"
+            aria-label={lang === "en" ? "The Universe" : "El Universo"}
+            onMouseEnter={() => setCentralHover(true)}
+            onMouseLeave={() => setCentralHover(false)}
+            onFocus={() => setCentralHover(true)}
+            onBlur={() => setCentralHover(false)}
+            style={{
+              display: "block",
+              width: "100%",
+              height: "100%",
+              textDecoration: "none",
+              color: "inherit",
+              outline: "none",
             }}
-            transition={{
-              scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-              y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
-            }}
-            style={{ position: "relative", width: "100%", height: "100%" }}
           >
-            <Orb central size={260} />
-          </motion.div>
-        </Link>
-      </motion.div>
+            <motion.div
+              animate={{
+                scale: centralHover ? 1.18 : 1,
+                y: [0, -4, 0],
+              }}
+              transition={{
+                scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
+              }}
+              style={{ position: "relative", width: "100%", height: "100%" }}
+            >
+              <Orb central size={260} />
+            </motion.div>
+          </Link>
+        </motion.div>
+      </div>
 
-      {/* LAYER 2B2 — six World Cores arranged in the dome, all same size */}
+      {/* LAYER 2B2 — six World Cores arranged in the dome, all same size.
+          Same split as the Central: static outer for left + top + centre
+          translation, motion inner for parallax + entry animation. */}
       {PLAN.map(({ idx, mult, dy, delay }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
@@ -274,27 +283,24 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         const dist = Math.abs(mult);
         const leftCalc = `calc(50% ${side} (${UNIT} * ${dist}))`;
         return (
-          <motion.div
+          <div
             key={w.slug}
             style={{
               position: "absolute",
               zIndex: 9,
-              x: sphX,
-              y: sphY,
               left: leftCalc,
               top: `calc(26% + ${dy})`,
-              translateX: "-50%",
-              translateY: "-50%",
               width: ORB_SIZE,
               height: ORB_SIZE,
+              transform: "translate(-50%, -50%)",
               pointerEvents: "auto",
             }}
           >
             <motion.div
+              style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
               initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
               animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
               transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay }}
-              style={{ position: "relative", width: "100%", height: "100%" }}
             >
               <Link
                 href={`/worlds/${w.slug}`}
@@ -372,7 +378,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 </motion.div>
               </Link>
             </motion.div>
-          </motion.div>
+          </div>
         );
       })}
 
@@ -408,13 +414,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.p>
         <motion.h1
           style={{
-            fontSize: "clamp(56px,10.5vw,156px)",
+            fontSize: "clamp(88px,16vw,220px)",
             fontWeight: 400,
             letterSpacing: "-0.04em",
             lineHeight: 0.86,
             color: "white",
             textAlign: "center",
-            textShadow: "0 2px 50px rgba(0,0,0,0.85)",
+            textShadow: "0 2px 60px rgba(0,0,0,0.85)",
           }}
           initial={{ opacity: 0, filter: "blur(20px)" }}
           animate={{ opacity: 1, filter: "blur(0px)" }}
