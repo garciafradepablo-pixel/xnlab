@@ -1,0 +1,30 @@
+# Xnlab Studio (XNLAB)
+
+> Worldbuilding studio for modern luxury. We design atmospheres, identities and visual systems for hospitality, nightlife, architecture and cultural identity. By appointment only.
+
+The studio operates from a single mark — XNLAB — and a single email: studio@xnlab.io. Work happens slowly, with a small number of clients each year. The visual language is dark, cinematic, atmospheric. We design presence, not content.
+
+## Pages
+
+- [Home](https://xnlab.io): Landing — wordmark, four disciplines, selected works summary, contact.
+- [Selected Works](https://xnlab.io/work): Case studies (currently 3 internal studies; real client work in progress).
+- [Selected Work — Hospitality Atmosphere Study](https://xnlab.io/work/hospitality-atmosphere-study): Internal study on hospitality interiors.
+- [Selected Work — Nightlife Visual System](https://xnlab.io/work/nightlife-visual-system): Internal study on nocturnal identity systems.
+- [Selected Work — Architectural Identity](https://xnlab.io/work/architectural-identity): Internal study on emotional architecture.
+- [About](https://xnlab.io/about): Studio philosophy, approach, beliefs, practice areas.
+- [Process](https://xnlab.io/process): How we work in four movements — Listen, Map atmospheres, Build the system, Live with it.
+- [Manifesto](https://xnlab.io/manifesto): Six statements on worldbuilding, atmosphere and restraint.
+- [Contact](https://xnlab.io/contact): Inquiry form. By appointment only.
+- [Colophon](https://xnlab.io/imprint): Studio details, typography credits, technical stack, brief privacy and terms notes.
+
+## Practice
+
+- Hospitality Systems — atmospheres designed to be remembered.
+- Nightlife Atmospheres — dark, cinematic environments for cultural energy.
+- Emotional Architecture — spaces shaped through silence, light and material.
+- Living Identities — symbols, avatars and identities with presence.
+
+## Contact
+
+- Email: studio@xnlab.io
+- Availability: By appointment only.

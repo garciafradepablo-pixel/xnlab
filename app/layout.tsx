@@ -3,6 +3,7 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { DustStyles } from "./_lib/atoms";
 import { ScrollProgress, FilmGrain } from "./_lib/chrome";
+import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -83,6 +84,11 @@ export const metadata: Metadata = {
   },
   formatDetection: { email: false, address: false, telephone: false },
   // Icons are generated dynamically via app/icon.tsx + app/apple-icon.tsx
+  verification: {
+    // Set GOOGLE_SITE_VERIFICATION in Vercel env (Search Console → Settings →
+    // Ownership verification → HTML tag → copy the content="..." value).
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
 };
 
 export const viewport: Viewport = {
@@ -127,6 +133,7 @@ export default function RootLayout({
         <FilmGrain />
         <ScrollProgress />
         <div id="main">{children}</div>
+        <Analytics />
       </body>
     </html>
   );

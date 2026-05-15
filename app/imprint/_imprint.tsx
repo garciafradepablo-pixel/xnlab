@@ -44,8 +44,8 @@ const en = {
   ],
   privacyLabel: "Privacy",
   privacy: [
-    "We do not collect personal data on this site. No analytics. No cookies. No third-party trackers.",
-    "Our contact form composes a draft in your own email client; nothing is stored on our servers until you choose to send.",
+    "We use Vercel Analytics — anonymous, cookieless, GDPR-friendly. No third-party trackers, no advertising pixels, no profile building.",
+    "Our contact form delivers your message directly to studio@xnlab.io. We never share your details and do not use them for anything else.",
   ],
   termsLabel: "Use",
   terms: [
@@ -98,8 +98,8 @@ const es = {
   ],
   privacyLabel: "Privacidad",
   privacy: [
-    "No recogemos datos personales en este sitio. Sin analítica. Sin cookies. Sin rastreadores de terceros.",
-    "Nuestro formulario de contacto redacta un borrador en tu propio cliente de correo; nada se guarda en nuestros servidores hasta que tú decides enviarlo.",
+    "Usamos Vercel Analytics — anónimo, sin cookies, compatible con GDPR. Sin rastreadores de terceros, sin píxeles publicitarios, sin construcción de perfiles.",
+    "Nuestro formulario de contacto entrega tu mensaje directamente a studio@xnlab.io. No compartimos tus datos ni los usamos para nada más.",
   ],
   termsLabel: "Uso",
   terms: [

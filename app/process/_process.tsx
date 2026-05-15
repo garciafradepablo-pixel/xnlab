@@ -43,6 +43,18 @@ const en = {
       ],
     },
   ],
+  deliverablesLabel: "What you receive",
+  deliverablesH: "Tangible outputs.",
+  deliverablesIntro:
+    "Each engagement results in a coherent set of artefacts — built to be lived with, not filed away.",
+  deliverables: [
+    "Atmosphere brief and spatial concept.",
+    "Visual identity system: marks, typography, palette.",
+    "Material and lighting specifications.",
+    "Sound and sensory direction.",
+    "Launch choreography and opening-night calibration.",
+    "Post-opening adjustments across the first season.",
+  ],
   closingH: "Worlds are not built fast.",
   closingBody:
     "If you have a brand that wants to be felt — a hotel, a club, an architecture, an identity — we would like to hear about it.",
@@ -89,6 +101,18 @@ const es = {
         "Un mundo no es un lanzamiento. Es una inhabitación lenta.",
       ],
     },
+  ],
+  deliverablesLabel: "Lo que recibes",
+  deliverablesH: "Salidas tangibles.",
+  deliverablesIntro:
+    "Cada colaboración resulta en un conjunto coherente de piezas — construidas para habitarlas, no para archivarlas.",
+  deliverables: [
+    "Brief de atmósfera y concepto espacial.",
+    "Sistema de identidad visual: marca, tipografía, paleta.",
+    "Especificaciones de material e iluminación.",
+    "Dirección sonora y sensorial.",
+    "Coreografía de lanzamiento y calibración de la noche de apertura.",
+    "Ajustes post-apertura durante la primera temporada.",
   ],
   closingH: "Los mundos no se construyen rápido.",
   closingBody:
@@ -265,6 +289,78 @@ export default function Process() {
             </div>
           </R>
         ))}
+      </section>
+
+      <section
+        style={{
+          padding: "clamp(72px,10vw,140px) clamp(24px,7vw,96px)",
+          maxWidth: 1120,
+          margin: "0 auto",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr",
+            gap: "clamp(36px,5vw,72px)",
+          }}
+          className="md:grid-cols-[minmax(160px,220px)_1fr]"
+        >
+          <R>
+            <p style={labelStyle}>{t.deliverablesLabel}</p>
+          </R>
+          <div>
+            <R>
+              <h2
+                style={{
+                  fontSize: "clamp(1.8rem,3.6vw,3.4rem)",
+                  fontWeight: 400,
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.045em",
+                  color: "white",
+                  textShadow: tsS,
+                  marginBottom: "clamp(20px,2.5vw,32px)",
+                }}
+              >
+                {t.deliverablesH}
+              </h2>
+            </R>
+            <R delay={0.08}>
+              <p
+                style={{
+                  fontSize: "clamp(1rem,1.22vw,1.12rem)",
+                  lineHeight: 1.72,
+                  color: "rgba(255,255,255,0.7)",
+                  fontWeight: 300,
+                  marginBottom: "clamp(28px,3.5vw,44px)",
+                  maxWidth: 640,
+                }}
+              >
+                {t.deliverablesIntro}
+              </p>
+            </R>
+            <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+              {t.deliverables.map((d, i) => (
+                <R key={d} delay={0.04 * i}>
+                  <li
+                    style={{
+                      padding: "clamp(14px,1.8vw,22px) 0",
+                      borderTop: "1px solid rgba(255,255,255,0.06)",
+                      fontFamily: serif,
+                      fontStyle: "italic",
+                      fontSize: "clamp(1.05rem,1.6vw,1.5rem)",
+                      lineHeight: 1.3,
+                      color: "rgba(255,255,255,0.82)",
+                    }}
+                  >
+                    {d}
+                  </li>
+                </R>
+              ))}
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section
