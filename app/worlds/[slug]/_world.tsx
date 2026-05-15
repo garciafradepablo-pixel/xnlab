@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../../_lib/atoms";
 import { Magnetic } from "../../_lib/chrome";
@@ -14,7 +15,7 @@ const ui = {
     energy: "Energy",
     notes: "Notes",
     practice: "We make",
-    contact: "Initiate Contact",
+    contact: "Apply for a project",
     next: "Next world →",
     back: "← All worlds",
   },
@@ -24,7 +25,7 @@ const ui = {
     energy: "Energía",
     notes: "Notas",
     practice: "Hacemos",
-    contact: "Iniciar Contacto",
+    contact: "Aplicar para un proyecto",
     next: "Siguiente mundo →",
     back: "← Todos los mundos",
   },
@@ -147,6 +148,70 @@ export default function WorldDetail({ world }: { world: World }) {
           </p>
         </R>
       </section>
+
+      {/* Discipline — cinematic atmosphere card, present when the Core owns one */}
+      {world.discipline && (
+        <section style={{ position: "relative", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+          <div style={{ position: "relative", width: "100%", height: "clamp(70svh,82vh,92svh)", minHeight: 480, overflow: "hidden" }}>
+            <Image
+              src={world.discipline.image}
+              alt={world.discipline.title[lang]}
+              fill
+              sizes="100vw"
+              style={{ objectFit: "cover", objectPosition: world.discipline.imagePosition ?? "center" }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "linear-gradient(to bottom, rgba(6,6,6,0.92) 0%, rgba(4,3,2,0.28) 14%, rgba(4,3,2,0.02) 38%, rgba(4,3,2,0.65) 86%, rgba(6,6,6,1) 100%)",
+              }}
+            />
+            <div
+              style={{
+                position: "absolute",
+                top: "50%",
+                left: 0,
+                right: 0,
+                transform: "translateY(-50%)",
+                padding: "0 clamp(24px,5vw,72px)",
+                textAlign: "center",
+                zIndex: 5,
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: "clamp(2rem,4.6vw,4.8rem)",
+                  fontWeight: 400,
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.045em",
+                  color: "white",
+                  textShadow: "0 1px 24px rgba(0,0,0,0.7)",
+                }}
+              >
+                <W text={world.discipline.title[lang]} delay={0} />
+              </h2>
+              <R delay={0.18}>
+                <p
+                  style={{
+                    marginTop: 18,
+                    fontSize: "clamp(0.96rem,1.18vw,1.1rem)",
+                    lineHeight: 1.7,
+                    color: "rgba(255,255,255,0.7)",
+                    fontWeight: 400,
+                    textShadow: ts,
+                    maxWidth: 720,
+                    margin: "18px auto 0",
+                  }}
+                >
+                  {world.discipline.copy[lang]}
+                </p>
+              </R>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Material + Energy */}
       <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,7vw,96px) clamp(56px,8vw,100px)", maxWidth: 1120, margin: "0 auto", borderTop: "1px solid rgba(255,255,255,0.05)" }}>

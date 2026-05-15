@@ -41,6 +41,15 @@ export type World = {
   energy: { en: string; es: string };
   practice: { en: string[]; es: string[] };
   body: { en: string[]; es: string[] };
+  // Optional cinematic discipline imagery — the full-bleed atmosphere card
+  // that used to live on the home page. Each Core that owns a discipline
+  // carries it here, so the home stays minimal and the World page is whole.
+  discipline?: {
+    image: string;
+    imagePosition?: string;
+    title: { en: string; es: string };
+    copy: { en: string; es: string };
+  };
 };
 
 export const worlds: World[] = [
@@ -91,6 +100,18 @@ export const worlds: World[] = [
         "Diseñamos este Core como una secuencia de atmósferas — umbral, pasillo, habitación, mesa — cada una afinada a una sensación. Los materiales son pesados. La luz, baja y cálida. El silencio forma parte de la carta.",
       ],
     },
+    discipline: {
+      image: "/images/03_emotional_curtains.jpg",
+      imagePosition: "center 42%",
+      title: {
+        en: "Hospitality Systems",
+        es: "Sistemas de Hospitalidad",
+      },
+      copy: {
+        en: "Atmospheres designed to be remembered.",
+        es: "Atmósferas diseñadas para ser recordadas.",
+      },
+    },
   },
   {
     slug: "nightlife-cultural-events",
@@ -138,6 +159,18 @@ export const worlds: World[] = [
         "La vida nocturna es la disciplina donde la energía cultural es más visible. La diseñamos como un sistema visual completo, no como un logo aplicado a flyers. Cada gesto es intencional: la puerta, la pauta de luz a medianoche, la tipografía de la pulsera, la banda sonora del baño.",
         "Ninguno de esos elementos grita. Juntos recuerdan. El sistema trata la oscuridad como lienzo y la contención como la herramienta más ruidosa que existe.",
       ],
+    },
+    discipline: {
+      image: "/images/04_sensorium_blue.jpg",
+      imagePosition: "center 40%",
+      title: {
+        en: "Nightlife Atmospheres",
+        es: "Atmósferas Nocturnas",
+      },
+      copy: {
+        en: "Dark, cinematic environments for cultural energy.",
+        es: "Entornos oscuros y cinematográficos para la energía cultural.",
+      },
     },
   },
   {
@@ -187,6 +220,18 @@ export const worlds: World[] = [
         "El resultado no es minimalista. Es concentrado. Un solo material elegido bien gana a un sistema de patrones elegidos rápido.",
       ],
     },
+    discipline: {
+      image: "/images/05_identity_chrome.jpg",
+      imagePosition: "center 45%",
+      title: {
+        en: "Living Identities",
+        es: "Identidades Vivas",
+      },
+      copy: {
+        en: "Symbols, avatars and identities with presence.",
+        es: "Símbolos, avatares e identidades con presencia.",
+      },
+    },
   },
   {
     slug: "architecture-spatial-design",
@@ -234,6 +279,18 @@ export const worlds: World[] = [
         "La arquitectura es la primera capa de emoción. Antes de la marca, antes de la música, antes del menú — la geometría del espacio ya habla. Este Core trata esa geometría como una frase y nuestro trabajo como editarla.",
         "Aislamos tres variables en cada proyecto: la profundidad de la sombra, la temperatura del material y el ritmo de las aberturas. Afinadas juntas, el espacio se siente inevitable.",
       ],
+    },
+    discipline: {
+      image: "/images/07_sculptural_white.jpg",
+      imagePosition: "center 60%",
+      title: {
+        en: "Emotional Architecture",
+        es: "Arquitectura Emocional",
+      },
+      copy: {
+        en: "Spaces shaped through silence, light and material.",
+        es: "Espacios moldeados por el silencio, la luz y el material.",
+      },
     },
   },
   {
