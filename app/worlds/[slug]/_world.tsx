@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../../_lib/atoms";
-import { Magnetic } from "../../_lib/chrome";
+import { LuxButton } from "../../_lib/lux-button";
 import { WordmarkLink } from "../../_lib/wordmark";
 import { Orb } from "../../_lib/orb";
 import type { World } from "../../_lib/worlds";
@@ -306,30 +306,7 @@ export default function WorldDetail({ world }: { world: World }) {
 
       {/* CTA + Next world */}
       <section style={{ padding: "clamp(64px,9vw,120px) clamp(20px,5vw,64px)", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <Magnetic>
-          <Link
-            href="/contact"
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: "0.7rem",
-              padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
-              fontSize: "clamp(10px,0.85vw,12px)",
-              fontWeight: 500,
-              letterSpacing: "0.28em",
-              textTransform: "uppercase",
-              color: "#060606",
-              textDecoration: "none",
-              background: "white",
-              borderRadius: 100,
-              transition: "background 0.4s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.88)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-          >
-            {t.contact}
-          </Link>
-        </Magnetic>
+        <LuxButton href="/contact" variant="solid" arrow={false}>{t.contact}</LuxButton>
         <div style={{ marginTop: 36 }}>
           <Link
             href={`/worlds/${next.slug}`}

@@ -2,7 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
-import { Magnetic } from "../_lib/chrome";
+import { LuxButton } from "../_lib/lux-button";
 import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
@@ -313,31 +313,9 @@ export default function Collaboration() {
             </p>
           </R>
           <R delay={0.32}>
-            <Magnetic>
-              <Link
-                href="/contact"
-                style={{
-                  marginTop: "clamp(32px,4vw,52px)",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "0.7rem",
-                  padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
-                  fontSize: "clamp(10px,0.85vw,12px)",
-                  fontWeight: 500,
-                  letterSpacing: "0.28em",
-                  textTransform: "uppercase",
-                  color: "#060606",
-                  textDecoration: "none",
-                  background: "white",
-                  borderRadius: 100,
-                  transition: "background 0.4s",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.88)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-              >
-                {t.cta}
-              </Link>
-            </Magnetic>
+            <div style={{ marginTop: "clamp(32px,4vw,52px)" }}>
+              <LuxButton href="/contact" variant="solid" arrow={false}>{t.cta}</LuxButton>
+            </div>
           </R>
         </div>
       </section>

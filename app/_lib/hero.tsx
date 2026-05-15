@@ -258,11 +258,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           >
             <motion.div
               animate={{
-                scale: centralHover ? 1.18 : 1,
+                scale: centralHover ? 1.22 : 1,
+                opacity: hovered !== null ? 0.45 : 1,
                 y: [0, -4, 0],
               }}
               transition={{
-                scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                scale: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
                 y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
               }}
               style={{ position: "relative", width: "100%", height: "100%" }}
@@ -279,6 +281,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       {PLAN.map(({ idx, mult, dy, delay }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
+        const dimmed = (hovered !== null && hovered !== w.slug) || centralHover;
         const side = mult < 0 ? "-" : "+";
         const dist = Math.abs(mult);
         const leftCalc = `calc(50% ${side} (${UNIT} * ${dist}))`;
@@ -332,17 +335,19 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     filter: "blur(22px)",
                     pointerEvents: "none",
                   }}
-                  animate={{ opacity: isHover ? 0.85 : 0.22 }}
+                  animate={{ opacity: isHover ? 0.95 : dimmed ? 0.1 : 0.22 }}
                   transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 />
 
                 <motion.div
                   animate={{
-                    scale: isHover ? 1.18 : 1,
+                    scale: isHover ? 1.22 : 1,
+                    opacity: dimmed ? 0.45 : 1,
                     y: [0, -3, 0],
                   }}
                   transition={{
-                    scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                    scale: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
                     y: { duration: 6.5 + idx * 0.4, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
                   }}
                   style={{ position: "relative", width: "100%", height: "100%" }}
