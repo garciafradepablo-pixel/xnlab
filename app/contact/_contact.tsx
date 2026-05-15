@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
+import { sendContactEmail } from "./actions";
 
 const en = {
   eyebrow: "Start a Conversation",
@@ -25,10 +26,12 @@ const en = {
     "Living Identities",
     "Other",
   ],
-  submit: "Open email →",
+  submit: "Send →",
+  sending: "Sending…",
   privacy:
-    "Submitting opens your email client with a pre-filled draft to studio@xnlab.io. We never share your details.",
-  ok: "Email opened — check your mail client.",
+    "Your message reaches studio@xnlab.io directly. We never share your details.",
+  okSent: "Sent — we will be in touch.",
+  okMailto: "Email opened — check your mail client.",
   back: "← Home",
   studioLabel: "Studio",
   studioInfo: ["By appointment only", "studio@xnlab.io"],
@@ -53,10 +56,12 @@ const es = {
     "Living Identities",
     "Otro",
   ],
-  submit: "Abrir email →",
+  submit: "Enviar →",
+  sending: "Enviando…",
   privacy:
-    "Enviar abre tu cliente de correo con un borrador pre-rellenado para studio@xnlab.io. No compartimos tus datos.",
-  ok: "Email abierto — revisa tu cliente de correo.",
+    "Tu mensaje llega directamente a studio@xnlab.io. No compartimos tus datos.",
+  okSent: "Enviado — te responderemos pronto.",
+  okMailto: "Email abierto — revisa tu cliente de correo.",
   back: "← Inicio",
   studioLabel: "Estudio",
   studioInfo: ["Solo con cita previa", "studio@xnlab.io"],
@@ -117,16 +122,32 @@ export default function Contact() {
   const [lang, setLang] = useLang();
   const t = lang === "en" ? en : es;
   const [form, setForm] = useState<FormState>(empty);
-  const [sent, setSent] = useState(false);
+  const [gotcha, setGotcha] = useState("");
+  const [sentMode, setSentMode] = useState<null | "sent" | "mailto">(null);
+  const [sending, setSending] = useState(false);
   const upd = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const onSubmit = (e: React.FormEvent) => {
+  const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.msg) return;
-    const href = buildMailto(form);
-    window.location.href = href;
-    setSent(true);
+    if (!form.email || !form.msg || sending) return;
+    setSending(true);
+    try {
+      const result = await sendContactEmail({ ...form, _gotcha: gotcha });
+      if (result.ok) {
+        setSentMode("sent");
+        return;
+      }
+      if (result.useMailto) {
+        window.location.href = buildMailto(form);
+        setSentMode("mailto");
+      }
+    } catch {
+      window.location.href = buildMailto(form);
+      setSentMode("mailto");
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -377,6 +398,7 @@ export default function Contact() {
               <Magnetic>
                 <motion.button
                   type="submit"
+                  disabled={sending || sentMode !== null}
                   whileTap={{ scale: 0.98 }}
                   style={{
                     padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
@@ -388,17 +410,33 @@ export default function Contact() {
                     background: "white",
                     border: "none",
                     borderRadius: 100,
-                    cursor: "pointer",
+                    cursor: sending || sentMode !== null ? "not-allowed" : "pointer",
                     whiteSpace: "nowrap",
+                    opacity: sending || sentMode !== null ? 0.7 : 1,
+                    transition: "opacity 0.3s",
                   }}
                 >
-                  {t.submit}
+                  {sending ? t.sending : t.submit}
                 </motion.button>
               </Magnetic>
             </div>
           </R>
 
-          {sent && (
+          {/* Honeypot — invisible to humans, irresistible to bots */}
+          <div aria-hidden style={{ position: "absolute", left: "-9999px", top: "-9999px", width: 1, height: 1, overflow: "hidden" }}>
+            <label>
+              Leave this empty
+              <input
+                type="text"
+                tabIndex={-1}
+                autoComplete="off"
+                value={gotcha}
+                onChange={(e) => setGotcha(e.target.value)}
+              />
+            </label>
+          </div>
+
+          {sentMode !== null && (
             <motion.p
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
@@ -410,7 +448,7 @@ export default function Contact() {
                 color: "rgba(255,255,255,0.7)",
               }}
             >
-              {t.ok}
+              {sentMode === "sent" ? t.okSent : t.okMailto}
             </motion.p>
           )}
         </form>
