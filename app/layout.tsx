@@ -54,7 +54,11 @@ export const metadata: Metadata = {
   category: "design",
   alternates: {
     canonical: "/",
-    languages: { en: "/", es: "/", "x-default": "/" },
+    languages: {
+      "en-US": "/",
+      "es-ES": "/",
+      "x-default": "/",
+    },
   },
   openGraph: {
     type: "website",

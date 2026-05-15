@@ -49,19 +49,45 @@ export default async function Page({
 
   const jsonLd = {
     "@context": "https://schema.org",
-    "@type": "Article",
-    headline: record.title.en,
-    description: record.lead.en,
-    datePublished: new Date(record.date).toISOString(),
-    author: { "@type": "Organization", name: "Xnlab Studio", url: "https://xnlab.io" },
-    publisher: {
-      "@type": "Organization",
-      name: "Xnlab Studio",
-      url: "https://xnlab.io",
-    },
-    mainEntityOfPage: `https://xnlab.io/lab-records/${record.slug}`,
-    keywords: record.tags?.join(", "),
-    articleSection: record.category.en,
+    "@graph": [
+      {
+        "@type": "Article",
+        headline: record.title.en,
+        alternativeHeadline: record.title.es,
+        description: record.lead.en,
+        datePublished: new Date(record.date).toISOString(),
+        dateModified: new Date(record.date).toISOString(),
+        author: {
+          "@type": "Organization",
+          name: "Xnlab Studio",
+          url: "https://xnlab.io",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "Xnlab Studio",
+          url: "https://xnlab.io",
+          logo: {
+            "@type": "ImageObject",
+            url: "https://xnlab.io/icon.png",
+          },
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": `https://xnlab.io/lab-records/${record.slug}`,
+        },
+        keywords: record.tags?.join(", "),
+        articleSection: record.category.en,
+        inLanguage: ["en", "es"],
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://xnlab.io" },
+          { "@type": "ListItem", position: 2, name: "Lab Records", item: "https://xnlab.io/lab-records" },
+          { "@type": "ListItem", position: 3, name: record.title.en, item: `https://xnlab.io/lab-records/${record.slug}` },
+        ],
+      },
+    ],
   };
 
   return (

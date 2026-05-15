@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { AmbientAudio } from "./audio";
 import { WordmarkLink } from "./wordmark";
@@ -52,6 +53,7 @@ const MOVEMENTS = (lang: NavLang): Array<[string, string, string]> =>
       ];
 
 export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void; t: NavCopy }) {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState<MenuKey | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -124,6 +126,9 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
         >
           {items.map((it) => {
             const active = open === it.key;
+            const onRoute =
+              pathname === it.href ||
+              (it.href !== "/" && pathname.startsWith(it.href));
             return (
               <div
                 key={it.key}
@@ -135,15 +140,36 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               >
                 <Link
                   href={it.href}
+                  aria-current={onRoute ? "page" : undefined}
                   style={{
                     textDecoration: "none",
-                    color: active ? "white" : "rgba(255,255,255,0.55)",
+                    color: active || onRoute ? "white" : "rgba(255,255,255,0.55)",
                     letterSpacing: active ? "0.28em" : "0.22em",
                     transition: "color 0.3s, letter-spacing 0.3s",
                   }}
                 >
                   {it.label}
                 </Link>
+                {/* Active indicator — small amber dot below the label
+                    on the current route. Premium, restrained. */}
+                {onRoute && (
+                  <motion.span
+                    aria-hidden
+                    layoutId="nav-active"
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                    style={{
+                      position: "absolute",
+                      left: "50%",
+                      bottom: 14,
+                      transform: "translateX(-50%)",
+                      width: 3,
+                      height: 3,
+                      borderRadius: "50%",
+                      background: "rgba(232,183,131,0.85)",
+                      boxShadow: "0 0 8px rgba(232,183,131,0.6)",
+                    }}
+                  />
+                )}
               </div>
             );
           })}

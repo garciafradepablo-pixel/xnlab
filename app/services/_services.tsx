@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { LuxButton } from "../_lib/lux-button";
+import { SectionMark } from "../_lib/ornaments";
 import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
@@ -599,7 +600,9 @@ export default function Services() {
         ))}
       </section>
 
-      <section style={{ position: "relative", minHeight: "clamp(55svh,68vh,78svh)", overflow: "hidden" }}>
+      <SectionMark />
+
+      <section style={{ position: "relative", minHeight: "clamp(48svh,58vh,68svh)", overflow: "hidden" }}>
         <Image
           src="/images/05_identity_chrome.jpg"
           alt=""
