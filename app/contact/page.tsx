@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Contact from "./_contact";
 
 export const metadata: Metadata = {
-  title: "Contact",
+  title: "Contact — Start a Creative Direction Collaboration",
   description:
-    "Start a conversation with XNLAB. By appointment only — collaborations in hospitality, nightlife, architecture and cultural identity.",
+    "Contact Xnlab Studio for creative direction, brand identity and atmosphere design in luxury hospitality, nightlife, architecture or cultural identity. Worldwide engagements. By appointment only.",
   alternates: { canonical: "/contact" },
   openGraph: {
     title: "Contact · XNLAB",

@@ -30,7 +30,7 @@ export const projects: Project[] = [
     number: "001",
     title: "Hospitality Atmosphere Study",
     discipline: "Hospitality Systems",
-    year: "2025",
+    year: "2023",
     location: { en: "Studio Draft · Internal", es: "Borrador de Estudio · Interno" },
     hero: "/images/03_emotional_curtains.jpg",
     heroPosition: "center 42%",
@@ -60,7 +60,7 @@ export const projects: Project[] = [
     },
     credits: [
       { role: "Direction", value: "Xnlab Studio" },
-      { role: "Status", value: "Internal study — 2025" },
+      { role: "Status", value: "Internal study — 2023" },
     ],
   },
   {
@@ -68,7 +68,7 @@ export const projects: Project[] = [
     number: "002",
     title: "Nightlife Visual System",
     discipline: "Nightlife Atmospheres",
-    year: "2025",
+    year: "2024",
     location: { en: "Studio Draft · Internal", es: "Borrador de Estudio · Interno" },
     hero: "/images/04_sensorium_blue.jpg",
     heroPosition: "center 40%",
@@ -98,7 +98,7 @@ export const projects: Project[] = [
     },
     credits: [
       { role: "Direction", value: "Xnlab Studio" },
-      { role: "Status", value: "Internal study — 2025" },
+      { role: "Status", value: "Internal study — 2024" },
     ],
   },
   {
@@ -106,7 +106,7 @@ export const projects: Project[] = [
     number: "003",
     title: "Architectural Identity",
     discipline: "Emotional Architecture",
-    year: "2024",
+    year: "2025",
     location: { en: "Studio Draft · Internal", es: "Borrador de Estudio · Interno" },
     hero: "/images/07_sculptural_white.jpg",
     heroPosition: "center 60%",
@@ -136,7 +136,7 @@ export const projects: Project[] = [
     },
     credits: [
       { role: "Direction", value: "Xnlab Studio" },
-      { role: "Status", value: "Internal study — 2024" },
+      { role: "Status", value: "Internal study — 2025" },
     ],
   },
 ];

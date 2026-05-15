@@ -3,9 +3,9 @@ import WorkIndex from "./_work-index";
 import { projects } from "./data";
 
 export const metadata: Metadata = {
-  title: "Selected Works",
+  title: "Selected Works — Boutique Hotel, Nightlife & Architecture Projects",
   description:
-    "Selected projects in hospitality, nightlife, architecture and cultural identity. Visual systems and atmospheres designed by XNLAB.",
+    "Selected creative direction projects by Xnlab Studio: brand identities, atmosphere design and visual systems for luxury hospitality, boutique hotels, nightclubs, restaurants and cultural architecture. Worldwide engagements.",
   alternates: { canonical: "/work" },
   openGraph: {
     title: "Selected Works · XNLAB",

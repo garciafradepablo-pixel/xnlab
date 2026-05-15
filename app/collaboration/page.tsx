@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Collaboration from "./_collaboration";
 
 export const metadata: Metadata = {
-  title: "Collaboration",
+  title: "Collaboration — How to Engage Xnlab Studio",
   description:
-    "How to work with Xnlab Studio. When to reach out, what to send, what the first conversation looks like, and how a typical engagement unfolds.",
+    "Practical engagement guide for hospitality, nightlife and architecture clients considering working with Xnlab Studio. When to reach out, what to send, the first conversation, engagement shape. Boutique studio, four to six clients per year.",
   alternates: { canonical: "/collaboration" },
   openGraph: {
     title: "Collaboration · Xnlab Studio",

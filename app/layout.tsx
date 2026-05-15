@@ -18,9 +18,9 @@ const cormorant = Cormorant_Garamond({
 });
 
 const SITE = "https://xnlab.io";
-const TITLE = "XNLAB — Creative systems for modern culture";
+const TITLE = "XNLAB — Creative Direction Studio for Luxury Hospitality";
 const DESCRIPTION =
-  "Worldbuilding studio for modern luxury. We design atmospheres, identities and visual systems for hospitality, nightlife, architecture and cultural identity. By appointment only.";
+  "Xnlab Studio is a global creative direction agency designing atmospheres, brand identities and visual systems for luxury hospitality, nightlife venues, emotional architecture and cultural brands. Worldbuilding for modern luxury — by appointment only.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -29,14 +29,21 @@ export const metadata: Metadata = {
   applicationName: "Xnlab Studio",
   generator: "Next.js",
   keywords: [
-    "creative direction",
-    "worldbuilding",
-    "hospitality design",
-    "nightlife design",
-    "emotional architecture",
-    "brand identity",
-    "luxury",
-    "atmosphere",
+    "creative direction studio",
+    "creative direction agency",
+    "worldbuilding studio",
+    "luxury hospitality branding",
+    "boutique hotel brand identity",
+    "hospitality design agency",
+    "nightlife branding",
+    "nightclub brand identity",
+    "emotional architecture studio",
+    "luxury brand identity agency",
+    "atmosphere design",
+    "global creative agency",
+    "luxury design studio",
+    "premium brand identity",
+    "cultural identity design",
     "XNLAB",
     "Xnlab Studio",
   ],
@@ -104,15 +111,71 @@ const jsonLd = {
   "@type": "Organization",
   name: "XNLAB",
   legalName: "Xnlab Studio",
-  alternateName: "Xnlab Studio",
+  alternateName: ["Xnlab Studio", "XNLAB Studio"],
   url: SITE,
   description: DESCRIPTION,
   email: "studio@xnlab.io",
+  foundingDate: "2023-01-01",
+  areaServed: "Worldwide",
+  serviceArea: { "@type": "Place", name: "Worldwide" },
+  slogan: "Worldbuilding for modern luxury.",
   knowsAbout: [
     "Hospitality Systems",
     "Nightlife Atmospheres",
     "Emotional Architecture",
     "Living Identities",
+    "Luxury brand identity",
+    "Creative direction",
+    "Worldbuilding",
+    "Atmosphere design",
+  ],
+  // Add real social profiles here when published. Empty until then to avoid 404s in Google's eyes.
+  sameAs: [],
+};
+
+const serviceLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "Service",
+      name: "Hospitality Systems",
+      serviceType: "Hospitality brand identity and atmosphere design",
+      description:
+        "Atmospheres, identities and visual systems for boutique hotels, restaurants and hospitality groups. Designed to be remembered, not described.",
+      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
+      areaServed: "Worldwide",
+      audience: { "@type": "Audience", audienceType: "Hospitality operators, boutique hotel owners" },
+    },
+    {
+      "@type": "Service",
+      name: "Nightlife Atmospheres",
+      serviceType: "Nightlife brand identity and venue direction",
+      description:
+        "Dark, cinematic visual systems for clubs, bars and cultural venues. Identity as a complete sensory programme — light, motion, sound, surface.",
+      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
+      areaServed: "Worldwide",
+      audience: { "@type": "Audience", audienceType: "Nightclub operators, cultural venue directors" },
+    },
+    {
+      "@type": "Service",
+      name: "Emotional Architecture",
+      serviceType: "Spatial and architectural identity direction",
+      description:
+        "Spaces shaped through silence, light and material. Architectural identity as the first layer of brand emotion.",
+      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
+      areaServed: "Worldwide",
+      audience: { "@type": "Audience", audienceType: "Architects, developers, cultural institutions" },
+    },
+    {
+      "@type": "Service",
+      name: "Living Identities",
+      serviceType: "Brand identity and visual system design",
+      description:
+        "Symbols, marks, avatars and identity systems with presence. Built to live across physical space, digital surface and cultural memory.",
+      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
+      areaServed: "Worldwide",
+      audience: { "@type": "Audience", audienceType: "Luxury brands, cultural projects" },
+    },
   ],
 };
 
@@ -127,6 +190,10 @@ export default function RootLayout({
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }}
         />
         <a href="#main" className="xn-skip">Skip to content</a>
         <DustStyles />
