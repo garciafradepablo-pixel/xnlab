@@ -20,6 +20,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.8,
   };
+  const process: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/process`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.7,
+  };
+  const imprint: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/imprint`,
+    lastModified: now,
+    changeFrequency: "yearly",
+    priority: 0.4,
+  };
   const contact: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/contact`,
     lastModified: now,
@@ -39,5 +51,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
     images: [`${SITE}${p.hero}`],
   }));
-  return [home, about, workIndex, ...works, contact];
+  return [home, about, process, workIndex, ...works, contact, imprint];
 }
