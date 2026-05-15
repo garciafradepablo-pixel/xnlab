@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
+import { Magnetic } from "../_lib/chrome";
 
 const en = {
   eyebrow: "Start a Conversation",
@@ -373,26 +374,27 @@ export default function Contact() {
           <R delay={0.18}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "clamp(20px,3vw,40px)", justifyContent: "space-between" }}>
               <p style={{ fontSize: 11, lineHeight: 1.7, color: "rgba(255,255,255,0.42)", maxWidth: 480 }}>{t.privacy}</p>
-              <motion.button
-                type="submit"
-                whileHover={{ scale: 1.03 }}
-                whileTap={{ scale: 0.98 }}
-                style={{
-                  padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
-                  fontSize: "clamp(10px,0.85vw,12px)",
-                  fontWeight: 500,
-                  letterSpacing: "0.28em",
-                  textTransform: "uppercase",
-                  color: "#060606",
-                  background: "white",
-                  border: "none",
-                  borderRadius: 100,
-                  cursor: "pointer",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {t.submit}
-              </motion.button>
+              <Magnetic>
+                <motion.button
+                  type="submit"
+                  whileTap={{ scale: 0.98 }}
+                  style={{
+                    padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
+                    fontSize: "clamp(10px,0.85vw,12px)",
+                    fontWeight: 500,
+                    letterSpacing: "0.28em",
+                    textTransform: "uppercase",
+                    color: "#060606",
+                    background: "white",
+                    border: "none",
+                    borderRadius: 100,
+                    cursor: "pointer",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {t.submit}
+                </motion.button>
+              </Magnetic>
             </div>
           </R>
 

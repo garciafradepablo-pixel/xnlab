@@ -1,60 +1,42 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
-import { motion, useScroll, useSpring } from "framer-motion";
+import { motion, useMotionValue, useScroll, useSpring } from "framer-motion";
+import { useRef } from "react";
 
-// Custom cursor — only renders on real mouse/pointer devices, never on touch
-export function PremiumCursor() {
-  const dotRef = useRef<HTMLDivElement | null>(null);
-  const [ok, setOk] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
-    setOk(mq.matches);
-    const upd = () => setOk(mq.matches);
-    mq.addEventListener?.("change", upd);
-    return () => mq.removeEventListener?.("change", upd);
-  }, []);
-  useEffect(() => {
-    if (!ok) return;
-    document.documentElement.classList.add("xn-cursor");
-    const dot = dotRef.current;
-    if (!dot) return;
-    let mx = 0, my = 0;
-    const move = (e: MouseEvent) => { mx = e.clientX; my = e.clientY; };
-    window.addEventListener("mousemove", move);
-    let raf = 0;
-    const tick = () => {
-      dot.style.transform = `translate(${mx - 2.5}px,${my - 2.5}px)`;
-      raf = requestAnimationFrame(tick);
-    };
-    tick();
-    return () => {
-      window.removeEventListener("mousemove", move);
-      cancelAnimationFrame(raf);
-      document.documentElement.classList.remove("xn-cursor");
-    };
-  }, [ok]);
-  if (!ok) return null;
+// Magnetic hover — children drift toward the cursor while it hovers; springs back on leave.
+// Quiet, expensive feel. No-op on touch devices (no mouse events).
+export function Magnetic({
+  children,
+  strength = 0.22,
+}: {
+  children: React.ReactNode;
+  strength?: number;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const mx = useMotionValue(0);
+  const my = useMotionValue(0);
+  const sx = useSpring(mx, { stiffness: 220, damping: 22, mass: 0.4 });
+  const sy = useSpring(my, { stiffness: 220, damping: 22, mass: 0.4 });
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 9999, pointerEvents: "none" }}>
-      <div
-        ref={dotRef}
-        style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
-          width: 5,
-          height: 5,
-          borderRadius: "50%",
-          background: "white",
-          mixBlendMode: "difference",
-        }}
-      />
-    </div>
+    <motion.div
+      ref={ref}
+      onMouseMove={(e) => {
+        const r = ref.current?.getBoundingClientRect();
+        if (!r) return;
+        mx.set((e.clientX - (r.left + r.width / 2)) * strength);
+        my.set((e.clientY - (r.top + r.height / 2)) * strength);
+      }}
+      onMouseLeave={() => {
+        mx.set(0);
+        my.set(0);
+      }}
+      style={{ x: sx, y: sy, display: "inline-block" }}
+    >
+      {children}
+    </motion.div>
   );
 }
 
-// 1px scroll progress bar pinned to the top; subtle gold accent
+// 1px scroll progress bar pinned to the top; spring-eased, soft gold tint
 export function ScrollProgress() {
   const { scrollYProgress } = useScroll();
   const x = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.3 });
@@ -75,5 +57,42 @@ export function ScrollProgress() {
         mixBlendMode: "screen",
       }}
     />
+  );
+}
+
+// Subtle film-grain texture fixed across the viewport.
+// The copy talks about "dark, cinematic, atmospheric" — this is the visual companion.
+// SVG feTurbulence rendered once, opacity ~6%, mix-blend overlay so it tints highlights and shadows differently.
+export function FilmGrain() {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9997,
+        pointerEvents: "none",
+        opacity: 0.07,
+        mixBlendMode: "overlay",
+        // Hint to the browser that this layer is static, paint it once
+        willChange: "auto",
+      }}
+    >
+      <svg
+        width="100%"
+        height="100%"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ display: "block" }}
+      >
+        <filter id="xn-grain">
+          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" seed="7" />
+          <feColorMatrix type="saturate" values="0" />
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="1.4" intercept="-0.2" />
+          </feComponentTransfer>
+        </filter>
+        <rect width="100%" height="100%" filter="url(#xn-grain)" />
+      </svg>
+    </div>
   );
 }
