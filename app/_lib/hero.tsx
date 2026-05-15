@@ -45,7 +45,7 @@ const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
 // height — header position on mobile (~100px from top), more centred
 // on tall desktops (~260px). Without this, top:14% looked like a header
 // on phones but left a huge empty gap above the wordmark on desktops.
-const DOME_TOP = "clamp(80px, calc(33svh - 100px), 280px)";
+const DOME_TOP = "clamp(140px, calc(35svh - 100px), 280px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
