@@ -21,20 +21,21 @@ type HeroCopy = {
 // centre so the row reads as an arc. Sizes shrink outward; the centre
 // is clearly the largest. Each Core arrives with its own entry vector
 // for a 3D, abstract assembly.
-// Sizes and spacing chosen so the whole dome fits at 375px viewport
-// without orb collisions: central radius + inner radius <= UNIT, and
-// outer mult*UNIT + outer radius <= half-viewport at the smallest
-// supported width.
+// Seven orbs as one constellation. All six Cores carry the same visual
+// weight (same size), and the Central Core is just barely larger — the
+// only differentiator is a hair of scale and the subtle warm halo that
+// already lives behind the wordmark. Less is more. Subtle arc only.
+const ORB_SIZE = "clamp(54px,6.4vw,104px)";
 const PLAN = [
-  { idx: 0, mult: -3, dy: "9%",   size: "clamp(30px,4.6vw,68px)", entry: { x: -180, y: 14,  scale: 0.30, blur: 22 }, delay: 2.05 },
-  { idx: 1, mult: -2, dy: "5%",   size: "clamp(34px,5vw,76px)",   entry: { x: -40,  y: -56, scale: 1.55, blur: 20 }, delay: 1.85 },
-  { idx: 2, mult: -1, dy: "1.5%", size: "clamp(40px,5.6vw,84px)", entry: { x: 30,   y: 64,  scale: 0.5,  blur: 14 }, delay: 1.65 },
-  { idx: 3, mult: 1,  dy: "1.5%", size: "clamp(40px,5.6vw,84px)", entry: { x: -30,  y: -64, scale: 1.55, blur: 16 }, delay: 1.75 },
-  { idx: 4, mult: 2,  dy: "5%",   size: "clamp(34px,5vw,76px)",   entry: { x: 40,   y: 56,  scale: 0.45, blur: 14 }, delay: 1.95 },
-  { idx: 5, mult: 3,  dy: "9%",   size: "clamp(30px,4.6vw,68px)", entry: { x: 180,  y: -14, scale: 0.3,  blur: 22 }, delay: 2.15 },
+  { idx: 0, mult: -3, dy: "3.5%", delay: 1.95 },
+  { idx: 1, mult: -2, dy: "2%",   delay: 1.85 },
+  { idx: 2, mult: -1, dy: "0.6%", delay: 1.75 },
+  { idx: 3, mult: 1,  dy: "0.6%", delay: 1.8  },
+  { idx: 4, mult: 2,  dy: "2%",   delay: 1.9  },
+  { idx: 5, mult: 3,  dy: "3.5%", delay: 2.0  },
 ];
-const UNIT = "clamp(54px,9.2vw,160px)";
-const CENTRAL_SIZE = "clamp(72px,11.5vw,180px)";
+const UNIT = "clamp(70px,8.5vw,150px)";
+const CENTRAL_SIZE = "clamp(68px,7.8vw,128px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -135,15 +136,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           transform: "translate(-50%, -50%)",
           zIndex: 4,
           width: "min(110vw, 1600px)",
-          height: "clamp(420px, 46vh, 720px)",
+          height: "clamp(360px, 38vh, 600px)",
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at center, rgba(228,180,128,0.18) 0%, rgba(190,140,90,0.07) 35%, rgba(60,40,30,0.02) 65%, transparent 80%)",
-          filter: "blur(34px)",
+            "radial-gradient(ellipse at center, rgba(228,180,128,0.11) 0%, rgba(190,140,90,0.045) 40%, rgba(60,40,30,0.012) 68%, transparent 82%)",
+          filter: "blur(38px)",
         }}
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
+        transition={{ duration: 4.2, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
       />
 
       {/* SHEEN top-right */}
@@ -162,8 +163,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           filter: "blur(40px)",
         }}
         initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: [0, 1, 0.55], scale: [0.6, 1.1, 1.4] }}
-        transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
+        animate={{ opacity: [0, 0.55, 0.35], scale: [0.6, 1.1, 1.4] }}
+        transition={{ duration: 4.2, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
       />
       <motion.div
         style={{
@@ -176,12 +177,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            "radial-gradient(ellipse at center, rgba(200,180,255,0.06) 0%, rgba(180,160,255,0.02) 40%, transparent 70%)",
-          filter: "blur(44px)",
+            "radial-gradient(ellipse at center, rgba(200,180,255,0.045) 0%, rgba(180,160,255,0.015) 40%, transparent 70%)",
+          filter: "blur(50px)",
         }}
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: [0, 0.7, 0.3], scale: [0.5, 1.0, 1.3] }}
-        transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 2.2 }}
+        animate={{ opacity: [0, 0.4, 0.18], scale: [0.5, 1.0, 1.3] }}
+        transition={{ duration: 4.2, ease: [0.22, 1, 0.36, 1], delay: 2.2 }}
       />
 
       {/* LAYER 2A — back orbits */}
@@ -209,7 +210,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           fill
           sizes="(max-width: 768px) 80vw, 55vw"
           loading="eager"
-          style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.28 }}
+          style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.16 }}
         />
       </motion.div>
 
@@ -229,9 +230,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           height: CENTRAL_SIZE,
           pointerEvents: "auto",
         }}
-        initial={{ opacity: 0, scale: 0.55, filter: "blur(18px)" }}
+        initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-        transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
+        transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.55 }}
       >
         <Link
           href="/worlds"
@@ -265,8 +266,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </Link>
       </motion.div>
 
-      {/* LAYER 2B2 — six World Cores arranged in the dome */}
-      {PLAN.map(({ idx, mult, dy, size, entry, delay }) => {
+      {/* LAYER 2B2 — six World Cores arranged in the dome, all same size */}
+      {PLAN.map(({ idx, mult, dy, delay }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
         const side = mult < 0 ? "-" : "+";
@@ -284,27 +285,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               top: `calc(26% + ${dy})`,
               translateX: "-50%",
               translateY: "-50%",
-              width: size,
-              height: size,
+              width: ORB_SIZE,
+              height: ORB_SIZE,
               pointerEvents: "auto",
             }}
           >
             <motion.div
-              initial={{
-                opacity: 0,
-                scale: entry.scale,
-                x: entry.x,
-                y: entry.y,
-                filter: `blur(${entry.blur}px)`,
-              }}
-              animate={{
-                opacity: 1,
-                scale: 1,
-                x: 0,
-                y: 0,
-                filter: "blur(0px)",
-              }}
-              transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1], delay }}
+              initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay }}
               style={{ position: "relative", width: "100%", height: "100%" }}
             >
               <Link
@@ -337,8 +326,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     filter: "blur(22px)",
                     pointerEvents: "none",
                   }}
-                  animate={{ opacity: isHover ? 0.95 : 0.35 }}
-                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                  animate={{ opacity: isHover ? 0.85 : 0.22 }}
+                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 />
 
                 <motion.div
@@ -419,13 +408,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.p>
         <motion.h1
           style={{
-            fontSize: "clamp(88px,16vw,220px)",
+            fontSize: "clamp(56px,10.5vw,156px)",
             fontWeight: 400,
             letterSpacing: "-0.04em",
             lineHeight: 0.86,
             color: "white",
             textAlign: "center",
-            textShadow: "0 2px 60px rgba(0,0,0,0.8)",
+            textShadow: "0 2px 50px rgba(0,0,0,0.85)",
           }}
           initial={{ opacity: 0, filter: "blur(20px)" }}
           animate={{ opacity: 1, filter: "blur(0px)" }}
@@ -446,8 +435,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           top: "62%",
           translateX: "-50%",
           translateY: "-50%",
-          width: "clamp(180px,32vw,380px)",
-          height: "clamp(180px,32vw,380px)",
+          width: "clamp(140px,26vw,320px)",
+          height: "clamp(140px,26vw,320px)",
           pointerEvents: "none",
         }}
         initial={{ opacity: 0, filter: "blur(14px)" }}
@@ -468,8 +457,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{
               objectFit: "contain",
               mixBlendMode: "screen",
-              opacity: 0.7,
-              filter: "drop-shadow(0 0 18px rgba(180,150,120,0.5))",
+              opacity: 0.32,
+              filter: "drop-shadow(0 0 14px rgba(180,150,120,0.3))",
             }}
           />
         </motion.div>
@@ -488,11 +477,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           fill
           sizes="100vw"
           loading="eager"
-          style={{ objectFit: "cover", objectPosition: "center top", mixBlendMode: "screen", opacity: 0.08 }}
+          style={{ objectFit: "cover", objectPosition: "center top", mixBlendMode: "screen", opacity: 0.055 }}
         />
       </motion.div>
 
-      <Dust count={14} opacity={0.09} />
+      <Dust count={10} opacity={0.07} />
 
       {/* Bottom copy */}
       <div
