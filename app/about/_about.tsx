@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { ts, tsS, serif, W, R, Dust, DustStyles, useLang } from "../_lib/atoms";
+import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 
 const en = {
   eyebrow: "About the Studio",
@@ -83,7 +83,6 @@ export default function About() {
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
       }}
     >
-      <DustStyles />
       <header
         style={{
           position: "fixed",
@@ -240,9 +239,9 @@ export default function About() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(40px,5vw,72px)",
-          gridTemplateColumns: "minmax(160px,220px) 1fr",
+          gridTemplateColumns: "1fr",
         }}
-        className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
+        className="md:grid-cols-[minmax(160px,220px)_1fr]"
       >
         <R>
           <p
@@ -297,8 +296,9 @@ export default function About() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(40px,5vw,72px)",
-          gridTemplateColumns: "minmax(160px,220px) 1fr",
+          gridTemplateColumns: "1fr",
         }}
+        className="md:grid-cols-[minmax(160px,220px)_1fr]"
       >
         <R>
           <p
@@ -342,8 +342,9 @@ export default function About() {
           margin: "0 auto",
           display: "grid",
           gap: "clamp(40px,5vw,72px)",
-          gridTemplateColumns: "minmax(160px,220px) 1fr",
+          gridTemplateColumns: "1fr",
         }}
+        className="md:grid-cols-[minmax(160px,220px)_1fr]"
       >
         <R>
           <p

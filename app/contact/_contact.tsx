@@ -2,7 +2,7 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
-import { ts, tsS, serif, W, R, Dust, DustStyles, useLang } from "../_lib/atoms";
+import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 
 const en = {
   eyebrow: "Start a Conversation",
@@ -30,7 +30,7 @@ const en = {
   ok: "Email opened — check your mail client.",
   back: "← Home",
   studioLabel: "Studio",
-  studioInfo: ["By appointment only", "studio@xnlab.io", "press@xnlab.io"],
+  studioInfo: ["By appointment only", "studio@xnlab.io"],
 };
 const es = {
   eyebrow: "Iniciar Conversación",
@@ -58,7 +58,7 @@ const es = {
   ok: "Email abierto — revisa tu cliente de correo.",
   back: "← Inicio",
   studioLabel: "Estudio",
-  studioInfo: ["Solo con cita previa", "studio@xnlab.io", "press@xnlab.io"],
+  studioInfo: ["Solo con cita previa", "studio@xnlab.io"],
 };
 
 type FormState = {
@@ -138,7 +138,6 @@ export default function Contact() {
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
       }}
     >
-      <DustStyles />
       <header
         style={{
           position: "fixed",
@@ -419,10 +418,11 @@ export default function Contact() {
             style={{
               display: "grid",
               gap: "clamp(24px,3vw,40px)",
-              gridTemplateColumns: "minmax(160px,220px) 1fr",
+              gridTemplateColumns: "1fr",
               paddingTop: "clamp(48px,6vw,80px)",
               borderTop: "1px solid rgba(255,255,255,0.06)",
             }}
+            className="md:grid-cols-[minmax(160px,220px)_1fr]"
           >
             <p style={labelStyle}>{t.studioLabel}</p>
             <div>

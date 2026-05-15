@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
+import { DustStyles } from "./_lib/atoms";
+import { PremiumCursor, ScrollProgress } from "./_lib/chrome";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -120,6 +122,9 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <DustStyles />
+        <PremiumCursor />
+        <ScrollProgress />
         {children}
       </body>
     </html>
