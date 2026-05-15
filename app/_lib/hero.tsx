@@ -130,6 +130,59 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
       />
 
+      {/* LAB X — small eyebrow above the Central Core. The Core's name
+          as the studio's axis, framed by hairlines so it reads as an
+          editorial mark, not a label. Sits at top: ~14% so it cleans
+          above the dome without crowding it. */}
+      <motion.div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "13%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 9,
+          display: "flex",
+          alignItems: "center",
+          gap: "clamp(10px, 1.4vw, 20px)",
+          pointerEvents: "none",
+        }}
+        initial={{ opacity: 0, y: -6 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
+      >
+        <span
+          aria-hidden
+          style={{
+            display: "inline-block",
+            width: "clamp(28px, 4vw, 56px)",
+            height: 1,
+            background: "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.45) 100%)",
+          }}
+        />
+        <span
+          style={{
+            fontSize: "clamp(10px, 0.8vw, 11.5px)",
+            letterSpacing: "0.5em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.78)",
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+            textShadow: "0 1px 12px rgba(0,0,0,0.85)",
+          }}
+        >
+          Lab&nbsp;X
+        </span>
+        <span
+          aria-hidden
+          style={{
+            display: "inline-block",
+            width: "clamp(28px, 4vw, 56px)",
+            height: 1,
+            background: "linear-gradient(to left, transparent 0%, rgba(255,255,255,0.45) 100%)",
+          }}
+        />
+      </motion.div>
+
       {/* Warm aureole unifying the dome */}
       <motion.div
         style={{
@@ -552,6 +605,51 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           </p>
         </motion.div>
       </div>
+
+      {/* Scroll cue — soft mark inviting the visitor to keep going.
+          A single vertical hairline that breathes, with the word SCROLL
+          set small below it. Sits just above the bottom fade. */}
+      <motion.div
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: "clamp(20px,3vh,36px)",
+          transform: "translateX(-50%)",
+          zIndex: 40,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 10,
+          pointerEvents: "none",
+        }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 1.6, delay: 3.0 }}
+      >
+        <span
+          style={{
+            fontSize: 9,
+            letterSpacing: "0.46em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.45)",
+            fontWeight: 500,
+            textShadow: "0 1px 10px rgba(0,0,0,0.85)",
+          }}
+        >
+          Scroll
+        </span>
+        <motion.span
+          style={{
+            display: "inline-block",
+            width: 1,
+            height: 36,
+            background: "linear-gradient(to bottom, rgba(255,255,255,0.55) 0%, transparent 100%)",
+          }}
+          animate={{ scaleY: [1, 0.65, 1], opacity: [0.85, 0.4, 0.85] }}
+          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+        />
+      </motion.div>
 
       <div
         style={{
