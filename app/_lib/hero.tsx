@@ -15,17 +15,35 @@ type HeroCopy = {
   s4: string;
 };
 
-// The hero keeps the original layered composition — backdrop, back orbits,
-// the chrome X symbol behind XNLAB, the small chrome orb on top, the haze
-// and dust. On top of that, six World Core orbs flank the central chrome
-// orb: three to the left, three to the right. Each one is a button into
-// its World detail page.
+// Each World Core's place on the row. The horizontal step is constant
+// (the unit gap is `clamp(80px,11vw,160px)`), so the gaps between
+// neighbouring orbs are equal. The vertical offset describes a dome:
+// the centre (chrome orb) sits at the top, and the further out a Core
+// is, the lower it falls.
+//
+// Sizes shrink toward the edges to give a depth illusion — inner orbs
+// feel "closer", outer orbs "further", like an aureole radiating from
+// the central chrome orb.
+//
+// Each Core also gets its own entry vector so the composition does
+// not assemble in one uniform fade: some pieces drift in from far
+// (small + blurred), others rush in from close (large + blurred).
+const PLAN = [
+  { idx: 0, mult: -3, dy: "8%",   size: "clamp(52px,5.8vw,74px)", entry: { x: -160, y: 12,  scale: 0.32, blur: 22 }, delay: 2.05 },
+  { idx: 1, mult: -2, dy: "4.5%", size: "clamp(62px,6.8vw,86px)", entry: { x: -40,  y: -52, scale: 1.55, blur: 20 }, delay: 1.85 },
+  { idx: 2, mult: -1, dy: "1.5%", size: "clamp(72px,7.8vw,98px)", entry: { x: 30,   y: 60,  scale: 0.5,  blur: 14 }, delay: 1.65 },
+  { idx: 3, mult: 1,  dy: "1.5%", size: "clamp(72px,7.8vw,98px)", entry: { x: -30,  y: -60, scale: 1.5,  blur: 16 }, delay: 1.75 },
+  { idx: 4, mult: 2,  dy: "4.5%", size: "clamp(62px,6.8vw,86px)", entry: { x: 40,   y: 52,  scale: 0.45, blur: 14 }, delay: 1.95 },
+  { idx: 5, mult: 3,  dy: "8%",   size: "clamp(52px,5.8vw,74px)", entry: { x: 160,  y: -12, scale: 0.3,  blur: 22 }, delay: 2.15 },
+];
+const UNIT = "clamp(80px,11vw,160px)"; // equal step between orbs
+
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
   const reduced = useReducedMotion();
   const [hovered, setHovered] = useState<string | null>(null);
 
-  // Mouse parallax — same gentle spring as the original
+  // Mouse parallax
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const sx = useSpring(rawX, { stiffness: 14, damping: 50 });
@@ -50,19 +68,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
     return () => el.removeEventListener("mousemove", fn);
   }, [rawX, rawY, reduced]);
 
-  // The six World Cores flanking the chrome orb. Index 0..2 sit on the
-  // left, 3..5 on the right. `dx` is the absolute horizontal distance
-  // from centre; the outer pair sits slightly higher than the inner so
-  // the row reads as a subtle wing rather than a flat line.
-  const flanks = [
-    { idx: 0, side: -1, dx: "clamp(180px,26vw,360px)", dy: "-4%" }, // far left
-    { idx: 1, side: -1, dx: "clamp(120px,18vw,240px)", dy: "-2%" }, // mid left
-    { idx: 2, side: -1, dx: "clamp(72px,11vw,150px)",  dy: "0%"  }, // near left
-    { idx: 3, side: 1,  dx: "clamp(72px,11vw,150px)",  dy: "0%"  }, // near right
-    { idx: 4, side: 1,  dx: "clamp(120px,18vw,240px)", dy: "-2%" }, // mid right
-    { idx: 5, side: 1,  dx: "clamp(180px,26vw,360px)", dy: "-4%" }, // far right
-  ];
-
   return (
     <section
       ref={ref}
@@ -75,9 +80,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         background: "#060402",
       }}
     >
-      {/* LAYER 1 — BACKDROP / CURTAIN */}
+      {/* LAYER 1 — backdrop */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.55 }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.62 }}>
           <Image
             src="/images/hero/01_background_desktop.png"
             alt=""
@@ -99,18 +104,19 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{ objectFit: "cover", objectPosition: "center", transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1)" }}
           />
         </div>
+        {/* Softer vignette and trimmed bottom fade — less heavy black margin */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "radial-gradient(ellipse at 50% 40%, rgba(3,2,1,0.3) 0%, rgba(3,2,1,0.92) 100%)",
+            background: "radial-gradient(ellipse at 50% 42%, rgba(3,2,1,0.18) 0%, rgba(3,2,1,0.78) 100%)",
           }}
         />
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(to bottom, rgba(4,2,1,0.85) 0%, transparent 25%, transparent 60%, rgba(4,2,1,1) 100%)",
+            background: "linear-gradient(to bottom, rgba(4,2,1,0.7) 0%, transparent 22%, transparent 70%, rgba(4,2,1,1) 100%)",
           }}
         />
       </div>
@@ -123,23 +129,45 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
       />
 
+      {/* Warm aureole — a single radial halo centred where the chrome orb
+          sits, unifying the seven orbs as one composition. */}
+      <motion.div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "28%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 4,
+          width: "min(110vw, 1500px)",
+          height: "clamp(360px, 40vh, 620px)",
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse at center, rgba(228,182,128,0.16) 0%, rgba(190,140,90,0.07) 35%, rgba(60,40,30,0.02) 65%, transparent 80%)",
+          filter: "blur(30px)",
+        }}
+        initial={{ opacity: 0, scale: 0.85 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
+      />
+
       {/* SHEEN top-right */}
       <motion.div
         style={{
           position: "absolute",
           top: "-10%",
           right: "-5%",
-          zIndex: 46,
+          zIndex: 4,
           width: "45vw",
           height: "45vw",
           pointerEvents: "none",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse at center, rgba(255,235,200,0.1) 0%, rgba(255,220,180,0.05) 40%, transparent 70%)",
+          background:
+            "radial-gradient(ellipse at center, rgba(255,235,200,0.1) 0%, rgba(255,220,180,0.05) 40%, transparent 70%)",
           filter: "blur(40px)",
         }}
         initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: [0, 1, 0], scale: [0.6, 1.1, 1.4] }}
-        transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
+        animate={{ opacity: [0, 1, 0.55], scale: [0.6, 1.1, 1.4] }}
+        transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
       />
       {/* SHEEN bottom-left */}
       <motion.div
@@ -147,20 +175,21 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           position: "absolute",
           bottom: "-10%",
           left: "-5%",
-          zIndex: 46,
+          zIndex: 4,
           width: "40vw",
           height: "40vw",
           pointerEvents: "none",
           borderRadius: "50%",
-          background: "radial-gradient(ellipse at center, rgba(200,180,255,0.06) 0%, rgba(180,160,255,0.02) 40%, transparent 70%)",
+          background:
+            "radial-gradient(ellipse at center, rgba(200,180,255,0.06) 0%, rgba(180,160,255,0.02) 40%, transparent 70%)",
           filter: "blur(44px)",
         }}
         initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: [0, 0.7, 0], scale: [0.5, 1.0, 1.3] }}
-        transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 2.4 }}
+        animate={{ opacity: [0, 0.7, 0.3], scale: [0.5, 1.0, 1.3] }}
+        transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 2.2 }}
       />
 
-      {/* LAYER 2A — ORBITS / FIELD — large but quiet, behind everything */}
+      {/* LAYER 2A — back orbits */}
       <motion.div
         style={{
           position: "absolute",
@@ -189,22 +218,22 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         />
       </motion.div>
 
-      {/* LAYER 2B — small chrome orb on top, the anchor of the upper row */}
+      {/* LAYER 2B — small chrome orb on top, dome apex */}
       <motion.div
         style={{
           position: "absolute",
-          zIndex: 6,
+          zIndex: 7,
           x: sphX,
           y: sphY,
           left: "50%",
           top: "28%",
           translateX: "-50%",
           translateY: "-50%",
-          width: "clamp(70px,8vw,110px)",
-          height: "clamp(70px,8vw,110px)",
+          width: "clamp(78px,8.4vw,118px)",
+          height: "clamp(78px,8.4vw,118px)",
           pointerEvents: "none",
         }}
-        initial={{ opacity: 0, scale: 0.6, filter: "blur(14px)" }}
+        initial={{ opacity: 0, scale: 0.55, filter: "blur(16px)" }}
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
         transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
       >
@@ -217,122 +246,160 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             src="/images/hero/04_main_orb.png"
             alt=""
             fill
-            sizes="(max-width: 768px) 90px, 110px"
+            sizes="(max-width: 768px) 96px, 118px"
             loading="eager"
             style={{
               objectFit: "contain",
               mixBlendMode: "screen",
-              filter: "drop-shadow(0 0 16px rgba(200,180,160,0.95)) drop-shadow(0 0 32px rgba(160,130,110,0.5))",
+              filter: "drop-shadow(0 0 18px rgba(220,200,170,0.9)) drop-shadow(0 0 38px rgba(170,140,110,0.5))",
             }}
           />
         </motion.div>
       </motion.div>
 
-      {/* LAYER 2B2 — six World Cores flanking the chrome orb, three each side */}
-      {flanks.map(({ idx, side, dx, dy }, i) => {
+      {/* LAYER 2B2 — the six World Cores, dome shape, equal gaps, mixed
+          entry vectors so the composition assembles abstractly. */}
+      {PLAN.map(({ idx, mult, dy, size, entry, delay }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
+        const side = mult < 0 ? "-" : "+";
+        const dist = Math.abs(mult);
+        const leftCalc = `calc(50% ${side} (${UNIT} * ${dist}))`;
         return (
           <motion.div
             key={w.slug}
             style={{
               position: "absolute",
-              zIndex: 7,
+              zIndex: 8,
               x: sphX,
               y: sphY,
-              left: `calc(50% ${side === -1 ? "-" : "+"} ${dx})`,
+              left: leftCalc,
               top: `calc(28% + ${dy})`,
               translateX: "-50%",
               translateY: "-50%",
-              width: "clamp(58px,6.6vw,92px)",
-              height: "clamp(58px,6.6vw,92px)",
+              width: size,
+              height: size,
               pointerEvents: "auto",
             }}
-            initial={{ opacity: 0, scale: 0.55, filter: "blur(12px)" }}
-            animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-            transition={{ duration: 2.0, ease: [0.22, 1, 0.36, 1], delay: 1.8 + i * 0.1 }}
           >
-            <Link
-              href={`/worlds/${w.slug}`}
-              aria-label={`${w.title[lang]} — ${w.color.name}`}
-              onMouseEnter={() => setHovered(w.slug)}
-              onMouseLeave={() => setHovered(null)}
-              onFocus={() => setHovered(w.slug)}
-              onBlur={() => setHovered(null)}
-              style={{
-                display: "block",
-                width: "100%",
-                height: "100%",
-                textDecoration: "none",
-                color: "inherit",
-                outline: "none",
+            <motion.div
+              initial={{
+                opacity: 0,
+                scale: entry.scale,
+                x: entry.x,
+                y: entry.y,
+                filter: `blur(${entry.blur}px)`,
               }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                x: 0,
+                y: 0,
+                filter: "blur(0px)",
+              }}
+              transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1], delay }}
+              style={{ width: "100%", height: "100%" }}
             >
-              <motion.div
-                animate={{
-                  scale: isHover ? 1.22 : 1,
-                  y: [0, -3, 0],
-                  filter: isHover
-                    ? `drop-shadow(0 0 18px ${w.color.glow})`
-                    : "drop-shadow(0 0 0 transparent)",
-                }}
-                transition={{
-                  scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-                  filter: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-                  y: { duration: 7 + i * 0.3, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
-                }}
-                style={{ width: "100%", height: "100%" }}
-              >
-                <Orb world={w} size={92} />
-              </motion.div>
-
-              {/* Hover label — number, colour, title. Sits below the orb. */}
-              <motion.div
-                aria-hidden
-                initial={false}
-                animate={{ opacity: isHover ? 1 : 0, y: isHover ? 0 : 6 }}
-                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+              <Link
+                href={`/worlds/${w.slug}`}
+                aria-label={`${w.title[lang]} — ${w.color.name}`}
+                onMouseEnter={() => setHovered(w.slug)}
+                onMouseLeave={() => setHovered(null)}
+                onFocus={() => setHovered(w.slug)}
+                onBlur={() => setHovered(null)}
                 style={{
-                  position: "absolute",
-                  left: "50%",
-                  top: "calc(100% + 12px)",
-                  transform: "translateX(-50%)",
-                  whiteSpace: "nowrap",
-                  pointerEvents: "none",
-                  textAlign: "center",
+                  display: "block",
+                  width: "100%",
+                  height: "100%",
+                  textDecoration: "none",
+                  color: "inherit",
+                  outline: "none",
                 }}
               >
-                <div
+                {/* Per-Core ambient halo always present, brightened on hover */}
+                <motion.div
+                  aria-hidden
                   style={{
-                    fontSize: 9,
-                    letterSpacing: "0.34em",
+                    position: "absolute",
+                    inset: "-32%",
+                    borderRadius: "50%",
+                    background: `radial-gradient(circle, ${w.color.glow} 0%, ${w.color.deep.replace(
+                      ",1)",
+                      ",0.04)"
+                    )} 50%, transparent 75%)`,
+                    filter: "blur(22px)",
+                    pointerEvents: "none",
+                  }}
+                  animate={{ opacity: isHover ? 0.95 : 0.35 }}
+                  transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+                />
+
+                <motion.div
+                  animate={{
+                    scale: isHover ? 1.22 : 1,
+                    y: [0, -3, 0],
+                  }}
+                  transition={{
+                    scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+                    y: { duration: 6.5 + idx * 0.4, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
+                  }}
+                  style={{ position: "relative", width: "100%", height: "100%" }}
+                >
+                  <Orb world={w} size={120} />
+                </motion.div>
+
+                {/* Persistent label — colour name above (eyebrow style),
+                    world title below the orb. Always visible at low
+                    opacity, lifted to full on hover. */}
+                <motion.div
+                  aria-hidden
+                  animate={{ opacity: isHover ? 1 : 0.58 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: "calc(100% + 8px)",
+                    transform: "translateX(-50%)",
+                    fontSize: "clamp(8px, 0.6vw, 10px)",
+                    letterSpacing: "0.32em",
                     textTransform: "uppercase",
                     color: w.color.hex,
                     fontWeight: 500,
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
                     textShadow: "0 1px 12px rgba(0,0,0,0.85)",
                   }}
                 >
                   {w.number} · {w.color.name}
-                </div>
-                <div
+                </motion.div>
+
+                <motion.div
+                  aria-hidden
+                  animate={{ opacity: isHover ? 1 : 0.78, y: isHover ? -1 : 0 }}
+                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   style={{
-                    marginTop: 3,
-                    fontSize: 12,
+                    position: "absolute",
+                    left: "50%",
+                    top: "calc(100% + 10px)",
+                    transform: "translateX(-50%)",
+                    fontSize: "clamp(10px, 0.78vw, 12.5px)",
                     letterSpacing: "-0.005em",
                     color: "white",
                     fontWeight: 400,
-                    textShadow: "0 1px 12px rgba(0,0,0,0.9)",
+                    whiteSpace: "nowrap",
+                    pointerEvents: "none",
+                    textShadow: "0 1px 10px rgba(0,0,0,0.9)",
                   }}
                 >
                   {w.title[lang]}
-                </div>
-              </motion.div>
-            </Link>
+                </motion.div>
+              </Link>
+            </motion.div>
           </motion.div>
         );
       })}
 
-      {/* LAYER 3 — XNLAB WORDMARK / AUTHORITY — centre, dominant */}
+      {/* LAYER 3 — XNLAB wordmark */}
       <div
         style={{
           position: "absolute",
@@ -380,11 +447,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.h1>
       </div>
 
-      {/* LAYER 2C — chrome X / identity anchor — lower, behind wordmark */}
+      {/* LAYER 2C — chrome X behind the wordmark */}
       <motion.div
         style={{
           position: "absolute",
-          zIndex: 8,
+          zIndex: 9,
           x: symX,
           y: symY,
           left: "50%",
@@ -420,7 +487,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.div>
       </motion.div>
 
-      {/* HAZE — atmospheric ceiling */}
+      {/* HAZE */}
       <motion.div
         style={{ position: "absolute", inset: 0, zIndex: 25, pointerEvents: "none" }}
         initial={{ opacity: 0 }}
@@ -439,7 +506,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
 
       <Dust count={14} opacity={0.09} />
 
-      {/* BOTTOM COPY */}
+      {/* Bottom copy */}
       <div
         style={{
           position: "absolute",
@@ -449,7 +516,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingBottom: "clamp(80px,12vh,120px)",
+          paddingBottom: "clamp(56px,9vh,96px)",
           pointerEvents: "none",
         }}
       >
@@ -457,7 +524,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{ textAlign: "center" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.6, delay: 2.0 }}
+          transition={{ duration: 1.6, delay: 2.6 }}
         >
           <p
             style={{
@@ -489,6 +556,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.div>
       </div>
 
+      {/* Trimmed bottom fade — less heavy black */}
       <div
         style={{
           position: "absolute",
@@ -496,7 +564,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           left: 0,
           right: 0,
           zIndex: 50,
-          height: "18%",
+          height: "12%",
           background: "linear-gradient(to bottom, transparent, #060606)",
           pointerEvents: "none",
         }}
