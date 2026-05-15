@@ -42,7 +42,13 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
     : world?.color.deep?.replace(",1)", ",0.05)") ?? "rgba(0,0,0,0.05)";
   const m = world?.motion;
 
-  const orbImage = image ?? world?.image ?? (isCentral ? "/images/worlds/central.png" : undefined);
+  // Shared chrome sphere PNG used across the universe — same physical object,
+  // different energies (each Core tints it via mix-blend overlay below).
+  const SHARED_ORB = "/images/worlds/central.png";
+  const orbImage = image ?? world?.image ?? SHARED_ORB;
+  // Crimson dark tint for the Central Core; world.color.hex for each Core
+  const tintColor = isCentral ? "#a8332a" : world?.color.hex;
+  const tintOpacity = isCentral ? 0.55 : world?.slug === "lifestyle" || world?.slug === "architecture" ? 0.32 : 0.5;
 
   // Per-pulse animation for the orb itself
   const breatheScale = m?.breatheScale ?? (isCentral ? [1, 1.025] : [1, 1.03]);
@@ -110,19 +116,59 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
         }}
       >
         {orbImage ? (
-          // Image-based orb (transparent PNG). User drops the PNG at /public/images/worlds/<slug>.png
-          <Image
-            src={orbImage}
-            alt={isCentral ? "XNLAB Central Core" : world?.title.en ?? "World Core"}
-            fill
-            sizes={`${size}px`}
-            style={{
-              objectFit: "contain",
-              // Slight color-matched drop-shadow so the orb feels like it sits in the universe
-              filter: `drop-shadow(0 0 24px ${haloColor})`,
-            }}
-            priority={isCentral}
-          />
+          // Shared chrome orb image. Same physical object, different energies —
+          // each Core tints it via a colour overlay with mix-blend-mode below.
+          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", overflow: "hidden" }}>
+            <Image
+              src={orbImage}
+              alt={isCentral ? "XNLAB Central Core" : world?.title.en ?? "World Core"}
+              fill
+              sizes={`${size}px`}
+              style={{
+                objectFit: "contain",
+                filter: `drop-shadow(0 0 24px ${haloColor})`,
+              }}
+              priority={isCentral}
+            />
+            {/* Colour tint — uses mix-blend-mode so chrome highlights stay
+                bright while the shadows take the Core's hue. Disabled for
+                lifestyle and architecture which read better at chrome. */}
+            {tintColor && (
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  background: tintColor,
+                  mixBlendMode: "color",
+                  opacity: tintOpacity,
+                  pointerEvents: "none",
+                  // Mask softens edges so tint follows the sphere, not a hard square
+                  maskImage:
+                    "radial-gradient(circle at center, black 55%, transparent 75%)",
+                  WebkitMaskImage:
+                    "radial-gradient(circle at center, black 55%, transparent 75%)",
+                }}
+              />
+            )}
+            {/* Subtle warm highlight pass — lifts the chrome so it does not
+                disappear into the tint. Especially helpful on darker Cores. */}
+            {!isCentral && (
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  borderRadius: "50%",
+                  background:
+                    "radial-gradient(circle at 38% 30%, rgba(255,255,255,0.18) 0%, transparent 28%)",
+                  mixBlendMode: "screen",
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+          </div>
         ) : (
           // CSS fallback — only renders if the PNG is missing.
           <CssOrbFallback world={world} central={isCentral} />
