@@ -11,3 +11,30 @@ body {
 * {
   box-sizing: border-box;
 }
+
+/* Custom cursor only for true mouse users — touch/pen/keyboard get the native cursor */
+@media (hover: hover) and (pointer: fine) {
+  html.xn-cursor,
+  html.xn-cursor * {
+    cursor: none;
+  }
+}
+
+/* Respect users who ask for reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Keyboard focus visibility — the cursor-none style hides focus for keyboard users otherwise */
+:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.6);
+  outline-offset: 3px;
+  border-radius: 2px;
+}

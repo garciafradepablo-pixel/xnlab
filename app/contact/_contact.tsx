@@ -1,0 +1,469 @@
+"use client";
+import { motion } from "framer-motion";
+import Link from "next/link";
+import { useState } from "react";
+import { ts, tsS, serif, W, R, Dust, DustStyles, useLang } from "../_lib/atoms";
+
+const en = {
+  eyebrow: "Start a Conversation",
+  h1a: "Build something",
+  h1b: "unforgettable.",
+  lead:
+    "We collaborate with a small number of clients each year. Tell us about your project — even if it's only an instinct so far.",
+  fields: {
+    name: "Name",
+    email: "Email",
+    company: "Studio / Brand (optional)",
+    type: "Discipline",
+    msg: "Tell us about your project",
+  },
+  types: [
+    "Hospitality Systems",
+    "Nightlife Atmospheres",
+    "Emotional Architecture",
+    "Living Identities",
+    "Other",
+  ],
+  submit: "Open email →",
+  privacy:
+    "Submitting opens your email client with a pre-filled draft to studio@xnlab.io. We never share your details.",
+  ok: "Email opened — check your mail client.",
+  back: "← Home",
+  studioLabel: "Studio",
+  studioInfo: ["By appointment only", "studio@xnlab.io", "press@xnlab.io"],
+};
+const es = {
+  eyebrow: "Iniciar Conversación",
+  h1a: "Construir algo",
+  h1b: "inolvidable.",
+  lead:
+    "Colaboramos con un número reducido de clientes cada año. Cuéntanos sobre tu proyecto — aunque solo sea una intuición todavía.",
+  fields: {
+    name: "Nombre",
+    email: "Email",
+    company: "Estudio / Marca (opcional)",
+    type: "Disciplina",
+    msg: "Cuéntanos sobre tu proyecto",
+  },
+  types: [
+    "Hospitality Systems",
+    "Nightlife Atmospheres",
+    "Emotional Architecture",
+    "Living Identities",
+    "Otro",
+  ],
+  submit: "Abrir email →",
+  privacy:
+    "Enviar abre tu cliente de correo con un borrador pre-rellenado para studio@xnlab.io. No compartimos tus datos.",
+  ok: "Email abierto — revisa tu cliente de correo.",
+  back: "← Inicio",
+  studioLabel: "Estudio",
+  studioInfo: ["Solo con cita previa", "studio@xnlab.io", "press@xnlab.io"],
+};
+
+type FormState = {
+  name: string;
+  email: string;
+  company: string;
+  type: string;
+  msg: string;
+};
+
+const empty: FormState = { name: "", email: "", company: "", type: "", msg: "" };
+
+function buildMailto(f: FormState) {
+  const subject = `XNLAB Inquiry — ${f.type || "General"} — ${f.name || "Unknown"}`;
+  const lines = [
+    `Name: ${f.name}`,
+    `Email: ${f.email}`,
+    f.company ? `Studio/Brand: ${f.company}` : null,
+    `Discipline: ${f.type || "—"}`,
+    "",
+    f.msg,
+  ].filter(Boolean) as string[];
+  const body = lines.join("\n");
+  const qs = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  return `mailto:studio@xnlab.io?${qs}`;
+}
+
+const fieldStyle: React.CSSProperties = {
+  display: "block",
+  width: "100%",
+  padding: "16px 0",
+  background: "transparent",
+  border: "none",
+  borderBottom: "1px solid rgba(255,255,255,0.18)",
+  color: "white",
+  fontFamily: "inherit",
+  fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
+  fontWeight: 300,
+  letterSpacing: "0.01em",
+  outline: "none",
+  transition: "border-color 0.3s",
+};
+
+const labelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 10,
+  fontWeight: 500,
+  letterSpacing: "0.38em",
+  textTransform: "uppercase",
+  color: "rgba(255,255,255,0.45)",
+  marginBottom: 4,
+};
+
+export default function Contact() {
+  const [lang, setLang] = useLang();
+  const t = lang === "en" ? en : es;
+  const [form, setForm] = useState<FormState>(empty);
+  const [sent, setSent] = useState(false);
+  const upd = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm((f) => ({ ...f, [k]: e.target.value }));
+
+  const onSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.email || !form.msg) return;
+    const href = buildMailto(form);
+    window.location.href = href;
+    setSent(true);
+  };
+
+  return (
+    <main
+      style={{
+        minHeight: "100vh",
+        overflowX: "hidden",
+        background: "#060606",
+        color: "white",
+        fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
+      }}
+    >
+      <DustStyles />
+      <header
+        style={{
+          position: "fixed",
+          top: 0,
+          left: 0,
+          right: 0,
+          zIndex: 200,
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(4,3,2,0.92)",
+          backdropFilter: "blur(28px)",
+          WebkitBackdropFilter: "blur(28px)",
+        }}
+      >
+        <nav
+          style={{
+            maxWidth: 1600,
+            margin: "0 auto",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            height: 64,
+            padding: "0 clamp(20px,5vw,56px)",
+          }}
+        >
+          <Link
+            href="/"
+            style={{
+              fontSize: 14,
+              fontWeight: 500,
+              letterSpacing: "0.42em",
+              color: "white",
+              textTransform: "uppercase",
+              textDecoration: "none",
+            }}
+          >
+            XNLAB
+          </Link>
+          <Link
+            href="/"
+            style={{
+              fontSize: 11,
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.55)",
+              textDecoration: "none",
+            }}
+          >
+            {t.back}
+          </Link>
+          <button
+            onClick={() => setLang(lang === "en" ? "es" : "en")}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 11,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+            }}
+          >
+            <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>
+            <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
+            <span style={{ color: lang === "es" ? "white" : "rgba(255,255,255,0.35)" }}>ES</span>
+          </button>
+        </nav>
+      </header>
+
+      <section
+        style={{
+          position: "relative",
+          padding: "clamp(140px,18vh,200px) clamp(24px,7vw,96px) clamp(48px,7vw,96px)",
+          maxWidth: 1120,
+          margin: "0 auto",
+        }}
+      >
+        <Dust count={8} opacity={0.06} />
+        <p style={{ ...labelStyle, marginBottom: 28, position: "relative", zIndex: 5 }}>{t.eyebrow}</p>
+        <h1
+          style={{
+            fontSize: "clamp(2.6rem,7vw,7rem)",
+            fontWeight: 400,
+            lineHeight: 0.92,
+            letterSpacing: "-0.055em",
+            textShadow: tsS,
+            position: "relative",
+            zIndex: 5,
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "baseline",
+            gap: "0.18em",
+          }}
+        >
+          <W text={t.h1a} delay={0} />
+          <span style={{ fontFamily: serif, fontStyle: "italic", color: "rgba(255,255,255,0.7)", fontSize: "1.18em" }}>
+            <W text={t.h1b} delay={0.12} />
+          </span>
+        </h1>
+        <R delay={0.3}>
+          <p
+            style={{
+              marginTop: "clamp(28px,3.5vw,44px)",
+              fontSize: "clamp(1rem,1.3vw,1.18rem)",
+              lineHeight: 1.72,
+              color: "rgba(255,255,255,0.7)",
+              fontWeight: 300,
+              maxWidth: 700,
+              textShadow: ts,
+            }}
+          >
+            {t.lead}
+          </p>
+        </R>
+      </section>
+
+      <section
+        style={{
+          padding: "0 clamp(24px,7vw,96px) clamp(80px,10vw,140px)",
+          maxWidth: 1120,
+          margin: "0 auto",
+          display: "grid",
+          gap: "clamp(48px,6vw,96px)",
+          gridTemplateColumns: "1fr",
+        }}
+      >
+        <form onSubmit={onSubmit} noValidate style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }}>
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+            <R>
+              <label style={labelStyle} htmlFor="name">
+                {t.fields.name}
+              </label>
+              <input
+                id="name"
+                name="name"
+                value={form.name}
+                onChange={upd("name")}
+                required
+                autoComplete="name"
+                style={fieldStyle}
+                onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+                onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+              />
+            </R>
+            <R delay={0.05}>
+              <label style={labelStyle} htmlFor="email">
+                {t.fields.email}
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={upd("email")}
+                required
+                autoComplete="email"
+                style={fieldStyle}
+                onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+                onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+              />
+            </R>
+          </div>
+
+          <R delay={0.1}>
+            <label style={labelStyle} htmlFor="company">
+              {t.fields.company}
+            </label>
+            <input
+              id="company"
+              name="company"
+              value={form.company}
+              onChange={upd("company")}
+              autoComplete="organization"
+              style={fieldStyle}
+              onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+              onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+            />
+          </R>
+
+          <R delay={0.12}>
+            <label style={labelStyle} htmlFor="type">
+              {t.fields.type}
+            </label>
+            <select
+              id="type"
+              name="type"
+              value={form.type}
+              onChange={upd("type")}
+              style={{
+                ...fieldStyle,
+                appearance: "none",
+                WebkitAppearance: "none",
+                MozAppearance: "none",
+                cursor: "pointer",
+                backgroundImage:
+                  "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
+                backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
+                backgroundSize: "6px 6px",
+                backgroundRepeat: "no-repeat",
+                color: form.type ? "white" : "rgba(255,255,255,0.45)",
+              }}
+            >
+              <option value="" style={{ background: "#060606" }}>
+                —
+              </option>
+              {t.types.map((opt) => (
+                <option key={opt} value={opt} style={{ background: "#060606" }}>
+                  {opt}
+                </option>
+              ))}
+            </select>
+          </R>
+
+          <R delay={0.14}>
+            <label style={labelStyle} htmlFor="msg">
+              {t.fields.msg}
+            </label>
+            <textarea
+              id="msg"
+              name="msg"
+              value={form.msg}
+              onChange={upd("msg")}
+              required
+              rows={6}
+              style={{ ...fieldStyle, resize: "vertical", lineHeight: 1.65, paddingTop: 14, paddingBottom: 14 }}
+              onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+              onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+            />
+          </R>
+
+          <R delay={0.18}>
+            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "clamp(20px,3vw,40px)", justifyContent: "space-between" }}>
+              <p style={{ fontSize: 11, lineHeight: 1.7, color: "rgba(255,255,255,0.42)", maxWidth: 480 }}>{t.privacy}</p>
+              <motion.button
+                type="submit"
+                whileHover={{ scale: 1.03 }}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
+                  fontSize: "clamp(10px,0.85vw,12px)",
+                  fontWeight: 500,
+                  letterSpacing: "0.28em",
+                  textTransform: "uppercase",
+                  color: "#060606",
+                  background: "white",
+                  border: "none",
+                  borderRadius: 100,
+                  cursor: "pointer",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {t.submit}
+              </motion.button>
+            </div>
+          </R>
+
+          {sent && (
+            <motion.p
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              style={{
+                fontSize: 11,
+                letterSpacing: "0.22em",
+                textTransform: "uppercase",
+                color: "rgba(255,255,255,0.7)",
+              }}
+            >
+              {t.ok}
+            </motion.p>
+          )}
+        </form>
+
+        <R delay={0.05}>
+          <div
+            style={{
+              display: "grid",
+              gap: "clamp(24px,3vw,40px)",
+              gridTemplateColumns: "minmax(160px,220px) 1fr",
+              paddingTop: "clamp(48px,6vw,80px)",
+              borderTop: "1px solid rgba(255,255,255,0.06)",
+            }}
+          >
+            <p style={labelStyle}>{t.studioLabel}</p>
+            <div>
+              {t.studioInfo.map((line, i) => {
+                const isEmail = line.includes("@");
+                return isEmail ? (
+                  <a
+                    key={i}
+                    href={`mailto:${line}`}
+                    style={{
+                      display: "block",
+                      fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
+                      lineHeight: 2,
+                      color: "rgba(255,255,255,0.78)",
+                      textDecoration: "none",
+                      fontWeight: 300,
+                      transition: "color 0.3s",
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.78)")}
+                  >
+                    {line}
+                  </a>
+                ) : (
+                  <p
+                    key={i}
+                    style={{
+                      fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
+                      lineHeight: 2,
+                      color: "rgba(255,255,255,0.55)",
+                      fontWeight: 300,
+                    }}
+                  >
+                    {line}
+                  </p>
+                );
+              })}
+            </div>
+          </div>
+        </R>
+      </section>
+    </main>
+  );
+}

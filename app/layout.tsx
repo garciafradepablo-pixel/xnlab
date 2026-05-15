@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 
@@ -14,9 +14,95 @@ const cormorant = Cormorant_Garamond({
   variable: "--font-serif",
 });
 
+const SITE = "https://xnlab.io";
+const TITLE = "XNLAB — Creative systems for modern culture";
+const DESCRIPTION =
+  "Worldbuilding studio for modern luxury. We design atmospheres, identities and visual systems for hospitality, nightlife, architecture and cultural identity. By appointment only.";
+
 export const metadata: Metadata = {
-  title: "XNLAB",
-  description: "Creative systems for modern culture.",
+  metadataBase: new URL(SITE),
+  title: { default: TITLE, template: "%s · XNLAB" },
+  description: DESCRIPTION,
+  applicationName: "XNLAB",
+  generator: "Next.js",
+  keywords: [
+    "creative direction",
+    "worldbuilding",
+    "hospitality design",
+    "nightlife design",
+    "emotional architecture",
+    "brand identity",
+    "luxury",
+    "atmosphere",
+    "XNLAB",
+  ],
+  authors: [{ name: "XNLAB" }],
+  creator: "XNLAB",
+  publisher: "XNLAB",
+  category: "design",
+  alternates: {
+    canonical: "/",
+    languages: { en: "/", es: "/", "x-default": "/" },
+  },
+  openGraph: {
+    type: "website",
+    siteName: "XNLAB",
+    title: TITLE,
+    description: DESCRIPTION,
+    url: SITE,
+    locale: "en_US",
+    alternateLocale: ["es_ES"],
+    images: [
+      {
+        url: "/images/01_hero_chrome.jpg",
+        width: 1200,
+        height: 896,
+        alt: "XNLAB — cinematic worldbuilding",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: DESCRIPTION,
+    images: ["/images/01_hero_chrome.jpg"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+  formatDetection: { email: false, address: false, telephone: false },
+  icons: { icon: "/favicon.ico" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#060606",
+  colorScheme: "dark",
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: "XNLAB",
+  url: SITE,
+  description: DESCRIPTION,
+  email: "studio@xnlab.io",
+  knowsAbout: [
+    "Hospitality Systems",
+    "Nightlife Atmospheres",
+    "Emotional Architecture",
+    "Living Identities",
+  ],
 };
 
 export default function RootLayout({
@@ -26,7 +112,13 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`} style={{background:"#060606"}}>
-      <body style={{margin:0,padding:0,background:"#060606",overflowX:"hidden"}}>{children}</body>
+      <body style={{margin:0,padding:0,background:"#060606",overflowX:"hidden"}}>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+        {children}
+      </body>
     </html>
   );
 }
