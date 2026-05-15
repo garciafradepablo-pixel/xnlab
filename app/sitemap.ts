@@ -26,6 +26,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.7,
   };
+  const manifesto: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/manifesto`,
+    lastModified: now,
+    changeFrequency: "yearly",
+    priority: 0.6,
+  };
   const imprint: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/imprint`,
     lastModified: now,
@@ -51,5 +57,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.7,
     images: [`${SITE}${p.hero}`],
   }));
-  return [home, about, process, workIndex, ...works, contact, imprint];
+  return [home, about, process, manifesto, workIndex, ...works, contact, imprint];
 }

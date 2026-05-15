@@ -122,10 +122,11 @@ export default function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <a href="#main" className="xn-skip">Skip to content</a>
         <DustStyles />
         <FilmGrain />
         <ScrollProgress />
-        {children}
+        <div id="main">{children}</div>
       </body>
     </html>
   );
