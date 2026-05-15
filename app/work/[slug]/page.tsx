@@ -59,7 +59,7 @@ export default async function Page({
     name: project.title,
     headline: project.title,
     description: project.excerpt.en,
-    creator: { "@type": "Organization", name: "XNLAB", url: "https://xnlab.io" },
+    creator: { "@type": "Organization", name: "XNLAB", legalName: "Xnlab Studio", url: "https://xnlab.io" },
     dateCreated: project.year,
     image: `https://xnlab.io${project.hero}`,
     about: project.discipline,

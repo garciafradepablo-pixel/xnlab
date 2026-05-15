@@ -59,7 +59,7 @@ export const projects: Project[] = [
       es: "Atmósferas diseñadas para ser recordadas, no descritas.",
     },
     credits: [
-      { role: "Direction", value: "XNLAB" },
+      { role: "Direction", value: "Xnlab Studio" },
       { role: "Status", value: "Internal study — 2025" },
     ],
   },
@@ -97,7 +97,7 @@ export const projects: Project[] = [
       es: "Contención, usada en voz alta.",
     },
     credits: [
-      { role: "Direction", value: "XNLAB" },
+      { role: "Direction", value: "Xnlab Studio" },
       { role: "Status", value: "Internal study — 2025" },
     ],
   },
@@ -135,7 +135,7 @@ export const projects: Project[] = [
       es: "No es minimalista. Es concentrado.",
     },
     credits: [
-      { role: "Direction", value: "XNLAB" },
+      { role: "Direction", value: "Xnlab Studio" },
       { role: "Status", value: "Internal study — 2024" },
     ],
   },
