@@ -33,6 +33,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.6,
   };
+  const atmospheres: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/atmospheres`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.7,
+  };
+  const nowPage: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/now`,
+    lastModified: now,
+    changeFrequency: "weekly",
+    priority: 0.75,
+  };
   const references: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/references`,
     lastModified: now,
@@ -82,5 +94,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.8,
   }));
-  return [home, worldsIndex, ...worldsList, about, process, collaboration, manifesto, references, workIndex, ...works, contact, imprint];
+  return [home, worldsIndex, ...worldsList, about, process, collaboration, manifesto, atmospheres, nowPage, references, workIndex, ...works, contact, imprint];
 }

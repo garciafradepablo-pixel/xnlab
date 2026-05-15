@@ -19,6 +19,8 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 - [Process](https://xnlab.io/process): How we work in four movements — Listen, Map atmospheres, Build the system, Live with it. Includes tangible deliverables.
 - [Collaboration](https://xnlab.io/collaboration): Practical notes on engaging the studio — when to reach out, what to send, the first conversation, engagement shape.
 - [Manifesto](https://xnlab.io/manifesto): Six statements on worldbuilding, atmosphere and restraint.
+- [Atmospheres](https://xnlab.io/atmospheres): Six sensory vignettes — one per World Core. Prose snapshots of the rooms and moments we design.
+- [Now](https://xnlab.io/now): A live note from inside the studio. What we are working on, reading, listening to, observing. Updated periodically.
 - [References / Library](https://xnlab.io/references): Curated set of books, architects, films, hotels and makers that inform the studio's work.
 - [Contact](https://xnlab.io/contact): Inquiry form. By appointment only.
 - [Colophon](https://xnlab.io/imprint): Studio details, typography credits, technical stack, brief privacy and terms notes.
