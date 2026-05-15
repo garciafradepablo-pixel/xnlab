@@ -1,19 +1,19 @@
 "use client";
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "./_lib/atoms";
-import { Magnetic } from "./_lib/chrome";
+import { LuxButton } from "./_lib/lux-button";
 
 const en = {
   eyebrow: "404 — World not found",
   h1a: "This world",
   h1b: "does not exist yet.",
   body: "The page you are looking for has either moved, been retired, or never lived here.",
-  cta: "Return to silence",
+  cta: "Return home",
   alt: "Or visit",
   links: [
     { label: "Selected Works", href: "/work" },
     { label: "About the Studio", href: "/about" },
-    { label: "Initiate Contact", href: "/contact" },
+    { label: "Apply for a project", href: "/contact" },
   ],
 };
 
@@ -22,12 +22,12 @@ const es = {
   h1a: "Este mundo",
   h1b: "todavía no existe.",
   body: "La página que buscas se ha movido, ha sido retirada, o nunca vivió aquí.",
-  cta: "Volver al silencio",
+  cta: "Volver al inicio",
   alt: "O visita",
   links: [
     { label: "Proyectos Seleccionados", href: "/work" },
     { label: "Sobre el Estudio", href: "/about" },
-    { label: "Iniciar Contacto", href: "/contact" },
+    { label: "Aplicar para un proyecto", href: "/contact" },
   ],
 };
 
@@ -101,32 +101,9 @@ export default function NotFoundClient() {
           </p>
         </R>
         <R delay={0.42}>
-          <Magnetic>
-            <Link
-              href="/"
-              style={{
-                marginTop: "clamp(36px,4.5vw,56px)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.7rem",
-                padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
-                fontSize: "clamp(10px,0.85vw,12px)",
-                fontWeight: 500,
-                letterSpacing: "0.28em",
-                textTransform: "uppercase",
-                color: "#060606",
-                textDecoration: "none",
-                background: "white",
-                borderRadius: 100,
-                transition: "background 0.4s",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.88)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "white")}
-            >
-              ← {t.cta}
-            </Link>
-          </Magnetic>
+          <div style={{ marginTop: "clamp(36px,4.5vw,56px)" }}>
+            <LuxButton href="/" variant="solid" arrow={false}>{t.cta}</LuxButton>
+          </div>
         </R>
         <R delay={0.55}>
           <div
@@ -171,7 +148,7 @@ export default function NotFoundClient() {
                   onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
                 >
-                  {l.label} →
+                  {l.label}
                 </Link>
               ))}
             </div>
