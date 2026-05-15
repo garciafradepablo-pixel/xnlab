@@ -15,35 +15,29 @@ type HeroCopy = {
   s4: string;
 };
 
-// Each World Core's place on the row. The horizontal step is constant
-// (the unit gap is `clamp(80px,11vw,160px)`), so the gaps between
-// neighbouring orbs are equal. The vertical offset describes a dome:
-// the centre (chrome orb) sits at the top, and the further out a Core
-// is, the lower it falls.
-//
-// Sizes shrink toward the edges to give a depth illusion — inner orbs
-// feel "closer", outer orbs "further", like an aureole radiating from
-// the central chrome orb.
-//
-// Each Core also gets its own entry vector so the composition does
-// not assemble in one uniform fade: some pieces drift in from far
-// (small + blurred), others rush in from close (large + blurred).
+// Six World Cores arranged in a dome above the wordmark. The central
+// chrome orb at the apex is the studio's Central Core. Spacing between
+// orbs is constant (one unit), vertical drop scales with distance from
+// centre so the row reads as an arc. Sizes shrink outward; the centre
+// is clearly the largest. Each Core arrives with its own entry vector
+// for a 3D, abstract assembly.
 const PLAN = [
-  { idx: 0, mult: -3, dy: "8%",   size: "clamp(52px,5.8vw,74px)", entry: { x: -160, y: 12,  scale: 0.32, blur: 22 }, delay: 2.05 },
-  { idx: 1, mult: -2, dy: "4.5%", size: "clamp(62px,6.8vw,86px)", entry: { x: -40,  y: -52, scale: 1.55, blur: 20 }, delay: 1.85 },
-  { idx: 2, mult: -1, dy: "1.5%", size: "clamp(72px,7.8vw,98px)", entry: { x: 30,   y: 60,  scale: 0.5,  blur: 14 }, delay: 1.65 },
-  { idx: 3, mult: 1,  dy: "1.5%", size: "clamp(72px,7.8vw,98px)", entry: { x: -30,  y: -60, scale: 1.5,  blur: 16 }, delay: 1.75 },
-  { idx: 4, mult: 2,  dy: "4.5%", size: "clamp(62px,6.8vw,86px)", entry: { x: 40,   y: 52,  scale: 0.45, blur: 14 }, delay: 1.95 },
-  { idx: 5, mult: 3,  dy: "8%",   size: "clamp(52px,5.8vw,74px)", entry: { x: 160,  y: -12, scale: 0.3,  blur: 22 }, delay: 2.15 },
+  { idx: 0, mult: -3, dy: "9%",   size: "clamp(52px,5.4vw,68px)", entry: { x: -180, y: 14,  scale: 0.30, blur: 22 }, delay: 2.05 },
+  { idx: 1, mult: -2, dy: "5%",   size: "clamp(56px,5.8vw,76px)", entry: { x: -40,  y: -56, scale: 1.55, blur: 20 }, delay: 1.85 },
+  { idx: 2, mult: -1, dy: "1.5%", size: "clamp(60px,6.2vw,84px)", entry: { x: 30,   y: 64,  scale: 0.5,  blur: 14 }, delay: 1.65 },
+  { idx: 3, mult: 1,  dy: "1.5%", size: "clamp(60px,6.2vw,84px)", entry: { x: -30,  y: -64, scale: 1.55, blur: 16 }, delay: 1.75 },
+  { idx: 4, mult: 2,  dy: "5%",   size: "clamp(56px,5.8vw,76px)", entry: { x: 40,   y: 56,  scale: 0.45, blur: 14 }, delay: 1.95 },
+  { idx: 5, mult: 3,  dy: "9%",   size: "clamp(52px,5.4vw,68px)", entry: { x: 180,  y: -14, scale: 0.3,  blur: 22 }, delay: 2.15 },
 ];
-const UNIT = "clamp(80px,11vw,160px)"; // equal step between orbs
+const UNIT = "clamp(82px,11vw,160px)";
+const CENTRAL_SIZE = "clamp(130px,13vw,180px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
   const reduced = useReducedMotion();
   const [hovered, setHovered] = useState<string | null>(null);
+  const [centralHover, setCentralHover] = useState(false);
 
-  // Mouse parallax
   const rawX = useMotionValue(0);
   const rawY = useMotionValue(0);
   const sx = useSpring(rawX, { stiffness: 14, damping: 50 });
@@ -104,7 +98,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{ objectFit: "cover", objectPosition: "center", transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1)" }}
           />
         </div>
-        {/* Softer vignette and trimmed bottom fade — less heavy black margin */}
         <div
           style={{
             position: "absolute",
@@ -129,21 +122,20 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
       />
 
-      {/* Warm aureole — a single radial halo centred where the chrome orb
-          sits, unifying the seven orbs as one composition. */}
+      {/* Warm aureole unifying the dome */}
       <motion.div
         style={{
           position: "absolute",
           left: "50%",
-          top: "28%",
+          top: "30%",
           transform: "translate(-50%, -50%)",
           zIndex: 4,
-          width: "min(110vw, 1500px)",
-          height: "clamp(360px, 40vh, 620px)",
+          width: "min(110vw, 1600px)",
+          height: "clamp(420px, 46vh, 720px)",
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at center, rgba(228,182,128,0.16) 0%, rgba(190,140,90,0.07) 35%, rgba(60,40,30,0.02) 65%, transparent 80%)",
-          filter: "blur(30px)",
+            "radial-gradient(ellipse at center, rgba(228,180,128,0.18) 0%, rgba(190,140,90,0.07) 35%, rgba(60,40,30,0.02) 65%, transparent 80%)",
+          filter: "blur(34px)",
         }}
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -169,7 +161,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         animate={{ opacity: [0, 1, 0.55], scale: [0.6, 1.1, 1.4] }}
         transition={{ duration: 3.6, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
       />
-      {/* SHEEN bottom-left */}
       <motion.div
         style={{
           position: "absolute",
@@ -218,47 +209,59 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         />
       </motion.div>
 
-      {/* LAYER 2B — small chrome orb on top, dome apex */}
+      {/* LAYER 2B — Central Core, the dome's apex. Now an actual orb,
+          notably larger than the six flanking Cores, and interactive. */}
       <motion.div
         style={{
           position: "absolute",
-          zIndex: 7,
+          zIndex: 8,
           x: sphX,
           y: sphY,
           left: "50%",
-          top: "28%",
+          top: "26%",
           translateX: "-50%",
           translateY: "-50%",
-          width: "clamp(78px,8.4vw,118px)",
-          height: "clamp(78px,8.4vw,118px)",
-          pointerEvents: "none",
+          width: CENTRAL_SIZE,
+          height: CENTRAL_SIZE,
+          pointerEvents: "auto",
         }}
-        initial={{ opacity: 0, scale: 0.55, filter: "blur(16px)" }}
+        initial={{ opacity: 0, scale: 0.55, filter: "blur(18px)" }}
         animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-        transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
+        transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
       >
-        <motion.div
-          style={{ width: "100%", height: "100%" }}
-          animate={{ y: [0, -4, 0] }}
-          transition={{ duration: 7, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+        <Link
+          href="/worlds"
+          aria-label={lang === "en" ? "The Universe" : "El Universo"}
+          onMouseEnter={() => setCentralHover(true)}
+          onMouseLeave={() => setCentralHover(false)}
+          onFocus={() => setCentralHover(true)}
+          onBlur={() => setCentralHover(false)}
+          style={{
+            display: "block",
+            width: "100%",
+            height: "100%",
+            textDecoration: "none",
+            color: "inherit",
+            outline: "none",
+          }}
         >
-          <Image
-            src="/images/hero/04_main_orb.png"
-            alt=""
-            fill
-            sizes="(max-width: 768px) 96px, 118px"
-            loading="eager"
-            style={{
-              objectFit: "contain",
-              mixBlendMode: "screen",
-              filter: "drop-shadow(0 0 18px rgba(220,200,170,0.9)) drop-shadow(0 0 38px rgba(170,140,110,0.5))",
+          <motion.div
+            animate={{
+              scale: centralHover ? 1.18 : 1,
+              y: [0, -4, 0],
             }}
-          />
-        </motion.div>
+            transition={{
+              scale: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+              y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
+            }}
+            style={{ position: "relative", width: "100%", height: "100%" }}
+          >
+            <Orb central size={260} />
+          </motion.div>
+        </Link>
       </motion.div>
 
-      {/* LAYER 2B2 — the six World Cores, dome shape, equal gaps, mixed
-          entry vectors so the composition assembles abstractly. */}
+      {/* LAYER 2B2 — six World Cores arranged in the dome */}
       {PLAN.map(({ idx, mult, dy, size, entry, delay }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
@@ -270,11 +273,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             key={w.slug}
             style={{
               position: "absolute",
-              zIndex: 8,
+              zIndex: 9,
               x: sphX,
               y: sphY,
               left: leftCalc,
-              top: `calc(28% + ${dy})`,
+              top: `calc(26% + ${dy})`,
               translateX: "-50%",
               translateY: "-50%",
               width: size,
@@ -298,7 +301,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 filter: "blur(0px)",
               }}
               transition={{ duration: 2.2, ease: [0.22, 1, 0.36, 1], delay }}
-              style={{ width: "100%", height: "100%" }}
+              style={{ position: "relative", width: "100%", height: "100%" }}
             >
               <Link
                 href={`/worlds/${w.slug}`}
@@ -316,7 +319,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   outline: "none",
                 }}
               >
-                {/* Per-Core ambient halo always present, brightened on hover */}
+                {/* Per-Core ambient halo */}
                 <motion.div
                   aria-hidden
                   style={{
@@ -336,7 +339,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
 
                 <motion.div
                   animate={{
-                    scale: isHover ? 1.22 : 1,
+                    scale: isHover ? 1.18 : 1,
                     y: [0, -3, 0],
                   }}
                   transition={{
@@ -348,50 +351,30 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   <Orb world={w} size={120} />
                 </motion.div>
 
-                {/* Persistent label — colour name above (eyebrow style),
-                    world title below the orb. Always visible at low
-                    opacity, lifted to full on hover. */}
+                {/* Single label below — number + full title in core colour.
+                    Wraps to two lines on long titles, centred under orb. */}
                 <motion.div
                   aria-hidden
-                  animate={{ opacity: isHover ? 1 : 0.58 }}
+                  animate={{ opacity: isHover ? 1 : 0.6, y: isHover ? -1 : 0 }}
                   transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   style={{
                     position: "absolute",
                     left: "50%",
-                    bottom: "calc(100% + 8px)",
+                    top: "calc(100% + 14px)",
                     transform: "translateX(-50%)",
-                    fontSize: "clamp(8px, 0.6vw, 10px)",
-                    letterSpacing: "0.32em",
+                    width: "clamp(120px, 14vw, 180px)",
+                    fontSize: "clamp(9px, 0.7vw, 10.5px)",
+                    letterSpacing: "0.24em",
                     textTransform: "uppercase",
                     color: w.color.hex,
                     fontWeight: 500,
-                    whiteSpace: "nowrap",
+                    textAlign: "center",
+                    lineHeight: 1.4,
                     pointerEvents: "none",
                     textShadow: "0 1px 12px rgba(0,0,0,0.85)",
                   }}
                 >
-                  {w.number} · {w.color.name}
-                </motion.div>
-
-                <motion.div
-                  aria-hidden
-                  animate={{ opacity: isHover ? 1 : 0.78, y: isHover ? -1 : 0 }}
-                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                  style={{
-                    position: "absolute",
-                    left: "50%",
-                    top: "calc(100% + 10px)",
-                    transform: "translateX(-50%)",
-                    fontSize: "clamp(10px, 0.78vw, 12.5px)",
-                    letterSpacing: "-0.005em",
-                    color: "white",
-                    fontWeight: 400,
-                    whiteSpace: "nowrap",
-                    pointerEvents: "none",
-                    textShadow: "0 1px 10px rgba(0,0,0,0.9)",
-                  }}
-                >
-                  {w.title[lang]}
+                  {w.number} · {w.title[lang]}
                 </motion.div>
               </Link>
             </motion.div>
@@ -451,7 +434,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       <motion.div
         style={{
           position: "absolute",
-          zIndex: 9,
+          zIndex: 7,
           x: symX,
           y: symY,
           left: "50%",
@@ -544,7 +527,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{
               fontSize: "clamp(11px,0.9vw,12px)",
               lineHeight: 1.85,
-              color: "rgba(255,255,255,0.28)",
+              color: "rgba(255,255,255,0.3)",
               fontWeight: 300,
               textShadow: ts,
               letterSpacing: "0.02em",
@@ -556,7 +539,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.div>
       </div>
 
-      {/* Trimmed bottom fade — less heavy black */}
       <div
         style={{
           position: "absolute",

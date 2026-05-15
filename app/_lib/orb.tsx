@@ -42,18 +42,13 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
     : world?.color.deep?.replace(",1)", ",0.05)") ?? "rgba(0,0,0,0.05)";
   const m = world?.motion;
 
-  // Shared chrome sphere PNG used as fallback when a Core has no native orb.
+  // central.png is the Central Core's own PNG — same status as a World's
+  // own PNG (halo + colour already baked in). We treat it as an "own
+  // image" too, so it does not get the chrome tint or circular clip.
   const SHARED_ORB = "/images/worlds/central.png";
   const orbImage = image ?? world?.image ?? SHARED_ORB;
-  // When the Core supplies its own PNG, the image already carries the colour
-  // and the chrome tint would over-saturate it. Tint only when we are
-  // displaying the shared chrome fallback.
-  const usesOwnImage = Boolean(image ?? world?.image);
-  const tintColor = isCentral
-    ? "#a8332a"
-    : usesOwnImage
-    ? null
-    : world?.color.hex;
+  const usesOwnImage = isCentral || Boolean(image ?? world?.image);
+  const tintColor = usesOwnImage ? null : world?.color.hex;
   const tintOpacity = isCentral
     ? 0.55
     : world?.slug === "luxury-lifestyle-brands" || world?.slug === "architecture-spatial-design"
