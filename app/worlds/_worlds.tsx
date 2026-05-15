@@ -222,11 +222,14 @@ export default function WorldsIndex() {
 
         <div
           style={{
-            maxWidth: 1280,
+            maxWidth: 1440,
             margin: "0 auto",
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "clamp(24px,3vw,48px)",
+            // 7 worlds (Universe + 6 cores) — fit in one row on wide
+            // screens for a premium constellation read. Falls back to
+            // 4 / 3 / 2 / 1 column layouts on narrower viewports.
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "clamp(16px,2vw,28px)",
           }}
         >
           {worlds.map((w, i) => (
@@ -244,13 +247,13 @@ export default function WorldsIndex() {
                   flexDirection: "column",
                   alignItems: "center",
                   textAlign: "center",
-                  padding: "clamp(36px,4vw,56px) clamp(20px,3vw,40px)",
+                  padding: "clamp(20px,2.4vw,32px) clamp(12px,1.8vw,24px)",
                   border: "1px solid rgba(255,255,255,0.05)",
-                  borderRadius: 8,
+                  borderRadius: 6,
                   background: "rgba(10,8,6,0.4)",
                   textDecoration: "none",
                   color: "inherit",
-                  transition: "border-color 0.5s, background 0.5s, transform 0.5s",
+                  transition: "border-color 0.5s, background 0.5s",
                   cursor: "pointer",
                 }}
                 onMouseEnter={(e) => {
@@ -262,46 +265,35 @@ export default function WorldsIndex() {
                   e.currentTarget.style.background = "rgba(10,8,6,0.4)";
                 }}
               >
-                <div style={{ width: "clamp(140px,14vw,200px)", height: "clamp(140px,14vw,200px)" }}>
-                  <Orb world={w} size={200} />
+                <div style={{ width: "clamp(90px,9vw,140px)", height: "clamp(90px,9vw,140px)" }}>
+                  <Orb world={w} size={140} />
                 </div>
                 <p
                   style={{
-                    marginTop: "clamp(24px,3vw,36px)",
-                    fontSize: 10,
+                    marginTop: "clamp(16px,2vw,24px)",
+                    fontSize: 9,
                     fontWeight: 500,
-                    letterSpacing: "0.42em",
+                    letterSpacing: "0.34em",
                     textTransform: "uppercase",
                     color: w.color.hex,
+                    margin: "clamp(16px,2vw,24px) 0 0",
                   }}
                 >
-                  {w.number} · {w.color.name}
+                  {w.number}
                 </p>
                 <h3
                   style={{
-                    marginTop: 12,
-                    fontSize: "clamp(1.2rem,1.8vw,1.6rem)",
-                    fontWeight: 400,
-                    lineHeight: 1.15,
-                    letterSpacing: "-0.025em",
+                    marginTop: 8,
+                    fontSize: "clamp(0.92rem,1.05vw,1.1rem)",
+                    fontWeight: 500,
+                    lineHeight: 1.25,
+                    letterSpacing: "0.005em",
                     color: "white",
                     textShadow: ts,
                   }}
                 >
                   {w.title[lang]}
                 </h3>
-                <p
-                  style={{
-                    marginTop: 14,
-                    fontFamily: serif,
-                    fontStyle: "italic",
-                    fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
-                    color: "rgba(255,255,255,0.6)",
-                    maxWidth: 320,
-                  }}
-                >
-                  {w.essence[lang]}
-                </p>
                 <p
                   style={{
                     marginTop: 22,

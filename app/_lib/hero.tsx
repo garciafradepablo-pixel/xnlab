@@ -29,16 +29,23 @@ type HeroCopy = {
 // outermost orb (mult ±3) fits inside a 375px viewport with breathing
 // room: 3·UNIT + ORB/2 must stay under half-viewport minus padding.
 const ORB_SIZE = "clamp(36px,6.4vw,100px)";
+// dy in viewport-height units so the dome's gentle arc scales with the
+// section height. Same numeric values as before (3.5%, 2%, 0.6%).
 const PLAN = [
-  { idx: 0, mult: -3, dy: "3.5%", delay: 2.35 },
-  { idx: 1, mult: -2, dy: "2%",   delay: 2.25 },
-  { idx: 2, mult: -1, dy: "0.6%", delay: 2.15 },
-  { idx: 3, mult: 1,  dy: "0.6%", delay: 2.2  },
-  { idx: 4, mult: 2,  dy: "2%",   delay: 2.3  },
-  { idx: 5, mult: 3,  dy: "3.5%", delay: 2.4  },
+  { idx: 0, mult: -3, dy: 3.5, delay: 2.35 },
+  { idx: 1, mult: -2, dy: 2,   delay: 2.25 },
+  { idx: 2, mult: -1, dy: 0.6, delay: 2.15 },
+  { idx: 3, mult: 1,  dy: 0.6, delay: 2.2  },
+  { idx: 4, mult: 2,  dy: 2,   delay: 2.3  },
+  { idx: 5, mult: 3,  dy: 3.5, delay: 2.4  },
 ];
 const UNIT = "clamp(50px,8.5vw,145px)";
 const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
+// Dome top position: a single source of truth that scales with viewport
+// height — header position on mobile (~100px from top), more centred
+// on tall desktops (~260px). Without this, top:14% looked like a header
+// on phones but left a huge empty gap above the wordmark on desktops.
+const DOME_TOP = "clamp(80px, calc(33svh - 100px), 280px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -227,7 +234,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           position: "absolute",
           zIndex: 8,
           left: "50%",
-          top: "14%",
+          top: DOME_TOP,
           width: CENTRAL_SIZE,
           height: CENTRAL_SIZE,
           transform: "translate(-50%, -50%)",
@@ -341,7 +348,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               position: "absolute",
               zIndex: 9,
               left: leftCalc,
-              top: `calc(14% + ${dy})`,
+              top: `calc(${DOME_TOP} + ${dy}svh)`,
               width: ORB_SIZE,
               height: ORB_SIZE,
               transform: "translate(-50%, -50%)",
@@ -567,7 +574,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
 
       <Dust count={10} opacity={0.07} />
 
-      {/* Bottom copy */}
+      {/* Bottom — strapline + scroll cue stacked in one column so they
+          never collide on short viewports. Single flex container at the
+          bottom of the hero, scroll cue follows the strapline below. */}
       <div
         style={{
           position: "absolute",
@@ -577,7 +586,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingBottom: "clamp(56px,9vh,96px)",
+          paddingBottom: "clamp(20px,3vh,36px)",
+          gap: "clamp(20px,3vh,32px)",
           pointerEvents: "none",
         }}
       >
@@ -615,29 +625,21 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             {copy.s3} {copy.s4}
           </p>
         </motion.div>
-      </div>
 
-      {/* Scroll cue — soft mark inviting the visitor to keep going.
-          A single vertical hairline that breathes, with the word SCROLL
-          set small below it. Sits just above the bottom fade. */}
-      <motion.div
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: "50%",
-          bottom: "clamp(20px,3vh,36px)",
-          transform: "translateX(-50%)",
-          zIndex: 40,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 10,
-          pointerEvents: "none",
-        }}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 1.6, delay: 3.5 }}
-      >
+        {/* Scroll cue. Lives inside the bottom column so it can never
+            overlap the strapline. Hidden on very short heights. */}
+        <motion.div
+          aria-hidden
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 10,
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.6, delay: 3.5 }}
+        >
         <span
           style={{
             fontSize: 9,
@@ -660,7 +662,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           animate={{ scaleY: [1, 0.65, 1], opacity: [0.85, 0.4, 0.85] }}
           transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
         />
-      </motion.div>
+        </motion.div>
+      </div>
 
       <div
         style={{
@@ -669,7 +672,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           left: 0,
           right: 0,
           zIndex: 50,
-          height: "12%",
+          height: "10%",
           background: "linear-gradient(to bottom, transparent, #060606)",
           pointerEvents: "none",
         }}
