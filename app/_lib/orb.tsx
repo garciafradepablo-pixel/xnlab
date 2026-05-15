@@ -94,17 +94,25 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
         willChange: "transform, filter",
       }}
     >
-      {/* Halo — soft coloured glow behind the orb */}
+      {/* Halo — soft coloured breath behind the orb.
+          When a Core supplies its own PNG the glow is already baked into the
+          image, so the CSS halo here is dialled right down to a faint
+          atmospheric breath. The chrome fallback gets a stronger halo
+          because the chrome image alone has no colour around it. */}
       <motion.div
         aria-hidden
-        animate={{ opacity: [0.45, 0.75, 0.45], scale: [1, 1.06, 1] }}
+        animate={
+          usesOwnImage
+            ? { opacity: [0.18, 0.32, 0.18], scale: [1, 1.04, 1] }
+            : { opacity: [0.45, 0.7, 0.45], scale: [1, 1.05, 1] }
+        }
         transition={{ duration: breatheDuration, ease: "easeInOut", repeat: Infinity }}
         style={{
           position: "absolute",
-          inset: "-35%",
+          inset: usesOwnImage ? "-12%" : "-32%",
           borderRadius: "50%",
-          background: `radial-gradient(circle, ${haloColor} 0%, ${deepFade} 45%, transparent 70%)`,
-          filter: "blur(32px)",
+          background: `radial-gradient(circle, ${haloColor} 0%, ${deepFade} 55%, transparent 78%)`,
+          filter: usesOwnImage ? "blur(48px)" : "blur(32px)",
           pointerEvents: "none",
         }}
       />
@@ -126,62 +134,73 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
         }}
       >
         {orbImage ? (
-          // Shared chrome orb image. Same physical object, different energies —
-          // each Core tints it via a colour overlay with mix-blend-mode below.
-          <div style={{ position: "absolute", inset: 0, borderRadius: "50%", overflow: "hidden" }}>
+          usesOwnImage ? (
+            // The Core supplies its own PNG: orb + halo are baked in.
+            // Render as-is, with a faint drop-shadow that just deepens the
+            // image's existing atmosphere. Do NOT clip with borderRadius —
+            // the baked-in glow extends past the sphere.
             <Image
               src={orbImage}
-              alt={isCentral ? "XNLAB Central Core" : world?.title.en ?? "World Core"}
+              alt={world?.title.en ?? (isCentral ? "XNLAB Central Core" : "World Core")}
               fill
               sizes={`${size}px`}
               style={{
                 objectFit: "contain",
-                filter: `drop-shadow(0 0 24px ${haloColor})`,
+                filter: `drop-shadow(0 0 14px ${haloColor})`,
               }}
               priority={isCentral}
             />
-            {/* Colour tint — uses mix-blend-mode so chrome highlights stay
-                bright while the shadows take the Core's hue. Disabled for
-                lifestyle and architecture which read better at chrome. */}
-            {tintColor && (
-              <div
-                aria-hidden
+          ) : (
+            // Chrome fallback — circular clip, colour tint and highlight
+            // pass turn the shared chrome sphere into each Core's energy.
+            <div style={{ position: "absolute", inset: 0, borderRadius: "50%", overflow: "hidden" }}>
+              <Image
+                src={orbImage}
+                alt={isCentral ? "XNLAB Central Core" : world?.title.en ?? "World Core"}
+                fill
+                sizes={`${size}px`}
                 style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  background: tintColor,
-                  mixBlendMode: "color",
-                  opacity: tintOpacity,
-                  pointerEvents: "none",
-                  // Mask softens edges so tint follows the sphere, not a hard square
-                  maskImage:
-                    "radial-gradient(circle at center, black 55%, transparent 75%)",
-                  WebkitMaskImage:
-                    "radial-gradient(circle at center, black 55%, transparent 75%)",
+                  objectFit: "contain",
+                  filter: `drop-shadow(0 0 24px ${haloColor})`,
                 }}
+                priority={isCentral}
               />
-            )}
-            {/* Subtle warm highlight pass — lifts the chrome so it does not
-                disappear into the tint. Only useful on the chrome fallback;
-                a Core's own PNG already carries its highlights. */}
-            {!isCentral && !usesOwnImage && (
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  background:
-                    "radial-gradient(circle at 38% 30%, rgba(255,255,255,0.18) 0%, transparent 28%)",
-                  mixBlendMode: "screen",
-                  pointerEvents: "none",
-                }}
-              />
-            )}
-          </div>
+              {tintColor && (
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    background: tintColor,
+                    mixBlendMode: "color",
+                    opacity: tintOpacity,
+                    pointerEvents: "none",
+                    maskImage:
+                      "radial-gradient(circle at center, black 55%, transparent 75%)",
+                    WebkitMaskImage:
+                      "radial-gradient(circle at center, black 55%, transparent 75%)",
+                  }}
+                />
+              )}
+              {!isCentral && (
+                <div
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    borderRadius: "50%",
+                    background:
+                      "radial-gradient(circle at 38% 30%, rgba(255,255,255,0.18) 0%, transparent 28%)",
+                    mixBlendMode: "screen",
+                    pointerEvents: "none",
+                  }}
+                />
+              )}
+            </div>
+          )
         ) : (
-          // CSS fallback — only renders if the PNG is missing.
+          // CSS fallback — only if no PNG at all.
           <CssOrbFallback world={world} central={isCentral} />
         )}
 
