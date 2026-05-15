@@ -30,12 +30,12 @@ type HeroCopy = {
 // room: 3·UNIT + ORB/2 must stay under half-viewport minus padding.
 const ORB_SIZE = "clamp(36px,6.4vw,100px)";
 const PLAN = [
-  { idx: 0, mult: -3, dy: "3.5%", delay: 1.95 },
-  { idx: 1, mult: -2, dy: "2%",   delay: 1.85 },
-  { idx: 2, mult: -1, dy: "0.6%", delay: 1.75 },
-  { idx: 3, mult: 1,  dy: "0.6%", delay: 1.8  },
-  { idx: 4, mult: 2,  dy: "2%",   delay: 1.9  },
-  { idx: 5, mult: 3,  dy: "3.5%", delay: 2.0  },
+  { idx: 0, mult: -3, dy: "3.5%", delay: 2.35 },
+  { idx: 1, mult: -2, dy: "2%",   delay: 2.25 },
+  { idx: 2, mult: -1, dy: "0.6%", delay: 2.15 },
+  { idx: 3, mult: 1,  dy: "0.6%", delay: 2.2  },
+  { idx: 4, mult: 2,  dy: "2%",   delay: 2.3  },
+  { idx: 5, mult: 3,  dy: "3.5%", delay: 2.4  },
 ];
 const UNIT = "clamp(50px,8.5vw,145px)";
 const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
@@ -238,7 +238,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
           initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.55 }}
+          transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.9 }}
         >
           <Link
             href="/worlds"
@@ -486,7 +486,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.6, delay: 1.2 }}
+          transition={{ duration: 1.4, delay: 0.8 }}
         >
           {copy.eyebrow}
         </motion.p>
@@ -500,9 +500,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             textAlign: "center",
             textShadow: "0 2px 60px rgba(0,0,0,0.85)",
           }}
-          initial={{ opacity: 0, filter: "blur(20px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{ duration: 2.8, ease: [0.22, 1, 0.36, 1], delay: 1.6 }}
+          initial={{ opacity: 0, filter: "blur(22px)", scale: 1.04 }}
+          animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+          transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
         >
           XNLAB
         </motion.h1>
@@ -585,7 +585,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{ textAlign: "center" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.6, delay: 2.6 }}
+          transition={{ duration: 1.6, delay: 2.9 }}
         >
           <p
             style={{
@@ -636,7 +636,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 1.6, delay: 3.0 }}
+        transition={{ duration: 1.6, delay: 3.5 }}
       >
         <span
           style={{
