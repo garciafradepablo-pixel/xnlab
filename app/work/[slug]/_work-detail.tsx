@@ -13,7 +13,7 @@ const ui = {
     notes: "Notes",
     gallery: "Gallery",
     credits: "Credits",
-    contact: "Start a conversation",
+    contact: "Initiate Contact",
     next: "Next world →",
   },
   es: {
@@ -22,7 +22,7 @@ const ui = {
     notes: "Notas",
     gallery: "Galería",
     credits: "Créditos",
-    contact: "Iniciar conversación",
+    contact: "Iniciar Contacto",
     next: "Siguiente mundo →",
   },
 };

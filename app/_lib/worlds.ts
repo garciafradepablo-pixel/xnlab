@@ -3,12 +3,12 @@
 // This file is canonical. Edit here and it propagates through the site.
 
 export type WorldSlug =
-  | "hospitality"
-  | "nightlife"
-  | "lifestyle"
-  | "architecture"
-  | "music"
-  | "digital";
+  | "hospitality-experience"
+  | "nightlife-cultural-events"
+  | "luxury-lifestyle-brands"
+  | "architecture-spatial-design"
+  | "music-cultural-artists"
+  | "cultural-digital-worlds";
 
 export type World = {
   slug: WorldSlug;
@@ -45,7 +45,7 @@ export type World = {
 
 export const worlds: World[] = [
   {
-    slug: "hospitality",
+    slug: "hospitality-experience",
     number: "01",
     color: {
       name: "Amber Gold",
@@ -93,7 +93,7 @@ export const worlds: World[] = [
     },
   },
   {
-    slug: "nightlife",
+    slug: "nightlife-cultural-events",
     number: "02",
     color: {
       name: "Electric Violet",
@@ -141,7 +141,7 @@ export const worlds: World[] = [
     },
   },
   {
-    slug: "lifestyle",
+    slug: "luxury-lifestyle-brands",
     number: "03",
     color: {
       name: "Ivory Pearl",
@@ -189,7 +189,7 @@ export const worlds: World[] = [
     },
   },
   {
-    slug: "architecture",
+    slug: "architecture-spatial-design",
     number: "04",
     color: {
       name: "Mineral Stone Grey",
@@ -237,7 +237,7 @@ export const worlds: World[] = [
     },
   },
   {
-    slug: "music",
+    slug: "music-cultural-artists",
     number: "05",
     color: {
       name: "Midnight Indigo",
@@ -285,7 +285,7 @@ export const worlds: World[] = [
     },
   },
   {
-    slug: "digital",
+    slug: "cultural-digital-worlds",
     number: "06",
     color: {
       name: "Iridescent Cyan",

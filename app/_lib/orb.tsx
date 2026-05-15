@@ -48,7 +48,7 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
   const orbImage = image ?? world?.image ?? SHARED_ORB;
   // Crimson dark tint for the Central Core; world.color.hex for each Core
   const tintColor = isCentral ? "#a8332a" : world?.color.hex;
-  const tintOpacity = isCentral ? 0.55 : world?.slug === "lifestyle" || world?.slug === "architecture" ? 0.32 : 0.5;
+  const tintOpacity = isCentral ? 0.55 : world?.slug === "luxury-lifestyle-brands" || world?.slug === "architecture-spatial-design" ? 0.32 : 0.5;
 
   // Per-pulse animation for the orb itself
   const breatheScale = m?.breatheScale ?? (isCentral ? [1, 1.025] : [1, 1.03]);

@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { projects } from "./work/data";
 import { worlds } from "./_lib/worlds";
+import { records } from "./_lib/lab-records";
 
 const SITE = "https://xnlab.io";
 
@@ -94,5 +95,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.8,
   }));
-  return [home, worldsIndex, ...worldsList, about, process, collaboration, manifesto, atmospheres, nowPage, references, workIndex, ...works, contact, imprint];
+  const labRecordsIndex: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/lab-records`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.85,
+  };
+  const labRecords: MetadataRoute.Sitemap = records.map((r) => ({
+    url: `${SITE}/lab-records/${r.slug}`,
+    lastModified: new Date(r.date),
+    changeFrequency: "yearly",
+    priority: 0.7,
+  }));
+  return [home, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, about, process, collaboration, manifesto, atmospheres, nowPage, references, workIndex, ...works, contact, imprint];
 }

@@ -8,12 +8,12 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 
 - [Home](https://xnlab.io): Landing — wordmark, four disciplines, selected works summary, contact.
 - [The Universe](https://xnlab.io/worlds): Entry to the XNLAB universe. Mythology (Central Core, ORUN, CHIO, anomalies) and the six World Cores.
-- [World 01 — Hospitality & Experience](https://xnlab.io/worlds/hospitality): Amber Gold. Hospitality brand systems, atmosphere design, restaurant identity.
-- [World 02 — Nightlife & Cultural Events](https://xnlab.io/worlds/nightlife): Electric Violet. Club identity, event direction, cultural venue branding.
-- [World 03 — Luxury & Lifestyle Brands](https://xnlab.io/worlds/lifestyle): Ivory Pearl. Fashion identity, perfume direction, editorial systems.
-- [World 04 — Architecture & Spatial Design](https://xnlab.io/worlds/architecture): Mineral Stone Grey. Architectural brand systems, spatial identity.
-- [World 05 — Music & Cultural Artists](https://xnlab.io/worlds/music): Midnight Indigo. Artist identity, album direction, tour aesthetic.
-- [World 06 — Cultural & Digital Worlds](https://xnlab.io/worlds/digital): Iridescent Cyan. Digital identity, AI-native direction, generative aesthetics.
+- [World 01 — Hospitality & Experience](https://xnlab.io/worlds/hospitality-experience): Amber Gold. Hospitality brand systems, atmosphere design, restaurant identity.
+- [World 02 — Nightlife & Cultural Events](https://xnlab.io/worlds/nightlife-cultural-events): Electric Violet. Club identity, event direction, cultural venue branding.
+- [World 03 — Luxury & Lifestyle Brands](https://xnlab.io/worlds/luxury-lifestyle-brands): Ivory Pearl. Fashion identity, perfume direction, editorial systems.
+- [World 04 — Architecture & Spatial Design](https://xnlab.io/worlds/architecture-spatial-design): Mineral Stone Grey. Architectural brand systems, spatial identity.
+- [World 05 — Music & Cultural Artists](https://xnlab.io/worlds/music-cultural-artists): Midnight Indigo. Artist identity, album direction, tour aesthetic.
+- [World 06 — Cultural & Digital Worlds](https://xnlab.io/worlds/cultural-digital-worlds): Iridescent Cyan. Digital identity, AI-native direction, generative aesthetics.
 - [Selected Works](https://xnlab.io/work): Case studies (currently 3 internal studies; real client work in progress).
 - [About](https://xnlab.io/about): Studio philosophy, approach, beliefs, practice areas.
 - [Process](https://xnlab.io/process): How we work in four movements — Listen, Map atmospheres, Build the system, Live with it. Includes tangible deliverables.
@@ -21,6 +21,7 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 - [Manifesto](https://xnlab.io/manifesto): Six statements on worldbuilding, atmosphere and restraint.
 - [Atmospheres](https://xnlab.io/atmospheres): Six sensory vignettes — one per World Core. Prose snapshots of the rooms and moments we design.
 - [Now](https://xnlab.io/now): A live note from inside the studio. What we are working on, reading, listening to, observing. Updated periodically.
+- [Lab Records](https://xnlab.io/lab-records): Editorial cultural observations from inside the studio. Long-form reading on hospitality branding, cinematic luxury, music worldbuilding, atmospheric design.
 - [References / Library](https://xnlab.io/references): Curated set of books, architects, films, hotels and makers that inform the studio's work.
 - [Contact](https://xnlab.io/contact): Inquiry form. By appointment only.
 - [Colophon](https://xnlab.io/imprint): Studio details, typography credits, technical stack, brief privacy and terms notes.

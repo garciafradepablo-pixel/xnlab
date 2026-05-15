@@ -13,7 +13,7 @@ const en = {
   links: [
     { label: "Selected Works", href: "/work" },
     { label: "About the Studio", href: "/about" },
-    { label: "Start a conversation", href: "/contact" },
+    { label: "Initiate Contact", href: "/contact" },
   ],
 };
 
@@ -27,7 +27,7 @@ const es = {
   links: [
     { label: "Proyectos Seleccionados", href: "/work" },
     { label: "Sobre el Estudio", href: "/about" },
-    { label: "Iniciar conversación", href: "/contact" },
+    { label: "Iniciar Contacto", href: "/contact" },
   ],
 };
 

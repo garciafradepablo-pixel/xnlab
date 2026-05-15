@@ -60,7 +60,7 @@ const en = {
   closingH: "Worlds are not built fast.",
   closingBody:
     "If you have a brand that wants to be felt — a hotel, a club, an architecture, an identity — we would like to hear about it.",
-  cta: "Start a conversation",
+  cta: "Initiate Contact",
   back: "← Home",
 };
 
@@ -119,7 +119,7 @@ const es = {
   closingH: "Los mundos no se construyen rápido.",
   closingBody:
     "Si tienes una marca que quiere ser sentida — un hotel, un club, una arquitectura, una identidad — nos gustaría saber de ella.",
-  cta: "Iniciar conversación",
+  cta: "Iniciar Contacto",
   back: "← Inicio",
 };
 

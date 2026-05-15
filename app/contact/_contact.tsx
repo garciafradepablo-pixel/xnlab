@@ -8,60 +8,82 @@ import { WordmarkLink } from "../_lib/wordmark";
 import { sendContactEmail } from "./actions";
 
 const en = {
-  eyebrow: "Start a Conversation",
-  h1a: "Build something",
-  h1b: "unforgettable.",
+  eyebrow: "Initiate Transmission",
+  h1a: "Open the",
+  h1b: "channel.",
   lead:
-    "We collaborate with a small number of clients each year. Tell us about your project — even if it's only an instinct so far.",
+    "For selected brands, cultural projects and visual systems. We collaborate with a small number of clients each year — tell us what you are building.",
   fields: {
     name: "Name",
     email: "Email",
-    company: "Studio / Brand (optional)",
-    type: "Discipline",
-    msg: "Tell us about your project",
+    brand: "Brand / Project",
+    website: "Website or Instagram",
+    world: "What world are you building?",
+    budget: "Budget range",
+    msg: "Tell us more",
   },
-  types: [
-    "Hospitality Systems",
-    "Nightlife Atmospheres",
-    "Emotional Architecture",
-    "Living Identities",
+  worlds: [
+    "Hospitality & Experience",
+    "Nightlife & Cultural Events",
+    "Luxury & Lifestyle Brands",
+    "Architecture & Spatial Design",
+    "Music & Cultural Artists",
+    "Cultural & Digital Worlds",
     "Other",
   ],
-  submit: "Send →",
-  sending: "Sending…",
+  budgets: [
+    "Under $1,000",
+    "$1,000 – $3,000",
+    "$3,000 – $7,000",
+    "$7,000 – $15,000",
+    "$15,000+",
+  ],
+  submit: "Initiate Contact →",
+  sending: "Transmitting…",
   privacy:
-    "Your message reaches studio@xnlab.io directly. We never share your details.",
-  okSent: "Sent — we will be in touch.",
+    "Your message reaches studio@xnlab.io directly. We read every inquiry. We only respond when there is a real match.",
+  okSent: "Received. We will respond when the right time arrives.",
   okMailto: "Email opened — check your mail client.",
   back: "← Home",
   studioLabel: "Studio",
   studioInfo: ["By appointment only", "studio@xnlab.io"],
 };
 const es = {
-  eyebrow: "Iniciar Conversación",
-  h1a: "Construir algo",
-  h1b: "inolvidable.",
+  eyebrow: "Iniciar Transmisión",
+  h1a: "Abrir el",
+  h1b: "canal.",
   lead:
-    "Colaboramos con un número reducido de clientes cada año. Cuéntanos sobre tu proyecto — aunque solo sea una intuición todavía.",
+    "Para marcas seleccionadas, proyectos culturales y sistemas visuales. Colaboramos con un número reducido de clientes cada año — cuéntanos qué estás construyendo.",
   fields: {
     name: "Nombre",
     email: "Email",
-    company: "Estudio / Marca (opcional)",
-    type: "Disciplina",
-    msg: "Cuéntanos sobre tu proyecto",
+    brand: "Marca / Proyecto",
+    website: "Web o Instagram",
+    world: "¿Qué mundo estás construyendo?",
+    budget: "Presupuesto",
+    msg: "Cuéntanos más",
   },
-  types: [
-    "Hospitality Systems",
-    "Nightlife Atmospheres",
-    "Emotional Architecture",
-    "Living Identities",
+  worlds: [
+    "Hospitality & Experience",
+    "Nightlife & Cultural Events",
+    "Luxury & Lifestyle Brands",
+    "Architecture & Spatial Design",
+    "Music & Cultural Artists",
+    "Cultural & Digital Worlds",
     "Otro",
   ],
-  submit: "Enviar →",
-  sending: "Enviando…",
+  budgets: [
+    "Menos de $1.000",
+    "$1.000 – $3.000",
+    "$3.000 – $7.000",
+    "$7.000 – $15.000",
+    "$15.000+",
+  ],
+  submit: "Iniciar Contacto →",
+  sending: "Transmitiendo…",
   privacy:
-    "Tu mensaje llega directamente a studio@xnlab.io. No compartimos tus datos.",
-  okSent: "Enviado — te responderemos pronto.",
+    "Tu mensaje llega directamente a studio@xnlab.io. Leemos cada solicitud. Solo respondemos cuando hay un match real.",
+  okSent: "Recibido. Responderemos cuando llegue el momento adecuado.",
   okMailto: "Email abierto — revisa tu cliente de correo.",
   back: "← Inicio",
   studioLabel: "Estudio",
@@ -71,20 +93,24 @@ const es = {
 type FormState = {
   name: string;
   email: string;
-  company: string;
-  type: string;
+  brand: string;
+  website: string;
+  world: string;
+  budget: string;
   msg: string;
 };
 
-const empty: FormState = { name: "", email: "", company: "", type: "", msg: "" };
+const empty: FormState = { name: "", email: "", brand: "", website: "", world: "", budget: "", msg: "" };
 
 function buildMailto(f: FormState) {
-  const subject = `XNLAB Inquiry — ${f.type || "General"} — ${f.name || "Unknown"}`;
+  const subject = `XNLAB Transmission — ${f.world || "General"} — ${f.name || "Unknown"}`;
   const lines = [
     `Name: ${f.name}`,
     `Email: ${f.email}`,
-    f.company ? `Studio/Brand: ${f.company}` : null,
-    `Discipline: ${f.type || "—"}`,
+    f.brand ? `Brand / Project: ${f.brand}` : null,
+    f.website ? `Website / Instagram: ${f.website}` : null,
+    `World: ${f.world || "—"}`,
+    f.budget ? `Budget: ${f.budget}` : null,
     "",
     f.msg,
   ].filter(Boolean) as string[];
@@ -314,55 +340,100 @@ export default function Contact() {
             </R>
           </div>
 
-          <R delay={0.1}>
-            <label style={labelStyle} htmlFor="company">
-              {t.fields.company}
-            </label>
-            <input
-              id="company"
-              name="company"
-              value={form.company}
-              onChange={upd("company")}
-              autoComplete="organization"
-              style={fieldStyle}
-              onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
-              onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
-            />
-          </R>
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+            <R delay={0.1}>
+              <label style={labelStyle} htmlFor="brand">
+                {t.fields.brand}
+              </label>
+              <input
+                id="brand"
+                name="brand"
+                value={form.brand}
+                onChange={upd("brand")}
+                autoComplete="organization"
+                style={fieldStyle}
+                onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+                onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+              />
+            </R>
+            <R delay={0.11}>
+              <label style={labelStyle} htmlFor="website">
+                {t.fields.website}
+              </label>
+              <input
+                id="website"
+                name="website"
+                value={form.website}
+                onChange={upd("website")}
+                autoComplete="url"
+                placeholder="@username · website.com"
+                style={fieldStyle}
+                onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+                onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+              />
+            </R>
+          </div>
 
-          <R delay={0.12}>
-            <label style={labelStyle} htmlFor="type">
-              {t.fields.type}
-            </label>
-            <select
-              id="type"
-              name="type"
-              value={form.type}
-              onChange={upd("type")}
-              style={{
-                ...fieldStyle,
-                appearance: "none",
-                WebkitAppearance: "none",
-                MozAppearance: "none",
-                cursor: "pointer",
-                backgroundImage:
-                  "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
-                backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
-                backgroundSize: "6px 6px",
-                backgroundRepeat: "no-repeat",
-                color: form.type ? "white" : "rgba(255,255,255,0.45)",
-              }}
-            >
-              <option value="" style={{ background: "#060606" }}>
-                —
-              </option>
-              {t.types.map((opt) => (
-                <option key={opt} value={opt} style={{ background: "#060606" }}>
-                  {opt}
-                </option>
-              ))}
-            </select>
-          </R>
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+            <R delay={0.12}>
+              <label style={labelStyle} htmlFor="world">
+                {t.fields.world}
+              </label>
+              <select
+                id="world"
+                name="world"
+                value={form.world}
+                onChange={upd("world")}
+                style={{
+                  ...fieldStyle,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  cursor: "pointer",
+                  backgroundImage:
+                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
+                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
+                  backgroundSize: "6px 6px",
+                  backgroundRepeat: "no-repeat",
+                  color: form.world ? "white" : "rgba(255,255,255,0.45)",
+                }}
+              >
+                <option value="" style={{ background: "#060606" }}>—</option>
+                {t.worlds.map((opt) => (
+                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
+                ))}
+              </select>
+            </R>
+            <R delay={0.13}>
+              <label style={labelStyle} htmlFor="budget">
+                {t.fields.budget}
+              </label>
+              <select
+                id="budget"
+                name="budget"
+                value={form.budget}
+                onChange={upd("budget")}
+                style={{
+                  ...fieldStyle,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  cursor: "pointer",
+                  backgroundImage:
+                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
+                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
+                  backgroundSize: "6px 6px",
+                  backgroundRepeat: "no-repeat",
+                  color: form.budget ? "white" : "rgba(255,255,255,0.45)",
+                }}
+              >
+                <option value="" style={{ background: "#060606" }}>—</option>
+                {t.budgets.map((opt) => (
+                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
+                ))}
+              </select>
+            </R>
+          </div>
 
           <R delay={0.14}>
             <label style={labelStyle} htmlFor="msg">

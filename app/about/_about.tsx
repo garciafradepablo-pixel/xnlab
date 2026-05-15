@@ -33,7 +33,7 @@ const en = {
   contactH: "By appointment only.",
   contactBody:
     "We collaborate with a small group of clients each year. If our work resonates, we'd like to hear from you.",
-  cta: "Start a conversation",
+  cta: "Initiate Contact",
   back: "← Home",
   studio: "Studio",
 };
@@ -66,7 +66,7 @@ const es = {
   contactH: "Solo con cita previa.",
   contactBody:
     "Colaboramos con un grupo reducido de clientes cada año. Si nuestro trabajo resuena, nos gustaría saber de ti.",
-  cta: "Iniciar conversación",
+  cta: "Iniciar Contacto",
   back: "← Inicio",
   studio: "Estudio",
 };

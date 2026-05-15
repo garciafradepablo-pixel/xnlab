@@ -56,7 +56,7 @@ const en = {
   closingH: "Ready when you are.",
   closingBody:
     "If the notes above describe the kind of collaboration you are looking for, we would like to hear about your project.",
-  cta: "Start a conversation",
+  cta: "Initiate Contact",
   back: "← Home",
 };
 
@@ -111,7 +111,7 @@ const es = {
   closingH: "Listos cuando lo estés.",
   closingBody:
     "Si las notas de arriba describen el tipo de colaboración que buscas, nos gustaría saber de tu proyecto.",
-  cta: "Iniciar conversación",
+  cta: "Iniciar Contacto",
   back: "← Inicio",
 };
 

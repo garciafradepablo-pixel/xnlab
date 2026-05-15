@@ -21,7 +21,7 @@ const en = {
   ctaH: "Cross the threshold.",
   ctaBody:
     "If you have a brand, a venue, a film, an artist or a digital world that belongs inside this universe — we would like to hear about it.",
-  cta: "Start a conversation",
+  cta: "Initiate Contact",
   back: "← Home",
 };
 
@@ -39,7 +39,7 @@ const es = {
   ctaH: "Cruza el umbral.",
   ctaBody:
     "Si tienes una marca, un local, una película, un artista o un mundo digital que pertenezca a este universo — nos gustaría saber de él.",
-  cta: "Iniciar conversación",
+  cta: "Iniciar Contacto",
   back: "← Inicio",
 };
 

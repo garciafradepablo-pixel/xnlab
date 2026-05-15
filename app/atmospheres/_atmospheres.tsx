@@ -13,7 +13,7 @@ type Vignette = {
 
 const vignettes: Vignette[] = [
   {
-    worldSlug: "hospitality",
+    worldSlug: "hospitality-experience",
     title: { en: "The corridor before the room", es: "El pasillo antes de la habitación" },
     body: {
       en: "Wool underfoot. Light no brighter than a candle three rooms away. The wallpaper has been touched a thousand times and remembers each one. A guest who has not yet seen the room already knows how it will feel. The hotel has done its first work before anyone has spoken.",
@@ -21,7 +21,7 @@ const vignettes: Vignette[] = [
     },
   },
   {
-    worldSlug: "nightlife",
+    worldSlug: "nightlife-cultural-events",
     title: { en: "Three in the morning, second room", es: "Las tres de la mañana, segunda sala" },
     body: {
       en: "The bass has dropped two semitones since midnight. The smoke is no longer decoration — it is the air. Strangers are easier than they have been all year. The bouncer at the threshold did one thing perfectly: he decided this would be the kind of night you cannot describe tomorrow. He was right.",
@@ -29,7 +29,7 @@ const vignettes: Vignette[] = [
     },
   },
   {
-    worldSlug: "lifestyle",
+    worldSlug: "luxury-lifestyle-brands",
     title: { en: "Champagne paper, opened slowly", es: "Papel champán, abierto despacio" },
     body: {
       en: "There is one fold. Then another. The tissue inside has been pressed by a hand, not a machine. The bottle weighs more than it should. The label has been printed on the back so that when you tilt the glass, the brand reads itself to you in reverse. Restraint, made expensive.",
@@ -37,7 +37,7 @@ const vignettes: Vignette[] = [
     },
   },
   {
-    worldSlug: "architecture",
+    worldSlug: "architecture-spatial-design",
     title: { en: "Marble at the first light", es: "Mármol a primera luz" },
     body: {
       en: "Six in the morning. The stone has not yet been warmed by the day. The shadow of the column is a single dark line across the floor. There is no music, no voice, no movement. The room is doing its full work and asking nothing of you. Architecture, when good, is a room that does not need you.",
@@ -45,7 +45,7 @@ const vignettes: Vignette[] = [
     },
   },
   {
-    worldSlug: "music",
+    worldSlug: "music-cultural-artists",
     title: { en: "Last song of the album", es: "Última canción del álbum" },
     body: {
       en: "The reverb tail is longer than the song. The room where the record was made was old and small and could not be replaced. The artist who wrote the album never described what it was about and never had to. You drive home with it on and arrive at a different version of where you live.",
@@ -53,7 +53,7 @@ const vignettes: Vignette[] = [
     },
   },
   {
-    worldSlug: "digital",
+    worldSlug: "cultural-digital-worlds",
     title: { en: "An interface that refracts", es: "Una interfaz que refracta" },
     body: {
       en: "The cursor leaves a fragment behind it. The page reorders itself slightly each time it is opened. The brand has not chosen a single typeface — it lets the system pick from a small family, and the choice becomes a signature. Identity here is not a logo. It is a behaviour you can recognise in the dark.",

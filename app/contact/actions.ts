@@ -5,8 +5,10 @@ import { Resend } from "resend";
 export type ContactInput = {
   name: string;
   email: string;
-  company?: string;
-  type?: string;
+  brand?: string;
+  website?: string;
+  world?: string;
+  budget?: string;
   msg: string;
   _gotcha?: string;
 };
@@ -35,12 +37,14 @@ export async function sendContactEmail(data: ContactInput): Promise<ContactResul
     return { ok: false, useMailto: true, reason: "no_backend" };
   }
 
-  const subject = `XNLAB Inquiry — ${data.type || "General"} — ${data.name || "Unknown"}`;
+  const subject = `XNLAB Transmission — ${data.world || "General"} — ${data.name || "Unknown"}`;
   const text = [
     `Name: ${data.name}`,
     `Email: ${data.email}`,
-    data.company ? `Studio/Brand: ${data.company}` : null,
-    `Discipline: ${data.type || "—"}`,
+    data.brand ? `Brand / Project: ${data.brand}` : null,
+    data.website ? `Website / Instagram: ${data.website}` : null,
+    `World: ${data.world || "—"}`,
+    data.budget ? `Budget: ${data.budget}` : null,
     "",
     data.msg,
   ]

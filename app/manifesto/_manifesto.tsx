@@ -17,7 +17,7 @@ const en = {
     "Worlds are built slowly. We are patient.",
   ],
   closing: "Read again, slowly.",
-  cta: "Start a conversation",
+  cta: "Initiate Contact",
   back: "← Home",
 };
 
@@ -33,7 +33,7 @@ const es = {
     "Los mundos se construyen despacio. Somos pacientes.",
   ],
   closing: "Léelo otra vez, despacio.",
-  cta: "Iniciar conversación",
+  cta: "Iniciar Contacto",
   back: "← Inicio",
 };
 
