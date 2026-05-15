@@ -83,8 +83,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       style={{
         position: "relative",
         width: "100%",
-        height: "100svh",
-        minHeight: 640,
+        // 100svh on regular phones, capped at 880px on tall viewports
+        // so the hero never grows past a comfortable luxury frame.
+        height: "min(100svh, 880px)",
+        minHeight: 560,
         overflow: "hidden",
         background: "#060402",
       }}
@@ -377,21 +379,20 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   outline: "none",
                 }}
               >
-                {/* Per-Core ambient halo */}
+                {/* Per-Core ambient halo — uses box-shadow on a circle
+                    so the glow follows the orb exactly. Avoids the
+                    rectangular bleed iOS Safari produces when blurring
+                    a square background. */}
                 <motion.div
                   aria-hidden
                   style={{
                     position: "absolute",
-                    inset: "-32%",
+                    inset: 0,
                     borderRadius: "50%",
-                    background: `radial-gradient(circle, ${w.color.glow} 0%, ${w.color.deep.replace(
-                      ",1)",
-                      ",0.04)"
-                    )} 50%, transparent 75%)`,
-                    filter: "blur(22px)",
+                    boxShadow: `0 0 24px 2px ${w.color.glow}, 0 0 56px 6px ${w.color.glow}`,
                     pointerEvents: "none",
                   }}
-                  animate={{ opacity: isHover ? 0.95 : dimmed ? 0.1 : 0.22 }}
+                  animate={{ opacity: isHover ? 1 : dimmed ? 0.08 : 0.35 }}
                   transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                 />
 
@@ -467,7 +468,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         );
       })}
 
-      {/* LAYER 3 — XNLAB wordmark */}
+      {/* LAYER 3 — XNLAB wordmark. Pulled a touch above the visual centre
+          on shorter viewports so it sits closer to the dome, removing the
+          empty zone between them. Falls back to centred on tall screens. */}
       <div
         style={{
           position: "absolute",
@@ -478,6 +481,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
+          paddingBottom: "clamp(0px, 8svh, 80px)",
         }}
       >
         <motion.p

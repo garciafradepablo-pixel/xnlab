@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -57,6 +58,9 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState<MenuKey | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 80);
@@ -83,6 +87,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
   const isMenuOpen = open !== null;
 
   return (
+    <>
     <header
       onMouseLeave={() => setOpen(null)}
       style={{
@@ -303,7 +308,13 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
         )}
       </AnimatePresence>
 
-      {/* Mobile drawer — full screen, stacked */}
+    </header>
+
+    {/* Mobile drawer — portalled to body so it escapes the header's
+        backdrop-filter containing block. Without the portal, iOS Safari
+        confined the fixed drawer to the 64px header rectangle and the
+        menu appeared empty. */}
+    {mounted && createPortal(
       <AnimatePresence>
         {mobileOpen && (
           <motion.div
@@ -318,6 +329,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               left: 0,
               right: 0,
               bottom: 0,
+              zIndex: 199,
               background: "rgba(4,3,2,0.98)",
               backdropFilter: "blur(32px)",
               WebkitBackdropFilter: "blur(32px)",
@@ -357,8 +369,10 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
             </div>
           </motion.div>
         )}
-      </AnimatePresence>
-    </header>
+      </AnimatePresence>,
+      document.body
+    )}
+    </>
   );
 }
 
@@ -374,22 +388,25 @@ function MobileSection({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: 28, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 22 }}>
+    <div style={{ marginBottom: 24, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 20 }}>
       <Link
         href={href}
         onClick={onClose}
         style={{
-          display: "block",
-          fontSize: 13,
-          letterSpacing: "0.28em",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          fontSize: 12,
+          letterSpacing: "0.32em",
           textTransform: "uppercase",
           color: "white",
           textDecoration: "none",
           fontWeight: 500,
-          marginBottom: 16,
+          marginBottom: 14,
         }}
       >
-        {title}
+        <span>{title}</span>
+        <span style={{ color: "rgba(232,183,131,0.85)", fontSize: 14, fontWeight: 400 }}>→</span>
       </Link>
       <div>{children}</div>
     </div>
@@ -421,13 +438,14 @@ function MenuCard({
       onClick={onSelect}
       style={{
         display: "block",
-        padding: compact ? "12px 14px" : "clamp(16px,1.8vw,24px) clamp(16px,1.8vw,24px)",
-        background: "rgba(255,255,255,0.025)",
-        border: "1px solid rgba(255,255,255,0.05)",
-        borderRadius: 4,
+        padding: compact ? "14px 16px" : "clamp(16px,1.8vw,24px) clamp(16px,1.8vw,24px)",
+        background: "rgba(255,255,255,0.02)",
+        border: "1px solid rgba(255,255,255,0.06)",
+        borderRadius: 6,
         textDecoration: "none",
         color: "inherit",
         transition: "background 0.3s, border-color 0.3s",
+        minHeight: compact ? 70 : undefined,
       }}
       onMouseEnter={(e) => {
         e.currentTarget.style.background = "rgba(255,255,255,0.055)";
