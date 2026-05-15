@@ -150,7 +150,9 @@ export default function WorldsIndex() {
       <section style={{ position: "relative", padding: "clamp(48px,7vw,120px) clamp(24px,7vw,96px) clamp(72px,10vw,140px)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr", gap: "clamp(40px,6vw,80px)", alignItems: "center" }} className="md:grid-cols-2">
           <div style={{ display: "flex", justifyContent: "center" }}>
-            <Orb central size={320} />
+            <div style={{ width: "clamp(240px,26vw,360px)", height: "clamp(240px,26vw,360px)" }}>
+              <Orb central size={360} />
+            </div>
           </div>
           <div>
             <p style={{ ...labelStyle, marginBottom: 24 }}>{t.centralLabel}</p>
@@ -260,7 +262,9 @@ export default function WorldsIndex() {
                   e.currentTarget.style.background = "rgba(10,8,6,0.4)";
                 }}
               >
-                <Orb world={w} size={160} />
+                <div style={{ width: "clamp(140px,14vw,200px)", height: "clamp(140px,14vw,200px)" }}>
+                  <Orb world={w} size={200} />
+                </div>
                 <p
                   style={{
                     marginTop: "clamp(24px,3vw,36px)",

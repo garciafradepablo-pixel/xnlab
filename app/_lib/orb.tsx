@@ -84,8 +84,8 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
       transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
       style={{
         position: "relative",
-        width: size,
-        height: size,
+        width: "100%",
+        height: "100%",
         willChange: "transform, filter",
       }}
     >
@@ -199,22 +199,6 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
           <CssOrbFallback world={world} central={isCentral} />
         )}
 
-        {/* Refract overlay only for the digital Core, even on top of an image */}
-        {pulse === "refract" && (
-          <motion.div
-            aria-hidden
-            animate={{ opacity: [0, 0.2, 0, 0.15, 0], scale: [0.95, 1.05, 1, 1.02, 0.98] }}
-            transition={{ duration: breatheDuration * 1.3, repeat: Infinity, ease: "easeInOut" }}
-            style={{
-              position: "absolute",
-              inset: 0,
-              borderRadius: "50%",
-              background: `conic-gradient(from 0deg, ${world?.color.core}, transparent 30%, ${world?.color.glow}, transparent 70%, ${world?.color.core})`,
-              mixBlendMode: "screen",
-              pointerEvents: "none",
-            }}
-          />
-        )}
       </motion.div>
     </motion.div>
   );

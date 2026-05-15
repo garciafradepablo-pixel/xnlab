@@ -463,8 +463,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{
               objectFit: "contain",
               mixBlendMode: "screen",
-              opacity: 0.32,
-              filter: "drop-shadow(0 0 14px rgba(180,150,120,0.3))",
+              opacity: 0.18,
+              filter: "drop-shadow(0 0 10px rgba(180,150,120,0.22))",
             }}
           />
         </motion.div>

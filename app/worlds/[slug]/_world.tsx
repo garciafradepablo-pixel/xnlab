@@ -111,8 +111,8 @@ export default function WorldDetail({ world }: { world: World }) {
         }}
       >
         <Dust count={12} opacity={0.06} />
-        <div style={{ marginBottom: "clamp(36px,5vw,60px)" }}>
-          <Orb world={world} size={260} />
+        <div style={{ marginBottom: "clamp(36px,5vw,60px)", width: "clamp(220px,22vw,320px)", height: "clamp(220px,22vw,320px)" }}>
+          <Orb world={world} size={320} />
         </div>
         <p style={{ ...labelStyle, marginBottom: 24, color: c.hex, position: "relative", zIndex: 5 }}>
           {t.eyebrowPrefix} {world.number} · {c.name}
