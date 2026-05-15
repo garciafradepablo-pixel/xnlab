@@ -130,65 +130,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
       />
 
-      {/* LAB X — small eyebrow above the Central Core. The Core's name
-          as the studio's axis, framed by hairlines so it reads as an
-          editorial mark, not a label. Static wrapper owns the centring
-          translate; motion.div inside owns opacity + y so framer never
-          overwrites the centring. */}
-      <div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "13%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 9,
-          pointerEvents: "none",
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, y: -6 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "clamp(10px, 1.4vw, 20px)",
-          }}
-        >
-          <span
-            aria-hidden
-            style={{
-              display: "inline-block",
-              width: "clamp(28px, 4vw, 56px)",
-              height: 1,
-              background: "linear-gradient(to right, transparent 0%, rgba(255,255,255,0.45) 100%)",
-            }}
-          />
-          <span
-            style={{
-              fontSize: "clamp(10px, 0.8vw, 11.5px)",
-              letterSpacing: "0.5em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.78)",
-              fontWeight: 500,
-              whiteSpace: "nowrap",
-              textShadow: "0 1px 12px rgba(0,0,0,0.85)",
-            }}
-          >
-            Lab&nbsp;X
-          </span>
-          <span
-            aria-hidden
-            style={{
-              display: "inline-block",
-              width: "clamp(28px, 4vw, 56px)",
-              height: 1,
-              background: "linear-gradient(to left, transparent 0%, rgba(255,255,255,0.45) 100%)",
-            }}
-          />
-        </motion.div>
-      </div>
-
       {/* Warm aureole unifying the dome */}
       <motion.div
         style={{
@@ -330,6 +271,39 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             >
               <Orb central size={260} />
             </motion.div>
+
+            {/* Hover label — "Lab X" appears above the Central Core when
+                hovered. Static wrapper owns the centring translate, the
+                motion paragraph owns only opacity + y. */}
+            <div
+              aria-hidden
+              style={{
+                position: "absolute",
+                left: "50%",
+                bottom: "calc(100% + 16px)",
+                transform: "translateX(-50%)",
+                pointerEvents: "none",
+              }}
+            >
+              <motion.p
+                animate={{ opacity: centralHover ? 1 : 0, y: centralHover ? 0 : 4 }}
+                transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                style={{
+                  margin: 0,
+                  fontSize: "clamp(10px, 0.8vw, 11.5px)",
+                  letterSpacing: "0.42em",
+                  textTransform: "uppercase",
+                  color: "white",
+                  fontWeight: 600,
+                  textAlign: "center",
+                  lineHeight: 1.35,
+                  whiteSpace: "nowrap",
+                  textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                }}
+              >
+                Lab&nbsp;X
+              </motion.p>
+            </div>
           </Link>
         </motion.div>
       </div>
