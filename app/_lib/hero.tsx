@@ -135,7 +135,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         style={{
           position: "absolute",
           left: "50%",
-          top: "30%",
+          top: "18%",
           transform: "translate(-50%, -50%)",
           zIndex: 4,
           width: "min(110vw, 1600px)",
@@ -227,7 +227,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           position: "absolute",
           zIndex: 8,
           left: "50%",
-          top: "26%",
+          top: "14%",
           width: CENTRAL_SIZE,
           height: CENTRAL_SIZE,
           transform: "translate(-50%, -50%)",
@@ -272,21 +272,21 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               <Orb central size={260} />
             </motion.div>
 
-            {/* Hover label — "Lab X" appears above the Central Core when
-                hovered. Static wrapper owns the centring translate, the
-                motion paragraph owns only opacity + y. */}
+            {/* Hover label — "Lab X" appears centred on the orb,
+                right over the X. Static wrapper owns the centring,
+                motion paragraph owns only opacity + scale. */}
             <div
               aria-hidden
               style={{
                 position: "absolute",
                 left: "50%",
-                bottom: "calc(100% + 16px)",
-                transform: "translateX(-50%)",
+                top: "50%",
+                transform: "translate(-50%, -50%)",
                 pointerEvents: "none",
               }}
             >
               <motion.p
-                animate={{ opacity: centralHover ? 1 : 0, y: centralHover ? 0 : 4 }}
+                animate={{ opacity: centralHover ? 1 : 0, scale: centralHover ? 1 : 0.92 }}
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                 style={{
                   margin: 0,
@@ -298,7 +298,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   textAlign: "center",
                   lineHeight: 1.35,
                   whiteSpace: "nowrap",
-                  textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                  textShadow: "0 1px 14px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.8)",
                 }}
               >
                 Lab&nbsp;X
@@ -325,7 +325,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               position: "absolute",
               zIndex: 9,
               left: leftCalc,
-              top: `calc(26% + ${dy})`,
+              top: `calc(14% + ${dy})`,
               width: ORB_SIZE,
               height: ORB_SIZE,
               transform: "translate(-50%, -50%)",
@@ -388,25 +388,23 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   <Orb world={w} size={120} />
                 </motion.div>
 
-                {/* Hover label — ABOVE the orb, centred on it. Static
-                    wrapper owns positioning + translateX(-50%); the inner
-                    motion paragraph owns only opacity + y so framer's
-                    transform never overwrites the centring. White, bold,
-                    no number prefix — all six Cores read with the same
-                    weight. */}
+                {/* Hover label — centred ON the orb, right over the
+                    X. White, bold, all six Cores read with the same
+                    weight. The text overflows the orb on long titles
+                    by design; the dimmed neighbours leave room for it. */}
                 <div
                   aria-hidden
                   style={{
                     position: "absolute",
                     left: "50%",
-                    bottom: "calc(100% + 14px)",
-                    transform: "translateX(-50%)",
+                    top: "50%",
+                    transform: "translate(-50%, -50%)",
                     width: "clamp(140px, 16vw, 200px)",
                     pointerEvents: "none",
                   }}
                 >
                   <motion.p
-                    animate={{ opacity: isHover ? 1 : 0, y: isHover ? 0 : 4 }}
+                    animate={{ opacity: isHover ? 1 : 0, scale: isHover ? 1 : 0.92 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                     style={{
                       margin: 0,
@@ -417,7 +415,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                       fontWeight: 600,
                       textAlign: "center",
                       lineHeight: 1.35,
-                      textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                      textShadow: "0 1px 14px rgba(0,0,0,0.95), 0 0 24px rgba(0,0,0,0.8)",
                     }}
                   >
                     {w.title[lang]}
