@@ -350,32 +350,41 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   <Orb world={w} size={120} />
                 </motion.div>
 
-                {/* Single label — appears only on hover so the dome stays
-                    clean on mobile (no overlap, no clutter). Number +
-                    full title rendered in the Core's colour. */}
-                <motion.div
+                {/* Hover label — ABOVE the orb, centred on it. Static
+                    wrapper owns positioning + translateX(-50%); the inner
+                    motion paragraph owns only opacity + y so framer's
+                    transform never overwrites the centring. White, bold,
+                    no number prefix — all six Cores read with the same
+                    weight. */}
+                <div
                   aria-hidden
-                  animate={{ opacity: isHover ? 1 : 0, y: isHover ? -1 : 4 }}
-                  transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
                   style={{
                     position: "absolute",
                     left: "50%",
-                    top: "calc(100% + 12px)",
+                    bottom: "calc(100% + 14px)",
                     transform: "translateX(-50%)",
                     width: "clamp(140px, 16vw, 200px)",
-                    fontSize: "clamp(9px, 0.72vw, 11px)",
-                    letterSpacing: "0.24em",
-                    textTransform: "uppercase",
-                    color: w.color.hex,
-                    fontWeight: 500,
-                    textAlign: "center",
-                    lineHeight: 1.4,
                     pointerEvents: "none",
-                    textShadow: "0 1px 14px rgba(0,0,0,0.9)",
                   }}
                 >
-                  {w.number} · {w.title[lang]}
-                </motion.div>
+                  <motion.p
+                    animate={{ opacity: isHover ? 1 : 0, y: isHover ? 0 : 4 }}
+                    transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(10px, 0.78vw, 11.5px)",
+                      letterSpacing: "0.26em",
+                      textTransform: "uppercase",
+                      color: "white",
+                      fontWeight: 600,
+                      textAlign: "center",
+                      lineHeight: 1.35,
+                      textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                    }}
+                  >
+                    {w.title[lang]}
+                  </motion.p>
+                </div>
               </Link>
             </motion.div>
           </div>
