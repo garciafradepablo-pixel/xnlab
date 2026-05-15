@@ -82,7 +82,7 @@ export const metadata: Metadata = {
     },
   },
   formatDetection: { email: false, address: false, telephone: false },
-  icons: { icon: "/favicon.ico" },
+  // Icons are generated dynamically via app/icon.tsx + app/apple-icon.tsx
 };
 
 export const viewport: Viewport = {
