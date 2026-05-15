@@ -12,8 +12,10 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 - [Selected Work — Nightlife Visual System](https://xnlab.io/work/nightlife-visual-system): Internal study on nocturnal identity systems.
 - [Selected Work — Architectural Identity](https://xnlab.io/work/architectural-identity): Internal study on emotional architecture.
 - [About](https://xnlab.io/about): Studio philosophy, approach, beliefs, practice areas.
-- [Process](https://xnlab.io/process): How we work in four movements — Listen, Map atmospheres, Build the system, Live with it.
+- [Process](https://xnlab.io/process): How we work in four movements — Listen, Map atmospheres, Build the system, Live with it. Includes tangible deliverables.
+- [Collaboration](https://xnlab.io/collaboration): Practical notes on engaging the studio — when to reach out, what to send, the first conversation, engagement shape.
 - [Manifesto](https://xnlab.io/manifesto): Six statements on worldbuilding, atmosphere and restraint.
+- [References / Library](https://xnlab.io/references): Curated set of books, architects, films, hotels and makers that inform the studio's work.
 - [Contact](https://xnlab.io/contact): Inquiry form. By appointment only.
 - [Colophon](https://xnlab.io/imprint): Studio details, typography credits, technical stack, brief privacy and terms notes.
 
