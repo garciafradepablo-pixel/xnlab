@@ -18,9 +18,9 @@ const cormorant = Cormorant_Garamond({
 });
 
 const SITE = "https://xnlab.io";
-const TITLE = "XNLAB — Creative Direction Studio for Luxury Hospitality";
+const TITLE = "XNLAB — Digital Atmosphere Studio for Premium Brands";
 const DESCRIPTION =
-  "Xnlab Studio is a global creative direction agency designing atmospheres, brand identities and visual systems for luxury hospitality, nightlife venues, emotional architecture and cultural brands. Worldbuilding for modern luxury — by appointment only.";
+  "XNLAB creates cinematic websites, campaign systems and AI-enhanced visual worlds for hospitality, architecture, wellness, nightlife and culture-led brands. Direction over content. By application only.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -29,19 +29,20 @@ export const metadata: Metadata = {
   applicationName: "Xnlab Studio",
   generator: "Next.js",
   keywords: [
+    "digital atmosphere studio",
+    "premium brand websites",
+    "cinematic web design agency",
+    "campaign systems for luxury brands",
+    "AI-enhanced visual direction",
+    "boutique hotel website design",
+    "hospitality brand websites",
+    "architecture studio website design",
+    "wellness brand identity",
+    "nightlife venue branding",
     "creative direction studio",
-    "creative direction agency",
     "worldbuilding studio",
-    "luxury hospitality branding",
-    "boutique hotel brand identity",
-    "hospitality design agency",
-    "nightlife branding",
-    "nightclub brand identity",
-    "emotional architecture studio",
     "luxury brand identity agency",
     "atmosphere design",
-    "global creative agency",
-    "luxury design studio",
     "premium brand identity",
     "cultural identity design",
     "XNLAB",

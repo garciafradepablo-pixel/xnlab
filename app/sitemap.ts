@@ -22,11 +22,17 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.8,
   };
+  const services: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/services`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.95,
+  };
   const process: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/process`,
     lastModified: now,
     changeFrequency: "monthly",
-    priority: 0.7,
+    priority: 0.85,
   };
   const manifesto: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/manifesto`,
@@ -107,5 +113,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.7,
   }));
-  return [home, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, about, process, collaboration, manifesto, atmospheres, nowPage, references, workIndex, ...works, contact, imprint];
+  return [home, services, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, about, process, collaboration, manifesto, atmospheres, nowPage, references, workIndex, ...works, contact, imprint];
 }

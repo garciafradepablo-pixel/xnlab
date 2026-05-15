@@ -41,8 +41,8 @@ const en = {
       label: "Engagement shape",
       title: "Few clients, full attention.",
       body: [
-        "We collaborate with four to six clients each year. Engagements run between six weeks and twelve months depending on the discipline.",
-        "Pricing is bespoke and quoted per project. We do not work on retainer or by the hour.",
+        "We collaborate with four to six clients each year. Engagements run between two weeks and twelve months depending on the engagement.",
+        "We do not sell hourly work. Most engagements are quoted as fixed-scope projects, paid in milestones. When a brand requires continuous presence, we build monthly creative systems around campaigns, updates and visual production — our Visual Engine offer.",
       ],
     },
     {
@@ -56,7 +56,7 @@ const en = {
   closingH: "Ready when you are.",
   closingBody:
     "If the notes above describe the kind of collaboration you are looking for, we would like to hear about your project.",
-  cta: "Initiate Contact",
+  cta: "Apply for a project",
   back: "← Home",
 };
 
@@ -96,8 +96,8 @@ const es = {
       label: "Forma del encargo",
       title: "Pocos clientes, atención completa.",
       body: [
-        "Colaboramos con cuatro a seis clientes cada año. Los encargos van de seis semanas a doce meses según la disciplina.",
-        "El precio es a medida y se cotiza por proyecto. No trabajamos con iguala ni por hora.",
+        "Colaboramos con cuatro a seis clientes cada año. Los encargos van de dos semanas a doce meses según el tipo.",
+        "No vendemos trabajo por horas. La mayoría de encargos se cotiza con alcance cerrado y se paga por hitos. Cuando una marca necesita presencia continua, construimos sistemas creativos mensuales alrededor de campañas, actualizaciones y producción visual — nuestra oferta Motor Visual.",
       ],
     },
     {
@@ -111,7 +111,7 @@ const es = {
   closingH: "Listos cuando lo estés.",
   closingBody:
     "Si las notas de arriba describen el tipo de colaboración que buscas, nos gustaría saber de tu proyecto.",
-  cta: "Iniciar Contacto",
+  cta: "Aplicar para un proyecto",
   back: "← Inicio",
 };
 

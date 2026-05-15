@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 import Contact from "./_contact";
 
 export const metadata: Metadata = {
-  title: "Contact — Start a Creative Direction Collaboration",
+  title: "Apply for a project — XNLAB",
   description:
-    "Contact Xnlab Studio for creative direction, brand identity and atmosphere design in luxury hospitality, nightlife, architecture or cultural identity. Worldwide engagements. By appointment only.",
+    "Apply to work with XNLAB. Cinematic websites, campaign systems and AI-enhanced visual worlds for hospitality, architecture, wellness, nightlife and culture-led brands. By application only.",
   alternates: { canonical: "/contact" },
   openGraph: {
-    title: "Contact · XNLAB",
-    description: "Start a conversation. By appointment only.",
+    title: "Apply for a project · XNLAB",
+    description: "Apply to work with XNLAB. By application only.",
     url: "https://xnlab.io/contact",
     type: "website",
   },

@@ -1,12 +1,13 @@
 # Xnlab Studio (XNLAB)
 
-> Worldbuilding studio for modern luxury. We design atmospheres, identities and visual systems for hospitality, nightlife, architecture and cultural identity. By appointment only.
+> Digital Atmosphere Studio for Premium Brands. XNLAB creates cinematic websites, campaign systems and AI-enhanced visual worlds for hospitality, architecture, wellness, nightlife and culture-led brands. By application only.
 
-The studio operates from a single mark — XNLAB — and a single email: studio@xnlab.io. Work happens slowly, with a small number of clients each year. The visual language is dark, cinematic, atmospheric. We design presence, not content.
+The studio operates from a single mark — XNLAB — and a single email: studio@xnlab.io. Work happens through fixed-scope projects (no hourly billing) and a monthly Visual Engine offer for brands that need continuous direction. Direction over content. AI extends production; it does not dilute the direction.
 
 ## Pages
 
-- [Home](https://xnlab.io): Landing — wordmark, four disciplines, selected works summary, contact.
+- [Home](https://xnlab.io): Landing — wordmark, problem statement, services preview, the six worlds, proof, apply.
+- [Services](https://xnlab.io/services): Six engagements with pricing in EUR — Campaign System (from €5,000), Digital Atmosphere (from €10,000), Brand World (from €25,000), Visual Engine (from €4,000/month), Technical / Growth Add-ons (from €1,500), Upgrade Sprint (from €2,500–€4,000).
 - [The Universe](https://xnlab.io/worlds): Entry to the XNLAB universe. Mythology (Central Core, ORUN, CHIO, anomalies) and the six World Cores.
 - [World 01 — Hospitality & Experience](https://xnlab.io/worlds/hospitality-experience): Amber Gold. Hospitality brand systems, atmosphere design, restaurant identity.
 - [World 02 — Nightlife & Cultural Events](https://xnlab.io/worlds/nightlife-cultural-events): Electric Violet. Club identity, event direction, cultural venue branding.
@@ -16,14 +17,14 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 - [World 06 — Cultural & Digital Worlds](https://xnlab.io/worlds/cultural-digital-worlds): Iridescent Cyan. Digital identity, AI-native direction, generative aesthetics.
 - [Selected Works](https://xnlab.io/work): Case studies (currently 3 internal studies; real client work in progress).
 - [About](https://xnlab.io/about): Studio philosophy, approach, beliefs, practice areas.
-- [Process](https://xnlab.io/process): How we work in four movements — Listen, Map atmospheres, Build the system, Live with it. Includes tangible deliverables.
+- [Process](https://xnlab.io/process): How we work in four movements — Diagnose, Direct, Build, Activate. Each engagement closes a perception gap and ships a coherent system.
 - [Collaboration](https://xnlab.io/collaboration): Practical notes on engaging the studio — when to reach out, what to send, the first conversation, engagement shape.
 - [Manifesto](https://xnlab.io/manifesto): Six statements on worldbuilding, atmosphere and restraint.
 - [Atmospheres](https://xnlab.io/atmospheres): Six sensory vignettes — one per World Core. Prose snapshots of the rooms and moments we design.
 - [Now](https://xnlab.io/now): A live note from inside the studio. What we are working on, reading, listening to, observing. Updated periodically.
 - [Lab Records](https://xnlab.io/lab-records): Editorial cultural observations from inside the studio. Long-form reading on hospitality branding, cinematic luxury, music worldbuilding, atmospheric design.
 - [References / Library](https://xnlab.io/references): Curated set of books, architects, films, hotels and makers that inform the studio's work.
-- [Contact](https://xnlab.io/contact): Inquiry form. By appointment only.
+- [Contact](https://xnlab.io/contact): Apply for a project. By application only. Fields: name, email, brand, website, industry, project type, timeline, estimated investment (EUR), message.
 - [Colophon](https://xnlab.io/imprint): Studio details, typography credits, technical stack, brief privacy and terms notes.
 
 ## Universe mythology
@@ -40,7 +41,15 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 - Emotional Architecture — spaces shaped through silence, light and material.
 - Living Identities — symbols, avatars and identities with presence.
 
+## Engagement model
+
+- Fixed-scope projects, paid in milestones (no hourly billing).
+- Monthly Visual Engine for brands that need continuous creative direction.
+- All pricing quoted in EUR.
+- Four-movement process: Diagnose, Direct, Build, Activate.
+- Selected clients: four to six brands per year.
+
 ## Contact
 
 - Email: studio@xnlab.io
-- Availability: By appointment only.
+- Availability: By application only.

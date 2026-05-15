@@ -7,119 +7,125 @@ import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
   eyebrow: "Process",
-  h1a: "Slow, deliberate,",
-  h1b: "intentional.",
+  h1a: "Diagnose. Direct.",
+  h1b: "Build. Activate.",
   lead:
-    "We move through every project in four movements. None is skipped, none is rushed. The work is finished when the space is remembered as a feeling.",
+    "Every engagement moves through four movements. The poetry stays. The commercial substance is explicit: a perception gap to close, a business objective to hit, an audience to direct at, and a system to launch and tune.",
   movements: [
     {
       number: "01",
-      title: "Listen",
+      title: "Diagnose",
       body: [
-        "Every project begins in silence. Before sketching, before mood, before any decision — we sit with you and with the place.",
-        "We ask what the brand wants to make people feel, then we ask what it is afraid to say. The second answer matters more.",
+        "Every project begins by naming the perception gap — the distance between what the brand feels like in the room, and what it feels like on a screen.",
+        "We sit with you, the place and the numbers. We ask what the brand wants to make people feel, what business objective it is hired to hit, and who exactly it is hired to move.",
+        "The output of this movement is a written brief: perception gap, business objective, primary audience, tone of voice, one single direction.",
       ],
     },
     {
       number: "02",
-      title: "Map atmospheres",
+      title: "Direct",
       body: [
-        "We translate the listening into a single visual hypothesis: the temperature, the materials, the silence, the texture of presence.",
-        "This is not a moodboard. It is a tuning fork — one note the rest of the system aligns to.",
+        "We translate the diagnosis into one visual hypothesis — atmosphere, palette, motion, copy register, conversion structure.",
+        "This is not a moodboard. It is a tuning fork: one note the rest of the system aligns to, including the way the page asks the visitor to act.",
+        "We agree the direction in writing before a single screen is built. Everything that follows is execution of this one decision.",
       ],
     },
     {
       number: "03",
-      title: "Build the system",
+      title: "Build",
       body: [
-        "Identity, space, motion, sound, gesture. Each is designed as part of the same body, never as separate deliverables.",
-        "We move slowly. We discard often. The system holds when nothing in it asks for attention.",
+        "Identity, copy, motion, code. Each is built as part of the same body, never as separate deliverables.",
+        "Visual system, technical implementation, structured data, performance and accessibility are designed together. We use AI to extend production where it raises the level, never to dilute the direction.",
+        "We move quickly inside the agreed direction, and we discard everything that is not on the line.",
       ],
     },
     {
       number: "04",
-      title: "Live with it",
+      title: "Activate",
       body: [
-        "Delivery is not the end. We stay with the work through its first nights — adjusting lighting, refining gestures, tuning the silence.",
-        "A world is not a launch. It is a slow inhabitation.",
+        "Delivery is not the end. We launch, we instrument, we read the first weeks of behaviour, and we tune.",
+        "Launch direction, analytics setup, SEO finalisation, first-iteration adjustments and a written report close every engagement. From there, brands either step away or stay on a monthly Visual Engine.",
       ],
     },
   ],
   deliverablesLabel: "What you receive",
   deliverablesH: "Tangible outputs.",
   deliverablesIntro:
-    "Each engagement results in a coherent set of artefacts — built to be lived with, not filed away.",
+    "Each engagement results in a coherent set of artefacts — built to launch and to last, not to be filed away.",
   deliverables: [
-    "Atmosphere brief and spatial concept.",
-    "Visual identity system: marks, typography, palette.",
-    "Material and lighting specifications.",
-    "Sound and sensory direction.",
-    "Launch choreography and opening-night calibration.",
-    "Post-opening adjustments across the first season.",
+    "Written brief: perception gap, objective, audience, direction.",
+    "Visual identity system: marks, typography, palette, motion.",
+    "Copy direction in EN/ES across surfaces.",
+    "Technical build, structured data, SEO, analytics.",
+    "Launch direction and conversion structure.",
+    "Post-launch tuning across the first month.",
   ],
   closingH: "Worlds are not built fast.",
   closingBody:
     "If you have a brand that wants to be felt — a hotel, a club, an architecture, an identity — we would like to hear about it.",
-  cta: "Initiate Contact",
+  cta: "Apply for a project",
   back: "← Home",
 };
 
 const es = {
   eyebrow: "Método",
-  h1a: "Lento, deliberado,",
-  h1b: "intencional.",
+  h1a: "Diagnosticar. Dirigir.",
+  h1b: "Construir. Activar.",
   lead:
-    "Atravesamos cada proyecto en cuatro movimientos. Ninguno se omite, ninguno se acelera. El trabajo termina cuando el espacio se recuerda como una sensación.",
+    "Cada encargo se mueve en cuatro movimientos. La poética se mantiene. La sustancia comercial es explícita: un gap de percepción que cerrar, un objetivo de negocio que cumplir, una audiencia hacia la que dirigir y un sistema que lanzar y afinar.",
   movements: [
     {
       number: "01",
-      title: "Escuchar",
+      title: "Diagnosticar",
       body: [
-        "Todo proyecto empieza en silencio. Antes del boceto, antes del mood, antes de cualquier decisión — nos sentamos contigo y con el lugar.",
-        "Preguntamos qué quiere hacer sentir la marca, después preguntamos qué teme decir. La segunda respuesta importa más.",
+        "Todo proyecto empieza nombrando el gap de percepción — la distancia entre cómo se siente la marca en la sala y cómo se siente en pantalla.",
+        "Nos sentamos contigo, con el lugar y con los números. Preguntamos qué quiere hacer sentir la marca, qué objetivo de negocio está contratada para cumplir y a quién está contratada para mover.",
+        "El resultado de este movimiento es un brief escrito: gap de percepción, objetivo de negocio, audiencia primaria, tono y una sola dirección.",
       ],
     },
     {
       number: "02",
-      title: "Mapear atmósferas",
+      title: "Dirigir",
       body: [
-        "Traducimos la escucha en una sola hipótesis visual: la temperatura, los materiales, el silencio, la textura de la presencia.",
-        "No es un moodboard. Es un diapasón — una nota a la que se alinea el resto del sistema.",
+        "Traducimos el diagnóstico en una sola hipótesis visual — atmósfera, paleta, movimiento, registro de copy, estructura de conversión.",
+        "No es un moodboard. Es un diapasón: una nota a la que se alinea el resto del sistema, incluida la manera en que la página pide al visitante que actúe.",
+        "Cerramos por escrito la dirección antes de construir una sola pantalla. Todo lo que sigue es ejecución de esa decisión.",
       ],
     },
     {
       number: "03",
-      title: "Construir el sistema",
+      title: "Construir",
       body: [
-        "Identidad, espacio, movimiento, sonido, gesto. Cada uno se diseña como parte del mismo cuerpo, nunca como entregables separados.",
-        "Avanzamos despacio. Descartamos a menudo. El sistema sostiene cuando nada en él pide atención.",
+        "Identidad, copy, movimiento, código. Cada cosa se construye como parte del mismo cuerpo, nunca como entregables separados.",
+        "Sistema visual, build técnico, datos estructurados, rendimiento y accesibilidad se diseñan juntos. Usamos IA para extender producción cuando eleva el nivel, nunca para diluir la dirección.",
+        "Avanzamos rápido dentro de la dirección acordada y descartamos todo lo que no esté en línea.",
       ],
     },
     {
       number: "04",
-      title: "Habitar el trabajo",
+      title: "Activar",
       body: [
-        "La entrega no es el final. Nos quedamos con el trabajo durante sus primeras noches — ajustando la luz, afinando los gestos, calibrando el silencio.",
-        "Un mundo no es un lanzamiento. Es una inhabitación lenta.",
+        "La entrega no es el final. Lanzamos, instrumentamos, leemos las primeras semanas de comportamiento y afinamos.",
+        "Dirección de lanzamiento, configuración de analítica, cierre de SEO, primera iteración y un informe escrito cierran cada encargo. Después, las marcas se van o se quedan en un Motor Visual mensual.",
       ],
     },
   ],
   deliverablesLabel: "Lo que recibes",
   deliverablesH: "Salidas tangibles.",
   deliverablesIntro:
-    "Cada colaboración resulta en un conjunto coherente de piezas — construidas para habitarlas, no para archivarlas.",
+    "Cada colaboración resulta en un conjunto coherente de piezas — construidas para lanzar y para durar, no para archivar.",
   deliverables: [
-    "Brief de atmósfera y concepto espacial.",
-    "Sistema de identidad visual: marca, tipografía, paleta.",
-    "Especificaciones de material e iluminación.",
-    "Dirección sonora y sensorial.",
-    "Coreografía de lanzamiento y calibración de la noche de apertura.",
-    "Ajustes post-apertura durante la primera temporada.",
+    "Brief escrito: gap de percepción, objetivo, audiencia, dirección.",
+    "Sistema de identidad visual: marca, tipografía, paleta, movimiento.",
+    "Dirección de copy en EN/ES en todas las superficies.",
+    "Build técnico, datos estructurados, SEO, analítica.",
+    "Dirección de lanzamiento y estructura de conversión.",
+    "Afinado post-lanzamiento durante el primer mes.",
   ],
   closingH: "Los mundos no se construyen rápido.",
   closingBody:
     "Si tienes una marca que quiere ser sentida — un hotel, un club, una arquitectura, una identidad — nos gustaría saber de ella.",
-  cta: "Iniciar Contacto",
+  cta: "Aplicar para un proyecto",
   back: "← Inicio",
 };
 

@@ -8,6 +8,8 @@ export type ContactInput = {
   brand?: string;
   website?: string;
   world?: string;
+  projectType?: string;
+  timeline?: string;
   budget?: string;
   msg: string;
   _gotcha?: string;
@@ -37,14 +39,16 @@ export async function sendContactEmail(data: ContactInput): Promise<ContactResul
     return { ok: false, useMailto: true, reason: "no_backend" };
   }
 
-  const subject = `XNLAB Transmission — ${data.world || "General"} — ${data.name || "Unknown"}`;
+  const subject = `XNLAB Application — ${data.world || "General"} — ${data.name || "Unknown"}`;
   const text = [
     `Name: ${data.name}`,
     `Email: ${data.email}`,
     data.brand ? `Brand / Project: ${data.brand}` : null,
     data.website ? `Website / Instagram: ${data.website}` : null,
-    `World: ${data.world || "—"}`,
-    data.budget ? `Budget: ${data.budget}` : null,
+    `Industry: ${data.world || "—"}`,
+    data.projectType ? `Project type: ${data.projectType}` : null,
+    data.timeline ? `Timeline: ${data.timeline}` : null,
+    data.budget ? `Estimated investment: ${data.budget}` : null,
     "",
     data.msg,
   ]

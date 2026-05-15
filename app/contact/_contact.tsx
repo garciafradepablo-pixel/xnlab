@@ -8,18 +8,20 @@ import { WordmarkLink } from "../_lib/wordmark";
 import { sendContactEmail } from "./actions";
 
 const en = {
-  eyebrow: "Initiate Transmission",
-  h1a: "Open the",
-  h1b: "channel.",
+  eyebrow: "Application · 007",
+  h1a: "Apply for",
+  h1b: "a project.",
   lead:
-    "For selected brands, cultural projects and visual systems. We collaborate with a small number of clients each year — tell us what you are building.",
+    "Every engagement is selected. We work with a small number of brands each year and quote per project. Tell us what you are building, when it opens, and what level you want it to feel at.",
   fields: {
     name: "Name",
     email: "Email",
     brand: "Brand / Project",
     website: "Website or Instagram",
-    world: "What world are you building?",
-    budget: "Budget range",
+    world: "Industry",
+    projectType: "Project type",
+    timeline: "Timeline",
+    budget: "Estimated investment",
     msg: "Tell us more",
   },
   worlds: [
@@ -29,38 +31,58 @@ const en = {
     "Architecture & Spatial Design",
     "Music & Cultural Artists",
     "Cultural & Digital Worlds",
+    "Wellness",
     "Other",
   ],
-  budgets: [
-    "Under $1,000",
-    "$1,000 – $3,000",
-    "$3,000 – $7,000",
-    "$7,000 – $15,000",
-    "$15,000+",
+  projectTypes: [
+    "Campaign System (single launch)",
+    "Digital Atmosphere (single-page)",
+    "Brand World (multi-page)",
+    "Visual Engine (monthly)",
+    "Technical / Growth Add-on",
+    "Upgrade Sprint",
+    "Not sure yet",
   ],
-  submit: "Initiate Contact →",
+  timelines: [
+    "Within 1 month",
+    "1–3 months",
+    "3–6 months",
+    "6+ months",
+    "Flexible / Exploratory",
+  ],
+  budgets: [
+    "€5,000 – €10,000",
+    "€10,000 – €25,000",
+    "€25,000 – €50,000",
+    "€50,000+",
+    "Monthly system (€4,000+/mo)",
+    "Not sure yet",
+  ],
+  submit: "Apply for a project →",
   sending: "Transmitting…",
   privacy:
-    "Your message reaches studio@xnlab.io directly. We read every inquiry. We only respond when there is a real match.",
+    "Every application is read by the studio. We respond when there is a real match. studio@xnlab.io.",
   okSent: "Received. We will respond when the right time arrives.",
   okMailto: "Email opened — check your mail client.",
   back: "← Home",
   studioLabel: "Studio",
-  studioInfo: ["By appointment only", "studio@xnlab.io"],
+  studioInfo: ["By application only", "studio@xnlab.io"],
 };
 const es = {
-  eyebrow: "Iniciar Transmisión",
-  h1a: "Abrir el",
-  h1b: "canal.",
+  eyebrow: "Aplicación · 007",
+  h1a: "Aplicar para",
+  h1b: "un proyecto.",
   lead:
-    "Para marcas seleccionadas, proyectos culturales y sistemas visuales. Colaboramos con un número reducido de clientes cada año — cuéntanos qué estás construyendo.",
+    "Cada encargo se selecciona. Trabajamos con un número reducido de marcas al año y cotizamos por proyecto. Cuéntanos qué construyes, cuándo abre y a qué altura quieres que se sienta.",
   fields: {
     name: "Nombre",
     email: "Email",
     brand: "Marca / Proyecto",
     website: "Web o Instagram",
-    world: "¿Qué mundo estás construyendo?",
-    budget: "Presupuesto",
+    world: "Industria",
+    projectType: "Tipo de proyecto",
+    timeline: "Plazo",
+    budget: "Inversión estimada",
     msg: "Cuéntanos más",
   },
   worlds: [
@@ -70,24 +92,42 @@ const es = {
     "Architecture & Spatial Design",
     "Music & Cultural Artists",
     "Cultural & Digital Worlds",
+    "Wellness",
     "Otro",
   ],
-  budgets: [
-    "Menos de $1.000",
-    "$1.000 – $3.000",
-    "$3.000 – $7.000",
-    "$7.000 – $15.000",
-    "$15.000+",
+  projectTypes: [
+    "Campaign System (lanzamiento puntual)",
+    "Atmósfera Digital (una sola página)",
+    "Mundo de Marca (multipágina)",
+    "Motor Visual (mensual)",
+    "Técnico / Crecimiento",
+    "Sprint de Mejora",
+    "Aún no lo tengo claro",
   ],
-  submit: "Iniciar Contacto →",
+  timelines: [
+    "En menos de 1 mes",
+    "1–3 meses",
+    "3–6 meses",
+    "6+ meses",
+    "Flexible / Exploratorio",
+  ],
+  budgets: [
+    "€5.000 – €10.000",
+    "€10.000 – €25.000",
+    "€25.000 – €50.000",
+    "€50.000+",
+    "Sistema mensual (€4.000+/mes)",
+    "Aún no lo tengo claro",
+  ],
+  submit: "Aplicar para un proyecto →",
   sending: "Transmitiendo…",
   privacy:
-    "Tu mensaje llega directamente a studio@xnlab.io. Leemos cada solicitud. Solo respondemos cuando hay un match real.",
+    "Cada aplicación la lee el estudio. Respondemos cuando hay un match real. studio@xnlab.io.",
   okSent: "Recibido. Responderemos cuando llegue el momento adecuado.",
   okMailto: "Email abierto — revisa tu cliente de correo.",
   back: "← Inicio",
   studioLabel: "Estudio",
-  studioInfo: ["Solo con cita previa", "studio@xnlab.io"],
+  studioInfo: ["Solo por aplicación", "studio@xnlab.io"],
 };
 
 type FormState = {
@@ -96,21 +136,35 @@ type FormState = {
   brand: string;
   website: string;
   world: string;
+  projectType: string;
+  timeline: string;
   budget: string;
   msg: string;
 };
 
-const empty: FormState = { name: "", email: "", brand: "", website: "", world: "", budget: "", msg: "" };
+const empty: FormState = {
+  name: "",
+  email: "",
+  brand: "",
+  website: "",
+  world: "",
+  projectType: "",
+  timeline: "",
+  budget: "",
+  msg: "",
+};
 
 function buildMailto(f: FormState) {
-  const subject = `XNLAB Transmission — ${f.world || "General"} — ${f.name || "Unknown"}`;
+  const subject = `XNLAB Application — ${f.world || "General"} — ${f.name || "Unknown"}`;
   const lines = [
     `Name: ${f.name}`,
     `Email: ${f.email}`,
     f.brand ? `Brand / Project: ${f.brand}` : null,
     f.website ? `Website / Instagram: ${f.website}` : null,
-    `World: ${f.world || "—"}`,
-    f.budget ? `Budget: ${f.budget}` : null,
+    `Industry: ${f.world || "—"}`,
+    f.projectType ? `Project type: ${f.projectType}` : null,
+    f.timeline ? `Timeline: ${f.timeline}` : null,
+    f.budget ? `Estimated investment: ${f.budget}` : null,
     "",
     f.msg,
   ].filter(Boolean) as string[];
@@ -429,6 +483,67 @@ export default function Contact() {
               >
                 <option value="" style={{ background: "#060606" }}>—</option>
                 {t.budgets.map((opt) => (
+                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
+                ))}
+              </select>
+            </R>
+          </div>
+
+          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)", gridTemplateColumns: "1fr 1fr" }} className="grid-cols-1 md:grid-cols-2">
+            <R delay={0.135}>
+              <label style={labelStyle} htmlFor="projectType">
+                {t.fields.projectType}
+              </label>
+              <select
+                id="projectType"
+                name="projectType"
+                value={form.projectType}
+                onChange={upd("projectType")}
+                style={{
+                  ...fieldStyle,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  cursor: "pointer",
+                  backgroundImage:
+                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
+                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
+                  backgroundSize: "6px 6px",
+                  backgroundRepeat: "no-repeat",
+                  color: form.projectType ? "white" : "rgba(255,255,255,0.45)",
+                }}
+              >
+                <option value="" style={{ background: "#060606" }}>—</option>
+                {t.projectTypes.map((opt) => (
+                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
+                ))}
+              </select>
+            </R>
+            <R delay={0.138}>
+              <label style={labelStyle} htmlFor="timeline">
+                {t.fields.timeline}
+              </label>
+              <select
+                id="timeline"
+                name="timeline"
+                value={form.timeline}
+                onChange={upd("timeline")}
+                style={{
+                  ...fieldStyle,
+                  appearance: "none",
+                  WebkitAppearance: "none",
+                  MozAppearance: "none",
+                  cursor: "pointer",
+                  backgroundImage:
+                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
+                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
+                  backgroundSize: "6px 6px",
+                  backgroundRepeat: "no-repeat",
+                  color: form.timeline ? "white" : "rgba(255,255,255,0.45)",
+                }}
+              >
+                <option value="" style={{ background: "#060606" }}>—</option>
+                {t.timelines.map((opt) => (
                   <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
                 ))}
               </select>
