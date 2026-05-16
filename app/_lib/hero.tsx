@@ -95,13 +95,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       }}
     >
       {/* LAYER 1 — backdrop.
-          Single unified background across every viewport. The mobile
-          composition (denser, more centred, with the chrome aura
-          already wrapping the wordmark zone) reads premium at every
-          size, so we use it everywhere. No breakpoint swap = no
-          visual "jump" when resizing. */}
+          The hero background PNG ships with baked-in bokeh and glow
+          spots that — once the orbs landed on top of it — created
+          visible "halos" around each sphere. We hide most of those
+          spots with a strong blur + low opacity + a heavy dark
+          vignette mask. The result is a uniform warm-dark atmosphere
+          (the original chrome aura around the wordmark area survives
+          softly) without distinct light artifacts behind the orbs. */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.7 }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.32 }}>
           <Image
             src="/images/hero/01_background_mobile.png"
             alt=""
@@ -109,21 +111,30 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             sizes="100vw"
             loading="eager"
             fetchPriority="high"
-            style={{ objectFit: "cover", objectPosition: "center" }}
+            style={{
+              objectFit: "cover",
+              objectPosition: "center",
+              filter: "blur(32px) saturate(0.85)",
+            }}
           />
         </div>
+        {/* Vignette mask — kills any residual baked-in highlight in
+            the constellation zone (top third of the hero) where the
+            orbs live. Concentrated darkness top, atmospheric warmth
+            in the middle, fade-to-page-black at the bottom. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "radial-gradient(ellipse at 50% 42%, rgba(3,2,1,0.18) 0%, rgba(3,2,1,0.78) 100%)",
+            background:
+              "linear-gradient(to bottom, rgba(4,3,2,0.92) 0%, rgba(4,3,2,0.7) 14%, rgba(4,3,2,0.35) 38%, rgba(4,3,2,0.55) 70%, rgba(6,4,2,1) 100%)",
           }}
         />
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "linear-gradient(to bottom, rgba(4,2,1,0.7) 0%, transparent 22%, transparent 70%, rgba(4,2,1,1) 100%)",
+            background: "radial-gradient(ellipse at 50% 50%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.5) 75%, rgba(3,2,1,0.85) 100%)",
           }}
         />
       </div>
