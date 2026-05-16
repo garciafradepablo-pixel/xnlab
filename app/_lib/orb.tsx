@@ -58,7 +58,7 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
   const drift = m?.drift ?? 4;
   const pulse = m?.pulse;
 
-  const animByPulse: Record<string, Record<string, unknown>> = {
+  const animByPulse: Record<string, Parameters<typeof motion.div>[0]["animate"]> = {
     still: { scale: breatheScale, y: [0, -drift, 0] },
     slow: { scale: breatheScale, y: [0, -drift, 0] },
     drift: { scale: breatheScale, x: [0, drift, 0, -drift, 0], y: [0, -drift, 0] },

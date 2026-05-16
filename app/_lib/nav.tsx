@@ -303,9 +303,9 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
           >
             <div
               style={{
-                maxWidth: open === "process" ? 920 : 1100,
+                maxWidth: open === "process" ? 760 : 880,
                 margin: "0 auto",
-                padding: "clamp(20px,2.4vw,32px) clamp(20px,3.4vw,40px) clamp(24px,2.8vw,36px)",
+                padding: "clamp(16px,1.8vw,24px) clamp(18px,2.6vw,32px) clamp(18px,2.2vw,28px)",
               }}
             >
               {open === "worlds" && <WorldsMenu lang={lang} onSelect={() => setOpen(null)} />}
@@ -541,9 +541,9 @@ function WorldRow({
       onClick={onSelect}
       style={{
         display: "flex",
-        alignItems: "flex-start",
-        gap: compact ? 12 : 16,
-        padding: compact ? "12px 8px" : "14px 14px",
+        alignItems: "center",
+        gap: compact ? 10 : 12,
+        padding: compact ? "8px 6px" : "10px 10px",
         textDecoration: "none",
         color: "inherit",
         position: "relative",
@@ -592,10 +592,9 @@ function WorldRow({
       />
       <div
         style={{
-          width: compact ? 36 : 44,
-          height: compact ? 36 : 44,
+          width: compact ? 28 : 32,
+          height: compact ? 28 : 32,
           flexShrink: 0,
-          marginTop: 2,
         }}
       >
         {orbSlot}
@@ -606,23 +605,23 @@ function WorldRow({
             display: "flex",
             alignItems: "baseline",
             gap: 8,
-            marginBottom: 6,
+            marginBottom: 2,
           }}
         >
           <span
             style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 500,
-              letterSpacing: "0.32em",
+              letterSpacing: "0.3em",
               color: numberColor,
             }}
           >
             {numberLabel}
           </span>
-          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 10 }}>—</span>
+          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 9 }}>—</span>
           <span
             style={{
-              fontSize: compact ? 13 : 14,
+              fontSize: compact ? 12.5 : 13,
               color: "white",
               letterSpacing: "-0.005em",
               fontWeight: 400,
@@ -634,10 +633,15 @@ function WorldRow({
         <p
           style={{
             margin: 0,
-            fontSize: compact ? 11 : 11.5,
-            lineHeight: 1.5,
-            color: "rgba(255,255,255,0.55)",
+            fontSize: compact ? 10.5 : 11,
+            lineHeight: 1.4,
+            color: "rgba(255,255,255,0.5)",
             fontWeight: 300,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: "vertical",
           }}
         >
           {body}
@@ -673,17 +677,17 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
             display: "flex",
             alignItems: "baseline",
             justifyContent: "space-between",
-            gap: 24,
-            marginBottom: 10,
-            padding: "0 14px 16px",
+            gap: 16,
+            marginBottom: 6,
+            padding: "0 10px 10px",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 500,
-              letterSpacing: "0.42em",
+              letterSpacing: "0.4em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.42)",
               margin: 0,
@@ -695,15 +699,15 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
             style={{
               fontFamily: serif,
               fontStyle: "italic",
-              fontSize: 14,
+              fontSize: 12.5,
               color: "rgba(232,183,131,0.78)",
               margin: 0,
               letterSpacing: "-0.005em",
             }}
           >
             {lang === "en"
-              ? "Six emotional systems. Six ways to build presence."
-              : "Seis sistemas emocionales. Seis formas de construir presencia."}
+              ? "Six emotional systems."
+              : "Seis sistemas emocionales."}
           </p>
         </div>
       )}
@@ -712,23 +716,9 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
           display: "grid",
           gap: 0,
           gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
-          columnGap: compact ? 0 : 28,
+          columnGap: compact ? 0 : 20,
         }}
       >
-        <WorldRow
-          href="/worlds"
-          numberLabel="00"
-          numberColor="rgba(255,255,255,0.55)"
-          title={lang === "en" ? "The Universe" : "El Universo"}
-          body={
-            lang === "en"
-              ? "The studio's full system — mythology, Central Core and the six Cores in one place."
-              : "El sistema completo del estudio — mitología, Núcleo Central y los seis Núcleos en un solo lugar."
-          }
-          orbSlot={<Orb central size={compact ? 36 : 44} />}
-          onSelect={onSelect}
-          compact={compact}
-        />
         {worlds.map((w) => (
           <WorldRow
             key={w.slug}
@@ -737,7 +727,7 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
             numberColor={w.color.hex}
             title={w.title[lang]}
             body={w.pitch[lang]}
-            orbSlot={<Orb world={w} size={compact ? 36 : 44} />}
+            orbSlot={<Orb world={w} size={compact ? 28 : 32} />}
             onSelect={onSelect}
             compact={compact}
           />
@@ -770,7 +760,7 @@ function ServiceRow({
       onClick={onSelect}
       style={{
         display: "block",
-        padding: compact ? "12px 8px" : "14px 14px",
+        padding: compact ? "8px 6px" : "10px 10px",
         textDecoration: "none",
         color: "inherit",
         position: "relative",
@@ -803,8 +793,8 @@ function ServiceRow({
         aria-hidden
         style={{
           position: "absolute",
-          left: 14,
-          right: 14,
+          left: 10,
+          right: 10,
           bottom: -1,
           height: 1,
           background: "rgba(232,183,131,0.65)",
@@ -819,25 +809,25 @@ function ServiceRow({
           display: "flex",
           alignItems: "baseline",
           justifyContent: "space-between",
-          gap: 12,
-          marginBottom: 6,
+          gap: 10,
+          marginBottom: 2,
         }}
       >
         <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
           <span
             style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 500,
-              letterSpacing: "0.32em",
+              letterSpacing: "0.3em",
               color: "rgba(232,183,131,0.62)",
             }}
           >
             {numberLabel}
           </span>
-          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 10 }}>—</span>
+          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 9 }}>—</span>
           <span
             style={{
-              fontSize: compact ? 13 : 14,
+              fontSize: compact ? 12.5 : 13,
               color: "white",
               letterSpacing: "-0.005em",
               fontWeight: 400,
@@ -871,12 +861,17 @@ function ServiceRow({
         <p
           style={{
             margin: 0,
-            fontSize: compact ? 11 : 11.5,
-            lineHeight: 1.5,
-            color: "rgba(255,255,255,0.55)",
+            fontSize: compact ? 10.5 : 11,
+            lineHeight: 1.4,
+            color: "rgba(255,255,255,0.5)",
             fontWeight: 300,
             flex: 1,
             minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: "vertical",
           }}
         >
           {body}
@@ -887,7 +882,7 @@ function ServiceRow({
           style={{
             fontFamily: serif,
             fontStyle: "italic",
-            fontSize: 16,
+            fontSize: 14,
             color: "rgba(232,183,131,0.85)",
             opacity: 0,
             transform: "translateX(-6px)",
@@ -913,17 +908,17 @@ function ServicesMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: (
             display: "flex",
             alignItems: "baseline",
             justifyContent: "space-between",
-            gap: 24,
-            marginBottom: 10,
-            padding: "0 14px 16px",
+            gap: 16,
+            marginBottom: 6,
+            padding: "0 10px 10px",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 500,
-              letterSpacing: "0.42em",
+              letterSpacing: "0.4em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.42)",
               margin: 0,
@@ -935,15 +930,15 @@ function ServicesMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: (
             style={{
               fontFamily: serif,
               fontStyle: "italic",
-              fontSize: 14,
+              fontSize: 12.5,
               color: "rgba(232,183,131,0.78)",
               margin: 0,
               letterSpacing: "-0.005em",
             }}
           >
             {lang === "en"
-              ? "Ways to enter the lab. Start focused or build a full world."
-              : "Cómo entrar al laboratorio. Empieza enfocado o construye un mundo completo."}
+              ? "Focused or full system."
+              : "Enfocado o sistema completo."}
           </p>
         </div>
       )}
@@ -952,7 +947,7 @@ function ServicesMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: (
           display: "grid",
           gap: 0,
           gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
-          columnGap: compact ? 0 : 28,
+          columnGap: compact ? 0 : 20,
         }}
       >
         {items.map(([title, duration, sub], i) => (
@@ -991,7 +986,7 @@ function MovementRow({
       onClick={onSelect}
       style={{
         display: "block",
-        padding: compact ? "12px 8px" : "14px 14px",
+        padding: compact ? "8px 6px" : "10px 10px",
         textDecoration: "none",
         color: "inherit",
         position: "relative",
@@ -1035,12 +1030,12 @@ function MovementRow({
           pointerEvents: "none",
         }}
       />
-      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 2 }}>
         <span
           style={{
             fontFamily: serif,
             fontStyle: "italic",
-            fontSize: compact ? 22 : 26,
+            fontSize: compact ? 18 : 20,
             lineHeight: 1,
             color: "rgba(232,183,131,0.55)",
             letterSpacing: "-0.02em",
@@ -1050,7 +1045,7 @@ function MovementRow({
         </span>
         <span
           style={{
-            fontSize: compact ? 13 : 14,
+            fontSize: compact ? 12.5 : 13,
             color: "white",
             letterSpacing: "-0.005em",
             fontWeight: 400,
@@ -1063,12 +1058,17 @@ function MovementRow({
         <p
           style={{
             margin: 0,
-            fontSize: compact ? 11 : 11.5,
-            lineHeight: 1.5,
-            color: "rgba(255,255,255,0.55)",
+            fontSize: compact ? 10.5 : 11,
+            lineHeight: 1.4,
+            color: "rgba(255,255,255,0.5)",
             fontWeight: 300,
             flex: 1,
             minWidth: 0,
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            display: "-webkit-box",
+            WebkitLineClamp: 1,
+            WebkitBoxOrient: "vertical",
           }}
         >
           {body}
@@ -1079,7 +1079,7 @@ function MovementRow({
           style={{
             fontFamily: serif,
             fontStyle: "italic",
-            fontSize: 16,
+            fontSize: 14,
             color: "rgba(232,183,131,0.85)",
             opacity: 0,
             transform: "translateX(-6px)",
@@ -1105,17 +1105,17 @@ function ProcessMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: ()
             display: "flex",
             alignItems: "baseline",
             justifyContent: "space-between",
-            gap: 24,
-            marginBottom: 10,
-            padding: "0 14px 16px",
+            gap: 16,
+            marginBottom: 6,
+            padding: "0 10px 10px",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           <p
             style={{
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 500,
-              letterSpacing: "0.42em",
+              letterSpacing: "0.4em",
               textTransform: "uppercase",
               color: "rgba(255,255,255,0.42)",
               margin: 0,
@@ -1127,15 +1127,15 @@ function ProcessMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: ()
             style={{
               fontFamily: serif,
               fontStyle: "italic",
-              fontSize: 14,
+              fontSize: 12.5,
               color: "rgba(232,183,131,0.78)",
               margin: 0,
               letterSpacing: "-0.005em",
             }}
           >
             {lang === "en"
-              ? "Four movements. One direction."
-              : "Cuatro movimientos. Una dirección."}
+              ? "Four movements."
+              : "Cuatro movimientos."}
           </p>
         </div>
       )}
@@ -1144,7 +1144,7 @@ function ProcessMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: ()
           display: "grid",
           gap: 0,
           gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
-          columnGap: compact ? 0 : 28,
+          columnGap: compact ? 0 : 20,
         }}
       >
         {items.map(([n, title, sub]) => (
