@@ -63,7 +63,7 @@ const vignettes: Vignette[] = [
 ];
 
 const en = {
-  eyebrow: "Atmospheres · 001",
+  eyebrow: "Atmospheres",
   h1a: "Sensory notes",
   h1b: "from the laboratory.",
   lead: "Six snapshots from the rooms, the hours and the surfaces we design. Not case studies. Not promises. Atmospheres, written down.",
@@ -74,7 +74,7 @@ const en = {
 };
 
 const es = {
-  eyebrow: "Atmósferas · 001",
+  eyebrow: "Atmósferas",
   h1a: "Notas sensoriales",
   h1b: "del laboratorio.",
   lead: "Seis instantáneas de las habitaciones, las horas y las superficies que diseñamos. No son case studies. No son promesas. Atmósferas, escritas.",

@@ -3,9 +3,9 @@ import LabRecords from "./_lab-records";
 import { records } from "../_lib/lab-records";
 
 export const metadata: Metadata = {
-  title: "Lab Records — Cultural Field Notes from Xnlab Studio",
+  title: "Lab Records — Notes on Hospitality, Luxury, Music & Digital Atmosphere",
   description:
-    "Editorial observations from inside Xnlab Studio on hospitality branding, cinematic luxury, music worldbuilding, atmospheric design and the next decade of cultural identity systems.",
+    "Editorial observations from XNLAB on hospitality branding, luxury, music identity, digital atmosphere and the future of cultural brands.",
   alternates: { canonical: "/lab-records" },
   openGraph: {
     title: "Lab Records · Xnlab Studio",

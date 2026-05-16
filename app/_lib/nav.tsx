@@ -7,6 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { AmbientAudio } from "./audio";
 import { WordmarkLink } from "./wordmark";
 import { worlds } from "./worlds";
+import { Orb } from "./orb";
+
+const serif = "var(--font-serif,'Cormorant Garamond',Georgia,serif)";
 
 type NavLang = "en" | "es";
 
@@ -22,20 +25,20 @@ type MenuKey = "worlds" | "services" | "process";
 const SERVICES = (lang: NavLang): Array<[string, string, string]> =>
   lang === "en"
     ? [
-        ["Campaign System", "From €5,000", "A focused launch across digital surfaces."],
-        ["Digital Atmosphere", "From €10,000", "Cinematic single-page world."],
-        ["Brand World", "From €25,000", "Full multi-page system."],
-        ["Visual Engine", "From €4,000 / mo", "Continuous creative direction."],
-        ["Technical / Growth", "From €1,500", "SEO, structure, analytics, conversion."],
-        ["Upgrade Sprint", "From €2.5K – €4K", "Two-to-four-week intensive."],
+        ["Campaign System", "2–3 weeks", "A focused launch across digital surfaces."],
+        ["Digital Atmosphere", "4–6 weeks", "Cinematic single-page world."],
+        ["Brand World", "8–12 weeks", "Full multi-page system."],
+        ["Visual Engine", "Monthly", "Continuous creative direction."],
+        ["SEO & Conversion Layer", "1–2 weeks", "SEO, structure, analytics, conversion."],
+        ["Perception Upgrade", "2–4 weeks", "Two-to-four-week intensive."],
       ]
     : [
-        ["Campaign System", "Desde €5.000", "Lanzamiento puntual en superficies digitales."],
-        ["Atmósfera Digital", "Desde €10.000", "Mundo cinematográfico de una sola página."],
-        ["Mundo de Marca", "Desde €25.000", "Sistema multipágina completo."],
-        ["Motor Visual", "Desde €4.000 / mes", "Dirección creativa continua."],
-        ["Técnico / Crecimiento", "Desde €1.500", "SEO, estructura, analítica, conversión."],
-        ["Sprint de Mejora", "Desde €2,5K – €4K", "Intensivo de dos a cuatro semanas."],
+        ["Campaign System", "2–3 semanas", "Lanzamiento puntual en superficies digitales."],
+        ["Atmósfera Digital", "4–6 semanas", "Mundo cinematográfico de una sola página."],
+        ["Mundo de Marca", "8–12 semanas", "Sistema multipágina completo."],
+        ["Motor Visual", "Mensual", "Dirección creativa continua."],
+        ["SEO y Conversión", "1–2 semanas", "SEO, estructura, analítica, conversión."],
+        ["Sprint de Percepción", "2–4 semanas", "Intensivo de dos a cuatro semanas."],
       ];
 
 const MOVEMENTS = (lang: NavLang): Array<[string, string, string]> =>
@@ -49,7 +52,7 @@ const MOVEMENTS = (lang: NavLang): Array<[string, string, string]> =>
     : [
         ["01", "Diagnosticar", "Nombrar el gap de percepción."],
         ["02", "Dirigir", "Fijar una sola dirección."],
-        ["03", "Construir", "Identidad, copy, motion, código."],
+        ["03", "Construir", "Identidad, redacción, animación, código."],
         ["04", "Activar", "Lanzar, afinar, quedarse durante el primer mes."],
       ];
 
@@ -80,7 +83,6 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
   const items: Array<{ key: MenuKey | "apply"; label: string; href: string; menu: boolean }> = [
     { key: "worlds", label: t.nw, href: "/worlds", menu: true },
     { key: "services", label: t.nse, href: "/services", menu: true },
-    { key: "process", label: t.np, href: "/process", menu: true },
     { key: "apply", label: t.na, href: "/contact", menu: false },
   ];
 
@@ -299,7 +301,13 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               WebkitBackdropFilter: "blur(32px)",
             }}
           >
-            <div style={{ maxWidth: 1600, margin: "0 auto", padding: "clamp(28px,3.4vw,48px) clamp(20px,5vw,56px)" }}>
+            <div
+              style={{
+                maxWidth: open === "process" ? 920 : 1100,
+                margin: "0 auto",
+                padding: "clamp(20px,2.4vw,32px) clamp(20px,3.4vw,40px) clamp(24px,2.8vw,36px)",
+              }}
+            >
               {open === "worlds" && <WorldsMenu lang={lang} onSelect={() => setOpen(null)} />}
               {open === "services" && <ServicesMenu lang={lang} onSelect={() => setOpen(null)} />}
               {open === "process" && <ProcessMenu lang={lang} onSelect={() => setOpen(null)} />}
@@ -343,9 +351,6 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               </MobileSection>
               <MobileSection title={t.nse} href="/services" onClose={() => setMobileOpen(false)}>
                 <ServicesMenu lang={lang} onSelect={() => setMobileOpen(false)} compact />
-              </MobileSection>
-              <MobileSection title={t.np} href="/process" onClose={() => setMobileOpen(false)}>
-                <ProcessMenu lang={lang} onSelect={() => setMobileOpen(false)} compact />
               </MobileSection>
               <Link
                 href="/contact"
@@ -484,12 +489,13 @@ function MenuCard({
       {meta && (
         <p
           style={{
-            fontFamily: "var(--font-serif, Georgia)",
-            fontStyle: "italic",
-            fontSize: compact ? 12.5 : 13.5,
-            color: "rgba(230,205,165,0.9)",
+            fontSize: 10,
+            fontWeight: 500,
+            letterSpacing: "0.32em",
+            textTransform: "uppercase",
+            color: "rgba(232,183,131,0.6)",
             margin: 0,
-            marginBottom: 4,
+            marginBottom: 6,
           }}
         >
           {meta}
@@ -510,78 +516,648 @@ function MenuCard({
   );
 }
 
-function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
+function WorldRow({
+  href,
+  numberLabel,
+  numberColor,
+  title,
+  body,
+  orbSlot,
+  onSelect,
+  compact,
+}: {
+  href: string;
+  numberLabel: string;
+  numberColor: string;
+  title: string;
+  body: string;
+  orbSlot: React.ReactNode;
+  onSelect?: () => void;
+  compact?: boolean;
+}) {
   return (
-    <div
+    <Link
+      href={href}
+      onClick={onSelect}
       style={{
-        display: "grid",
-        gap: compact ? 8 : "clamp(10px,1.2vw,16px)",
-        gridTemplateColumns: compact ? "1fr 1fr" : "repeat(auto-fit,minmax(200px,1fr))",
+        display: "flex",
+        alignItems: "flex-start",
+        gap: compact ? 12 : 16,
+        padding: compact ? "12px 8px" : "14px 14px",
+        textDecoration: "none",
+        color: "inherit",
+        position: "relative",
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+        transition: "background 0.4s, border-color 0.4s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = "scaleX(1)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "1";
+          arrow.style.transform = "translateX(0)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = "scaleX(0)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "0";
+          arrow.style.transform = "translateX(-6px)";
+        }
       }}
     >
-      <MenuCard
-        href="/worlds"
-        number="00"
-        title={lang === "en" ? "The Universe" : "El Universo"}
-        sub={lang === "en" ? "Mythology and Cores" : "Mitología y Núcleos"}
-        compact={compact}
-        onSelect={onSelect}
+      {/* Bottom hairline accent in the world's colour. Scales from
+          centre on hover. Subtle commercial signature for each Core. */}
+      <span
+        data-accent
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: 14,
+          right: 14,
+          bottom: -1,
+          height: 1,
+          background: numberColor,
+          opacity: 0.65,
+          transform: "scaleX(0)",
+          transformOrigin: "left center",
+          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+          pointerEvents: "none",
+        }}
       />
-      {worlds.map((w) => (
-        <MenuCard
-          key={w.slug}
-          href={`/worlds/${w.slug}`}
-          number={w.number}
-          numberColor={w.color.hex}
-          title={w.title[lang]}
-          sub={w.color.name}
-          compact={compact}
+      <div
+        style={{
+          width: compact ? 36 : 44,
+          height: compact ? 36 : 44,
+          flexShrink: 0,
+          marginTop: 2,
+        }}
+      >
+        {orbSlot}
+      </div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            gap: 8,
+            marginBottom: 6,
+          }}
+        >
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.32em",
+              color: numberColor,
+            }}
+          >
+            {numberLabel}
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 10 }}>—</span>
+          <span
+            style={{
+              fontSize: compact ? 13 : 14,
+              color: "white",
+              letterSpacing: "-0.005em",
+              fontWeight: 400,
+            }}
+          >
+            {title}
+          </span>
+        </div>
+        <p
+          style={{
+            margin: 0,
+            fontSize: compact ? 11 : 11.5,
+            lineHeight: 1.5,
+            color: "rgba(255,255,255,0.55)",
+            fontWeight: 300,
+          }}
+        >
+          {body}
+        </p>
+      </div>
+      <span
+        data-arrow
+        aria-hidden
+        style={{
+          fontFamily: serif,
+          fontStyle: "italic",
+          fontSize: 18,
+          color: numberColor,
+          alignSelf: "center",
+          opacity: 0,
+          transform: "translateX(-6px)",
+          transition: "opacity 0.4s, transform 0.4s",
+          pointerEvents: "none",
+        }}
+      >
+        →
+      </span>
+    </Link>
+  );
+}
+
+function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
+  return (
+    <div>
+      {!compact && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 24,
+            marginBottom: 10,
+            padding: "0 14px 16px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.42em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.42)",
+              margin: 0,
+            }}
+          >
+            {lang === "en" ? "The Universe" : "El Universo"}
+          </p>
+          <p
+            style={{
+              fontFamily: serif,
+              fontStyle: "italic",
+              fontSize: 14,
+              color: "rgba(232,183,131,0.78)",
+              margin: 0,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {lang === "en"
+              ? "Six emotional systems. Six ways to build presence."
+              : "Seis sistemas emocionales. Seis formas de construir presencia."}
+          </p>
+        </div>
+      )}
+      <div
+        style={{
+          display: "grid",
+          gap: 0,
+          gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
+          columnGap: compact ? 0 : 28,
+        }}
+      >
+        <WorldRow
+          href="/worlds"
+          numberLabel="00"
+          numberColor="rgba(255,255,255,0.55)"
+          title={lang === "en" ? "The Universe" : "El Universo"}
+          body={
+            lang === "en"
+              ? "The studio's full system — mythology, Central Core and the six Cores in one place."
+              : "El sistema completo del estudio — mitología, Núcleo Central y los seis Núcleos en un solo lugar."
+          }
+          orbSlot={<Orb central size={compact ? 36 : 44} />}
           onSelect={onSelect}
+          compact={compact}
         />
-      ))}
+        {worlds.map((w) => (
+          <WorldRow
+            key={w.slug}
+            href={`/worlds/${w.slug}`}
+            numberLabel={w.number}
+            numberColor={w.color.hex}
+            title={w.title[lang]}
+            body={w.pitch[lang]}
+            orbSlot={<Orb world={w} size={compact ? 36 : 44} />}
+            onSelect={onSelect}
+            compact={compact}
+          />
+        ))}
+      </div>
     </div>
+  );
+}
+
+function ServiceRow({
+  href,
+  numberLabel,
+  duration,
+  title,
+  body,
+  onSelect,
+  compact,
+}: {
+  href: string;
+  numberLabel: string;
+  duration: string;
+  title: string;
+  body: string;
+  onSelect?: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      onClick={onSelect}
+      style={{
+        display: "block",
+        padding: compact ? "12px 8px" : "14px 14px",
+        textDecoration: "none",
+        color: "inherit",
+        position: "relative",
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+        transition: "background 0.4s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = "scaleX(1)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "1";
+          arrow.style.transform = "translateX(0)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = "scaleX(0)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "0";
+          arrow.style.transform = "translateX(-6px)";
+        }
+      }}
+    >
+      <span
+        data-accent
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: 14,
+          right: 14,
+          bottom: -1,
+          height: 1,
+          background: "rgba(232,183,131,0.65)",
+          transform: "scaleX(0)",
+          transformOrigin: "left center",
+          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+          pointerEvents: "none",
+        }}
+      />
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 12,
+          marginBottom: 6,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.32em",
+              color: "rgba(232,183,131,0.62)",
+            }}
+          >
+            {numberLabel}
+          </span>
+          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 10 }}>—</span>
+          <span
+            style={{
+              fontSize: compact ? 13 : 14,
+              color: "white",
+              letterSpacing: "-0.005em",
+              fontWeight: 400,
+            }}
+          >
+            {title}
+          </span>
+        </div>
+        <span
+          style={{
+            fontSize: 9.5,
+            fontWeight: 500,
+            letterSpacing: "0.28em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.42)",
+            whiteSpace: "nowrap",
+            flexShrink: 0,
+          }}
+        >
+          {duration}
+        </span>
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "baseline",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <p
+          style={{
+            margin: 0,
+            fontSize: compact ? 11 : 11.5,
+            lineHeight: 1.5,
+            color: "rgba(255,255,255,0.55)",
+            fontWeight: 300,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {body}
+        </p>
+        <span
+          data-arrow
+          aria-hidden
+          style={{
+            fontFamily: serif,
+            fontStyle: "italic",
+            fontSize: 16,
+            color: "rgba(232,183,131,0.85)",
+            opacity: 0,
+            transform: "translateX(-6px)",
+            transition: "opacity 0.4s, transform 0.4s",
+            pointerEvents: "none",
+            flexShrink: 0,
+          }}
+        >
+          →
+        </span>
+      </div>
+    </Link>
   );
 }
 
 function ServicesMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
   const items = SERVICES(lang);
   return (
-    <div
+    <div>
+      {!compact && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 24,
+            marginBottom: 10,
+            padding: "0 14px 16px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.42em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.42)",
+              margin: 0,
+            }}
+          >
+            {lang === "en" ? "Systems" : "Sistemas"}
+          </p>
+          <p
+            style={{
+              fontFamily: serif,
+              fontStyle: "italic",
+              fontSize: 14,
+              color: "rgba(232,183,131,0.78)",
+              margin: 0,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {lang === "en"
+              ? "Ways to enter the lab. Start focused or build a full world."
+              : "Cómo entrar al laboratorio. Empieza enfocado o construye un mundo completo."}
+          </p>
+        </div>
+      )}
+      <div
+        style={{
+          display: "grid",
+          gap: 0,
+          gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
+          columnGap: compact ? 0 : 28,
+        }}
+      >
+        {items.map(([title, duration, sub], i) => (
+          <ServiceRow
+            key={title}
+            href="/services"
+            numberLabel={`0${i + 1}`}
+            duration={duration}
+            title={title}
+            body={sub}
+            onSelect={onSelect}
+            compact={compact}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MovementRow({
+  numberLabel,
+  title,
+  body,
+  onSelect,
+  compact,
+}: {
+  numberLabel: string;
+  title: string;
+  body: string;
+  onSelect?: () => void;
+  compact?: boolean;
+}) {
+  return (
+    <Link
+      href="/process"
+      onClick={onSelect}
       style={{
-        display: "grid",
-        gap: compact ? 8 : "clamp(10px,1.2vw,16px)",
-        gridTemplateColumns: compact ? "1fr" : "repeat(auto-fit,minmax(220px,1fr))",
+        display: "block",
+        padding: compact ? "12px 8px" : "14px 14px",
+        textDecoration: "none",
+        color: "inherit",
+        position: "relative",
+        borderTop: "1px solid rgba(255,255,255,0.05)",
+        transition: "background 0.4s",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = "scaleX(1)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "1";
+          arrow.style.transform = "translateX(0)";
+        }
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "transparent";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = "scaleX(0)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "0";
+          arrow.style.transform = "translateX(-6px)";
+        }
       }}
     >
-      {items.map(([title, price, sub], i) => (
-        <MenuCard
-          key={title}
-          href="/services"
-          number={`0${i + 1}`}
-          title={title}
-          meta={price}
-          sub={sub}
-          compact={compact}
-          onSelect={onSelect}
-        />
-      ))}
-    </div>
+      <span
+        data-accent
+        aria-hidden
+        style={{
+          position: "absolute",
+          left: 14,
+          right: 14,
+          bottom: -1,
+          height: 1,
+          background: "rgba(232,183,131,0.65)",
+          transform: "scaleX(0)",
+          transformOrigin: "left center",
+          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+          pointerEvents: "none",
+        }}
+      />
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 6 }}>
+        <span
+          style={{
+            fontFamily: serif,
+            fontStyle: "italic",
+            fontSize: compact ? 22 : 26,
+            lineHeight: 1,
+            color: "rgba(232,183,131,0.55)",
+            letterSpacing: "-0.02em",
+          }}
+        >
+          {numberLabel}
+        </span>
+        <span
+          style={{
+            fontSize: compact ? 13 : 14,
+            color: "white",
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
+          }}
+        >
+          {title}
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
+        <p
+          style={{
+            margin: 0,
+            fontSize: compact ? 11 : 11.5,
+            lineHeight: 1.5,
+            color: "rgba(255,255,255,0.55)",
+            fontWeight: 300,
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          {body}
+        </p>
+        <span
+          data-arrow
+          aria-hidden
+          style={{
+            fontFamily: serif,
+            fontStyle: "italic",
+            fontSize: 16,
+            color: "rgba(232,183,131,0.85)",
+            opacity: 0,
+            transform: "translateX(-6px)",
+            transition: "opacity 0.4s, transform 0.4s",
+            pointerEvents: "none",
+            flexShrink: 0,
+          }}
+        >
+          →
+        </span>
+      </div>
+    </Link>
   );
 }
 
 function ProcessMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
   const items = MOVEMENTS(lang);
   return (
-    <div
-      style={{
-        display: "grid",
-        gap: compact ? 8 : "clamp(10px,1.2vw,16px)",
-        gridTemplateColumns: compact ? "1fr 1fr" : "repeat(auto-fit,minmax(220px,1fr))",
-      }}
-    >
-      {items.map(([n, title, sub]) => (
-        <MenuCard key={n} href="/process" number={n} title={title} sub={sub} compact={compact} onSelect={onSelect} />
-      ))}
+    <div>
+      {!compact && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 24,
+            marginBottom: 10,
+            padding: "0 14px 16px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <p
+            style={{
+              fontSize: 10,
+              fontWeight: 500,
+              letterSpacing: "0.42em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.42)",
+              margin: 0,
+            }}
+          >
+            {lang === "en" ? "Method" : "Método"}
+          </p>
+          <p
+            style={{
+              fontFamily: serif,
+              fontStyle: "italic",
+              fontSize: 14,
+              color: "rgba(232,183,131,0.78)",
+              margin: 0,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {lang === "en"
+              ? "Four movements. One direction."
+              : "Cuatro movimientos. Una dirección."}
+          </p>
+        </div>
+      )}
+      <div
+        style={{
+          display: "grid",
+          gap: 0,
+          gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
+          columnGap: compact ? 0 : 28,
+        }}
+      >
+        {items.map(([n, title, sub]) => (
+          <MovementRow
+            key={n}
+            numberLabel={n}
+            title={title}
+            body={sub}
+            onSelect={onSelect}
+            compact={compact}
+          />
+        ))}
+      </div>
     </div>
   );
 }

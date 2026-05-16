@@ -6,7 +6,7 @@ import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
-  eyebrow: "Manifesto · 001",
+  eyebrow: "Manifesto",
   intro: "Six statements.",
   statements: [
     "We design presence, not content.",
@@ -17,12 +17,12 @@ const en = {
     "Worlds are built slowly. We are patient.",
   ],
   closing: "Read again, slowly.",
-  cta: "Initiate Contact",
+  cta: "Start a project",
   back: "← Home",
 };
 
 const es = {
-  eyebrow: "Manifiesto · 001",
+  eyebrow: "Manifiesto",
   intro: "Seis afirmaciones.",
   statements: [
     "Diseñamos presencia, no contenido.",
@@ -33,7 +33,7 @@ const es = {
     "Los mundos se construyen despacio. Somos pacientes.",
   ],
   closing: "Léelo otra vez, despacio.",
-  cta: "Iniciar Contacto",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
 };
 

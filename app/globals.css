@@ -83,3 +83,78 @@ html {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
+
+/* Screen-reader-only utility. Used for SEO-friendly H1s that should not
+   compete with the cinematic wordmark visually but should still be
+   indexable by search engines and parsed by assistive technology. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Global focus-visible style. Premium amber ring for keyboard nav, never
+   shown on mouse-only focus (focus-visible only). Sits 3px outside the
+   target with a soft 1px ring + small offset shadow for legibility on
+   the dark background. */
+:focus { outline: none; }
+:focus-visible {
+  outline: 1px solid rgba(232, 183, 131, 0.85);
+  outline-offset: 3px;
+  border-radius: 2px;
+  transition: outline-color 0.2s ease;
+}
+button:focus-visible,
+a:focus-visible {
+  outline: 1px solid rgba(232, 183, 131, 0.85);
+  outline-offset: 4px;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 1px solid rgba(232, 183, 131, 0.6);
+  outline-offset: 2px;
+}
+
+/* Light selection colour so highlighted text reads luxe against the
+   dark site instead of the default OS blue. */
+::selection {
+  background: rgba(232, 183, 131, 0.32);
+  color: white;
+}
+
+/* Mobile-first touch sizing — ensures all interactive controls meet
+   the 44×44 touch target requirement on small screens without bloating
+   them on desktop. Applied via media query so it never affects pointer
+   devices that already have larger comfortable hit areas. */
+@media (hover: none) and (pointer: coarse) {
+  a, button, [role="button"], input[type="submit"], input[type="button"] {
+    min-height: 44px;
+  }
+  /* Slightly larger tap zones around small inline links inside body
+     copy, without changing their visual size. */
+  p a, li a {
+    padding-block: 2px;
+  }
+}
+
+/* Disable the custom cursor follow on touch — already gated in JS, but
+   this prevents any flicker before mount. */
+@media (hover: none), (pointer: coarse) {
+  body { cursor: auto; }
+}
+
+/* Tighter line-height on narrow screens to keep premium typography
+   from feeling airy on mobile. */
+@media (max-width: 480px) {
+  body {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+  }
+}

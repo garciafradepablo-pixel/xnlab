@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../../_lib/atoms";
 import { WordmarkLink } from "../../_lib/wordmark";
+import { Breadcrumb } from "../../_lib/breadcrumb";
 import { Magnetic } from "../../_lib/chrome";
 import type { LabRecord as TLabRecord } from "../../_lib/lab-records";
 import { records } from "../../_lib/lab-records";
@@ -10,13 +11,13 @@ import { worlds } from "../../_lib/worlds";
 const ui = {
   en: {
     back: "← All records",
-    cta: "Initiate Contact",
+    cta: "Start a project",
     next: "Next record →",
     relatedWorld: "Related World",
   },
   es: {
     back: "← Todos los records",
-    cta: "Iniciar Contacto",
+    cta: "Iniciar un proyecto",
     next: "Siguiente record →",
     relatedWorld: "Mundo relacionado",
   },
@@ -48,6 +49,21 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
   // Next record (loops)
   const idx = records.findIndex((r) => r.slug === record.slug);
   const next = records[(idx + 1) % records.length];
+  // Related records — prefer same worldSlug, fallback to overlapping
+  // tags. Always 3 results max, current record always excluded.
+  const related = (() => {
+    const others = records.filter((r) => r.slug !== record.slug);
+    const sameWorld = record.worldSlug
+      ? others.filter((r) => r.worldSlug === record.worldSlug)
+      : [];
+    const tagSet = new Set(record.tags ?? []);
+    const byTag = others
+      .filter((r) => !sameWorld.includes(r))
+      .filter((r) => (r.tags ?? []).some((t) => tagSet.has(t)));
+    return [...sameWorld, ...byTag, ...others]
+      .filter((r, i, arr) => arr.findIndex((x) => x.slug === r.slug) === i)
+      .slice(0, 3);
+  })();
 
   return (
     <main
@@ -99,6 +115,14 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
         </nav>
       </header>
 
+      <Breadcrumb
+        items={[
+          { label: lang === "en" ? "Home" : "Inicio", href: "/" },
+          { label: "Lab Records", href: "/lab-records" },
+          { label: record.title[lang] },
+        ]}
+      />
+
       {/* Hero — record title + meta */}
       <section
         style={{
@@ -108,7 +132,7 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "clamp(140px,18vh,200px) clamp(24px,7vw,96px) clamp(60px,8vw,120px)",
+          padding: "clamp(170px,20vh,220px) clamp(24px,7vw,96px) clamp(60px,8vw,120px)",
           textAlign: "center",
           background: `radial-gradient(ellipse at 50% 38%, ${deepTint.replace(",1)", ",0.55)")} 0%, transparent 60%), #060606`,
         }}
@@ -205,6 +229,110 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
                 {world.title[lang]} →
               </Link>
             </div>
+          </div>
+        </section>
+      )}
+
+      {/* Related records — strong internal linking for SEO + reader
+          retention. Picks records that share the same World Core or
+          overlapping tags, never the current record. */}
+      {related.length > 0 && (
+        <section
+          style={{
+            padding: "clamp(56px,8vw,120px) clamp(20px,7vw,96px)",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+            maxWidth: 1100,
+            margin: "0 auto",
+          }}
+        >
+          <p
+            style={{
+              ...labelStyle,
+              marginBottom: "clamp(28px,3.4vw,48px)",
+              textAlign: "center",
+            }}
+          >
+            {lang === "en" ? "Continue reading" : "Sigue leyendo"}
+          </p>
+          <div
+            style={{
+              display: "grid",
+              gap: 0,
+              gridTemplateColumns: "1fr",
+            }}
+            className="md:grid-cols-3"
+          >
+            {related.map((r, i) => (
+              <Link
+                key={r.slug}
+                href={`/lab-records/${r.slug}`}
+                style={{
+                  display: "block",
+                  padding: "clamp(22px,2.6vw,32px) clamp(14px,2vw,24px)",
+                  borderTop: "1px solid rgba(255,255,255,0.06)",
+                  borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  borderRight:
+                    i < related.length - 1 ? "1px solid rgba(255,255,255,0.04)" : undefined,
+                  textDecoration: "none",
+                  color: "inherit",
+                  position: "relative",
+                  transition: "background 0.4s",
+                }}
+                className={
+                  i === 0
+                    ? "md:border-r md:[border-right-color:rgba(255,255,255,0.04)]"
+                    : i === 1
+                    ? "md:border-r md:[border-right-color:rgba(255,255,255,0.04)]"
+                    : ""
+                }
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: "0.32em",
+                    color: "rgba(232,183,131,0.55)",
+                    margin: 0,
+                    marginBottom: 8,
+                  }}
+                >
+                  {r.number} · {r.category[lang]}
+                </p>
+                <p
+                  style={{
+                    fontFamily: serif,
+                    fontStyle: "italic",
+                    fontSize: "clamp(1.05rem,1.45vw,1.35rem)",
+                    lineHeight: 1.18,
+                    letterSpacing: "-0.005em",
+                    color: "rgba(255,255,255,0.92)",
+                    margin: 0,
+                    marginBottom: 10,
+                  }}
+                >
+                  {r.title[lang]}
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontSize: "clamp(0.92rem,1.04vw,1.02rem)",
+                    lineHeight: 1.6,
+                    color: "rgba(255,255,255,0.6)",
+                    fontWeight: 300,
+                  }}
+                >
+                  {r.lead[lang].length > 140
+                    ? `${r.lead[lang].slice(0, 140).trim()}…`
+                    : r.lead[lang]}
+                </p>
+              </Link>
+            ))}
           </div>
         </section>
       )}

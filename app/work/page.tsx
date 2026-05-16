@@ -3,14 +3,14 @@ import WorkIndex from "./_work-index";
 import { projects } from "./data";
 
 export const metadata: Metadata = {
-  title: "Selected Works — Boutique Hotel, Nightlife & Architecture Projects",
+  title: "Selected Studies — XNLAB Internal Visual Systems",
   description:
-    "Selected creative direction projects by Xnlab Studio: brand identities, atmosphere design and visual systems for luxury hospitality, boutique hotels, nightclubs, restaurants and cultural architecture. Worldwide engagements.",
+    "Explore internal XNLAB studies showing how the studio designs atmosphere, identity, campaign systems and digital presence.",
   alternates: { canonical: "/work" },
   openGraph: {
-    title: "Selected Works · XNLAB",
+    title: "Selected Studies · XNLAB",
     description:
-      "Selected projects in hospitality, nightlife, architecture and cultural identity.",
+      "Internal visual systems showing how XNLAB designs atmosphere, identity and digital presence.",
     url: "https://xnlab.io/work",
     type: "website",
   },

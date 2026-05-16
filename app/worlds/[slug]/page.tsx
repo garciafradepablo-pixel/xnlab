@@ -17,17 +17,22 @@ export async function generateMetadata({
   const { slug } = await params;
   const w = getWorld(slug);
   if (!w) return {};
-  const title = `${w.title.en} — World ${w.number}`;
-  const description = `${w.essence.en} ${w.energy.en}`;
+  const title = `${w.title.en} — XNLAB World ${w.number}`;
+  const description = w.pitch.en;
   return {
     title,
     description,
     alternates: { canonical: `/worlds/${w.slug}` },
     openGraph: {
-      title: `${w.title.en} · Xnlab Studio`,
+      title: `${w.title.en} · XNLAB`,
       description,
       url: `https://xnlab.io/worlds/${w.slug}`,
       type: "article",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${w.title.en} · XNLAB`,
+      description,
     },
   };
 }
@@ -40,5 +45,55 @@ export default async function Page({
   const { slug } = await params;
   const world = getWorld(slug);
   if (!world) notFound();
-  return <WorldDetail world={world} />;
+
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Article",
+        headline: `${world.title.en} — ${world.color.name}`,
+        description: world.pitch.en,
+        author: {
+          "@type": "Organization",
+          name: "XNLAB",
+          url: "https://xnlab.io",
+        },
+        publisher: {
+          "@type": "Organization",
+          name: "XNLAB",
+          url: "https://xnlab.io",
+        },
+        mainEntityOfPage: {
+          "@type": "WebPage",
+          "@id": `https://xnlab.io/worlds/${world.slug}`,
+        },
+        articleSection: "Worlds",
+        inLanguage: ["en", "es"],
+        keywords: [world.title.en, world.color.name, "XNLAB", "creative direction", "digital atmosphere"].join(", "),
+      },
+      {
+        "@type": "BreadcrumbList",
+        itemListElement: [
+          { "@type": "ListItem", position: 1, name: "Home", item: "https://xnlab.io" },
+          { "@type": "ListItem", position: 2, name: "Worlds", item: "https://xnlab.io/worlds" },
+          {
+            "@type": "ListItem",
+            position: 3,
+            name: world.title.en,
+            item: `https://xnlab.io/worlds/${world.slug}`,
+          },
+        ],
+      },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <WorldDetail world={world} />
+    </>
+  );
 }

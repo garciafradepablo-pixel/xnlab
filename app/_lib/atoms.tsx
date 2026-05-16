@@ -124,11 +124,15 @@ export function Dust({ count = 8, opacity = 0.08 }: { count?: number; opacity?: 
             position: "absolute",
             left: `${p.x}%`,
             top: `${p.y}%`,
-            width: p.s * 8,
-            height: p.s * 8,
+            width: p.s * 14,
+            height: p.s * 14,
             borderRadius: "50%",
-            background: `radial-gradient(circle, rgba(230,205,165,${opacity}) 0%, transparent 70%)`,
-            filter: "blur(2px)",
+            // Softer destello — gradient fades from a low-opacity centre
+            // straight to transparent, with extra CSS blur on top. The
+            // particle becomes a real bokeh haze instead of a defined
+            // dot. Cinematic film grain feel.
+            background: `radial-gradient(circle, rgba(230,205,165,${opacity * 0.7}) 0%, rgba(230,205,165,${opacity * 0.3}) 30%, transparent 55%)`,
+            filter: "blur(5px)",
             animation: `${p.anim} ${p.d}s ${p.del}s infinite ease-in-out`,
             transform: "translate(-50%,-50%)",
             willChange: "transform,opacity",

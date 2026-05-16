@@ -16,7 +16,7 @@ export default async function OG({
   const discipline = project?.discipline ?? "Selected Works";
   const year = project?.year ?? "";
   const title = project?.title ?? "Selected Works";
-  const excerpt = project?.excerpt.en ?? "Worldbuilding for modern luxury.";
+  const excerpt = project?.excerpt.en ?? "Digital Atmosphere Studio for premium brands.";
 
   return new ImageResponse(
     (

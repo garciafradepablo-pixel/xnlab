@@ -30,7 +30,7 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
         ref={ref}
         style={{
           position: "relative",
-          width: "clamp(260px, 56vw, 560px)",
+          width: "clamp(220px, 44vw, 440px)",
           aspectRatio: "1",
           scale,
         }}
@@ -45,9 +45,9 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
                 position: "absolute",
                 left: "50%",
                 top: "50%",
-                width: "clamp(54px, 7.4vw, 100px)",
-                height: "clamp(54px, 7.4vw, 100px)",
-                transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(calc(-1 * clamp(95px, 23vw, 215px))) rotate(${-angle}deg)`,
+                width: "clamp(64px, 9.4vw, 130px)",
+                height: "clamp(64px, 9.4vw, 130px)",
+                transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(calc(-1 * clamp(85px, 19vw, 180px))) rotate(${-angle}deg)`,
               }}
             >
               <Link
@@ -86,27 +86,42 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
                     left: "50%",
                     bottom: "calc(100% + 14px)",
                     transform: "translateX(-50%)",
-                    width: "clamp(150px, 18vw, 220px)",
+                    width: "clamp(200px, 22vw, 280px)",
                     pointerEvents: "none",
                   }}
                 >
-                  <motion.p
+                  <motion.div
                     animate={{ opacity: isHover ? 1 : 0, y: isHover ? 0 : 4 }}
                     transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                    style={{
-                      margin: 0,
-                      fontSize: "clamp(10px, 0.78vw, 11.5px)",
-                      letterSpacing: "0.26em",
-                      textTransform: "uppercase",
-                      color: "white",
-                      fontWeight: 600,
-                      textAlign: "center",
-                      lineHeight: 1.35,
-                      textShadow: "0 1px 14px rgba(0,0,0,0.95)",
-                    }}
+                    style={{ textAlign: "center" }}
                   >
-                    {w.title[lang]}
-                  </motion.p>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: "clamp(10px, 0.78vw, 11.5px)",
+                        letterSpacing: "0.26em",
+                        textTransform: "uppercase",
+                        color: "white",
+                        fontWeight: 600,
+                        lineHeight: 1.35,
+                        textShadow: "0 1px 14px rgba(0,0,0,0.95)",
+                      }}
+                    >
+                      {w.title[lang]}
+                    </p>
+                    <p
+                      style={{
+                        margin: "8px 0 0",
+                        fontSize: "clamp(10px, 0.78vw, 11.5px)",
+                        lineHeight: 1.4,
+                        color: "rgba(255,255,255,0.62)",
+                        fontWeight: 300,
+                        textShadow: "0 1px 12px rgba(0,0,0,0.92)",
+                      }}
+                    >
+                      {w.pitch[lang]}
+                    </p>
+                  </motion.div>
                 </div>
               </Link>
             </div>

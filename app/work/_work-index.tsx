@@ -4,25 +4,28 @@ import Image from "next/image";
 import Link from "next/link";
 import type { Project } from "./data";
 import { ts, tsS, serif, W, R, useLang } from "../_lib/atoms";
+import { LuxButton } from "../_lib/lux-button";
 import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
-  eyebrow: "Selected Works",
+  eyebrow: "Selected Studies",
   heading1: "Selected",
-  heading2: "Worlds.",
+  heading2: "Studies.",
   intro:
-    "A small set of internal studies and selected projects. Each is a complete visual system — atmosphere, identity and presence.",
-  byApt: "By appointment only · studio@xnlab.io",
+    "Internal visual systems created to show how XNLAB thinks, directs and builds atmosphere. Each study moves through Problem, Direction, System, Surfaces and Result.",
+  closingEyebrow: "By appointment only · studio@xnlab.io",
+  cta: "Start a project",
   back: "← Home",
   count: (n: number) => `${String(n).padStart(3, "0")} — Works`,
 };
 const es = {
-  eyebrow: "Proyectos Seleccionados",
-  heading1: "Mundos",
+  eyebrow: "Estudios Seleccionados",
+  heading1: "Estudios",
   heading2: "seleccionados.",
   intro:
-    "Un conjunto reducido de estudios internos y proyectos seleccionados. Cada uno es un sistema visual completo — atmósfera, identidad y presencia.",
-  byApt: "Solo con cita previa · studio@xnlab.io",
+    "Sistemas visuales internos creados para mostrar cómo XNLAB piensa, dirige y construye atmósfera. Cada estudio recorre Problema, Dirección, Sistema, Superficies y Resultado.",
+  closingEyebrow: "Solo con cita previa · studio@xnlab.io",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
   count: (n: number) => `${String(n).padStart(3, "0")} — Mundos`,
 };
@@ -280,25 +283,19 @@ export default function WorkIndex({ projects }: { projects: Project[] }) {
           borderTop: "1px solid rgba(255,255,255,0.04)",
         }}
       >
-        <Link
-          href="/contact"
+        <p
           style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "0.7rem",
-            padding: "0.85rem clamp(1.2rem,3vw,2.4rem)",
-            fontSize: "clamp(10px,0.85vw,12px)",
+            fontSize: 10,
             fontWeight: 500,
-            letterSpacing: "0.28em",
+            letterSpacing: "0.32em",
             textTransform: "uppercase",
-            color: "#060606",
-            textDecoration: "none",
-            background: "white",
-            borderRadius: 100,
+            color: "rgba(255,255,255,0.42)",
+            marginBottom: "clamp(20px,2.5vw,32px)",
           }}
         >
-          {t.byApt}
-        </Link>
+          {t.closingEyebrow}
+        </p>
+        <LuxButton href="/contact" variant="solid" arrow={false}>{t.cta}</LuxButton>
       </section>
     </main>
   );

@@ -13,7 +13,7 @@ const en = {
   links: [
     { label: "Selected Works", href: "/work" },
     { label: "About the Studio", href: "/about" },
-    { label: "Apply for a project", href: "/contact" },
+    { label: "Start a project", href: "/contact" },
   ],
 };
 
@@ -27,7 +27,7 @@ const es = {
   links: [
     { label: "Proyectos Seleccionados", href: "/work" },
     { label: "Sobre el Estudio", href: "/about" },
-    { label: "Aplicar para un proyecto", href: "/contact" },
+    { label: "Iniciar un proyecto", href: "/contact" },
   ],
 };
 
@@ -73,10 +73,9 @@ export default function NotFoundClient() {
             letterSpacing: "-0.055em",
             textShadow: tsS,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "baseline",
-            justifyContent: "center",
-            gap: "0.18em",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 0,
           }}
         >
           <W text={t.h1a} delay={0} />

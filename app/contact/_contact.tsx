@@ -8,11 +8,11 @@ import { WordmarkLink } from "../_lib/wordmark";
 import { sendContactEmail } from "./actions";
 
 const en = {
-  eyebrow: "Application · 007",
-  h1a: "Apply for",
-  h1b: "a project.",
+  eyebrow: "Start a project · 2026",
+  h1a: "Tell us what you",
+  h1b: "are building.",
   lead:
-    "Every engagement is selected. We work with a small number of brands each year and quote per project. Tell us what you are building, when it opens, and what level you want it to feel at.",
+    "If the project has atmosphere, ambition or cultural weight, we want to understand it. XNLAB takes four to six engagements each year. Every one is selected, scoped and quoted with care — and a small number of 2026 slots remain.",
   fields: {
     name: "Name",
     email: "Email",
@@ -35,12 +35,12 @@ const en = {
     "Other",
   ],
   projectTypes: [
-    "Campaign System (single launch)",
-    "Digital Atmosphere (single-page)",
-    "Brand World (multi-page)",
-    "Visual Engine (monthly)",
-    "Technical / Growth Add-on",
-    "Upgrade Sprint",
+    "Campaign System",
+    "Digital Atmosphere",
+    "Brand World",
+    "Visual Engine",
+    "SEO & Conversion Layer",
+    "Perception Upgrade Sprint",
     "Not sure yet",
   ],
   timelines: [
@@ -58,22 +58,22 @@ const en = {
     "Monthly system (€4,000+/mo)",
     "Not sure yet",
   ],
-  submit: "Apply for a project →",
+  submit: "Send project request →",
   sending: "Transmitting…",
   privacy:
-    "Every application is read by the studio. We respond when there is a real match. studio@xnlab.io.",
-  okSent: "Received. We will respond when the right time arrives.",
+    "Every request is read by the studio. We respond when there is a real fit. studio@xnlab.io.",
+  okSent: "Your request has entered the lab. We will review the project and respond if there is a fit.",
   okMailto: "Email opened — check your mail client.",
   back: "← Home",
   studioLabel: "Studio",
-  studioInfo: ["By application only", "studio@xnlab.io"],
+  studioInfo: ["By appointment only", "studio@xnlab.io"],
 };
 const es = {
-  eyebrow: "Aplicación · 007",
-  h1a: "Aplicar para",
-  h1b: "un proyecto.",
+  eyebrow: "Iniciar un proyecto · 2026",
+  h1a: "Cuéntanos qué",
+  h1b: "estás construyendo.",
   lead:
-    "Cada encargo se selecciona. Trabajamos con un número reducido de marcas al año y cotizamos por proyecto. Cuéntanos qué construyes, cuándo abre y a qué altura quieres que se sienta.",
+    "Si el proyecto tiene atmósfera, ambición o peso cultural, queremos entenderlo. XNLAB toma de cuatro a seis encargos al año. Cada uno se selecciona, se acota y se cotiza con cuidado — y quedan unos pocos huecos para 2026.",
   fields: {
     name: "Nombre",
     email: "Email",
@@ -96,13 +96,13 @@ const es = {
     "Otro",
   ],
   projectTypes: [
-    "Campaign System (lanzamiento puntual)",
-    "Atmósfera Digital (una sola página)",
-    "Mundo de Marca (multipágina)",
-    "Motor Visual (mensual)",
-    "Técnico / Crecimiento",
-    "Sprint de Mejora",
-    "Aún no lo tengo claro",
+    "Campaign System",
+    "Atmósfera Digital",
+    "Mundo de Marca",
+    "Motor Visual",
+    "SEO y Conversión",
+    "Sprint de Mejora de Percepción",
+    "Aún por definir",
   ],
   timelines: [
     "En menos de 1 mes",
@@ -117,17 +117,17 @@ const es = {
     "€25.000 – €50.000",
     "€50.000+",
     "Sistema mensual (€4.000+/mes)",
-    "Aún no lo tengo claro",
+    "Aún por definir",
   ],
-  submit: "Aplicar para un proyecto →",
-  sending: "Transmitiendo…",
+  submit: "Enviar solicitud →",
+  sending: "Enviando…",
   privacy:
-    "Cada aplicación la lee el estudio. Respondemos cuando hay un match real. studio@xnlab.io.",
-  okSent: "Recibido. Responderemos cuando llegue el momento adecuado.",
+    "Cada solicitud la lee el estudio. Respondemos cuando hay un encaje real. studio@xnlab.io.",
+  okSent: "Tu solicitud ha entrado en el laboratorio. Revisaremos el proyecto y responderemos si hay un encaje.",
   okMailto: "Email abierto — revisa tu cliente de correo.",
   back: "← Inicio",
   studioLabel: "Estudio",
-  studioInfo: ["Solo por aplicación", "studio@xnlab.io"],
+  studioInfo: ["Solo con cita previa", "studio@xnlab.io"],
 };
 
 type FormState = {
@@ -320,9 +320,9 @@ export default function Contact() {
             position: "relative",
             zIndex: 5,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "baseline",
-            gap: "0.18em",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 0,
           }}
         >
           <W text={t.h1a} delay={0} />

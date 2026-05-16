@@ -8,30 +8,45 @@ import { WordmarkLink } from "../../_lib/wordmark";
 
 const ui = {
   en: {
-    back: "← All works",
-    intro: "Intro",
-    notes: "Notes",
+    back: "← All studies",
+    problem: "Problem",
+    direction: "Direction",
+    system: "System",
+    surfaces: "Surfaces",
+    result: "Result",
     gallery: "Gallery",
     credits: "Credits",
-    contact: "Initiate Contact",
-    next: "Next world →",
+    contact: "Start a project",
+    next: "Next study →",
   },
   es: {
-    back: "← Todos los mundos",
-    intro: "Intro",
-    notes: "Notas",
+    back: "← Todos los estudios",
+    problem: "Problema",
+    direction: "Dirección",
+    system: "Sistema",
+    surfaces: "Superficies",
+    result: "Resultado",
     gallery: "Galería",
     credits: "Créditos",
-    contact: "Iniciar Contacto",
-    next: "Siguiente mundo →",
+    contact: "Iniciar un proyecto",
+    next: "Siguiente estudio →",
   },
 };
 
 export default function WorkDetail({ project }: { project: Project }) {
   const [lang, setLang] = useLang();
   const t = ui[lang];
-  const body = project.body[lang];
   const pull = project.pullQuote?.[lang];
+  // Five-part editorial framework. Each chapter is rendered as its own
+  // labelled row so the studio's commercial thinking is visible at a
+  // glance, not buried inside a free-form essay.
+  const chapters: Array<{ label: string; body: string; isList?: boolean; items?: string[] }> = [
+    { label: t.problem, body: project.problem[lang] },
+    { label: t.direction, body: project.direction[lang] },
+    { label: t.system, body: project.system[lang] },
+    { label: t.surfaces, body: "", isList: true, items: project.surfaces[lang] },
+    { label: t.result, body: project.result[lang] },
+  ];
 
   return (
     <main
@@ -200,38 +215,101 @@ export default function WorkDetail({ project }: { project: Project }) {
 
       <section
         style={{
-          padding: "clamp(72px,10vw,140px) clamp(24px,8vw,120px)",
-          maxWidth: 920,
+          padding: "clamp(72px,10vw,140px) clamp(24px,7vw,96px)",
+          maxWidth: 1180,
           margin: "0 auto",
         }}
       >
-        <R>
-          <p
-            style={{
-              fontSize: 10,
-              fontWeight: 500,
-              letterSpacing: "0.38em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.45)",
-              marginBottom: 32,
-            }}
-          >
-            {t.intro}
-          </p>
-        </R>
-        {body.map((para, i) => (
-          <R delay={0.05 * i} key={i}>
-            <p
+        {chapters.map((ch, i) => (
+          <R key={ch.label} delay={i * 0.06}>
+            <div
               style={{
-                marginBottom: "1.4em",
-                fontSize: "clamp(1.05rem,1.45vw,1.3rem)",
-                lineHeight: 1.7,
-                color: "rgba(255,255,255,0.78)",
-                fontWeight: 300,
+                display: "grid",
+                gap: "clamp(28px,3.4vw,52px)",
+                padding: "clamp(36px,4.6vw,72px) 0",
+                borderTop: i === 0 ? "1px solid rgba(255,255,255,0.06)" : undefined,
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                alignItems: "start",
               }}
+              className="grid-cols-1 md:grid-cols-[minmax(140px,200px)_1fr]"
             >
-              {para}
-            </p>
+              <div style={{ display: "flex", alignItems: "baseline", gap: 12 }}>
+                <span
+                  style={{
+                    fontFamily: serif,
+                    fontStyle: "italic",
+                    fontSize: "clamp(2rem,3vw,2.6rem)",
+                    lineHeight: 1,
+                    color: "rgba(232,183,131,0.7)",
+                    letterSpacing: "-0.02em",
+                  }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <p
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: "0.42em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,0.55)",
+                    margin: 0,
+                    paddingTop: 8,
+                  }}
+                >
+                  {ch.label}
+                </p>
+              </div>
+              <div style={{ maxWidth: 760 }}>
+                {ch.isList && ch.items ? (
+                  <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                    {ch.items.map((it, j) => (
+                      <li
+                        key={j}
+                        style={{
+                          padding: "clamp(12px,1.4vw,18px) 0",
+                          borderTop: j === 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                          borderBottom: "1px solid rgba(255,255,255,0.06)",
+                          display: "flex",
+                          alignItems: "baseline",
+                          gap: 14,
+                          fontSize: "clamp(1rem,1.22vw,1.18rem)",
+                          lineHeight: 1.55,
+                          color: "rgba(255,255,255,0.78)",
+                          fontWeight: 300,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 10,
+                            fontWeight: 500,
+                            letterSpacing: "0.3em",
+                            color: "rgba(232,183,131,0.55)",
+                            minWidth: 26,
+                          }}
+                        >
+                          {String(j + 1).padStart(2, "0")}
+                        </span>
+                        {it}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(1.05rem,1.4vw,1.3rem)",
+                      lineHeight: 1.62,
+                      color: "rgba(255,255,255,0.82)",
+                      fontWeight: 300,
+                      letterSpacing: "-0.005em",
+                    }}
+                  >
+                    {ch.body}
+                  </p>
+                )}
+              </div>
+            </div>
           </R>
         ))}
       </section>

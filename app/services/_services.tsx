@@ -5,16 +5,17 @@ import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { LuxButton } from "../_lib/lux-button";
 import { SectionMark } from "../_lib/ornaments";
 import { WordmarkLink } from "../_lib/wordmark";
+import { serviceDetails } from "../_lib/service-details";
 
 const en = {
-  eyebrow: "Services",
-  h1a: "Six engagements,",
-  h1b: "one direction.",
+  eyebrow: "Systems",
+  h1a: "Ways to enter",
+  h1b: "the lab.",
   lead:
-    "We work in fixed-scope projects. No hourly billing. Every engagement is quoted, signed and delivered as a coherent system — designed to make a brand impossible to scroll past.",
+    "Start with a focused system or build a complete visual world. We work in fixed-scope projects, never by the hour. Every engagement is quoted, signed and delivered as a coherent system — designed to make a brand impossible to scroll past.",
   outcomesLabel: "Outcome",
   forLabel: "Built for",
-  servicesLabel: "Service offer · 2026",
+  servicesLabel: "Systems offer · 2026",
   services: [
     {
       number: "01",
@@ -67,6 +68,7 @@ const en = {
       ],
       outcome: "A brand that walks into the room before the founder does.",
       forWhom: "Hotel groups · Cultural venues · Architecture studios · Wellness brands.",
+      featured: true,
     },
     {
       number: "04",
@@ -87,7 +89,7 @@ const en = {
     },
     {
       number: "05",
-      name: "Technical / Growth Add-ons",
+      name: "SEO & Conversion Layer",
       price: "From €1,500",
       duration: "1–2 weeks",
       summary: "SEO, analytics, structured data, conversion tuning, technical refinement.",
@@ -103,7 +105,7 @@ const en = {
     },
     {
       number: "06",
-      name: "XNLAB Upgrade Sprint",
+      name: "Perception Upgrade Sprint",
       price: "From €2,500 – €4,000",
       duration: "2–4 weeks",
       summary:
@@ -169,19 +171,21 @@ const en = {
   closingH: "Apply for a project.",
   closingBody:
     "Every engagement is selected. Tell us what you are building, when it opens, and what level you want it to feel at.",
-  cta: "Apply for a project",
+  cta: "Start a project",
   back: "← Home",
+  featuredLabel: "Most chosen",
+  fromLabel: "Investment",
 };
 
 const es = {
-  eyebrow: "Servicios",
-  h1a: "Seis encargos,",
-  h1b: "una dirección.",
+  eyebrow: "Sistemas",
+  h1a: "Cómo entrar",
+  h1b: "al laboratorio.",
   lead:
-    "Trabajamos en proyectos con alcance cerrado. Sin facturación por horas. Cada encargo se cotiza, se firma y se entrega como un sistema coherente — diseñado para que una marca no se pueda pasar de largo.",
+    "Empieza con un sistema enfocado o construye un mundo visual completo. Trabajamos por proyectos con alcance cerrado, nunca por horas. Cada encargo se cotiza, se firma y se entrega como un sistema coherente — diseñado para que tu marca sea imposible de ignorar.",
   outcomesLabel: "Resultado",
   forLabel: "Para",
-  servicesLabel: "Oferta de servicio · 2026",
+  servicesLabel: "Oferta de sistemas · 2026",
   services: [
     {
       number: "01",
@@ -189,16 +193,16 @@ const es = {
       price: "Desde €5.000",
       duration: "2–3 semanas",
       summary:
-        "Una intervención breve y coherente en las superficies digitales — aperturas, lanzamientos, drops.",
+        "Una intervención breve y precisa en superficies digitales: aperturas, lanzamientos y momentos culturales puntuales.",
       includes: [
         "Concepto y dirección de campaña.",
-        "Visuales hero y key frames de movimiento.",
-        "Dos a tres micro-páginas de campaña.",
-        "Copy de titulares en EN/ES.",
+        "Visuales principales y fotogramas clave de animación.",
+        "Dos o tres micro-páginas de campaña.",
+        "Redacción de titulares en EN/ES.",
         "Entrega y calendario de lanzamiento.",
       ],
       outcome: "Un evento de marca que se siente diseñado de principio a fin.",
-      forWhom: "Aperturas · Lanzamientos · Drops · Momentos culturales puntuales.",
+      forWhom: "Aperturas · Lanzamientos · Drops · Momentos culturales.",
     },
     {
       number: "02",
@@ -206,15 +210,15 @@ const es = {
       price: "Desde €10.000",
       duration: "4–6 semanas",
       summary:
-        "Un mundo cinematográfico de una sola página para la marca. La casa, en sentido literal.",
+        "Un mundo cinematográfico de una sola página: el lugar donde tu marca vive online.",
       includes: [
         "Dirección de arte y lenguaje de movimiento.",
-        "Build cinemático de una sola página (Next.js).",
-        "Copy en EN/ES — titulares, secciones, CTA.",
-        "SEO, imagen OG, datos estructurados.",
-        "Analítica, despliegue y handover.",
+        "Desarrollo cinematográfico de una sola página (Next.js).",
+        "Redacción en EN/ES — titulares, secciones, llamadas a la acción.",
+        "SEO, imagen para redes sociales y datos estructurados.",
+        "Analítica, puesta en producción y traspaso final.",
       ],
-      outcome: "Una casa digital que por fin está a la altura de la física.",
+      outcome: "Un hogar digital al fin a la altura del físico.",
       forWhom: "Restaurantes · Hoteles boutique · Estudios · Artistas.",
     },
     {
@@ -223,17 +227,18 @@ const es = {
       price: "Desde €25.000",
       duration: "8–12 semanas",
       summary:
-        "Un sistema multipágina completo. Lenguaje visual, movimiento, copy, build técnico, lanzamiento.",
+        "Un sistema multipágina completo: lenguaje visual, movimiento, redacción, desarrollo técnico y lanzamiento.",
       includes: [
         "Dirección de marca y brief atmosférico.",
-        "Sistema multipágina (6–12 rutas).",
+        "Sistema multipágina (6–12 secciones).",
         "Superficies de identidad: marca, tipografía, paleta, movimiento.",
-        "Dirección completa de copy en EN/ES.",
-        "Build técnico, SEO, datos estructurados.",
-        "Dirección de lanzamiento y afinado post-launch.",
+        "Dirección completa de redacción en EN/ES.",
+        "Desarrollo técnico, SEO y datos estructurados.",
+        "Dirección de lanzamiento y afinado posterior.",
       ],
       outcome: "Una marca que entra en la sala antes que el fundador.",
       forWhom: "Grupos hoteleros · Lugares culturales · Estudios de arquitectura · Marcas wellness.",
+      featured: true,
     },
     {
       number: "04",
@@ -241,12 +246,12 @@ const es = {
       price: "Desde €4.000 / mes",
       duration: "Mensual · 6 meses mínimo",
       summary:
-        "Sistema creativo continuo — campañas, actualizaciones, producción visual y dirección con IA.",
+        "Sistema creativo continuo: campañas, actualizaciones, producción visual y dirección asistida por IA.",
       includes: [
         "Una campaña al mes, de principio a fin.",
-        "Producción visual: imagen, movimiento, copy.",
+        "Producción visual: imagen, movimiento, redacción.",
         "Dirección y extensión de activos asistida por IA.",
-        "Actualizaciones de sitio y refinamiento de superficies.",
+        "Actualizaciones del sitio y refinamiento de superficies.",
         "Llamada mensual de dirección e informe.",
       ],
       outcome: "Una marca que envía cultura, no posts.",
@@ -254,36 +259,36 @@ const es = {
     },
     {
       number: "05",
-      name: "Técnico / Crecimiento",
+      name: "SEO y Conversión",
       price: "Desde €1.500",
       duration: "1–2 semanas",
       summary:
-        "SEO, analítica, datos estructurados, optimización de conversión, refinamiento técnico.",
+        "SEO, analítica, datos estructurados, optimización de conversión y refinamiento técnico.",
       includes: [
-        "Auditoría técnica de SEO y arreglos.",
+        "Auditoría técnica de SEO y correcciones.",
         "Sistema de metadatos y datos estructurados.",
-        "Analítica, Search Console y dashboards.",
+        "Analítica, Search Console y paneles.",
         "Optimización de conversión y claridad.",
         "Repaso de rendimiento y accesibilidad.",
       ],
-      outcome: "Dirección que motores, IAs y humanos leen igual de claro.",
-      forWhom: "Marcas con un sitio bonito que todavía no se encuentra.",
+      outcome: "Una dirección que motores, IAs y humanos leen con la misma claridad.",
+      forWhom: "Marcas con un buen sitio que aún no atrae el tráfico que merece.",
     },
     {
       number: "06",
-      name: "Sprint de Mejora XNLAB",
+      name: "Sprint de Mejora de Percepción",
       price: "Desde €2.500 – €4.000",
       duration: "2–4 semanas",
       summary:
-        "Intensivo de dos a cuatro semanas sobre una marca existente — dirección, copy, superficies, movimiento.",
+        "Intensivo de dos a cuatro semanas sobre una marca existente: dirección, redacción, superficies y movimiento.",
       includes: [
         "Diagnóstico del gap de percepción.",
         "Re-dirección puntual en superficies clave.",
-        "Reescritura de titulares y CTA.",
-        "Mejoras de movimiento y visual en páginas existentes.",
+        "Reescritura de titulares y llamadas a la acción.",
+        "Mejoras de movimiento y visuales en páginas existentes.",
         "Informe final y hoja de ruta.",
       ],
-      outcome: "Una marca existente empujada hacia delante sin rehacer todo.",
+      outcome: "Una marca existente impulsada sin necesidad de rehacer todo.",
       forWhom: "Marcas con un sitio que funciona pero ya no está a la altura del producto.",
     },
   ],
@@ -301,7 +306,7 @@ const es = {
     },
     {
       title: "Dirigir",
-      body: "Fijamos una sola dirección: tono, atmósfera, copy, movimiento, sistema visual.",
+      body: "Fijamos una sola dirección: tono, atmósfera, redacción, movimiento, sistema visual.",
     },
     {
       title: "Construir",
@@ -322,23 +327,25 @@ const es = {
     {
       q: "¿Trabajáis con equipos internos o agencias?",
       a:
-        "Sí. Colaboramos con equipos internos de marca y marketing. Hacemos white-label cuando la relación lo requiere.",
+        "Sí. Colaboramos con equipos internos de marca y marketing. Trabajamos en marca blanca cuando la relación lo requiere.",
     },
     {
-      q: "¿Idiomas?",
-      a: "Entregamos en inglés y español, nativos. Otros idiomas a petición.",
+      q: "¿Idiomas de entrega?",
+      a: "Entregamos en inglés y español, ambos nativos. Otros idiomas bajo petición.",
     },
     {
-      q: "¿Stack?",
+      q: "¿Stack técnico?",
       a:
-        "Next.js, motion moderno, producción asistida por IA. Hosting por defecto en Vercel. Abierto a stacks existentes.",
+        "Next.js, animación moderna y producción asistida por IA. Alojamiento por defecto en Vercel. Abiertos a integrar stacks existentes.",
     },
   ],
-  closingH: "Aplicar para un proyecto.",
+  closingH: "Solicitar un proyecto.",
   closingBody:
     "Cada encargo se selecciona. Cuéntanos qué construyes, cuándo abre y a qué altura quieres que se sienta.",
-  cta: "Aplicar para un proyecto",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
+  featuredLabel: "Más elegido",
+  fromLabel: "Inversión",
 };
 
 const labelStyle: React.CSSProperties = {
@@ -452,9 +459,9 @@ export default function Services() {
             position: "relative",
             zIndex: 5,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "baseline",
-            gap: "0.18em",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 0,
           }}
         >
           <W text={t.h1a} delay={0} />
@@ -480,7 +487,9 @@ export default function Services() {
       </section>
 
       <section style={{ padding: "0 clamp(24px,7vw,96px) clamp(48px,8vw,120px)", maxWidth: 1200, margin: "0 auto" }}>
-        {t.services.map((s, i) => (
+        {t.services.map((s, i) => {
+          const slug = serviceDetails[i]?.slug;
+          return (
           <R key={s.number} delay={0.04 * i}>
             <article
               style={{
@@ -488,9 +497,50 @@ export default function Services() {
                 gap: "clamp(28px,3vw,48px)",
                 padding: "clamp(40px,5vw,72px) 0",
                 borderTop: "1px solid rgba(255,255,255,0.06)",
+                position: "relative",
               }}
               className="grid-cols-1 md:grid-cols-[minmax(140px,200px)_1fr]"
             >
+              {slug && (
+                <Link
+                  href={`/services/${slug}`}
+                  aria-label={s.name}
+                  style={{ position: "absolute", inset: 0, zIndex: 1 }}
+                />
+              )}
+              {s.featured && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: "clamp(28px,3.4vw,48px)",
+                    right: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 8,
+                    padding: "6px 14px",
+                    border: "1px solid rgba(232,183,131,0.45)",
+                    background: "rgba(232,183,131,0.08)",
+                    color: "#e8b783",
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: "0.32em",
+                    textTransform: "uppercase",
+                    borderRadius: 999,
+                    zIndex: 2,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: "#e8b783",
+                      boxShadow: "0 0 10px 1px rgba(232,183,131,0.7)",
+                    }}
+                  />
+                  {t.featuredLabel}
+                </div>
+              )}
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p
                   style={{
@@ -514,22 +564,37 @@ export default function Services() {
                     letterSpacing: "-0.035em",
                     color: "white",
                     textShadow: tsS,
-                    marginBottom: 12,
+                    marginBottom: "clamp(20px,2.4vw,28px)",
                   }}
                 >
                   {s.name}
                 </h2>
-                <p
+                <div
                   style={{
-                    fontFamily: serif,
-                    fontStyle: "italic",
-                    fontSize: "clamp(1.1rem,1.6vw,1.5rem)",
-                    color: "rgba(230,205,165,0.9)",
-                    marginBottom: "clamp(20px,2.5vw,28px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                    paddingBottom: "clamp(22px,2.8vw,32px)",
+                    marginBottom: "clamp(26px,3vw,36px)",
+                    borderBottom: "1px solid rgba(232,183,131,0.18)",
                   }}
                 >
-                  {s.price}
-                </p>
+                  <p style={{ ...labelStyle, color: "rgba(232,183,131,0.6)" }}>{t.fromLabel}</p>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontFamily: serif,
+                      fontStyle: "italic",
+                      fontSize: "clamp(2.4rem,4.8vw,4.4rem)",
+                      lineHeight: 1,
+                      letterSpacing: "-0.025em",
+                      color: "#e8b783",
+                      textShadow: "0 1px 24px rgba(232,183,131,0.18)",
+                    }}
+                  >
+                    {s.price}
+                  </p>
+                </div>
                 <p
                   style={{
                     fontSize: "clamp(1rem,1.22vw,1.12rem)",
@@ -594,10 +659,36 @@ export default function Services() {
                     </p>
                   </div>
                 </div>
+                {slug && (
+                  <div style={{ marginTop: "clamp(28px,3vw,40px)", display: "flex", alignItems: "center", gap: 12, position: "relative", zIndex: 2, pointerEvents: "none" }}>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 500,
+                        letterSpacing: "0.32em",
+                        textTransform: "uppercase",
+                        color: "rgba(232,183,131,0.85)",
+                      }}
+                    >
+                      {lang === "en" ? "Read the system" : "Leer el sistema"}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: serif,
+                        fontStyle: "italic",
+                        fontSize: 18,
+                        color: "#e8b783",
+                      }}
+                    >
+                      →
+                    </span>
+                  </div>
+                )}
               </div>
             </article>
           </R>
-        ))}
+          );
+        })}
       </section>
 
       <SectionMark />
@@ -644,10 +735,9 @@ export default function Services() {
                 color: "white",
                 textShadow: tsS,
                 display: "flex",
-                flexWrap: "wrap",
-                alignItems: "baseline",
-                justifyContent: "center",
-                gap: "0.2em",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 0,
               }}
             >
               <W text={t.approachH1} delay={0} />

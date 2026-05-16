@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Worlds from "./_worlds";
 
 export const metadata: Metadata = {
-  title: "The Universe — Worlds, ORUN & CHIO",
+  title: "Worlds — XNLAB Visual Systems for Hospitality, Nightlife, Luxury, Architecture & Music",
   description:
-    "Inside the Xnlab Studio universe: the Central Core, six World Cores (Hospitality, Nightlife, Lifestyle, Architecture, Music, Digital) and the mythology of ORUN and CHIO. A living creative laboratory.",
+    "Explore the six XNLAB Worlds: emotional systems for hospitality, nightlife, luxury, architecture, music and digital culture.",
   alternates: { canonical: "/worlds" },
   openGraph: {
-    title: "The Universe · Xnlab Studio",
+    title: "Worlds · XNLAB",
     description:
-      "Six World Cores, one Central Core, and the mythology that holds them — ORUN, CHIO and the anomalies.",
+      "Six emotional systems. Six ways to build presence. The XNLAB methodology for premium brands.",
     url: "https://xnlab.io/worlds",
     type: "article",
   },

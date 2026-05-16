@@ -3,6 +3,10 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { DustStyles } from "./_lib/atoms";
 import { ScrollProgress, FilmGrain } from "./_lib/chrome";
+import { PageTransition } from "./_lib/page-transition";
+import { Cursor } from "./_lib/cursor";
+import { BackToTop } from "./_lib/back-to-top";
+import { LoadingCurtain } from "./_lib/loading-curtain";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -20,7 +24,7 @@ const cormorant = Cormorant_Garamond({
 const SITE = "https://xnlab.io";
 const TITLE = "XNLAB — Digital Atmosphere Studio for Premium Brands";
 const DESCRIPTION =
-  "XNLAB creates cinematic websites, campaign systems and AI-enhanced visual worlds for hospitality, architecture, wellness, nightlife and culture-led brands. Direction over content. By application only.";
+  "XNLAB builds cinematic websites, campaign systems and visual worlds for hospitality, nightlife, architecture, wellness, artists and culture-led brands.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -29,21 +33,26 @@ export const metadata: Metadata = {
   applicationName: "Xnlab Studio",
   generator: "Next.js",
   keywords: [
+    "creative direction studio",
+    "brand worldbuilding",
+    "visual identity systems",
+    "campaign systems",
+    "hospitality branding",
+    "nightlife visual identity",
+    "luxury brand direction",
+    "music visual identity",
+    "digital atmosphere",
+    "AI-assisted creative direction",
+    "premium web design",
+    "visual content systems",
     "digital atmosphere studio",
     "premium brand websites",
     "cinematic web design agency",
-    "campaign systems for luxury brands",
-    "AI-enhanced visual direction",
     "boutique hotel website design",
-    "hospitality brand websites",
     "architecture studio website design",
     "wellness brand identity",
     "nightlife venue branding",
-    "creative direction studio",
-    "worldbuilding studio",
-    "luxury brand identity agency",
     "atmosphere design",
-    "premium brand identity",
     "cultural identity design",
     "XNLAB",
     "Xnlab Studio",
@@ -123,12 +132,14 @@ const jsonLd = {
   foundingDate: "2023-01-01",
   areaServed: "Worldwide",
   serviceArea: { "@type": "Place", name: "Worldwide" },
-  slogan: "Worldbuilding for modern luxury.",
+  slogan: "Digital Atmosphere Studio for premium brands.",
   knowsAbout: [
-    "Hospitality Systems",
-    "Nightlife Atmospheres",
-    "Emotional Architecture",
-    "Living Identities",
+    "Hospitality Experience",
+    "Nightlife and Cultural Events",
+    "Luxury Lifestyle Brands",
+    "Architecture and Spatial Design",
+    "Music and Cultural Artists",
+    "Cultural Digital Worlds",
     "Luxury brand identity",
     "Creative direction",
     "Worldbuilding",
@@ -138,12 +149,30 @@ const jsonLd = {
   sameAs: [],
 };
 
+// WebSite schema with SearchAction — helps Google understand the site
+// as a top-level cultural property + enables sitelinks search box in
+// the SERP. Also declares the bilingual nature explicitly.
+const websiteLd = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: "XNLAB",
+  alternateName: "Xnlab Studio",
+  url: SITE,
+  description: DESCRIPTION,
+  inLanguage: ["en", "es"],
+  publisher: {
+    "@type": "Organization",
+    name: "XNLAB",
+    url: SITE,
+  },
+};
+
 const serviceLd = {
   "@context": "https://schema.org",
   "@graph": [
     {
       "@type": "Service",
-      name: "Hospitality Systems",
+      name: "Hospitality Experience",
       serviceType: "Hospitality brand identity and atmosphere design",
       description:
         "Atmospheres, identities and visual systems for boutique hotels, restaurants and hospitality groups. Designed to be remembered, not described.",
@@ -153,7 +182,7 @@ const serviceLd = {
     },
     {
       "@type": "Service",
-      name: "Nightlife Atmospheres",
+      name: "Nightlife and Cultural Events",
       serviceType: "Nightlife brand identity and venue direction",
       description:
         "Dark, cinematic visual systems for clubs, bars and cultural venues. Identity as a complete sensory programme — light, motion, sound, surface.",
@@ -163,7 +192,17 @@ const serviceLd = {
     },
     {
       "@type": "Service",
-      name: "Emotional Architecture",
+      name: "Luxury Lifestyle Brands",
+      serviceType: "Luxury and lifestyle brand identity direction",
+      description:
+        "Brand worlds for luxury fashion, beauty, wellness and lifestyle houses. Identity as a complete cultural object — surface, motion, copy, atmosphere.",
+      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
+      areaServed: "Worldwide",
+      audience: { "@type": "Audience", audienceType: "Luxury and lifestyle brand owners" },
+    },
+    {
+      "@type": "Service",
+      name: "Architecture and Spatial Design",
       serviceType: "Spatial and architectural identity direction",
       description:
         "Spaces shaped through silence, light and material. Architectural identity as the first layer of brand emotion.",
@@ -173,13 +212,23 @@ const serviceLd = {
     },
     {
       "@type": "Service",
-      name: "Living Identities",
-      serviceType: "Brand identity and visual system design",
+      name: "Music and Cultural Artists",
+      serviceType: "Visual identity and direction for artists and labels",
       description:
-        "Symbols, marks, avatars and identity systems with presence. Built to live across physical space, digital surface and cultural memory.",
+        "Visual worlds for musicians, labels and cultural artists. Cover art, motion, web presence and cinematic launch direction.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Luxury brands, cultural projects" },
+      audience: { "@type": "Audience", audienceType: "Recording artists, labels, cultural producers" },
+    },
+    {
+      "@type": "Service",
+      name: "Cultural Digital Worlds",
+      serviceType: "Digital identity and worldbuilding",
+      description:
+        "Symbols, avatars and digital identities with presence. Built to live across physical space, digital surface and cultural memory.",
+      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
+      areaServed: "Worldwide",
+      audience: { "@type": "Audience", audienceType: "Cultural brands, digital-native projects" },
     },
   ],
 };
@@ -198,13 +247,20 @@ export default function RootLayout({
         />
         <script
           type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
+        />
+        <script
+          type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }}
         />
         <a href="#main" className="xn-skip">Skip to content</a>
         <DustStyles />
         <FilmGrain />
         <ScrollProgress />
-        <div id="main">{children}</div>
+        <Cursor />
+        <BackToTop />
+        <LoadingCurtain />
+        <div id="main"><PageTransition>{children}</PageTransition></div>
         <Analytics />
       </body>
     </html>

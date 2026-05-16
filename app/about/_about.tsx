@@ -2,6 +2,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
+import { LuxButton } from "../_lib/lux-button";
 import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
@@ -25,15 +26,17 @@ const en = {
   ],
   practiceLabel: "Practice",
   practice: [
-    "Hospitality Systems",
-    "Nightlife Atmospheres",
-    "Emotional Architecture",
-    "Living Identities",
+    "Hospitality Experience",
+    "Nightlife & Cultural Events",
+    "Luxury Lifestyle Brands",
+    "Architecture & Spatial Design",
+    "Music & Cultural Artists",
+    "Cultural Digital Worlds",
   ],
   contactH: "By appointment only.",
   contactBody:
-    "We collaborate with a small group of clients each year. If our work resonates, we'd like to hear from you.",
-  cta: "Initiate Contact",
+    "We collaborate with a small group of clients each year. If our work resonates, we would like to hear from you.",
+  cta: "Start a project",
   back: "← Home",
   studio: "Studio",
 };
@@ -42,7 +45,7 @@ const es = {
   h1a: "Un estudio de",
   h1b: "presencia.",
   lead:
-    "XNLAB es un estudio de dirección creativa para el lujo moderno. Diseñamos atmósferas, identidades y sistemas visuales que moldean cómo se recuerda una marca — no lo que dice.",
+    "XNLAB es un estudio de dirección creativa para el lujo moderno. Diseñamos atmósferas, identidades y sistemas visuales que definen cómo se recuerda una marca — no lo que dice.",
   approachLabel: "Método",
   approachH: "Worldbuilding, no branding.",
   approach: [
@@ -58,15 +61,17 @@ const es = {
   ],
   practiceLabel: "Práctica",
   practice: [
-    "Hospitality Systems",
-    "Nightlife Atmospheres",
-    "Emotional Architecture",
-    "Living Identities",
+    "Hospitalidad y experiencia",
+    "Vida nocturna y eventos culturales",
+    "Marcas de lujo y lifestyle",
+    "Arquitectura y diseño espacial",
+    "Música y artistas culturales",
+    "Mundos culturales y digitales",
   ],
   contactH: "Solo con cita previa.",
   contactBody:
     "Colaboramos con un grupo reducido de clientes cada año. Si nuestro trabajo resuena, nos gustaría saber de ti.",
-  cta: "Iniciar Contacto",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
   studio: "Estudio",
 };
@@ -188,9 +193,9 @@ export default function About() {
             position: "relative",
             zIndex: 5,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "baseline",
-            gap: "0.18em",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 0,
           }}
         >
           <W text={t.h1a} delay={0} />
@@ -460,26 +465,9 @@ export default function About() {
             </p>
           </R>
           <R delay={0.32}>
-            <Link
-              href="/contact"
-              style={{
-                marginTop: "clamp(28px,3.5vw,44px)",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: "0.7rem",
-                padding: "0.85rem clamp(1.2rem,3vw,2.4rem)",
-                fontSize: "clamp(10px,0.85vw,12px)",
-                fontWeight: 500,
-                letterSpacing: "0.28em",
-                textTransform: "uppercase",
-                color: "#060606",
-                textDecoration: "none",
-                background: "white",
-                borderRadius: 100,
-              }}
-            >
-              {t.cta}
-            </Link>
+            <div style={{ marginTop: "clamp(28px,3.5vw,44px)" }}>
+              <LuxButton href="/contact" variant="solid" arrow={false}>{t.cta}</LuxButton>
+            </div>
           </R>
         </div>
       </section>

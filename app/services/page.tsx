@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Services from "./_services";
 
-const TITLE = "Services — Cinematic Web, Campaigns and Brand Worlds";
+const TITLE = "Services — Cinematic Websites, Campaign Systems & Brand Worlds · XNLAB";
 const DESCRIPTION =
-  "Six engagements at XNLAB: Campaign Systems, Digital Atmospheres, Brand Worlds, Visual Engines, Technical/Growth Add-ons and Upgrade Sprints. Pricing in EUR. By application only.";
+  "Explore XNLAB's fixed-scope creative direction engagements: campaign systems, digital atmospheres, brand worlds, visual engines, SEO layers and perception upgrade sprints.";
 
 export const metadata: Metadata = {
   title: TITLE,
@@ -49,16 +49,16 @@ const services = [
       "Continuous creative system — campaigns, visual production, AI-assisted direction.",
   },
   {
-    name: "Technical / Growth Add-ons",
+    name: "SEO & Conversion Layer",
     price: "1500",
     desc:
-      "SEO, analytics, structured data, conversion tuning, technical refinement.",
+      "For existing websites that look good but are not being found, understood or converted. Technical SEO, structured data, analytics and conversion tuning.",
   },
   {
-    name: "XNLAB Upgrade Sprint",
+    name: "Perception Upgrade Sprint",
     price: "2500",
     desc:
-      "Two-to-four-week intensive on an existing brand — direction, copy, surfaces, motion.",
+      "A focused two-to-four-week upgrade for brands whose digital presence no longer matches the level of the product.",
   },
 ];
 

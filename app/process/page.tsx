@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Process from "./_process";
 
 export const metadata: Metadata = {
-  title: "Process — How Xnlab Studio Designs Brand Worlds",
+  title: "Process — How XNLAB Builds Digital Atmospheres and Brand Worlds",
   description:
-    "The Xnlab Studio creative direction process for luxury hospitality, nightlife and architecture projects: listening, mapping atmospheres, building visual systems and living with the work through opening. Tangible deliverables included.",
+    "XNLAB's process moves through Diagnose, Direct, Build and Activate — closing the perception gap between a brand's real-world experience and digital presence.",
   alternates: { canonical: "/process" },
   openGraph: {
     title: "Process · Xnlab Studio",

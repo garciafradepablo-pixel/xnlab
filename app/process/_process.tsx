@@ -63,8 +63,8 @@ const en = {
   ],
   closingH: "Worlds are not built fast.",
   closingBody:
-    "If you have a brand that wants to be felt — a hotel, a club, an architecture, an identity — we would like to hear about it.",
-  cta: "Apply for a project",
+    "If you are building a hotel, club, cultural venue, architecture studio, artist world or premium digital identity — we would like to hear about it.",
+  cta: "Start a project",
   back: "← Home",
 };
 
@@ -88,7 +88,7 @@ const es = {
       number: "02",
       title: "Dirigir",
       body: [
-        "Traducimos el diagnóstico en una sola hipótesis visual — atmósfera, paleta, movimiento, registro de copy, estructura de conversión.",
+        "Traducimos el diagnóstico en una sola hipótesis visual — atmósfera, paleta, movimiento, registro de redacción, estructura de conversión.",
         "No es un moodboard. Es un diapasón: una nota a la que se alinea el resto del sistema, incluida la manera en que la página pide al visitante que actúe.",
         "Cerramos por escrito la dirección antes de construir una sola pantalla. Todo lo que sigue es ejecución de esa decisión.",
       ],
@@ -97,8 +97,8 @@ const es = {
       number: "03",
       title: "Construir",
       body: [
-        "Identidad, copy, movimiento, código. Cada cosa se construye como parte del mismo cuerpo, nunca como entregables separados.",
-        "Sistema visual, build técnico, datos estructurados, rendimiento y accesibilidad se diseñan juntos. Usamos IA para extender producción cuando eleva el nivel, nunca para diluir la dirección.",
+        "Identidad, redacción, animación, código. Cada cosa se construye como parte del mismo cuerpo, nunca como entregables separados.",
+        "Sistema visual, desarrollo técnico, datos estructurados, rendimiento y accesibilidad se diseñan juntos. Usamos IA para extender la producción cuando eleva el nivel, nunca para diluir la dirección.",
         "Avanzamos rápido dentro de la dirección acordada y descartamos todo lo que no esté en línea.",
       ],
     },
@@ -112,21 +112,21 @@ const es = {
     },
   ],
   deliverablesLabel: "Lo que recibes",
-  deliverablesH: "Salidas tangibles.",
+  deliverablesH: "Entregables tangibles.",
   deliverablesIntro:
     "Cada colaboración resulta en un conjunto coherente de piezas — construidas para lanzar y para durar, no para archivar.",
   deliverables: [
     "Brief escrito: gap de percepción, objetivo, audiencia, dirección.",
     "Sistema de identidad visual: marca, tipografía, paleta, movimiento.",
-    "Dirección de copy en EN/ES en todas las superficies.",
-    "Build técnico, datos estructurados, SEO, analítica.",
+    "Dirección de redacción en EN/ES en todas las superficies.",
+    "Desarrollo técnico, datos estructurados, SEO y analítica.",
     "Dirección de lanzamiento y estructura de conversión.",
-    "Afinado post-lanzamiento durante el primer mes.",
+    "Afinado posterior al lanzamiento durante el primer mes.",
   ],
   closingH: "Los mundos no se construyen rápido.",
   closingBody:
-    "Si tienes una marca que quiere ser sentida — un hotel, un club, una arquitectura, una identidad — nos gustaría saber de ella.",
-  cta: "Aplicar para un proyecto",
+    "Si estás construyendo un hotel, un club, un espacio cultural, un estudio de arquitectura, el mundo de un artista o una identidad digital premium — nos gustaría saber de ello.",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
 };
 
@@ -222,9 +222,9 @@ export default function Process() {
             position: "relative",
             zIndex: 5,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "baseline",
-            gap: "0.18em",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            gap: 0,
           }}
         >
           <W text={t.h1a} delay={0} />

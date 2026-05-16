@@ -36,6 +36,11 @@ export type World = {
     pulse: "still" | "slow" | "drift" | "vibrate" | "wave" | "refract";
   };
   title: { en: string; es: string };
+  // Commercial doorway line — one direct sentence describing the kind of
+  // brands this Core is built for. Used on the /worlds index card,
+  // CircleOfWorlds hover, and the top of /worlds/[slug]. Sits between
+  // the poetic essence and the longer body — bridges lore and offer.
+  pitch: { en: string; es: string };
   essence: { en: string; es: string };
   material: { en: string; es: string };
   energy: { en: string; es: string };
@@ -67,6 +72,10 @@ export const worlds: World[] = [
     },
     motion: { breatheScale: [1, 1.04], breatheDuration: 7.5, drift: 4, pulse: "slow" },
     title: { en: "Hospitality & Experience", es: "Hospitalidad y Experiencia" },
+    pitch: {
+      en: "Warm, sensory atmospheres for restaurants, hotels and immersive dining.",
+      es: "Atmósferas cálidas y sensoriales para restaurantes, hoteles y experiencias gastronómicas.",
+    },
     essence: {
       en: "Where warmth becomes architecture.",
       es: "Donde la calidez se hace arquitectura.",
@@ -105,8 +114,8 @@ export const worlds: World[] = [
       image: "/images/03_emotional_curtains.jpg",
       imagePosition: "center 42%",
       title: {
-        en: "Hospitality Systems",
-        es: "Sistemas de Hospitalidad",
+        en: "Hospitality Experience",
+        es: "Hospitalidad y Experiencia",
       },
       copy: {
         en: "Atmospheres designed to be remembered.",
@@ -128,6 +137,10 @@ export const worlds: World[] = [
     },
     motion: { breatheScale: [1, 1.05], breatheDuration: 3.4, drift: 7, pulse: "vibrate" },
     title: { en: "Nightlife & Cultural Events", es: "Vida nocturna y Eventos culturales" },
+    pitch: {
+      en: "High-voltage visual systems for venues, parties, launches and nightlife culture.",
+      es: "Sistemas visuales de alto voltaje para locales, fiestas, lanzamientos y cultura de noche.",
+    },
     essence: {
       en: "Where presence becomes voltage.",
       es: "Donde la presencia se hace voltaje.",
@@ -166,8 +179,8 @@ export const worlds: World[] = [
       image: "/images/04_sensorium_blue.jpg",
       imagePosition: "center 40%",
       title: {
-        en: "Nightlife Atmospheres",
-        es: "Atmósferas Nocturnas",
+        en: "Nightlife & Cultural Events",
+        es: "Vida nocturna y Eventos culturales",
       },
       copy: {
         en: "Dark, cinematic environments for cultural energy.",
@@ -189,6 +202,10 @@ export const worlds: World[] = [
     },
     motion: { breatheScale: [1, 1.018], breatheDuration: 10, drift: 2, pulse: "still" },
     title: { en: "Luxury & Lifestyle Brands", es: "Lujo y Estilo de vida" },
+    pitch: {
+      en: "Soft, refined worlds for premium products, beauty, fashion and lifestyle brands.",
+      es: "Mundos suaves y refinados para producto premium, belleza, moda y marcas de lifestyle.",
+    },
     essence: {
       en: "Where silence becomes language.",
       es: "Donde el silencio se hace lenguaje.",
@@ -227,12 +244,12 @@ export const worlds: World[] = [
       image: "/images/05_identity_chrome.jpg",
       imagePosition: "center 45%",
       title: {
-        en: "Living Identities",
-        es: "Identidades Vivas",
+        en: "Luxury & Lifestyle Brands",
+        es: "Lujo y Estilo de vida",
       },
       copy: {
-        en: "Symbols, avatars and identities with presence.",
-        es: "Símbolos, avatares e identidades con presencia.",
+        en: "Brand worlds for premium fashion, beauty and lifestyle houses.",
+        es: "Mundos de marca para casas premium de moda, belleza y lifestyle.",
       },
     },
   },
@@ -250,6 +267,10 @@ export const worlds: World[] = [
     },
     motion: { breatheScale: [1, 1.012], breatheDuration: 14, drift: 1, pulse: "still" },
     title: { en: "Architecture & Spatial Design", es: "Arquitectura y Diseño Espacial" },
+    pitch: {
+      en: "Quiet, material-driven atmospheres for interiors, architecture and spatial identity.",
+      es: "Atmósferas silenciosas, dirigidas por el material, para interiorismo, arquitectura e identidad espacial.",
+    },
     essence: {
       en: "Where weight becomes meaning.",
       es: "Donde el peso se hace sentido.",
@@ -271,7 +292,7 @@ export const worlds: World[] = [
       es: [
         "Sistemas de marca arquitectónica para estudios y promotores.",
         "Identidad espacial para proyectos culturales y residenciales.",
-        "Curaduría de materiales y dirección lumínica.",
+        "Dirección de materiales y dirección lumínica.",
       ],
     },
     body: {
@@ -288,8 +309,8 @@ export const worlds: World[] = [
       image: "/images/07_sculptural_white.jpg",
       imagePosition: "center 60%",
       title: {
-        en: "Emotional Architecture",
-        es: "Arquitectura Emocional",
+        en: "Architecture & Spatial Design",
+        es: "Arquitectura y Diseño Espacial",
       },
       copy: {
         en: "Spaces shaped through silence, light and material.",
@@ -311,6 +332,10 @@ export const worlds: World[] = [
     },
     motion: { breatheScale: [1, 1.03], breatheDuration: 8.5, drift: 6, pulse: "wave" },
     title: { en: "Music & Cultural Artists", es: "Música y Artistas Culturales" },
+    pitch: {
+      en: "Cinematic identity systems for artists, releases, visualizers and emotional campaigns.",
+      es: "Sistemas de identidad cinematográfica para artistas, lanzamientos, visualizers y campañas emocionales.",
+    },
     essence: {
       en: "Where emotion becomes form.",
       es: "Donde la emoción se hace forma.",
@@ -331,8 +356,8 @@ export const worlds: World[] = [
       ],
       es: [
         "Identidad visual de artistas y dirección de álbum.",
-        "Estética de tour y atmósfera de escenario.",
-        "Branding de venues musicales y programación atmosférica.",
+        "Estética de gira y atmósfera de escenario.",
+        "Identidad de salas y locales musicales con programación atmosférica.",
       ],
     },
     body: {
@@ -360,6 +385,10 @@ export const worlds: World[] = [
     },
     motion: { breatheScale: [1, 1.06], breatheDuration: 5, drift: 5, pulse: "refract" },
     title: { en: "Cultural & Digital Worlds", es: "Mundos Culturales y Digitales" },
+    pitch: {
+      en: "Futuristic, fluid systems for digital brands, avatars, campaigns and online presence.",
+      es: "Sistemas futuristas y fluidos para marcas digitales, avatares, campañas y presencia online.",
+    },
     essence: {
       en: "Where worlds mutate.",
       es: "Donde los mundos mutan.",
@@ -370,7 +399,7 @@ export const worlds: World[] = [
     },
     energy: {
       en: "Internet culture. AI-native atmosphere. Digital dimensions. Mutation as material.",
-      es: "Cultura de internet. Atmósfera AI-native. Dimensiones digitales. La mutación como material.",
+      es: "Cultura de internet. Atmósfera nativa de IA. Dimensiones digitales. La mutación como material.",
     },
     practice: {
       en: [
@@ -380,7 +409,7 @@ export const worlds: World[] = [
       ],
       es: [
         "Sistemas de identidad digital para marcas culturales y plataformas.",
-        "Dirección visual AI-native y estética generativa.",
+        "Dirección visual nativa de IA y estética generativa.",
         "Mundos de campaña nativos de internet.",
       ],
     },

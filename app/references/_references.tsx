@@ -127,7 +127,7 @@ const refs: Ref[] = [
 ];
 
 const en = {
-  eyebrow: "Library · 001",
+  eyebrow: "Library",
   h1a: "What informs",
   h1b: "the work.",
   lead:
@@ -137,7 +137,7 @@ const en = {
 };
 
 const es = {
-  eyebrow: "Biblioteca · 001",
+  eyebrow: "Biblioteca",
   h1a: "Lo que informa",
   h1b: "el trabajo.",
   lead:

@@ -8,38 +8,56 @@ import { Orb } from "../_lib/orb";
 import { worlds, mythology } from "../_lib/worlds";
 
 const en = {
-  eyebrow: "The Universe · 001",
-  h1a: "A living",
-  h1b: "laboratory.",
+  eyebrow: "The Universe",
+  h1a: "Selected",
+  h1b: "Worlds.",
   lead:
-    "XNLAB is not an agency in the usual sense. It is a laboratory of worlds — six Cores orbiting a central origin, each with its own material, energy and physics. This page is the entrance.",
+    "Six emotional systems. Six ways to build presence.",
+  methodLabel: "Method",
+  methodH: "The Worlds are not decoration.",
+  methodH2: "They are how XNLAB chooses the emotional physics of a project.",
+  methodBody: [
+    "Each Core defines how a brand should look, move, sound and be remembered across digital surfaces.",
+    "A restaurant does not need the same atmosphere as a music artist. A luxury brand does not move like a nightlife event. A digital world does not breathe like architecture.",
+    "XNLAB uses each Core to define visual language, campaign direction, motion style, content system, digital presence and emotional memory.",
+  ],
+  loreLabel: "Mythology",
   centralLabel: "The Central Core",
   worldsLabel: "Six Worlds, one universe",
   worldsIntro:
     "Each Core represents a discipline of the studio and a register of cultural energy. Different colour. Different material. Different behaviour. Same physics.",
-  enter: "Enter",
-  ctaH: "Cross the threshold.",
+  enter: "Enter world",
+  ctaH: "Build something unforgettable.",
   ctaBody:
-    "If you have a brand, a venue, a film, an artist or a digital world that belongs inside this universe — we would like to hear about it.",
-  cta: "Initiate Contact",
+    "If you have a brand, a venue, an artist or a digital project that belongs inside this universe, we would like to hear about it.",
+  cta: "Start a project",
   back: "← Home",
 };
 
 const es = {
-  eyebrow: "El Universo · 001",
-  h1a: "Un laboratorio",
-  h1b: "vivo.",
+  eyebrow: "El Universo",
+  h1a: "Mundos",
+  h1b: "seleccionados.",
   lead:
-    "XNLAB no es una agencia en el sentido habitual. Es un laboratorio de mundos — seis Núcleos orbitando un origen central, cada uno con su propio material, energía y física. Esta página es la entrada.",
+    "Seis sistemas emocionales. Seis formas de construir presencia.",
+  methodLabel: "Método",
+  methodH: "Los Mundos no son decoración.",
+  methodH2: "Son cómo XNLAB elige la física emocional de un proyecto.",
+  methodBody: [
+    "Cada Núcleo define cómo una marca debe verse, moverse, sonar y ser recordada en sus superficies digitales.",
+    "Un restaurante no necesita la misma atmósfera que un artista musical. Una marca de lujo no se mueve como un evento nocturno. Un mundo digital no respira como una arquitectura.",
+    "XNLAB usa cada Núcleo para definir lenguaje visual, dirección de campaña, estilo de animación, sistema de contenido, presencia digital y memoria emocional.",
+  ],
+  loreLabel: "Mitología",
   centralLabel: "El Núcleo Central",
   worldsLabel: "Seis mundos, un universo",
   worldsIntro:
     "Cada Núcleo representa una disciplina del estudio y un registro de energía cultural. Color distinto. Material distinto. Comportamiento distinto. Misma física.",
-  enter: "Entrar",
-  ctaH: "Cruza el umbral.",
+  enter: "Entrar al mundo",
+  ctaH: "Construye algo inolvidable.",
   ctaBody:
-    "Si tienes una marca, un local, una película, un artista o un mundo digital que pertenezca a este universo — nos gustaría saber de él.",
-  cta: "Iniciar Contacto",
+    "Si tienes una marca, un local, un artista o un proyecto digital que pertenezca a este universo, nos gustaría saber de él.",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
 };
 
@@ -128,10 +146,9 @@ export default function WorldsIndex() {
             position: "relative",
             zIndex: 5,
             display: "flex",
-            flexWrap: "wrap",
-            alignItems: "baseline",
-            justifyContent: "center",
-            gap: "0.18em",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 0,
           }}
         >
           <W text={t.h1a} delay={0} />
@@ -144,6 +161,37 @@ export default function WorldsIndex() {
             {t.lead}
           </p>
         </R>
+      </section>
+
+      {/* Methodology — the commercial layer that explains why the
+          Worlds are a system, not just lore. Sits between the hero
+          and the mythology so the visitor first understands the
+          professional logic of the universe before entering it. */}
+      <section style={{ position: "relative", padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px)", borderTop: "1px solid rgba(255,255,255,0.05)", maxWidth: 1120, margin: "0 auto" }}>
+        <div style={{ display: "grid", gap: "clamp(36px,4.6vw,72px)" }} className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]">
+          <div>
+            <R><p style={labelStyle}>{t.methodLabel}</p></R>
+          </div>
+          <div style={{ maxWidth: 760 }}>
+            <R>
+              <h2 style={{ fontSize: "clamp(1.7rem,3vw,2.8rem)", fontWeight: 400, lineHeight: 1.1, letterSpacing: "-0.035em", color: "white", textShadow: tsS, margin: 0 }}>
+                {t.methodH}
+              </h2>
+            </R>
+            <R delay={0.15}>
+              <p style={{ marginTop: "clamp(12px,1.6vw,20px)", fontFamily: serif, fontStyle: "italic", fontSize: "clamp(1.15rem,1.65vw,1.55rem)", lineHeight: 1.32, color: "rgba(232,183,131,0.78)", letterSpacing: "-0.005em" }}>
+                {t.methodH2}
+              </p>
+            </R>
+            {t.methodBody.map((p, i) => (
+              <R key={i} delay={0.25 + i * 0.08}>
+                <p style={{ marginTop: i === 0 ? "clamp(24px,3vw,36px)" : "clamp(16px,2vw,22px)", fontSize: "clamp(0.98rem,1.2vw,1.12rem)", lineHeight: 1.72, color: "rgba(255,255,255,0.72)", fontWeight: 300 }}>
+                  {p}
+                </p>
+              </R>
+            ))}
+          </div>
+        </div>
       </section>
 
       {/* Central Core */}
@@ -284,7 +332,7 @@ export default function WorldsIndex() {
                 <h3
                   style={{
                     marginTop: 8,
-                    fontSize: "clamp(0.92rem,1.05vw,1.1rem)",
+                    fontSize: "clamp(0.95rem,1.1vw,1.15rem)",
                     fontWeight: 500,
                     lineHeight: 1.25,
                     letterSpacing: "0.005em",
@@ -294,6 +342,19 @@ export default function WorldsIndex() {
                 >
                   {w.title[lang]}
                 </h3>
+                <p
+                  style={{
+                    marginTop: 12,
+                    fontSize: "clamp(11px,0.85vw,12.5px)",
+                    lineHeight: 1.55,
+                    color: "rgba(255,255,255,0.6)",
+                    fontWeight: 300,
+                    textShadow: ts,
+                    maxWidth: 260,
+                  }}
+                >
+                  {w.pitch[lang]}
+                </p>
                 <p
                   style={{
                     marginTop: 22,

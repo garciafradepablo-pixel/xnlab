@@ -7,7 +7,7 @@ import { SectionMark } from "../_lib/ornaments";
 import { WordmarkLink } from "../_lib/wordmark";
 
 const en = {
-  eyebrow: "Collaboration · 002",
+  eyebrow: "Collaboration",
   h1a: "How we",
   h1b: "engage.",
   lead:
@@ -57,12 +57,12 @@ const en = {
   closingH: "Ready when you are.",
   closingBody:
     "If the notes above describe the kind of collaboration you are looking for, we would like to hear about your project.",
-  cta: "Apply for a project",
+  cta: "Start a project",
   back: "← Home",
 };
 
 const es = {
-  eyebrow: "Colaboración · 002",
+  eyebrow: "Colaboración",
   h1a: "Cómo",
   h1b: "colaboramos.",
   lead:
@@ -105,14 +105,14 @@ const es = {
       label: "Después de la entrega",
       title: "Nos quedamos hasta la apertura.",
       body: [
-        "La entrega no es el final del encargo. Nos quedamos durante la semana de apertura, calibramos luz y sonido en sitio, y ajustamos detalles a lo largo de la primera temporada. Está incluido.",
+        "La entrega no es el final del encargo. Nos quedamos durante la semana de apertura, calibramos luz y sonido in situ, y ajustamos detalles a lo largo de la primera temporada. Está incluido.",
       ],
     },
   ],
   closingH: "Listos cuando lo estés.",
   closingBody:
     "Si las notas de arriba describen el tipo de colaboración que buscas, nos gustaría saber de tu proyecto.",
-  cta: "Aplicar para un proyecto",
+  cta: "Iniciar un proyecto",
   back: "← Inicio",
 };
 

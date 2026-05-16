@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../../_lib/atoms";
 import { LuxButton } from "../../_lib/lux-button";
 import { WordmarkLink } from "../../_lib/wordmark";
+import { Breadcrumb } from "../../_lib/breadcrumb";
 import { Orb } from "../../_lib/orb";
 import type { World } from "../../_lib/worlds";
 import { worlds } from "../../_lib/worlds";
@@ -15,7 +16,7 @@ const ui = {
     energy: "Energy",
     notes: "Notes",
     practice: "We make",
-    contact: "Apply for a project",
+    contact: "Start a project",
     next: "Next world →",
     back: "← All worlds",
   },
@@ -25,7 +26,7 @@ const ui = {
     energy: "Energía",
     notes: "Notas",
     practice: "Hacemos",
-    contact: "Aplicar para un proyecto",
+    contact: "Iniciar un proyecto",
     next: "Siguiente mundo →",
     back: "← Todos los mundos",
   },
@@ -95,6 +96,14 @@ export default function WorldDetail({ world }: { world: World }) {
         </nav>
       </header>
 
+      <Breadcrumb
+        items={[
+          { label: lang === "en" ? "Home" : "Inicio", href: "/" },
+          { label: lang === "en" ? "Worlds" : "Mundos", href: "/worlds" },
+          { label: world.title[lang] },
+        ]}
+      />
+
       {/* Hero — the world's portrait */}
       <section
         style={{
@@ -104,7 +113,7 @@ export default function WorldDetail({ world }: { world: World }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          padding: "clamp(120px,16vh,180px) clamp(24px,5vw,72px) clamp(48px,7vw,96px)",
+          padding: "clamp(150px,18vh,200px) clamp(24px,5vw,72px) clamp(48px,7vw,96px)",
           textAlign: "center",
           // Subtle color-tinted radial gradient using the core's deep colour
           background: `radial-gradient(circle at 50% 38%, ${c.deep.replace(",1)", ",0.55)")} 0%, transparent 60%), #060606`,
@@ -145,6 +154,21 @@ export default function WorldDetail({ world }: { world: World }) {
             }}
           >
             {world.essence[lang]}
+          </p>
+        </R>
+        <R delay={0.55}>
+          <p
+            style={{
+              marginTop: "clamp(18px,2.4vw,28px)",
+              fontSize: "clamp(0.98rem,1.22vw,1.15rem)",
+              lineHeight: 1.7,
+              color: "rgba(255,255,255,0.6)",
+              fontWeight: 300,
+              maxWidth: 720,
+              textShadow: ts,
+            }}
+          >
+            {world.pitch[lang]}
           </p>
         </R>
       </section>

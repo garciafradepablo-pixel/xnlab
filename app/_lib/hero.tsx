@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
+import { LuxButton } from "./lux-button";
 
 type HeroCopy = {
   eyebrow: string;
@@ -13,6 +14,8 @@ type HeroCopy = {
   s2: string;
   s3: string;
   s4: string;
+  heroCta1: string;
+  heroCta2: string;
 };
 
 // Six World Cores arranged in a dome above the wordmark. The central
@@ -32,12 +35,12 @@ const ORB_SIZE = "clamp(36px,6.4vw,100px)";
 // dy in viewport-height units so the dome's gentle arc scales with the
 // section height. Same numeric values as before (3.5%, 2%, 0.6%).
 const PLAN = [
-  { idx: 0, mult: -3, dy: 3.5, delay: 2.35 },
-  { idx: 1, mult: -2, dy: 2,   delay: 2.25 },
-  { idx: 2, mult: -1, dy: 0.6, delay: 2.15 },
-  { idx: 3, mult: 1,  dy: 0.6, delay: 2.2  },
-  { idx: 4, mult: 2,  dy: 2,   delay: 2.3  },
-  { idx: 5, mult: 3,  dy: 3.5, delay: 2.4  },
+  { idx: 0, mult: -3, dy: 3.5, delay: 1.55 },
+  { idx: 1, mult: -2, dy: 2,   delay: 1.5  },
+  { idx: 2, mult: -1, dy: 0.6, delay: 1.45 },
+  { idx: 3, mult: 1,  dy: 0.6, delay: 1.45 },
+  { idx: 4, mult: 2,  dy: 2,   delay: 1.5  },
+  { idx: 5, mult: 3,  dy: 3.5, delay: 1.55 },
 ];
 const UNIT = "clamp(50px,8.5vw,145px)";
 const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
@@ -91,28 +94,22 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         background: "#060402",
       }}
     >
-      {/* LAYER 1 — backdrop */}
+      {/* LAYER 1 — backdrop.
+          Single unified background across every viewport. The mobile
+          composition (denser, more centred, with the chrome aura
+          already wrapping the wordmark zone) reads premium at every
+          size, so we use it everywhere. No breakpoint swap = no
+          visual "jump" when resizing. */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.62 }}>
-          <Image
-            src="/images/hero/01_background_desktop.png"
-            alt=""
-            fill
-            sizes="100vw"
-            className="opacity-0 sm:opacity-100"
-            loading="eager"
-            fetchPriority="high"
-            style={{ objectFit: "cover", objectPosition: "center", transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1)" }}
-          />
+        <div style={{ position: "absolute", inset: 0, opacity: 0.7 }}>
           <Image
             src="/images/hero/01_background_mobile.png"
             alt=""
             fill
             sizes="100vw"
-            className="opacity-100 sm:opacity-0"
             loading="eager"
             fetchPriority="high"
-            style={{ objectFit: "cover", objectPosition: "center", transition: "opacity 0.7s cubic-bezier(0.22,1,0.36,1)" }}
+            style={{ objectFit: "cover", objectPosition: "center" }}
           />
         </div>
         <div
@@ -151,8 +148,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           height: "clamp(360px, 38vh, 600px)",
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at center, rgba(228,180,128,0.11) 0%, rgba(190,140,90,0.045) 40%, rgba(60,40,30,0.012) 68%, transparent 82%)",
-          filter: "blur(38px)",
+            "radial-gradient(ellipse at center, rgba(228,180,128,0.09) 0%, rgba(190,140,90,0.035) 35%, rgba(60,40,30,0.008) 58%, transparent 75%)",
+          filter: "blur(64px)",
         }}
         initial={{ opacity: 0, scale: 0.85 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -171,8 +168,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            "radial-gradient(ellipse at center, rgba(255,235,200,0.1) 0%, rgba(255,220,180,0.05) 40%, transparent 70%)",
-          filter: "blur(40px)",
+            "radial-gradient(ellipse at center, rgba(255,235,200,0.085) 0%, rgba(255,220,180,0.035) 38%, transparent 62%)",
+          filter: "blur(70px)",
         }}
         initial={{ opacity: 0, scale: 0.6 }}
         animate={{ opacity: [0, 0.55, 0.35], scale: [0.6, 1.1, 1.4] }}
@@ -189,8 +186,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            "radial-gradient(ellipse at center, rgba(200,180,255,0.045) 0%, rgba(180,160,255,0.015) 40%, transparent 70%)",
-          filter: "blur(50px)",
+            "radial-gradient(ellipse at center, rgba(200,180,255,0.038) 0%, rgba(180,160,255,0.012) 40%, transparent 65%)",
+          filter: "blur(80px)",
         }}
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: [0, 0.4, 0.18], scale: [0.5, 1.0, 1.3] }}
@@ -247,7 +244,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
           initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay: 1.9 }}
+          transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 1.2 }}
         >
           <Link
             href="/worlds"
@@ -303,10 +300,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   aria-hidden
                   style={{
                     position: "absolute",
-                    inset: "-60% -40%",
+                    inset: "-18% -16%",
                     background:
-                      "radial-gradient(ellipse at center, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0.3) 45%, transparent 75%)",
-                    filter: "blur(6px)",
+                      "radial-gradient(ellipse at center, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 35%, transparent 70%)",
+                    filter: "blur(3px)",
                     pointerEvents: "none",
                   }}
                 />
@@ -379,22 +376,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   outline: "none",
                 }}
               >
-                {/* Per-Core ambient halo — uses box-shadow on a circle
-                    so the glow follows the orb exactly. Avoids the
-                    rectangular bleed iOS Safari produces when blurring
-                    a square background. */}
-                <motion.div
-                  aria-hidden
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    borderRadius: "50%",
-                    boxShadow: `0 0 24px 2px ${w.color.glow}, 0 0 56px 6px ${w.color.glow}`,
-                    pointerEvents: "none",
-                  }}
-                  animate={{ opacity: isHover ? 1 : dimmed ? 0.08 : 0.35 }}
-                  transition={{ duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                />
+                {/* Removed the hover-only halo box-shadow that lived
+                    here. The Orb component now carries its own
+                    multi-layer atmospheric composition (backdrop
+                    glow, ground shadow, specular pass) so this layer
+                    no longer needs to exist. Less DOM, fewer
+                    competing radii, cleaner render. */}
 
                 <motion.div
                   animate={{
@@ -437,10 +424,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                       aria-hidden
                       style={{
                         position: "absolute",
-                        inset: "-60% -20%",
+                        inset: "-18% -12%",
                         background:
-                          "radial-gradient(ellipse at center, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.25) 50%, transparent 78%)",
-                        filter: "blur(6px)",
+                          "radial-gradient(ellipse at center, rgba(0,0,0,0.78) 0%, rgba(0,0,0,0.4) 35%, transparent 70%)",
+                        filter: "blur(3px)",
                         pointerEvents: "none",
                       }}
                     />
@@ -516,10 +503,25 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
         >
           XNLAB
+          {/* SEO-only descriptive heading — invisible to sighted users
+              (keeps the cinematic wordmark intact) but indexed by search
+              engines and read by screen readers as the page's H1. */}
+          <span className="sr-only">
+            {lang === "en"
+              ? " — Digital Atmosphere Studio for Premium Brands. Creative direction for hospitality, nightlife, architecture, wellness, artists and culture-led brands."
+              : " — Estudio de Atmósfera Digital para Marcas Premium. Dirección creativa para hospitalidad, vida nocturna, arquitectura, wellness, artistas y marcas con voz cultural."}
+          </span>
         </motion.h1>
       </div>
 
-      {/* LAYER 2C — chrome X behind the wordmark */}
+      {/* LAYER 2C — chrome X behind the wordmark.
+          Position mirrors the wordmark's flex centring: 50% vertical
+          minus half of the wordmark's paddingBottom so the symbol
+          sits on the exact vertical centre of the XNLAB letters at
+          every viewport size. Earlier the symbol was hard-coded to
+          top:62% which drifted away from the wordmark on tall
+          desktop viewports, making the X read as a separate object
+          above the title instead of being woven through it. */}
       <motion.div
         style={{
           position: "absolute",
@@ -527,7 +529,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           x: symX,
           y: symY,
           left: "50%",
-          top: "62%",
+          top: "calc(50% - clamp(0px, 4svh, 40px))",
           translateX: "-50%",
           translateY: "-50%",
           width: "clamp(140px,26vw,320px)",
@@ -591,25 +593,25 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alignItems: "center",
           justifyContent: "flex-end",
           paddingBottom: "clamp(20px,3vh,36px)",
-          gap: "clamp(20px,3vh,32px)",
+          gap: "clamp(16px,2.4vh,28px)",
           pointerEvents: "none",
         }}
       >
         <motion.div
-          style={{ textAlign: "center" }}
+          style={{ textAlign: "center", padding: "0 clamp(20px,5vw,48px)" }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.6, delay: 2.9 }}
+          transition={{ duration: 1.4, delay: 1.95 }}
         >
           <p
             style={{
-              fontSize: "clamp(11px,0.9vw,12px)",
-              lineHeight: 1.85,
-              color: "rgba(255,255,255,0.6)",
+              fontSize: "clamp(12px,1.05vw,14px)",
+              lineHeight: 1.55,
+              color: "rgba(255,255,255,0.78)",
               fontWeight: 300,
               textShadow: tsS,
-              letterSpacing: "0.02em",
-              maxWidth: "80vw",
+              letterSpacing: "0.005em",
+              maxWidth: "min(620px, 90vw)",
               margin: "0 auto",
             }}
           >
@@ -617,55 +619,103 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           </p>
           <p
             style={{
-              fontSize: "clamp(11px,0.9vw,12px)",
-              lineHeight: 1.85,
-              color: "rgba(255,255,255,0.3)",
-              fontWeight: 300,
+              fontSize: "clamp(9px,0.78vw,10px)",
+              lineHeight: 1.7,
+              color: "rgba(255,255,255,0.42)",
+              fontWeight: 500,
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              marginTop: 12,
               textShadow: ts,
-              letterSpacing: "0.02em",
-              marginTop: 4,
+              maxWidth: "min(560px, 90vw)",
+              margin: "12px auto 0",
             }}
           >
             {copy.s3} {copy.s4}
           </p>
         </motion.div>
 
-        {/* Scroll cue. Lives inside the bottom column so it can never
-            overlap the strapline. Hidden on very short heights. */}
+        {/* Dual CTA — primary (Start a project) + secondary (Explore worlds).
+            Sits between the strapline and the scroll cue. pointerEvents
+            re-enabled on the wrapping flex container to make them clickable. */}
+        <motion.div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "clamp(10px,1.6vw,18px)",
+            pointerEvents: "auto",
+          }}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1.2, delay: 2.15, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <LuxButton href="/contact" variant="solid" arrow={false}>
+            {copy.heroCta1}
+          </LuxButton>
+          <LuxButton href="/services" variant="minimal">
+            {copy.heroCta2}
+          </LuxButton>
+        </motion.div>
+
+        {/* Scroll cue — refined.
+            A descending light pulse inside a thin guide line, infinite
+            loop. Reads as a slow film exposure dropping, not a
+            mechanical button. The track stays static; only the lit
+            segment moves, creating the impression of light travelling
+            down into the page. */}
         <motion.div
           aria-hidden
           style={{
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
-            gap: 10,
+            gap: 14,
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.6, delay: 3.5 }}
+          transition={{ duration: 1.4, delay: 2.45 }}
         >
-        <span
-          style={{
-            fontSize: 9,
-            letterSpacing: "0.46em",
-            textTransform: "uppercase",
-            color: "rgba(255,255,255,0.45)",
-            fontWeight: 500,
-            textShadow: "0 1px 10px rgba(0,0,0,0.85)",
-          }}
-        >
-          Scroll
-        </span>
-        <motion.span
-          style={{
-            display: "inline-block",
-            width: 1,
-            height: 36,
-            background: "linear-gradient(to bottom, rgba(255,255,255,0.55) 0%, transparent 100%)",
-          }}
-          animate={{ scaleY: [1, 0.65, 1], opacity: [0.85, 0.4, 0.85] }}
-          transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
-        />
+          <span
+            style={{
+              fontSize: 9,
+              letterSpacing: "0.5em",
+              textTransform: "uppercase",
+              color: "rgba(255,255,255,0.48)",
+              fontWeight: 500,
+              textShadow: "0 1px 10px rgba(0,0,0,0.85)",
+              paddingLeft: "0.5em",
+            }}
+          >
+            Scroll
+          </span>
+          {/* Static track */}
+          <span
+            style={{
+              position: "relative",
+              display: "inline-block",
+              width: 1,
+              height: 42,
+              background: "rgba(255,255,255,0.14)",
+              overflow: "hidden",
+            }}
+          >
+            {/* Travelling light pulse */}
+            <motion.span
+              style={{
+                position: "absolute",
+                left: 0,
+                width: 1,
+                height: 14,
+                background:
+                  "linear-gradient(to bottom, transparent 0%, rgba(232,183,131,0.95) 50%, transparent 100%)",
+                filter: "drop-shadow(0 0 4px rgba(232,183,131,0.8))",
+              }}
+              animate={{ top: ["-14px", "42px"] }}
+              transition={{ duration: 2.4, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.4 }}
+            />
+          </span>
         </motion.div>
       </div>
 

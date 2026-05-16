@@ -37,9 +37,6 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
   const haloColor = isCentral
     ? "rgba(180,50,30,0.5)"
     : world?.color.glow ?? "rgba(255,255,255,0.2)";
-  const deepFade = isCentral
-    ? "rgba(20,5,4,0.05)"
-    : world?.color.deep?.replace(",1)", ",0.05)") ?? "rgba(0,0,0,0.05)";
   const m = world?.motion;
 
   // central.png is the Central Core's own PNG — same status as a World's
@@ -89,30 +86,15 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
         willChange: "transform, filter",
       }}
     >
-      {/* Halo — soft coloured breath behind the orb.
-          When a Core supplies its own PNG the glow is already baked into the
-          image, so the CSS halo here is dialled right down to a faint
-          atmospheric breath. The chrome fallback gets a stronger halo
-          because the chrome image alone has no colour around it. */}
-      <motion.div
-        aria-hidden
-        animate={
-          usesOwnImage
-            ? { opacity: [0.18, 0.32, 0.18], scale: [1, 1.04, 1] }
-            : { opacity: [0.45, 0.7, 0.45], scale: [1, 1.05, 1] }
-        }
-        transition={{ duration: breatheDuration, ease: "easeInOut", repeat: Infinity }}
-        style={{
-          position: "absolute",
-          inset: usesOwnImage ? "-12%" : "-32%",
-          borderRadius: "50%",
-          background: `radial-gradient(circle, ${haloColor} 0%, ${deepFade} 55%, transparent 78%)`,
-          filter: usesOwnImage ? "blur(48px)" : "blur(32px)",
-          pointerEvents: "none",
-        }}
-      />
-
-      {/* The orb itself */}
+      {/* The orb itself. Same treatment for ALL orbs (Central + 6
+          Worlds): only the PNG, no extra CSS layers. The Central is
+          the visual reference — the user confirmed it reads perfect
+          at rest — so we apply the same discipline to the 6 Worlds.
+          Every previous experiment (drop-shadow, box-shadow rim,
+          radial-gradient mask, scale crop, ambient bloom, rim halo,
+          specular pass, under-orb light pool) ended exposing a ring,
+          a moat, a circle outline or a rectangle. The PNG alone is
+          the proven solution. */}
       <motion.div
         animate={animByPulse[animKey]}
         transition={{
@@ -130,33 +112,44 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
       >
         {orbImage ? (
           usesOwnImage ? (
-            // The Core supplies its own PNG: orb + halo are baked in.
-            // Render as-is, with a faint drop-shadow that just deepens the
-            // image's existing atmosphere. Do NOT clip with borderRadius —
-            // the baked-in glow extends past the sphere.
             <Image
               src={orbImage}
-              alt={world?.title.en ?? (isCentral ? "XNLAB Central Core" : "World Core")}
+              alt={
+                isCentral
+                  ? "XNLAB Central Core — Creative Direction Studio"
+                  : world
+                  ? `${world.color.name} ${world.title.en} Core — XNLAB`
+                  : "XNLAB World Core"
+              }
               fill
               sizes={`${size}px`}
               style={{
                 objectFit: "contain",
-                filter: `drop-shadow(0 0 14px ${haloColor})`,
+                position: "absolute",
+                zIndex: 2,
               }}
               priority={isCentral}
             />
           ) : (
             // Chrome fallback — circular clip, colour tint and highlight
             // pass turn the shared chrome sphere into each Core's energy.
+            // overflow:hidden + borderRadius:50% already clip the chrome
+            // sphere into a circle; no drop-shadow needed (glow comes from
+            // the box-shadow halo above).
             <div style={{ position: "absolute", inset: 0, borderRadius: "50%", overflow: "hidden" }}>
               <Image
                 src={orbImage}
-                alt={isCentral ? "XNLAB Central Core" : world?.title.en ?? "World Core"}
+                alt={
+                  isCentral
+                    ? "XNLAB Central Core — Creative Direction Studio"
+                    : world
+                    ? `${world.color.name} ${world.title.en} Core — XNLAB`
+                    : "XNLAB World Core"
+                }
                 fill
                 sizes={`${size}px`}
                 style={{
                   objectFit: "contain",
-                  filter: `drop-shadow(0 0 24px ${haloColor})`,
                 }}
                 priority={isCentral}
               />
