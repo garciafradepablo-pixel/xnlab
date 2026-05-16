@@ -281,21 +281,18 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           >
             <motion.div
               animate={{
-                // When any world is the protagonist, the Central Core
-                // visibly steps back — scales down to 0.84 and dims to
-                // 0.28 — so the visitor never sees two orbs reading as
-                // "lit" at the same time. Only when nothing is hovered
-                // does the Central return to full presence; on its own
-                // hover it lifts to 1.22 as before.
-                scale: centralHover ? 1.22 : hovered !== null ? 0.84 : 1,
-                opacity: hovered !== null ? 0.28 : 1,
-                filter: hovered !== null ? "blur(1px)" : "blur(0px)",
+                // Central Core keeps its full presence at all times.
+                // On its own hover it lifts to 1.22. When a world is
+                // hovered we do not dim or shrink it — the world orb
+                // claims the protagonist position through scale and
+                // glow, not by dimming the centre. Silence over
+                // contrast.
+                scale: centralHover ? 1.22 : 1,
+                opacity: 1,
                 y: [0, -4, 0],
               }}
               transition={{
-                scale: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-                opacity: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
-                filter: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+                scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
                 y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
               }}
               style={{ position: "relative", width: "100%", height: "100%" }}
@@ -430,9 +427,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     // The neighbour gets a whisper to acknowledge the
                     // gesture without competing for attention.
                     filter: isHover
-                      ? `drop-shadow(0 0 36px ${w.color.glow}) drop-shadow(0 0 18px rgba(255,255,255,0.32))`
-                      : dockBoost > 0
-                      ? `drop-shadow(0 0 10px ${w.color.glow})`
+                      ? `drop-shadow(0 0 28px ${w.color.glow}) drop-shadow(0 0 52px ${w.color.glow}) drop-shadow(0 0 14px rgba(255,255,255,0.35))`
                       : "none",
                     y: [0, -3, 0],
                   }}
@@ -612,8 +607,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           top: "calc(50% - clamp(0px, 4svh, 40px))",
           translateX: "-50%",
           translateY: "-50%",
-          width: "clamp(140px,26vw,320px)",
-          height: "clamp(140px,26vw,320px)",
+          width: "clamp(180px,32vw,420px)",
+          height: "clamp(180px,32vw,420px)",
           pointerEvents: "none",
         }}
         initial={{ opacity: 0, filter: "blur(14px)" }}
@@ -629,13 +624,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             src="/images/hero/05_main_bottom_symbol.png"
             alt=""
             fill
-            sizes="(max-width: 768px) 220px, 380px"
+            sizes="(max-width: 768px) 260px, 420px"
             loading="eager"
             style={{
               objectFit: "contain",
               mixBlendMode: "screen",
-              opacity: 0.18,
-              filter: "drop-shadow(0 0 10px rgba(180,150,120,0.22))",
+              opacity: 0.55,
+              filter: "drop-shadow(0 0 24px rgba(212,140,80,0.42))",
             }}
           />
         </motion.div>
