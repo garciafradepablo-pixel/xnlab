@@ -359,12 +359,23 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       {PLAN.map(({ idx, mult, dy, delay, op, sc }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
-        const hoveredMult =
+        // mult spans -3..-1 and 1..3 (the central core sits at 0 but is
+        // a separate component). To make adjacency match what the eye
+        // sees — innermost left and innermost right are neighbours —
+        // we collapse mult onto a continuous 0..5 visual rank.
+        const visualRank = (m: number) => (m < 0 ? m + 3 : m + 2);
+        const myRank = visualRank(mult);
+        const hoveredRank =
           hovered === null
             ? null
-            : PLAN.find((p) => worlds[p.idx].slug === hovered)?.mult ?? null;
+            : (() => {
+                const found = PLAN.find(
+                  (p) => worlds[p.idx].slug === hovered
+                );
+                return found ? visualRank(found.mult) : null;
+              })();
         const distFromHover =
-          hoveredMult === null ? null : Math.abs(mult - hoveredMult);
+          hoveredRank === null ? null : Math.abs(myRank - hoveredRank);
         // Dock falloff: 1 at hovered, ~0.67 one step away, ~0.33 two
         // steps, 0 at three. Multiplied into the scale and glow boost.
         const dockBoost =
