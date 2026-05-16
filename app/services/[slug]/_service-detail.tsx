@@ -217,6 +217,43 @@ export default function ServiceDetailPage({ service }: { service: ServiceDetail 
               {service.lead[lang]}
             </p>
           </R>
+          {/* Outcome pull-quote — surfaces the promise immediately
+              under the lead so the visitor sees what they walk away
+              with before scanning specs and bullets. */}
+          <R delay={0.6}>
+            <div
+              style={{
+                marginTop: "clamp(28px,3.6vw,44px)",
+                paddingLeft: "clamp(14px,1.8vw,22px)",
+                borderLeft: `1px solid ${c?.hex ?? "rgba(232,183,131,0.55)"}`,
+                maxWidth: 720,
+              }}
+            >
+              <p
+                style={{
+                  ...labelStyle,
+                  color: c?.hex ?? "rgba(232,183,131,0.7)",
+                  marginBottom: 10,
+                }}
+              >
+                {t.outcome}
+              </p>
+              <p
+                style={{
+                  margin: 0,
+                  fontFamily: serif,
+                  fontStyle: "italic",
+                  fontSize: "clamp(1.2rem,1.6vw,1.55rem)",
+                  lineHeight: 1.35,
+                  letterSpacing: "-0.005em",
+                  color: "rgba(255,255,255,0.9)",
+                  textShadow: ts,
+                }}
+              >
+                {service.outcome[lang]}
+              </p>
+            </div>
+          </R>
         </div>
       </section>
 
