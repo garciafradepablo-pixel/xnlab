@@ -100,3 +100,73 @@ export function SectionMark() {
     </div>
   );
 }
+
+// Standalone atelier star — the same four-point sparkle used by the
+// chapter divider, but sized for a hero ornament and continuously
+// breathing. Sits in the hero composition between the strapline and
+// the CTAs as a typographic punctuation in the atmosphere. Use the
+// `size` prop to scale it; default 14px is the comfortable hero size.
+export function AtelierStar({
+  size = 14,
+  color = "rgba(232,183,131,0.85)",
+  shadow = "rgba(232,183,131,0.55)",
+  className,
+  style,
+}: {
+  size?: number;
+  color?: string;
+  shadow?: string;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <motion.span
+      aria-hidden
+      className={className}
+      animate={{
+        opacity: [0.55, 1, 0.55],
+        scale: [1, 1.18, 1],
+        rotate: [0, 8, 0, -8, 0],
+      }}
+      transition={{ duration: 5.4, ease: "easeInOut", repeat: Infinity }}
+      style={{
+        display: "inline-block",
+        width: size,
+        height: size,
+        position: "relative",
+        ...style,
+      }}
+    >
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          margin: "auto",
+          display: "block",
+          width: size,
+          height: 1,
+          background: `linear-gradient(to right, transparent 0%, ${color} 50%, transparent 100%)`,
+          top: "50%",
+          transform: "translateY(-50%)",
+          filter: `drop-shadow(0 0 ${size * 0.35}px ${shadow})`,
+        }}
+      />
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          margin: "auto",
+          display: "block",
+          width: 1,
+          height: size,
+          background: `linear-gradient(to bottom, transparent 0%, ${color} 50%, transparent 100%)`,
+          left: "50%",
+          transform: "translateX(-50%)",
+          filter: `drop-shadow(0 0 ${size * 0.35}px ${shadow})`,
+        }}
+      />
+    </motion.span>
+  );
+}

@@ -7,6 +7,7 @@ import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
 import { LuxButton } from "./lux-button";
+import { AtelierStar } from "./ornaments";
 
 type HeroCopy = {
   eyebrow: string;
@@ -697,6 +698,26 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           >
             {copy.s3} {copy.s4}
           </p>
+        </motion.div>
+
+        {/* Atelier star — the four-point sparkle returns as the
+            typographic punctuation of the hero atmosphere. Sits
+            between the strapline and the CTAs, breathing quietly.
+            Pulled into the same column as the rest of the bottom stack
+            so the rhythm reads: line of copy · star · CTAs · scroll. */}
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 1.2, delay: 2.05, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            marginTop: "clamp(-6px,-0.6vh,-2px)",
+            marginBottom: "clamp(-6px,-0.6vh,-2px)",
+          }}
+        >
+          <AtelierStar size={14} />
         </motion.div>
 
         {/* Dual CTA — primary (Start a project) + secondary (Explore worlds).
