@@ -48,7 +48,7 @@ export async function sendContactEmail(data: ContactInput): Promise<ContactResul
     `Industry: ${data.world || "—"}`,
     data.projectType ? `Project type: ${data.projectType}` : null,
     data.timeline ? `Timeline: ${data.timeline}` : null,
-    data.budget ? `Estimated investment: ${data.budget}` : null,
+    data.budget ? `Engagement intensity: ${data.budget}` : null,
     "",
     data.msg,
   ]

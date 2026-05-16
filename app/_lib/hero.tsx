@@ -360,36 +360,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       {PLAN.map(({ idx, mult, dy, delay, op, sc }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
-        // mult spans -3..-1 and 1..3 (the central core sits at 0 but is
-        // a separate component). To make adjacency match what the eye
-        // sees — innermost left and innermost right are neighbours —
-        // we collapse mult onto a continuous 0..5 visual rank.
-        const visualRank = (m: number) => (m < 0 ? m + 3 : m + 2);
-        const myRank = visualRank(mult);
-        const hoveredRank =
-          hovered === null
-            ? null
-            : (() => {
-                const found = PLAN.find(
-                  (p) => worlds[p.idx].slug === hovered
-                );
-                return found ? visualRank(found.mult) : null;
-              })();
-        const distFromHover =
-          hoveredRank === null ? null : Math.abs(myRank - hoveredRank);
-        // Tight Dock falloff: only the hovered orb is the protagonist;
-        // its immediate neighbour gets a very subtle lift; everything
-        // else stays untouched. Three or four orbs all growing reads as
-        // "the whole row reacted" — exactly the opposite of the Dock
-        // gesture we want.
-        const dockBoost =
-          distFromHover === null
-            ? 0
-            : distFromHover === 0
-            ? 1
-            : distFromHover === 1
-            ? 0.22
-            : 0;
+        // Strict isolation: only the hovered orb reacts. Even a tiny
+        // boost on the neighbour reads as "two orbs grew at once" when
+        // you hover one in the middle of the row (it has two
+        // neighbours), so the gesture loses its singular focus.
+        const dockBoost = isHover ? 1 : 0;
         const dimmed = centralHover;
         const side = mult < 0 ? "-" : "+";
         const dist = Math.abs(mult);

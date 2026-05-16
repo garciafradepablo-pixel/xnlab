@@ -25,38 +25,31 @@ export const metadata: Metadata = {
 const services = [
   {
     name: "Campaign System",
-    price: "5000",
     desc:
       "Focused launch system across digital surfaces — campaign visuals, micro-pages, motion, copy.",
   },
   {
     name: "Digital Atmosphere",
-    price: "10000",
     desc:
       "Cinematic single-page world. Direction, motion, structured data, technical build.",
   },
   {
     name: "Brand World",
-    price: "25000",
     desc:
       "Full multi-page system. Visual language, motion, copy, build, launch.",
   },
   {
     name: "Visual Engine",
-    price: "4000",
-    unit: "MONTH",
     desc:
       "Continuous creative system — campaigns, visual production, AI-assisted direction.",
   },
   {
     name: "SEO & Conversion Layer",
-    price: "1500",
     desc:
       "For existing websites that look good but are not being found, understood or converted. Technical SEO, structured data, analytics and conversion tuning.",
   },
   {
     name: "Perception Upgrade Sprint",
-    price: "2500",
     desc:
       "A focused two-to-four-week upgrade for brands whose digital presence no longer matches the level of the product.",
   },
@@ -92,15 +85,9 @@ const jsonLd = {
       areaServed: "Worldwide",
       offers: {
         "@type": "Offer",
-        priceCurrency: "EUR",
-        price: s.price,
-        priceSpecification: {
-          "@type": "PriceSpecification",
-          priceCurrency: "EUR",
-          minPrice: s.price,
-          ...(s.unit ? { unitText: s.unit, billingIncrement: 1 } : {}),
-        },
-        url: "https://xnlab.io/services",
+        availability: "https://schema.org/InStock",
+        availabilityStarts: "2026-01-01",
+        url: "https://xnlab.io/contact",
       },
     })),
     {

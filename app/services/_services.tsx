@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { LuxButton } from "../_lib/lux-button";
-import { SectionMark } from "../_lib/ornaments";
+import { SectionMark, IntensityMeter } from "../_lib/ornaments";
 import { WordmarkLink } from "../_lib/wordmark";
 import { serviceDetails } from "../_lib/service-details";
 
@@ -20,7 +20,8 @@ const en = {
     {
       number: "01",
       name: "Campaign System",
-      price: "From €5,000",
+      tier: 2 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Focused launch",
       duration: "2–3 weeks",
       summary:
         "A focused burst across digital surfaces — for openings, launches and drops.",
@@ -37,7 +38,8 @@ const en = {
     {
       number: "02",
       name: "Digital Atmosphere",
-      price: "From €10,000",
+      tier: 3 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Cinematic surface",
       duration: "4–6 weeks",
       summary:
         "A cinematic single-page world for the brand. The home, in the most literal sense.",
@@ -54,7 +56,8 @@ const en = {
     {
       number: "03",
       name: "Brand World",
-      price: "From €25,000",
+      tier: 5 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Complete world",
       duration: "8–12 weeks",
       summary:
         "A complete multi-page system. Visual language, motion, copy, technical build, launch.",
@@ -73,7 +76,8 @@ const en = {
     {
       number: "04",
       name: "Visual Engine",
-      price: "From €4,000 / month",
+      tier: 4 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Continuous direction",
       duration: "Monthly · 6-month minimum",
       summary:
         "Continuous creative system — campaigns, updates, visual production and AI direction.",
@@ -90,7 +94,8 @@ const en = {
     {
       number: "05",
       name: "SEO & Conversion Layer",
-      price: "From €1,500",
+      tier: 1 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Surgical layer",
       duration: "1–2 weeks",
       summary: "SEO, analytics, structured data, conversion tuning, technical refinement.",
       includes: [
@@ -106,7 +111,8 @@ const en = {
     {
       number: "06",
       name: "Perception Upgrade Sprint",
-      price: "From €2,500 – €4,000",
+      tier: 2 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Targeted sprint",
       duration: "2–4 weeks",
       summary:
         "Two-to-four-week intensive on an existing brand — direction, copy, surfaces, motion.",
@@ -174,7 +180,7 @@ const en = {
   cta: "Start a project",
   back: "← Home",
   featuredLabel: "Most chosen",
-  fromLabel: "Investment",
+  fromLabel: "Intensity",
 };
 
 const es = {
@@ -190,7 +196,8 @@ const es = {
     {
       number: "01",
       name: "Campaign System",
-      price: "Desde €5.000",
+      tier: 2 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Lanzamiento enfocado",
       duration: "2–3 semanas",
       summary:
         "Una intervención breve y precisa en superficies digitales: aperturas, lanzamientos y momentos culturales puntuales.",
@@ -207,7 +214,8 @@ const es = {
     {
       number: "02",
       name: "Atmósfera Digital",
-      price: "Desde €10.000",
+      tier: 3 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Superficie cinematográfica",
       duration: "4–6 semanas",
       summary:
         "Un mundo cinematográfico de una sola página: el lugar donde tu marca vive online.",
@@ -224,7 +232,8 @@ const es = {
     {
       number: "03",
       name: "Mundo de Marca",
-      price: "Desde €25.000",
+      tier: 5 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Mundo completo",
       duration: "8–12 semanas",
       summary:
         "Un sistema multipágina completo: lenguaje visual, movimiento, redacción, desarrollo técnico y lanzamiento.",
@@ -243,7 +252,8 @@ const es = {
     {
       number: "04",
       name: "Motor Visual",
-      price: "Desde €4.000 / mes",
+      tier: 4 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Dirección continua",
       duration: "Mensual · 6 meses mínimo",
       summary:
         "Sistema creativo continuo: campañas, actualizaciones, producción visual y dirección asistida por IA.",
@@ -260,7 +270,8 @@ const es = {
     {
       number: "05",
       name: "SEO y Conversión",
-      price: "Desde €1.500",
+      tier: 1 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Capa quirúrgica",
       duration: "1–2 semanas",
       summary:
         "SEO, analítica, datos estructurados, optimización de conversión y refinamiento técnico.",
@@ -277,7 +288,8 @@ const es = {
     {
       number: "06",
       name: "Sprint de Mejora de Percepción",
-      price: "Desde €2.500 – €4.000",
+      tier: 2 as 1 | 2 | 3 | 4 | 5,
+      tierLabel: "Sprint dirigido",
       duration: "2–4 semanas",
       summary:
         "Intensivo de dos a cuatro semanas sobre una marca existente: dirección, redacción, superficies y movimiento.",
@@ -345,7 +357,7 @@ const es = {
   cta: "Iniciar un proyecto",
   back: "← Inicio",
   featuredLabel: "Más elegido",
-  fromLabel: "Inversión",
+  fromLabel: "Intensidad",
 };
 
 const labelStyle: React.CSSProperties = {
@@ -580,19 +592,20 @@ export default function Services() {
                   }}
                 >
                   <p style={{ ...labelStyle, color: "rgba(232,183,131,0.6)" }}>{t.fromLabel}</p>
+                  <IntensityMeter tier={s.tier} style={{ marginTop: 4, marginBottom: 4 }} />
                   <p
                     style={{
                       margin: 0,
                       fontFamily: serif,
                       fontStyle: "italic",
-                      fontSize: "clamp(2.4rem,4.8vw,4.4rem)",
-                      lineHeight: 1,
-                      letterSpacing: "-0.025em",
+                      fontSize: "clamp(1.6rem,2.6vw,2.4rem)",
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.018em",
                       color: "#e8b783",
                       textShadow: "0 1px 24px rgba(232,183,131,0.18)",
                     }}
                   >
-                    {s.price}
+                    {s.tierLabel}
                   </p>
                 </div>
                 <p

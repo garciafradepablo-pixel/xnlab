@@ -101,6 +101,69 @@ export function SectionMark() {
   );
 }
 
+// Luxury intensity meter — five dots, the first `tier` filled amber,
+// the rest faint. Reads as an analogue gauge of how comprehensive a
+// service is, with no money attached. The filled dots breathe gently
+// so the meter never sits dead on the page. Optional `compact` mode
+// shrinks the dot size for inline use on cards.
+export function IntensityMeter({
+  tier,
+  compact,
+  style,
+}: {
+  tier: 1 | 2 | 3 | 4 | 5;
+  compact?: boolean;
+  style?: React.CSSProperties;
+}) {
+  const size = compact ? 5 : 7;
+  const gap = compact ? 5 : 7;
+  return (
+    <div
+      aria-label={`Intensity ${tier} of 5`}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap,
+        ...style,
+      }}
+    >
+      {[1, 2, 3, 4, 5].map((n) => {
+        const filled = n <= tier;
+        return (
+          <motion.span
+            key={n}
+            aria-hidden
+            animate={
+              filled
+                ? { opacity: [0.7, 1, 0.7], scale: [1, 1.08, 1] }
+                : undefined
+            }
+            transition={{
+              duration: 3.4,
+              ease: "easeInOut",
+              repeat: Infinity,
+              delay: (n - 1) * 0.18,
+            }}
+            style={{
+              display: "inline-block",
+              width: size,
+              height: size,
+              borderRadius: "50%",
+              background: filled
+                ? "radial-gradient(circle at 35% 30%, rgba(255,210,160,0.95) 0%, rgba(232,183,131,0.95) 45%, rgba(180,120,60,0.85) 100%)"
+                : "rgba(255,255,255,0.12)",
+              border: filled ? "none" : "1px solid rgba(255,255,255,0.18)",
+              boxShadow: filled
+                ? "0 0 8px rgba(232,183,131,0.55), 0 0 2px rgba(232,183,131,0.8)"
+                : "none",
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 // Standalone atelier star — the same four-point sparkle used by the
 // chapter divider, but sized for a hero ornament and continuously
 // breathing. Sits in the hero composition between the strapline and

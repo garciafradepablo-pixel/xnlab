@@ -21,10 +21,14 @@ export type ServiceDetail = {
   tagline: { en: string; es: string };
   // 1–2 sentence commercial lead under the hero.
   lead: { en: string; es: string };
-  // Specs strip shown under the lead: duration, scope shape, price range.
+  // Specs strip shown under the lead: duration, scope shape, intensity tier.
   duration: { en: string; es: string };
   scope: { en: string; es: string };
-  price: { en: string; es: string };
+  // Luxury intensity on a 1..5 scale (rendered as a 5-dot meter so the
+  // visitor reads how the engagement escalates per pack without a hard
+  // price tag). Numbers stay private until the first call.
+  tier: 1 | 2 | 3 | 4 | 5;
+  tierLabel: { en: string; es: string };
   // Three to four longer paragraphs that describe what this system is,
   // who it is for, and why it converts.
   body: { en: string[]; es: string[] };
@@ -61,7 +65,8 @@ export const serviceDetails: ServiceDetail[] = [
     },
     duration: { en: "2–3 weeks", es: "2–3 semanas" },
     scope: { en: "Fixed scope · One campaign", es: "Alcance cerrado · Una campaña" },
-    price: { en: "From €5,000", es: "Desde €5.000" },
+    tier: 2,
+    tierLabel: { en: "Focused launch", es: "Lanzamiento enfocado" },
     body: {
       en: [
         "The Campaign System is built for brands with a real cultural moment to defend: a hotel reopening, a club season launch, an artist drop, a perfume release, a venue debut. The window is short. The visual signal must be unmistakable across every surface a guest, follower or critic touches.",
@@ -122,7 +127,8 @@ export const serviceDetails: ServiceDetail[] = [
     },
     duration: { en: "4–6 weeks", es: "4–6 semanas" },
     scope: { en: "Fixed scope · Single-page system", es: "Alcance cerrado · Sistema de una sola página" },
-    price: { en: "From €10,000", es: "Desde €10.000" },
+    tier: 3,
+    tierLabel: { en: "Cinematic surface", es: "Superficie cinematográfica" },
     body: {
       en: [
         "Most premium brands lose money at the booking step. The room is beautiful, the dinner is unforgettable, the perfume is poetic — and the website is a generic template that breaks the spell. Digital Atmosphere closes that gap.",
@@ -183,7 +189,8 @@ export const serviceDetails: ServiceDetail[] = [
     },
     duration: { en: "8–12 weeks", es: "8–12 semanas" },
     scope: { en: "Fixed scope · 6–12 page system", es: "Alcance cerrado · Sistema de 6–12 páginas" },
-    price: { en: "From €25,000", es: "Desde €25.000" },
+    tier: 5,
+    tierLabel: { en: "Complete world", es: "Mundo completo" },
     body: {
       en: [
         "Brand World is built for the brands that have outgrown a template, a freelancer or a generic agency. They have presence in the room, they have a real audience, and they have a budget — but their visual system does not yet hold across every surface they appear on.",
@@ -246,7 +253,8 @@ export const serviceDetails: ServiceDetail[] = [
     },
     duration: { en: "Monthly · 6-month minimum", es: "Mensual · 6 meses mínimo" },
     scope: { en: "Recurring · One campaign per month", es: "Recurrente · Una campaña al mes" },
-    price: { en: "From €4,000 / month", es: "Desde €4.000 / mes" },
+    tier: 4,
+    tierLabel: { en: "Continuous direction", es: "Dirección continua" },
     body: {
       en: [
         "Premium brands lose direction the moment they go from one big launch to a stream of small ones. Visual Engine is for the brands that have already invested in a Brand World and now need to keep shipping cultural moments without diluting the system.",
@@ -307,7 +315,8 @@ export const serviceDetails: ServiceDetail[] = [
     },
     duration: { en: "1–2 weeks", es: "1–2 semanas" },
     scope: { en: "Fixed scope · Existing site", es: "Alcance cerrado · Sitio existente" },
-    price: { en: "From €1,500", es: "Desde €1.500" },
+    tier: 1,
+    tierLabel: { en: "Surgical layer", es: "Capa quirúrgica" },
     body: {
       en: [
         "Most premium sites are beautiful and invisible at the same time. The atmosphere is there, but the search engines do not see it, the AI assistants do not understand it, the analytics is half wired, and the conversion path is full of polite friction.",
@@ -366,7 +375,8 @@ export const serviceDetails: ServiceDetail[] = [
     },
     duration: { en: "2–4 weeks", es: "2–4 semanas" },
     scope: { en: "Fixed scope · Targeted upgrade", es: "Alcance cerrado · Mejora puntual" },
-    price: { en: "From €2,500 – €4,000", es: "Desde €2.500 – €4.000" },
+    tier: 2,
+    tierLabel: { en: "Targeted sprint", es: "Sprint dirigido" },
     body: {
       en: [
         "Some brands do not need a new site — they need to be pulled forward. The product has matured, the audience has matured, but the digital surface still speaks in the brand's old voice. A full rebuild is overkill; doing nothing is the slow leak.",

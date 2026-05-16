@@ -57,13 +57,9 @@ export default async function Page({ params }: { params: Params }) {
         audience: { "@type": "Audience", audienceType: service.audience.en },
         offers: {
           "@type": "Offer",
-          priceCurrency: "EUR",
-          priceSpecification: {
-            "@type": "PriceSpecification",
-            priceCurrency: "EUR",
-            price: service.price.en.replace(/[^\d]/g, "").slice(0, 5),
-          },
           availability: "https://schema.org/LimitedAvailability",
+          availabilityStarts: "2026-01-01",
+          url: "https://xnlab.io/contact",
         },
         mainEntityOfPage: {
           "@type": "WebPage",

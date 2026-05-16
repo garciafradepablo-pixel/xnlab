@@ -3,7 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../../_lib/atoms";
 import { LuxButton } from "../../_lib/lux-button";
-import { SectionMark } from "../../_lib/ornaments";
+import { SectionMark, IntensityMeter } from "../../_lib/ornaments";
 import { WordmarkLink } from "../../_lib/wordmark";
 import { Orb } from "../../_lib/orb";
 import { Breadcrumb } from "../../_lib/breadcrumb";
@@ -17,7 +17,7 @@ const ui = {
     eyebrowPrefix: "System",
     durationLabel: "Duration",
     scopeLabel: "Scope",
-    priceLabel: "Investment",
+    priceLabel: "Intensity",
     body: "About",
     includes: "What you receive",
     outcome: "Outcome",
@@ -31,7 +31,7 @@ const ui = {
     eyebrowPrefix: "Sistema",
     durationLabel: "Duración",
     scopeLabel: "Alcance",
-    priceLabel: "Inversión",
+    priceLabel: "Intensidad",
     body: "Sobre el sistema",
     includes: "Lo que recibes",
     outcome: "Resultado",
@@ -238,12 +238,19 @@ export default function ServiceDetailPage({ service }: { service: ServiceDetail 
           className="grid-cols-1 md:grid-cols-3"
         >
           {[
-            [t.durationLabel, service.duration[lang]],
-            [t.scopeLabel, service.scope[lang]],
-            [t.priceLabel, service.price[lang]],
-          ].map(([label, value]) => (
+            { label: t.durationLabel, value: service.duration[lang] },
+            { label: t.scopeLabel, value: service.scope[lang] },
+            {
+              label: t.priceLabel,
+              value: service.tierLabel[lang],
+              tier: service.tier,
+            },
+          ].map(({ label, value, tier }) => (
             <div key={label}>
               <p style={{ ...labelStyle, marginBottom: 10, color: "rgba(232,183,131,0.6)" }}>{label}</p>
+              {tier !== undefined && (
+                <IntensityMeter tier={tier} style={{ marginBottom: 10 }} />
+              )}
               <p
                 style={{
                   margin: 0,
