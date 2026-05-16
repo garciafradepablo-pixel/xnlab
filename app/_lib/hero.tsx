@@ -495,6 +495,38 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         );
       })}
 
+      {/* LAYER 2D — Atelier sigil. The four-point star (the same symbol
+          inside the XNLAB mark) sits at the geometric centre of the hero,
+          breathing quietly between the orbital swirl behind it and the
+          wordmark in front of it. Acts as the brand watermark embedded
+          in the atmosphere. zIndex 9 puts it above all background
+          imagery and orbs but below the wordmark and CTAs (10/30). */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          zIndex: 9,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          pointerEvents: "none",
+          paddingBottom: "clamp(0px, 8svh, 80px)",
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.6 }}
+          animate={{ opacity: 0.6, scale: 1 }}
+          transition={{ duration: 2.2, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <AtelierStar
+            size={72}
+            color="rgba(232,183,131,0.85)"
+            shadow="rgba(232,183,131,0.65)"
+          />
+        </motion.div>
+      </div>
+
       {/* LAYER 3 — XNLAB wordmark. Pulled a touch above the visual centre
           on shorter viewports so it sits closer to the dome, removing the
           empty zone between them. Falls back to centred on tall screens. */}
@@ -673,26 +705,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           >
             {copy.s3} {copy.s4}
           </p>
-        </motion.div>
-
-        {/* Atelier star — the four-point sparkle returns as the
-            typographic punctuation of the hero atmosphere. Sits
-            between the strapline and the CTAs, breathing quietly.
-            Pulled into the same column as the rest of the bottom stack
-            so the rhythm reads: line of copy · star · CTAs · scroll. */}
-        <motion.div
-          aria-hidden
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, delay: 2.05, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            marginTop: "clamp(-6px,-0.6vh,-2px)",
-            marginBottom: "clamp(-6px,-0.6vh,-2px)",
-          }}
-        >
-          <AtelierStar size={14} />
         </motion.div>
 
         {/* Dual CTA — primary (Start a project) + secondary (Explore worlds).
