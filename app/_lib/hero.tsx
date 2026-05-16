@@ -281,13 +281,21 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           >
             <motion.div
               animate={{
-                scale: centralHover ? 1.22 : 1,
-                opacity: hovered !== null ? 0.45 : 1,
+                // When any world is the protagonist, the Central Core
+                // visibly steps back — scales down to 0.84 and dims to
+                // 0.28 — so the visitor never sees two orbs reading as
+                // "lit" at the same time. Only when nothing is hovered
+                // does the Central return to full presence; on its own
+                // hover it lifts to 1.22 as before.
+                scale: centralHover ? 1.22 : hovered !== null ? 0.84 : 1,
+                opacity: hovered !== null ? 0.28 : 1,
+                filter: hovered !== null ? "blur(1px)" : "blur(0px)",
                 y: [0, -4, 0],
               }}
               transition={{
-                scale: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
-                opacity: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                scale: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                opacity: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+                filter: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
                 y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
               }}
               style={{ position: "relative", width: "100%", height: "100%" }}

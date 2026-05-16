@@ -542,8 +542,8 @@ function WorldRow({
       style={{
         display: "flex",
         alignItems: "center",
-        gap: compact ? 10 : 12,
-        padding: compact ? "8px 6px" : "10px 10px",
+        gap: compact ? 12 : 16,
+        padding: compact ? "10px 8px" : "14px 12px",
         textDecoration: "none",
         color: "inherit",
         position: "relative",
@@ -592,60 +592,38 @@ function WorldRow({
       />
       <div
         style={{
-          width: compact ? 28 : 32,
-          height: compact ? 28 : 32,
+          width: compact ? 36 : 44,
+          height: compact ? 36 : 44,
           flexShrink: 0,
         }}
       >
         {orbSlot}
       </div>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div
+      <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
+        <span
           style={{
-            display: "flex",
-            alignItems: "baseline",
-            gap: 8,
-            marginBottom: 2,
+            fontSize: 9,
+            fontWeight: 500,
+            letterSpacing: "0.32em",
+            color: numberColor,
+            flexShrink: 0,
           }}
         >
-          <span
-            style={{
-              fontSize: 9,
-              fontWeight: 500,
-              letterSpacing: "0.3em",
-              color: numberColor,
-            }}
-          >
-            {numberLabel}
-          </span>
-          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 9 }}>—</span>
-          <span
-            style={{
-              fontSize: compact ? 12.5 : 13,
-              color: "white",
-              letterSpacing: "-0.005em",
-              fontWeight: 400,
-            }}
-          >
-            {title}
-          </span>
-        </div>
-        <p
+          {numberLabel}
+        </span>
+        <span
           style={{
-            margin: 0,
-            fontSize: compact ? 10.5 : 11,
-            lineHeight: 1.4,
-            color: "rgba(255,255,255,0.5)",
-            fontWeight: 300,
+            fontSize: compact ? 13 : 14,
+            color: "white",
+            letterSpacing: "-0.005em",
+            fontWeight: 400,
             overflow: "hidden",
             textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 1,
-            WebkitBoxOrient: "vertical",
+            whiteSpace: "nowrap",
           }}
         >
-          {body}
-        </p>
+          {title}
+        </span>
       </div>
       <span
         data-arrow
@@ -727,7 +705,7 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
             numberColor={w.color.hex}
             title={w.title[lang]}
             body={w.pitch[lang]}
-            orbSlot={<Orb world={w} size={compact ? 28 : 32} />}
+            orbSlot={<Orb world={w} size={compact ? 36 : 48} />}
             onSelect={onSelect}
             compact={compact}
           />

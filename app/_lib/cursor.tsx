@@ -60,23 +60,49 @@ export function Cursor() {
         translateY: "-50%",
         pointerEvents: "none",
         zIndex: 99999,
-        mixBlendMode: "difference",
       }}
     >
+      {/* Soft amber halo — premium glow that breathes around the
+          precise dot, like a candlelight reflection. No border. */}
       <motion.div
         animate={{
-          width: hovering ? 28 : 14,
-          height: hovering ? 28 : 14,
-          borderColor: hovering ? "rgba(232,183,131,0.65)" : "rgba(255,255,255,0.32)",
-          opacity: hovering ? 0.95 : 0.7,
+          width: hovering ? 60 : 36,
+          height: hovering ? 60 : 36,
+          opacity: hovering ? 0.85 : 0.5,
+        }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          translateX: "-50%",
+          translateY: "-50%",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle, rgba(232,183,131,0.42) 0%, rgba(232,183,131,0.14) 38%, transparent 72%)",
+          filter: "blur(2px)",
+        }}
+      />
+      {/* Precise dot at the centre — warm white with a tight glow,
+          tiny so it never competes with the system cursor underneath. */}
+      <motion.div
+        animate={{
+          scale: hovering ? 1.35 : 1,
+          opacity: hovering ? 1 : 0.9,
         }}
         transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
         style={{
+          position: "absolute",
+          left: "50%",
+          top: "50%",
+          translateX: "-50%",
+          translateY: "-50%",
+          width: 5,
+          height: 5,
           borderRadius: "50%",
-          borderStyle: "solid",
-          borderWidth: 1,
-          boxSizing: "border-box",
-          filter: "blur(0.3px)",
+          background: "rgba(255,238,210,0.96)",
+          boxShadow:
+            "0 0 4px rgba(232,183,131,0.95), 0 0 12px rgba(232,183,131,0.55)",
         }}
       />
     </motion.div>
