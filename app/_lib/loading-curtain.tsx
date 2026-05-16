@@ -214,63 +214,30 @@ export function LoadingCurtain() {
             </motion.div>
           </motion.div>
 
-          {/* Vertical lab scanline sweeping across the orb */}
-          {!reduced && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 0.55, x: ["-22vw", "22vw"] }}
-              transition={{
-                opacity: { duration: 0.8, delay: 0.4 },
-                x: {
-                  duration: 3.6,
-                  repeat: Infinity,
-                  repeatType: "reverse",
-                  ease: "easeInOut",
-                  delay: 0.4,
-                },
-              }}
-              style={{
-                position: "absolute",
-                left: "50%",
-                top: "50%",
-                transform: "translate(-50%,-50%)",
-                width: 1,
-                height: "min(280px, 32vh)",
-                background:
-                  "linear-gradient(to bottom, transparent 0%, rgba(232,183,131,0.65) 50%, transparent 100%)",
-                pointerEvents: "none",
-                mixBlendMode: "screen",
-                filter: "blur(0.4px)",
-              }}
-            />
-          )}
-
-          {/* Caption stack — wordmark, divider, stage text, progress, prompt */}
+          {/* Top zone — wordmark + hairline divider, anchored to the top
+              of the viewport so it never collides with the centred orb. */}
           <div
             style={{
               position: "absolute",
-              inset: 0,
+              top: "clamp(40px, 9vh, 88px)",
+              left: 0,
+              right: 0,
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              justifyContent: "center",
               pointerEvents: "none",
-              padding: "0 24px",
             }}
           >
             <motion.p
               initial={{ opacity: 0, letterSpacing: "0.8em" }}
-              animate={{ opacity: 0.9, letterSpacing: "0.46em" }}
+              animate={{ opacity: 0.92, letterSpacing: "0.5em" }}
               transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                fontSize: "clamp(11px,1vw,13px)",
+                fontSize: "clamp(10px, 0.95vw, 12px)",
                 fontWeight: 500,
                 color: "rgba(232,183,131,0.92)",
                 textTransform: "uppercase",
                 margin: 0,
-                marginTop: "min(70px, 18vh)",
-                position: "relative",
-                zIndex: 3,
                 textShadow: "0 2px 24px rgba(0,0,0,0.85)",
               }}
             >
@@ -278,19 +245,35 @@ export function LoadingCurtain() {
             </motion.p>
             <motion.div
               initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 90, opacity: 1 }}
-              transition={{ duration: 2, ease: [0.22, 1, 0.36, 1] }}
+              animate={{ width: 64, opacity: 1 }}
+              transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                marginTop: 16,
+                marginTop: 14,
                 height: 1,
                 background:
-                  "linear-gradient(to right, transparent, rgba(232,183,131,0.55), transparent)",
+                  "linear-gradient(to right, transparent, rgba(232,183,131,0.5), transparent)",
               }}
             />
-            {/* Stage caption — Cormorant italic, fades on key change */}
+          </div>
+
+          {/* Bottom zone — stage caption, progress, prompt. Sits below
+              the orb with generous breathing room. */}
+          <div
+            style={{
+              position: "absolute",
+              bottom: "clamp(36px, 8vh, 80px)",
+              left: 0,
+              right: 0,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              pointerEvents: "none",
+              padding: "0 24px",
+              gap: 16,
+            }}
+          >
             <div
               style={{
-                marginTop: 18,
                 height: 22,
                 display: "flex",
                 alignItems: "center",
@@ -303,7 +286,7 @@ export function LoadingCurtain() {
                 <motion.p
                   key={stage}
                   initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 0.7, y: 0 }}
+                  animate={{ opacity: 0.72, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
                   transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
                   style={{
@@ -311,20 +294,18 @@ export function LoadingCurtain() {
                     fontFamily:
                       "var(--font-serif,'Cormorant Garamond',Georgia,serif)",
                     fontStyle: "italic",
-                    fontSize: "clamp(13px,1.2vw,15px)",
-                    color: "rgba(255,255,255,0.7)",
+                    fontSize: "clamp(13px, 1.2vw, 15px)",
+                    color: "rgba(255,255,255,0.72)",
                     letterSpacing: "-0.005em",
-                    textShadow: "0 2px 18px rgba(0,0,0,0.8)",
+                    textShadow: "0 2px 18px rgba(0,0,0,0.85)",
                   }}
                 >
                   {STAGES[stage]}
                 </motion.p>
               </AnimatePresence>
             </div>
-            {/* Progress hairline */}
             <div
               style={{
-                marginTop: 16,
                 width: "min(220px, 44vw)",
                 height: 1,
                 background: "rgba(255,255,255,0.08)",
@@ -348,7 +329,6 @@ export function LoadingCurtain() {
                 }}
               />
             </div>
-            {/* Touch to enter */}
             <motion.button
               type="button"
               onClick={(e) => {
@@ -357,7 +337,7 @@ export function LoadingCurtain() {
               }}
               animate={
                 ready
-                  ? { opacity: [0.45, 0.95, 0.45], y: [0, -2, 0] }
+                  ? { opacity: [0.5, 0.95, 0.5], y: [0, -2, 0] }
                   : { opacity: 0 }
               }
               transition={
@@ -366,21 +346,21 @@ export function LoadingCurtain() {
                   : { duration: 0.4 }
               }
               style={{
-                marginTop: 30,
+                marginTop: 6,
                 display: "inline-flex",
                 alignItems: "center",
                 gap: 12,
                 fontSize: 10,
                 letterSpacing: "0.4em",
                 textTransform: "uppercase",
-                color: "rgba(255,255,255,0.78)",
+                color: "rgba(255,255,255,0.82)",
                 fontWeight: 500,
                 background: "transparent",
                 border: "none",
                 cursor: ready ? "pointer" : "default",
                 padding: "10px 16px",
                 pointerEvents: ready ? "auto" : "none",
-                textShadow: "0 2px 16px rgba(0,0,0,0.8)",
+                textShadow: "0 2px 16px rgba(0,0,0,0.85)",
               }}
             >
               <motion.span
