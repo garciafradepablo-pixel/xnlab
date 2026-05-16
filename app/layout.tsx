@@ -3,10 +3,8 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { DustStyles } from "./_lib/atoms";
 import { ScrollProgress, FilmGrain } from "./_lib/chrome";
-import { PageTransition } from "./_lib/page-transition";
 import { Cursor } from "./_lib/cursor";
 import { BackToTop } from "./_lib/back-to-top";
-import { LoadingCurtain } from "./_lib/loading-curtain";
 import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({
@@ -259,8 +257,7 @@ export default function RootLayout({
         <ScrollProgress />
         <Cursor />
         <BackToTop />
-        <LoadingCurtain />
-        <div id="main"><PageTransition>{children}</PageTransition></div>
+        <div id="main">{children}</div>
         <Analytics />
       </body>
     </html>
