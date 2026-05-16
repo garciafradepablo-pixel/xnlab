@@ -17,7 +17,7 @@ export function SectionMark() {
         alignItems: "center",
         justifyContent: "center",
         gap: "clamp(14px, 2vw, 22px)",
-        padding: "clamp(32px, 5vw, 72px) clamp(20px, 5vw, 64px)",
+        padding: "clamp(20px, 3vw, 44px) clamp(20px, 5vw, 64px)",
         position: "relative",
       }}
     >

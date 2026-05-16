@@ -9,6 +9,8 @@ import {
   type MotionValue,
 } from "framer-motion";
 import { useEffect, useState } from "react";
+import { Orb } from "./orb";
+import { worlds } from "./worlds";
 
 // XNLAB cold-open. Instead of a flat dark sheet, the visitor sees the
 // atelier "warm up": three layers of pigment-smoke drifting and
@@ -133,11 +135,13 @@ export function LoadingCurtain() {
             delay={9}
           />
 
-          {/* Forming orb — slow rotation, breathing conic glow on top */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.55, filter: "blur(22px)" }}
-            animate={{ opacity: 0.9, scale: 1, filter: "blur(0px)" }}
-            transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }}
+          {/* Constellation forming — the real XNLAB universe assembles
+              itself: the Central Core PNG appears first, the six World
+              PNGs swarm in from outside and settle into the hexagonal
+              ring. Each orb keeps its own breathing / drifting motion
+              (handled inside <Orb/>), and the whole ring slowly drifts
+              as a body so the constellation never feels static. */}
+          <div
             style={{
               position: "absolute",
               inset: 0,
@@ -148,71 +152,82 @@ export function LoadingCurtain() {
             }}
           >
             <motion.div
-              animate={reduced ? undefined : { rotate: 360 }}
-              transition={{ duration: 26, repeat: Infinity, ease: "linear" }}
+              initial={{ opacity: 0, scale: 0.7, filter: "blur(18px)" }}
+              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1] }}
               style={{
-                width: "clamp(180px, 24vw, 280px)",
-                height: "clamp(180px, 24vw, 280px)",
                 position: "relative",
+                width: "clamp(260px, 40vw, 460px)",
+                aspectRatio: "1",
               }}
             >
-              {/* base orb */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  background:
-                    "radial-gradient(circle at 36% 30%, rgba(255,180,120,0.75) 0%, rgba(220,90,40,0.42) 22%, rgba(80,30,15,0.85) 56%, rgba(10,5,4,1) 92%)",
-                }}
-              />
-              {/* internal conic — looks like liquid catching light */}
+              {/* Slow rotating ring — carries the six worlds. Period is
+                  long enough that the rotation reads as drift, not spin. */}
               <motion.div
-                animate={
-                  reduced
-                    ? undefined
-                    : { rotate: -360, scale: [1, 1.06, 1] }
-                }
-                transition={{
-                  rotate: { duration: 10, repeat: Infinity, ease: "linear" },
-                  scale: { duration: 5, repeat: Infinity, ease: "easeInOut" },
-                }}
-                style={{
-                  position: "absolute",
-                  inset: "12%",
-                  borderRadius: "50%",
-                  background:
-                    "conic-gradient(from 0deg, rgba(255,150,80,0) 0deg, rgba(255,210,160,0.32) 70deg, rgba(255,150,80,0) 140deg, rgba(220,80,30,0.22) 220deg, rgba(255,150,80,0) 320deg)",
-                  mixBlendMode: "screen",
-                  filter: "blur(10px)",
-                }}
-              />
-              {/* highlight */}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  borderRadius: "50%",
-                  background:
-                    "radial-gradient(circle at 38% 28%, rgba(255,255,255,0.16) 0%, transparent 26%)",
-                  mixBlendMode: "screen",
-                }}
-              />
-              {/* halo ring */}
+                animate={reduced ? undefined : { rotate: 360 }}
+                transition={{ duration: 90, repeat: Infinity, ease: "linear" }}
+                style={{ position: "absolute", inset: 0 }}
+              >
+                {worlds.map((w, i) => {
+                  const angle = -90 + i * 60;
+                  return (
+                    <motion.div
+                      key={w.slug}
+                      initial={{ opacity: 0, scale: 0.4 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{
+                        duration: 1.3,
+                        delay: 0.55 + i * 0.22,
+                        ease: [0.22, 1, 0.36, 1],
+                      }}
+                      style={{
+                        position: "absolute",
+                        left: "50%",
+                        top: "50%",
+                        width: "clamp(56px, 8vw, 92px)",
+                        height: "clamp(56px, 8vw, 92px)",
+                        transform: `translate(-50%, -50%) rotate(${angle}deg) translateY(calc(-1 * clamp(100px, 14.5vw, 180px))) rotate(${-angle}deg)`,
+                      }}
+                    >
+                      <Orb world={w} size={92} />
+                    </motion.div>
+                  );
+                })}
+              </motion.div>
+              {/* Central Core stays still in the centre */}
               <motion.div
-                animate={reduced ? undefined : { opacity: [0.4, 0.7, 0.4] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                initial={{ opacity: 0, scale: 0.6 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
                 style={{
                   position: "absolute",
-                  inset: "-22%",
+                  left: "50%",
+                  top: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: "clamp(110px, 15vw, 170px)",
+                  height: "clamp(110px, 15vw, 170px)",
+                }}
+              >
+                <Orb central size={170} />
+              </motion.div>
+              {/* Soft amber wash behind the constellation */}
+              <motion.div
+                aria-hidden
+                animate={reduced ? undefined : { opacity: [0.35, 0.6, 0.35] }}
+                transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                style={{
+                  position: "absolute",
+                  inset: "-15%",
                   borderRadius: "50%",
                   background:
-                    "radial-gradient(circle, rgba(232,150,80,0.18) 0%, transparent 60%)",
-                  filter: "blur(20px)",
+                    "radial-gradient(circle, rgba(232,150,80,0.16) 0%, transparent 65%)",
+                  filter: "blur(28px)",
+                  zIndex: -1,
+                  pointerEvents: "none",
                 }}
               />
             </motion.div>
-          </motion.div>
+          </div>
 
           {/* Top zone — wordmark + hairline divider, anchored to the top
               of the viewport so it never collides with the centred orb. */}
