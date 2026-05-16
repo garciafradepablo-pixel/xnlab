@@ -328,27 +328,105 @@ export default function WorldDetail({ world }: { world: World }) {
         </div>
       </section>
 
-      {/* CTA + Next world */}
-      <section style={{ padding: "clamp(64px,9vw,120px) clamp(20px,5vw,64px)", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      {/* CTA + Next world — two pills stacked; the second tinted to the
+          colour of the next world so the visitor sees the universe
+          continue, not just a footnote link. */}
+      <section style={{ padding: "clamp(56px,7vw,96px) clamp(20px,5vw,64px) clamp(64px,9vw,120px)", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
         <LuxButton href="/contact" variant="solid" arrow={false}>{t.contact}</LuxButton>
-        <div style={{ marginTop: 36 }}>
-          <Link
-            href={`/worlds/${next.slug}`}
-            style={{
-              fontSize: 11,
-              letterSpacing: "0.28em",
-              textTransform: "uppercase",
-              color: next.color.hex,
-              textDecoration: "none",
-              transition: "color 0.3s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = next.color.hex)}
-          >
-            {t.next} {next.number} · {next.color.name}
-          </Link>
+        <div style={{ marginTop: "clamp(28px,3.6vw,48px)" }}>
+          <NextWorldButton next={next} label={t.next} />
         </div>
       </section>
     </main>
+  );
+}
+
+// Pill-shaped link to the next world, tinted to that world's accent
+// colour. Mirrors LuxButton's geometry so it sits in the same rhythm
+// as the primary CTA above, but reads as a portal rather than a
+// commercial close — it carries the next world's own orb on the left.
+function NextWorldButton({ next, label }: { next: World; label: string }) {
+  return (
+    <Link
+      href={`/worlds/${next.slug}`}
+      data-next
+      onMouseEnter={(e) => {
+        const sweep = e.currentTarget.querySelector("[data-sweep]") as HTMLElement | null;
+        if (sweep) sweep.style.transform = "translateX(0%)";
+        e.currentTarget.style.borderColor = next.color.hex;
+        e.currentTarget.style.color = "white";
+      }}
+      onMouseLeave={(e) => {
+        const sweep = e.currentTarget.querySelector("[data-sweep]") as HTMLElement | null;
+        if (sweep) sweep.style.transform = "translateX(-101%)";
+        e.currentTarget.style.borderColor = `${next.color.hex}66`;
+        e.currentTarget.style.color = next.color.hex;
+      }}
+      style={{
+        position: "relative",
+        display: "inline-flex",
+        alignItems: "center",
+        gap: "0.9rem",
+        padding: "0.85rem 1.4rem 0.85rem 0.7rem",
+        fontSize: "clamp(10px, 0.85vw, 12px)",
+        fontWeight: 500,
+        letterSpacing: "0.28em",
+        textTransform: "uppercase",
+        color: next.color.hex,
+        textDecoration: "none",
+        background: "rgba(255,255,255,0.02)",
+        border: `1px solid ${next.color.hex}66`,
+        borderRadius: 100,
+        overflow: "hidden",
+        transition: "color 0.45s, border-color 0.45s",
+      }}
+    >
+      {/* Colour sweep that fills from the left on hover */}
+      <span
+        data-sweep
+        aria-hidden
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: `linear-gradient(90deg, ${next.color.hex}00 0%, ${next.color.hex}33 50%, ${next.color.hex}55 100%)`,
+          transform: "translateX(-101%)",
+          transition: "transform 0.7s cubic-bezier(0.22,1,0.36,1)",
+          pointerEvents: "none",
+        }}
+      />
+      {/* Inline next-world orb so the button reads as a portal */}
+      <span
+        aria-hidden
+        style={{
+          position: "relative",
+          zIndex: 2,
+          width: 32,
+          height: 32,
+          flexShrink: 0,
+          display: "inline-block",
+        }}
+      >
+        <Orb world={next} size={32} />
+      </span>
+      <span style={{ position: "relative", zIndex: 2, display: "inline-flex", alignItems: "baseline", gap: "0.7rem" }}>
+        <span>{label}</span>
+        <span aria-hidden style={{ color: `${next.color.hex}88`, fontSize: "0.92em", letterSpacing: "0.2em" }}>
+          {next.number}
+        </span>
+        <span style={{ color: "rgba(255,255,255,0.85)" }}>{next.color.name}</span>
+      </span>
+      <span
+        aria-hidden
+        style={{
+          position: "relative",
+          zIndex: 2,
+          fontSize: "1.05em",
+          color: next.color.hex,
+          marginLeft: 4,
+        }}
+      >
+        →
+      </span>
+    </Link>
   );
 }
