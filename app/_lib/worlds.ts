@@ -259,7 +259,7 @@ export const worlds: World[] = [
     image: "/images/worlds/architecture-spatial-design.png",
     color: {
       name: "Mineral Stone Grey",
-      hex: "#8a8a86",
+      hex: "#c8c8c0",
       core: "rgba(190,190,180,0.85)",
       mid: "rgba(110,108,100,0.55)",
       deep: "rgba(28,28,26,1)",
@@ -324,7 +324,7 @@ export const worlds: World[] = [
     image: "/images/worlds/music-cultural-artists.png",
     color: {
       name: "Midnight Indigo",
-      hex: "#2c3a8a",
+      hex: "#7c8ce0",
       core: "rgba(120,140,255,0.92)",
       mid: "rgba(50,70,180,0.7)",
       deep: "rgba(8,10,32,1)",

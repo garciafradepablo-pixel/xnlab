@@ -266,47 +266,51 @@ export default function WorldsIndex() {
                   flexDirection: "column",
                   alignItems: "center",
                   textAlign: "center",
-                  padding: "clamp(20px,2.4vw,32px) clamp(12px,1.8vw,24px)",
-                  border: "1px solid rgba(255,255,255,0.05)",
-                  borderRadius: 6,
-                  background: "rgba(10,8,6,0.4)",
                   textDecoration: "none",
                   color: "inherit",
-                  transition: "border-color 0.5s, background 0.5s",
+                  padding: "clamp(12px,1.6vw,22px) clamp(8px,1vw,16px)",
                   cursor: "pointer",
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)";
-                  e.currentTarget.style.background = "rgba(14,11,9,0.65)";
+                  const btn = e.currentTarget.querySelector("[data-enter]") as HTMLElement | null;
+                  if (btn) {
+                    btn.style.background = w.color.hex;
+                    btn.style.color = "#060606";
+                    btn.style.borderColor = w.color.hex;
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
-                  e.currentTarget.style.background = "rgba(10,8,6,0.4)";
+                  const btn = e.currentTarget.querySelector("[data-enter]") as HTMLElement | null;
+                  if (btn) {
+                    btn.style.background = "transparent";
+                    btn.style.color = w.color.hex;
+                    btn.style.borderColor = `${w.color.hex}66`;
+                  }
                 }}
               >
-                <div style={{ width: "clamp(90px,9vw,140px)", height: "clamp(90px,9vw,140px)" }}>
-                  <Orb world={w} size={140} />
+                <div style={{ width: "clamp(110px,11vw,160px)", height: "clamp(110px,11vw,160px)" }}>
+                  <Orb world={w} size={160} />
                 </div>
                 <p
                   style={{
-                    marginTop: "clamp(16px,2vw,24px)",
-                    fontSize: 9,
+                    fontSize: 10,
                     fontWeight: 500,
-                    letterSpacing: "0.34em",
+                    letterSpacing: "0.36em",
                     textTransform: "uppercase",
                     color: w.color.hex,
-                    margin: "clamp(16px,2vw,24px) 0 0",
+                    margin: "clamp(18px,2.2vw,28px) 0 0",
+                    textShadow: `0 0 12px ${w.color.glow}`,
                   }}
                 >
                   {w.number}
                 </p>
                 <h3
                   style={{
-                    marginTop: 8,
-                    fontSize: "clamp(0.95rem,1.1vw,1.15rem)",
+                    marginTop: 10,
+                    fontSize: "clamp(1rem,1.18vw,1.22rem)",
                     fontWeight: 500,
-                    lineHeight: 1.25,
-                    letterSpacing: "0.005em",
+                    lineHeight: 1.22,
+                    letterSpacing: "-0.005em",
                     color: "white",
                     textShadow: ts,
                   }}
@@ -316,27 +320,38 @@ export default function WorldsIndex() {
                 <p
                   style={{
                     marginTop: 12,
-                    fontSize: "clamp(11px,0.85vw,12.5px)",
+                    fontSize: "clamp(11px,0.86vw,12.5px)",
                     lineHeight: 1.55,
-                    color: "rgba(255,255,255,0.6)",
+                    color: "rgba(255,255,255,0.58)",
                     fontWeight: 300,
                     textShadow: ts,
-                    maxWidth: 260,
+                    maxWidth: 240,
                   }}
                 >
                   {w.pitch[lang]}
                 </p>
-                <p
+                <span
+                  data-enter
                   style={{
-                    marginTop: 22,
+                    marginTop: "clamp(22px,2.6vw,32px)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "0.6rem",
+                    padding: "0.65rem 1.1rem",
                     fontSize: 10,
+                    fontWeight: 500,
                     letterSpacing: "0.3em",
                     textTransform: "uppercase",
-                    color: "rgba(255,255,255,0.45)",
+                    color: w.color.hex,
+                    background: "transparent",
+                    border: `1px solid ${w.color.hex}66`,
+                    borderRadius: 100,
+                    transition: "background 0.45s, color 0.45s, border-color 0.45s",
                   }}
                 >
-                  {t.enter} →
-                </p>
+                  {t.enter}
+                  <span aria-hidden style={{ fontSize: "1.1em" }}>→</span>
+                </span>
               </Link>
             </motion.div>
           ))}
