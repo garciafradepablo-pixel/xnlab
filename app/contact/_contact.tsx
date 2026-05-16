@@ -59,7 +59,7 @@ const en = {
     "Bespoke · beyond scope, let's talk",
     "Not sure yet",
   ],
-  submit: "Send project request →",
+  submit: "Send project request",
   sending: "Transmitting…",
   privacy:
     "Every request is read by the studio. We respond when there is a real fit. studio@xnlab.io.",
@@ -121,7 +121,7 @@ const es = {
     "Hecho a medida · más allá del alcance",
     "Aún por definir",
   ],
-  submit: "Enviar solicitud →",
+  submit: "Enviar solicitud",
   sending: "Enviando…",
   privacy:
     "Cada solicitud la lee el estudio. Respondemos cuando hay un encaje real. studio@xnlab.io.",

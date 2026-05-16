@@ -13,7 +13,7 @@ const en = {
   lead: "Editorial observations on hospitality, luxury, music, architecture and the next decade of cultural identity. Slow reading. Updated when there is something to say.",
   cta: "Start a project",
   back: "← Home",
-  read: "Read →",
+  read: "Read",
 };
 
 const es = {
@@ -23,7 +23,7 @@ const es = {
   lead: "Observaciones editoriales sobre hospitalidad, lujo, música, arquitectura y la próxima década de los sistemas de identidad cultural. Lectura lenta. Se actualiza cuando hay algo que decir.",
   cta: "Iniciar un proyecto",
   back: "← Inicio",
-  read: "Leer →",
+  read: "Leer",
 };
 
 const labelStyle: React.CSSProperties = {

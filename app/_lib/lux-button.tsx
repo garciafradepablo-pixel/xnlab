@@ -17,7 +17,10 @@ export function LuxButton({
   href,
   children,
   variant = "ghost",
-  arrow = true,
+  // Forward arrows on CTAs were a generic "click me" signal. Removed
+  // by default — the pill geometry, hover sweep and typographic
+  // weight already say it. Set arrow={true} only on rare callouts.
+  arrow = false,
   className,
   external,
 }: {

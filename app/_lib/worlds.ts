@@ -77,8 +77,8 @@ export const worlds: World[] = [
       es: "Atmósferas cálidas y sensoriales para restaurantes, hoteles y experiencias gastronómicas.",
     },
     essence: {
-      en: "Where warmth becomes architecture.",
-      es: "Donde la calidez se hace arquitectura.",
+      en: "The room is the first sentence the brand speaks.",
+      es: "La sala es la primera frase que pronuncia la marca.",
     },
     material: {
       en: "Translucent amber crystal with warm copper reflections.",
@@ -103,11 +103,11 @@ export const worlds: World[] = [
     body: {
       en: [
         "Hospitality is the discipline of being remembered. Not for what was served, but for how the room felt when the guest walked in and how the air still felt the next morning.",
-        "We design this Core as a sequence of atmospheres — threshold, corridor, room, table — each tuned to one feeling. Materials are heavy. Light is low and warm. Silence is part of the menu.",
+        "We design this Core as a sequence of atmospheres. Threshold, corridor, room, table. Each one tuned to a single feeling. Materials are heavy. Light is low and warm. Silence is part of the menu.",
       ],
       es: [
         "La hospitalidad es la disciplina de ser recordados. No por lo que se sirvió, sino por cómo se sintió la habitación cuando el huésped entró, y cómo seguía sintiéndose el aire a la mañana siguiente.",
-        "Diseñamos este Core como una secuencia de atmósferas — umbral, pasillo, habitación, mesa — cada una afinada a una sensación. Los materiales son pesados. La luz, baja y cálida. El silencio forma parte de la carta.",
+        "Diseñamos este Core como una secuencia de atmósferas. Umbral, pasillo, habitación, mesa. Cada una afinada a una sola sensación. Los materiales son pesados. La luz, baja y cálida. El silencio forma parte de la carta.",
       ],
     },
     discipline: {
@@ -142,8 +142,8 @@ export const worlds: World[] = [
       es: "Sistemas visuales de alto voltaje para locales, fiestas, lanzamientos y cultura de noche.",
     },
     essence: {
-      en: "Where presence becomes voltage.",
-      es: "Donde la presencia se hace voltaje.",
+      en: "After midnight, the architecture is alive.",
+      es: "Pasada la medianoche, la arquitectura está viva.",
     },
     material: {
       en: "Ultraviolet liquid glass with energetic particles in slow orbit.",
@@ -157,12 +157,12 @@ export const worlds: World[] = [
       en: [
         "Club and venue identity systems.",
         "Event direction, lineup graphic language, wristband design.",
-        "Atmospheric programming — light, sound and motion as one system.",
+        "Atmospheric programming. Light, sound and motion as one system.",
       ],
       es: [
         "Sistemas de identidad para clubs y locales.",
         "Dirección de eventos, lenguaje gráfico de lineup, diseño de pulseras.",
-        "Programación atmosférica — luz, sonido y movimiento como un solo sistema.",
+        "Programación atmosférica. Luz, sonido y movimiento como un solo sistema.",
       ],
     },
     body: {
@@ -207,8 +207,8 @@ export const worlds: World[] = [
       es: "Mundos suaves y refinados para producto premium, belleza, moda y marcas de lifestyle.",
     },
     essence: {
-      en: "Where silence becomes language.",
-      es: "Donde el silencio se hace lenguaje.",
+      en: "What is removed is what is remembered.",
+      es: "Lo que se quita es lo que se recuerda.",
     },
     material: {
       en: "Soft pearl ceramic with champagne silver reflections.",
@@ -232,11 +232,11 @@ export const worlds: World[] = [
     },
     body: {
       en: [
-        "Lifestyle and fashion brands compete in attention; the ones that endure compete in restraint. This Core is the discipline of removing — typography, palette, gesture — until what remains is inevitable.",
+        "Lifestyle and fashion brands compete in attention. The ones that endure compete in restraint. This Core is the discipline of removing. Typography, palette, gesture. We subtract until what remains is inevitable.",
         "The result is not minimal. It is concentrated. A single material chosen well outranks a system of patterns chosen quickly.",
       ],
       es: [
-        "Las marcas de moda y lifestyle compiten en atención; las que perduran compiten en contención. Este Core es la disciplina de quitar — tipografía, paleta, gesto — hasta que lo que queda sea inevitable.",
+        "Las marcas de moda y lifestyle compiten en atención. Las que perduran compiten en contención. Este Core es la disciplina de quitar. Tipografía, paleta, gesto. Quitamos hasta que lo que queda se vuelve inevitable.",
         "El resultado no es minimalista. Es concentrado. Un solo material elegido bien gana a un sistema de patrones elegidos rápido.",
       ],
     },
@@ -272,8 +272,8 @@ export const worlds: World[] = [
       es: "Atmósferas silenciosas, dirigidas por el material, para interiorismo, arquitectura e identidad espacial.",
     },
     essence: {
-      en: "Where weight becomes meaning.",
-      es: "Donde el peso se hace sentido.",
+      en: "Geometry, before the words arrive.",
+      es: "Geometría, antes de que lleguen las palabras.",
     },
     material: {
       en: "Polished stone and graphite mineral surfaces.",
@@ -297,11 +297,11 @@ export const worlds: World[] = [
     },
     body: {
       en: [
-        "Architecture is the first layer of emotion. Before the brand, before the music, before the menu — the geometry of a space already speaks. This Core treats that geometry as a sentence and our job as editing it.",
+        "Architecture is the first layer of emotion. Before the brand, before the music, before the menu, the geometry of a space already speaks. This Core treats that geometry as a sentence and our job as editing it.",
         "We isolate three variables on every project: the depth of shadow, the temperature of the material, and the rhythm of the openings. Tuned together, the space feels inevitable.",
       ],
       es: [
-        "La arquitectura es la primera capa de emoción. Antes de la marca, antes de la música, antes del menú — la geometría del espacio ya habla. Este Core trata esa geometría como una frase y nuestro trabajo como editarla.",
+        "La arquitectura es la primera capa de emoción. Antes de la marca, antes de la música, antes del menú, la geometría del espacio ya habla. Este Core trata esa geometría como una frase y nuestro trabajo como editarla.",
         "Aislamos tres variables en cada proyecto: la profundidad de la sombra, la temperatura del material y el ritmo de las aberturas. Afinadas juntas, el espacio se siente inevitable.",
       ],
     },
@@ -337,8 +337,8 @@ export const worlds: World[] = [
       es: "Sistemas de identidad cinematográfica para artistas, lanzamientos, visualizers y campañas emocionales.",
     },
     essence: {
-      en: "Where emotion becomes form.",
-      es: "Donde la emoción se hace forma.",
+      en: "The artist is the world.",
+      es: "El artista es el mundo.",
     },
     material: {
       en: "Deep blue nebula glass with subtle light waves moving across the surface.",
@@ -363,11 +363,11 @@ export const worlds: World[] = [
     body: {
       en: [
         "Music is the discipline where atmosphere arrives without permission. An artist's identity has to hold under the same conditions: in a record sleeve, in a 9-second clip, in a stadium, in a bedroom at 3am.",
-        "This Core treats the artist as a world — sound, image, gesture, silence — and builds a system robust enough to carry them across every context they will be heard in.",
+        "This Core treats the artist as a world. Sound, image, gesture, silence. We build a system robust enough to carry them across every context they will be heard in.",
       ],
       es: [
         "La música es la disciplina donde la atmósfera llega sin permiso. La identidad de un artista tiene que sostener en las mismas condiciones: en la portada de un disco, en un clip de 9 segundos, en un estadio, en un dormitorio a las 3 de la mañana.",
-        "Este Core trata al artista como un mundo — sonido, imagen, gesto, silencio — y construye un sistema lo bastante robusto para llevarlo a través de cada contexto en el que se le escuche.",
+        "Este Core trata al artista como un mundo. Sonido, imagen, gesto, silencio. Construimos un sistema lo bastante robusto para llevarlo a través de cada contexto en el que se le escuche.",
       ],
     },
   },
@@ -390,8 +390,8 @@ export const worlds: World[] = [
       es: "Sistemas futuristas y fluidos para marcas digitales, avatares, campañas y presencia online.",
     },
     essence: {
-      en: "Where worlds mutate.",
-      es: "Donde los mundos mutan.",
+      en: "The Core that mutates while you watch it.",
+      es: "El Núcleo que muta mientras lo miras.",
     },
     material: {
       en: "Holographic refractive crystal with liquid glitches that appear and dissolve.",
@@ -415,11 +415,11 @@ export const worlds: World[] = [
     },
     body: {
       en: [
-        "The digital Core is the only one that mutates while you look at it. Internet culture moves faster than the systems built to describe it. Our work in this Core is generative by design — visual languages capable of evolving without losing themselves.",
+        "The digital Core is the only one that mutates while you look at it. Internet culture moves faster than the systems built to describe it. Our work in this Core is generative by design. Visual languages capable of evolving without losing themselves.",
         "We build identities that hold their core while their surface refracts. AI as material. Glitches as gestures. Anomalies as features, not failures.",
       ],
       es: [
-        "El Core digital es el único que muta mientras lo miras. La cultura de internet se mueve más rápido que los sistemas construidos para describirla. Nuestro trabajo en este Core es generativo por diseño — lenguajes visuales capaces de evolucionar sin perderse a sí mismos.",
+        "El Core digital es el único que muta mientras lo miras. La cultura de internet se mueve más rápido que los sistemas construidos para describirla. Nuestro trabajo en este Core es generativo por diseño. Lenguajes visuales capaces de evolucionar sin perderse a sí mismos.",
         "Construimos identidades que mantienen su núcleo mientras su superficie se refracta. La IA como material. Los glitches como gestos. Las anomalías como rasgos, no como fallos.",
       ],
     },
@@ -437,16 +437,16 @@ export const mythology = {
       name: "The Central Core",
       essence: "The origin. The laboratory. The intelligence.",
       body: [
-        "At the centre of the universe lives a dark crimson sphere of liquid obsidian glass. A metallic X is forged inside it — not placed on top, but suspended in the energy that holds the Core together.",
-        "The Central Core is the studio. It observes the worlds, records what they teach, and feeds the laboratory that makes them.",
+        "At the centre of the universe rests a sphere of dark crimson obsidian. Its surface is liquid. Its weight is silent. Inside the sphere, suspended in the energy that holds the Core together, a metallic X is forged. Not painted on the orb. Not placed over it. Forged within it, the way meaning is forged within a sentence.",
+        "The Central Core is the studio. It watches every world the universe contains, records what each one teaches, and feeds the laboratory where the next ones take shape.",
       ],
     },
     es: {
       name: "El Núcleo Central",
       essence: "El origen. El laboratorio. La inteligencia.",
       body: [
-        "En el centro del universo vive una esfera carmesí oscura de vidrio de obsidiana líquida. Una X metálica está forjada dentro — no puesta encima, sino suspendida en la energía que sostiene el Núcleo.",
-        "El Núcleo Central es el estudio. Observa los mundos, registra lo que enseñan y alimenta el laboratorio que los construye.",
+        "En el centro del universo descansa una esfera de obsidiana carmesí. Su superficie es líquida. Su peso es silencio. Dentro de la esfera, suspendida en la energía que mantiene al Núcleo unido, hay una X metálica forjada. No pintada sobre la esfera. No puesta encima. Forjada en su interior, como el sentido se forja dentro de una frase.",
+        "El Núcleo Central es el estudio. Observa cada mundo que el universo contiene, registra lo que cada uno enseña y alimenta el laboratorio donde toman forma los siguientes.",
       ],
     },
   },
@@ -455,12 +455,12 @@ export const mythology = {
     role: { en: "Observer of worlds", es: "Observador de mundos" },
     body: {
       en: [
-        "ORUN watches from inside the Central Core. It does not intervene; it records. Every project the studio enters passes through ORUN's silence first.",
-        "When ORUN is present, the room becomes more accurate to itself.",
+        "ORUN watches from inside the Central Core. It does not intervene. It records. Every project the studio accepts is first passed through ORUN's silence, where the air thickens, the noise stops, and the brand is heard for what it actually is.",
+        "When ORUN is present, the room becomes more accurate to itself. What was decoration falls away. What was real remains, with nothing in front of it.",
       ],
       es: [
-        "ORUN observa desde dentro del Núcleo Central. No interviene; registra. Cada proyecto al que entra el estudio pasa primero por el silencio de ORUN.",
-        "Cuando ORUN está presente, el espacio se vuelve más fiel a sí mismo.",
+        "ORUN observa desde dentro del Núcleo Central. No interviene. Registra. Cada proyecto que el estudio acepta atraviesa primero el silencio de ORUN, donde el aire se vuelve denso, el ruido se detiene y la marca se oye por lo que realmente es.",
+        "Cuando ORUN está presente, el espacio se vuelve más fiel a sí mismo. Lo que era decoración cae. Lo que era verdadero permanece, sin nada delante.",
       ],
     },
   },
@@ -469,12 +469,12 @@ export const mythology = {
     role: { en: "Reactive creature of the anomalies", es: "Criatura reactiva de las anomalías" },
     body: {
       en: [
-        "When a world becomes unstable, fractures appear in its Core and release shards. XIO finds these fragments.",
-        "Each shard transforms it. New forms, new gestures, new energies emerge. XIO is how the studio remembers what the worlds taught us — not as a record, but as a body that keeps changing.",
+        "When a world is pushed past its rhythm, its Core fractures. Shards drift out, carrying the colour, the sound and the breath of that world. XIO finds them, and absorbs them.",
+        "Every shard transforms XIO. New forms, new gestures, new charges enter its body. XIO is how the studio remembers what each world has taught it. Not as a record. As a creature that keeps changing.",
       ],
       es: [
-        "Cuando un mundo se vuelve inestable, aparecen fracturas en su Núcleo y liberan fragmentos. XIO encuentra esos fragmentos.",
-        "Cada fragmento la transforma. Surgen nuevas formas, nuevos gestos, nuevas energías. XIO es la manera en que el estudio recuerda lo que los mundos nos enseñaron — no como un registro, sino como un cuerpo que sigue cambiando.",
+        "Cuando un mundo se empuja más allá de su ritmo, su Núcleo se fractura. Los fragmentos se desprenden y derivan, cargando el color, el sonido y la respiración de ese mundo. XIO los encuentra y los absorbe.",
+        "Cada fragmento la transforma. Nuevas formas, nuevos gestos, nuevas cargas entran en su cuerpo. XIO es la manera en que el estudio recuerda lo que cada mundo le ha enseñado. No como registro. Como criatura que sigue cambiando.",
       ],
     },
   },
@@ -482,15 +482,15 @@ export const mythology = {
     en: {
       title: "Anomalies",
       body: [
-        "Worlds are not stable. When a Core is pushed beyond its rhythm — too much pressure, too fast, too far — fractures appear. Light leaks. Shards form.",
-        "We treat these moments not as errors but as material. The shards are how the universe evolves.",
+        "Worlds are not stable. When a Core is pushed beyond its rhythm, fractures appear in its surface. Light leaks through the seams. Shards form and drift outward, each one carrying a fragment of signal.",
+        "We do not treat these moments as failure. The shards are the material the universe is built from. Every evolution of our practice has begun with a fracture we refused to repair.",
       ],
     },
     es: {
       title: "Anomalías",
       body: [
-        "Los mundos no son estables. Cuando se empuja un Núcleo más allá de su ritmo — demasiada presión, demasiado rápido, demasiado lejos — aparecen fracturas. La luz se escapa. Se forman fragmentos.",
-        "Tratamos esos momentos no como errores sino como material. Los fragmentos son la forma en que el universo evoluciona.",
+        "Los mundos no son estables. Cuando un Núcleo se empuja más allá de su ritmo, aparecen fracturas en su superficie. La luz se escapa por las costuras. Los fragmentos se desprenden y derivan, cargados de señal.",
+        "No tratamos esos momentos como errores. Los fragmentos son el material con el que se construye el universo. Cada evolución de nuestro trabajo ha empezado en una fractura que no quisimos reparar.",
       ],
     },
   },

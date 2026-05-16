@@ -12,13 +12,13 @@ const ui = {
   en: {
     back: "← All records",
     cta: "Start a project",
-    next: "Next record →",
+    next: "Next record",
     relatedWorld: "Related World",
   },
   es: {
     back: "← Todos los records",
     cta: "Iniciar un proyecto",
-    next: "Siguiente record →",
+    next: "Siguiente record",
     relatedWorld: "Mundo relacionado",
   },
 };
@@ -226,7 +226,7 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
                 onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = accent)}
               >
-                {world.title[lang]} →
+                {world.title[lang]}
               </Link>
             </div>
           </div>

@@ -62,15 +62,39 @@ export function Cursor() {
         zIndex: 99999,
       }}
     >
-      {/* Soft amber halo — premium glow that breathes around the
-          precise dot, like a candlelight reflection. No border. */}
+      {/* Premium halo — slowly cycles through the six XNLAB world
+          accents (amber, violet, ivory, stone, indigo, cyan), so the
+          cursor reads as a moving signature of the universe itself.
+          Twenty-four-second loop means the colour change is perceived,
+          not flashed. */}
       <motion.div
         animate={{
           width: hovering ? 60 : 36,
           height: hovering ? 60 : 36,
-          opacity: hovering ? 0.85 : 0.5,
+          opacity: hovering ? 0.85 : 0.55,
+          background: [
+            // Hospitality — amber gold
+            "radial-gradient(circle, rgba(216,147,42,0.55) 0%, rgba(216,147,42,0.18) 38%, transparent 72%)",
+            // Nightlife — electric violet
+            "radial-gradient(circle, rgba(140,70,255,0.55) 0%, rgba(140,70,255,0.18) 38%, transparent 72%)",
+            // Lifestyle — ivory pearl
+            "radial-gradient(circle, rgba(232,226,210,0.55) 0%, rgba(232,226,210,0.18) 38%, transparent 72%)",
+            // Architecture — mineral stone
+            "radial-gradient(circle, rgba(200,200,192,0.55) 0%, rgba(200,200,192,0.18) 38%, transparent 72%)",
+            // Music — midnight indigo
+            "radial-gradient(circle, rgba(124,140,224,0.55) 0%, rgba(124,140,224,0.18) 38%, transparent 72%)",
+            // Digital — iridescent cyan
+            "radial-gradient(circle, rgba(70,214,206,0.55) 0%, rgba(70,214,206,0.18) 38%, transparent 72%)",
+            // Loop back to amber
+            "radial-gradient(circle, rgba(216,147,42,0.55) 0%, rgba(216,147,42,0.18) 38%, transparent 72%)",
+          ],
         }}
-        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        transition={{
+          width: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+          height: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+          opacity: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+          background: { duration: 24, ease: "linear", repeat: Infinity },
+        }}
         style={{
           position: "absolute",
           left: "50%",
@@ -78,8 +102,6 @@ export function Cursor() {
           translateX: "-50%",
           translateY: "-50%",
           borderRadius: "50%",
-          background:
-            "radial-gradient(circle, rgba(232,183,131,0.42) 0%, rgba(232,183,131,0.14) 38%, transparent 72%)",
           filter: "blur(2px)",
         }}
       />
@@ -100,9 +122,9 @@ export function Cursor() {
           width: 5,
           height: 5,
           borderRadius: "50%",
-          background: "rgba(255,238,210,0.96)",
+          background: "rgba(255,245,225,0.96)",
           boxShadow:
-            "0 0 4px rgba(232,183,131,0.95), 0 0 12px rgba(232,183,131,0.55)",
+            "0 0 4px rgba(255,235,200,0.95), 0 0 12px rgba(255,220,180,0.55)",
         }}
       />
     </motion.div>
