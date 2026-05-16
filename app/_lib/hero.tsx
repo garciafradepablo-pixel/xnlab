@@ -348,18 +348,37 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
 
       {/* LAYER 2B2 — six World Cores arranged in the dome, all same size.
           Same split as the Central: static outer for left + top + centre
-          translation, motion inner for parallax + entry animation. */}
+          translation, motion inner for parallax + entry animation.
+
+          Dock magnification: when one orb is hovered, neighbours scale
+          and brighten with a distance falloff (peak on the hovered
+          orb, smaller on each step away, none at distance ≥ 3). No
+          sibling dimming — Apple's Dock doesn't dim neighbours, it
+          just enlarges them, and that reads as luxurious rather than
+          stagey. */}
       {PLAN.map(({ idx, mult, dy, delay, op, sc }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
-        const dimmed = (hovered !== null && hovered !== w.slug) || centralHover;
+        const hoveredMult =
+          hovered === null
+            ? null
+            : PLAN.find((p) => worlds[p.idx].slug === hovered)?.mult ?? null;
+        const distFromHover =
+          hoveredMult === null ? null : Math.abs(mult - hoveredMult);
+        // Dock falloff: 1 at hovered, ~0.67 one step away, ~0.33 two
+        // steps, 0 at three. Multiplied into the scale and glow boost.
+        const dockBoost =
+          distFromHover === null ? 0 : Math.max(0, 1 - distFromHover / 3);
+        const dimmed = centralHover;
         const side = mult < 0 ? "-" : "+";
         const dist = Math.abs(mult);
         const leftCalc = `calc(50% ${side} (${UNIT} * ${dist}))`;
         // Depth modulation. Outer orbs sit further back: lower opacity,
         // smaller scale, lower z-index so the inner ones overlap them on
         // hover. Creates the alveolus arc instead of a flat constellation.
-        const depthZ = 9 - Math.abs(mult);
+        // When dock-boosted, lift the z-index so neighbours surface above
+        // the dimmed background of the central or unrelated areas.
+        const depthZ = 9 - Math.abs(mult) + (dockBoost > 0 ? 6 : 0);
         return (
           <div
             key={w.slug}
@@ -398,16 +417,22 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               >
                 <motion.div
                   animate={{
-                    scale: isHover ? sc * 1.22 : sc,
-                    opacity: dimmed ? op * 0.45 : op,
+                    scale: sc * (1 + dockBoost * 0.32),
+                    opacity: dimmed ? op * 0.45 : Math.min(1, op + dockBoost * 0.25),
+                    filter: `drop-shadow(0 0 ${
+                      8 + dockBoost * 28
+                    }px ${w.color.glow}) drop-shadow(0 0 ${
+                      dockBoost * 12
+                    }px rgba(255,255,255,${dockBoost * 0.22}))`,
                     y: [0, -3, 0],
                   }}
                   transition={{
-                    scale: { duration: 0.7, ease: [0.22, 1, 0.36, 1] },
-                    opacity: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                    scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
+                    filter: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
                     y: { duration: 6.5 + idx * 0.4, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
                   }}
-                  style={{ position: "relative", width: "100%", height: "100%" }}
+                  style={{ position: "relative", width: "100%", height: "100%", willChange: "transform, filter" }}
                 >
                   <Orb world={w} size={120} />
                 </motion.div>
