@@ -34,13 +34,18 @@ type HeroCopy = {
 const ORB_SIZE = "clamp(36px,6.4vw,100px)";
 // dy in viewport-height units so the dome's gentle arc scales with the
 // section height. Same numeric values as before (3.5%, 2%, 0.6%).
+// Each orb carries its own depth profile. The constellation reads as an
+// alveolus — a pocket of space with curvature — instead of a flat tiara
+// of identical jewels. Outer orbs sit further back (lower opacity, smaller
+// scale, deeper vertical drop). Inner orbs sit closer to the viewer
+// (full opacity, full scale, almost at the apex of the arc).
 const PLAN = [
-  { idx: 0, mult: -3, dy: 3.5, delay: 1.55 },
-  { idx: 1, mult: -2, dy: 2,   delay: 1.5  },
-  { idx: 2, mult: -1, dy: 0.6, delay: 1.45 },
-  { idx: 3, mult: 1,  dy: 0.6, delay: 1.45 },
-  { idx: 4, mult: 2,  dy: 2,   delay: 1.5  },
-  { idx: 5, mult: 3,  dy: 3.5, delay: 1.55 },
+  { idx: 0, mult: -3, dy: 4.6, delay: 1.55, op: 0.55, sc: 0.82 },
+  { idx: 1, mult: -2, dy: 2.6, delay: 1.5,  op: 0.78, sc: 0.92 },
+  { idx: 2, mult: -1, dy: 0.6, delay: 1.45, op: 1,    sc: 1    },
+  { idx: 3, mult: 1,  dy: 0.6, delay: 1.45, op: 1,    sc: 1    },
+  { idx: 4, mult: 2,  dy: 2.6, delay: 1.5,  op: 0.78, sc: 0.92 },
+  { idx: 5, mult: 3,  dy: 4.6, delay: 1.55, op: 0.55, sc: 0.82 },
 ];
 const UNIT = "clamp(50px,8.5vw,145px)";
 const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
@@ -344,19 +349,23 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       {/* LAYER 2B2 — six World Cores arranged in the dome, all same size.
           Same split as the Central: static outer for left + top + centre
           translation, motion inner for parallax + entry animation. */}
-      {PLAN.map(({ idx, mult, dy, delay }) => {
+      {PLAN.map(({ idx, mult, dy, delay, op, sc }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
         const dimmed = (hovered !== null && hovered !== w.slug) || centralHover;
         const side = mult < 0 ? "-" : "+";
         const dist = Math.abs(mult);
         const leftCalc = `calc(50% ${side} (${UNIT} * ${dist}))`;
+        // Depth modulation. Outer orbs sit further back: lower opacity,
+        // smaller scale, lower z-index so the inner ones overlap them on
+        // hover. Creates the alveolus arc instead of a flat constellation.
+        const depthZ = 9 - Math.abs(mult);
         return (
           <div
             key={w.slug}
             style={{
               position: "absolute",
-              zIndex: 9,
+              zIndex: depthZ,
               left: leftCalc,
               top: `calc(${DOME_TOP} + ${dy}svh)`,
               width: ORB_SIZE,
@@ -368,7 +377,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             <motion.div
               style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
               initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
-              animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
+              animate={{ opacity: op, scale: sc, filter: "blur(0px)" }}
               transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay }}
             >
               <Link
@@ -387,17 +396,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   outline: "none",
                 }}
               >
-                {/* Removed the hover-only halo box-shadow that lived
-                    here. The Orb component now carries its own
-                    multi-layer atmospheric composition (backdrop
-                    glow, ground shadow, specular pass) so this layer
-                    no longer needs to exist. Less DOM, fewer
-                    competing radii, cleaner render. */}
-
                 <motion.div
                   animate={{
-                    scale: isHover ? 1.22 : 1,
-                    opacity: dimmed ? 0.45 : 1,
+                    scale: isHover ? sc * 1.22 : sc,
+                    opacity: dimmed ? op * 0.45 : op,
                     y: [0, -3, 0],
                   }}
                   transition={{

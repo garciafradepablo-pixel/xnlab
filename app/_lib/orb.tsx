@@ -86,15 +86,6 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
         willChange: "transform, filter",
       }}
     >
-      {/* The orb itself. Same treatment for ALL orbs (Central + 6
-          Worlds): only the PNG, no extra CSS layers. The Central is
-          the visual reference — the user confirmed it reads perfect
-          at rest — so we apply the same discipline to the 6 Worlds.
-          Every previous experiment (drop-shadow, box-shadow rim,
-          radial-gradient mask, scale crop, ambient bloom, rim halo,
-          specular pass, under-orb light pool) ended exposing a ring,
-          a moat, a circle outline or a rectangle. The PNG alone is
-          the proven solution. */}
       <motion.div
         animate={animByPulse[animKey]}
         transition={{
@@ -110,6 +101,33 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
           willChange: "transform",
         }}
       >
+        {/* Under-orb luminosity pool — light emitted DOWNWARD from the
+            sphere onto an unseen surface. Positioned exclusively below
+            the equator and tighter than the orb width, so the pool
+            never wraps around the silhouette as a ring. Screen blend
+            adds light additively to the page; if the orb is moved
+            away nothing remains underneath. Creates the alveolus depth
+            the user requested — each orb sits in its own colour pocket
+            instead of floating like a sticker. */}
+        {usesOwnImage && (
+          <motion.div
+            aria-hidden
+            animate={{ opacity: [0.5, 0.78, 0.5] }}
+            transition={{ duration: breatheDuration, ease: "easeInOut", repeat: Infinity }}
+            style={{
+              position: "absolute",
+              left: "26%",
+              right: "26%",
+              top: "82%",
+              height: "34%",
+              background: `radial-gradient(ellipse 100% 60% at 50% 0%, ${haloColor} 0%, transparent 75%)`,
+              mixBlendMode: "screen",
+              filter: "blur(6px)",
+              pointerEvents: "none",
+              zIndex: 0,
+            }}
+          />
+        )}
         {orbImage ? (
           usesOwnImage ? (
             <Image
