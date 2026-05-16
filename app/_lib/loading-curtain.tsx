@@ -11,26 +11,29 @@ import {
 import { useEffect, useState } from "react";
 import { Orb } from "./orb";
 
-// XNLAB cold-open. Instead of a flat dark sheet, the visitor sees the
-// atelier "warm up": three layers of pigment-smoke drifting and
-// reacting to the cursor, an amber orb forming in the centre, a
-// hairline progress meter, sequential calibration captions, and a
-// final "touch to enter" prompt the visitor can click to push through.
-// The curtain dismisses on click after the stages settle, or auto-
-// dismisses at the hard timeout if the visitor hasn't moved.
+// XNLAB cold-open. Shown only on the first paint of a browser session
+// (sessionStorage gated, so opening additional tabs or navigating back
+// inside the same session does not replay the curtain). Four short
+// stages settle in ~1.1s, the curtain auto-dismisses at 1.6s max, and
+// the visitor can tap to enter sooner. Lightweight: one PNG (priority),
+// two soft smoke layers, no satellite PNGs.
 const STAGES = [
   "Initialising the atmosphere",
   "Mixing pigments",
   "Tuning resonance",
-  "Calibrating the room",
   "Open the laboratory",
 ];
 
-const STAGE_MS = 620;
+const STAGE_MS = 280;
+const SESSION_KEY = "xn:seen-loader";
 
 export function LoadingCurtain() {
   const reduced = useReducedMotion();
-  const [show, setShow] = useState(true);
+  // Default off; the curtain only turns on after we confirm this is the
+  // first paint of the session. This prevents the dark sheet from
+  // briefly flashing on subsequent tabs.
+  const [show, setShow] = useState(false);
+  const [armed, setArmed] = useState(false);
   const [stage, setStage] = useState(0);
   const [ready, setReady] = useState(false);
 
@@ -39,23 +42,43 @@ export function LoadingCurtain() {
   const px = useSpring(rawX, { stiffness: 55, damping: 22, mass: 0.8 });
   const py = useSpring(rawY, { stiffness: 55, damping: 22, mass: 0.8 });
 
-  // Cursor / touch parallax — drives the smoke layers' translation.
+  // Session gate. Run once on mount; if this tab is the first paint of
+  // the session, arm the curtain. Otherwise it stays off.
   useEffect(() => {
-    if (reduced) return;
+    if (typeof window === "undefined") return;
+    try {
+      const seen = window.sessionStorage.getItem(SESSION_KEY);
+      if (!seen) {
+        window.sessionStorage.setItem(SESSION_KEY, "1");
+        setShow(true);
+        setArmed(true);
+      }
+    } catch {
+      // Private mode or storage disabled — show the curtain once
+      // regardless. Better that than silently degrading.
+      setShow(true);
+      setArmed(true);
+    }
+  }, []);
+
+  // Cursor / touch parallax — drives the smoke layer translation.
+  useEffect(() => {
+    if (reduced || !armed) return;
     const onMove = (e: PointerEvent) => {
       rawX.set(e.clientX / window.innerWidth);
       rawY.set(e.clientY / window.innerHeight);
     };
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => window.removeEventListener("pointermove", onMove);
-  }, [reduced, rawX, rawY]);
+  }, [reduced, rawX, rawY, armed]);
 
-  // Stage progression.
+  // Stage progression — only runs once armed.
   useEffect(() => {
+    if (!armed) return;
     if (reduced) {
       setStage(STAGES.length - 1);
       setReady(true);
-      const t = setTimeout(() => setShow(false), 220);
+      const t = setTimeout(() => setShow(false), 160);
       return () => clearTimeout(t);
     }
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -63,12 +86,12 @@ export function LoadingCurtain() {
       timers.push(setTimeout(() => setStage(i), STAGE_MS * i));
     }
     timers.push(
-      setTimeout(() => setReady(true), STAGE_MS * (STAGES.length - 1) + 80)
+      setTimeout(() => setReady(true), STAGE_MS * (STAGES.length - 1) + 40)
     );
-    // Hard cap — auto-dismiss even if no click.
-    timers.push(setTimeout(() => setShow(false), STAGE_MS * (STAGES.length + 2)));
+    // Hard cap — auto-dismiss even if the visitor does nothing.
+    timers.push(setTimeout(() => setShow(false), STAGE_MS * STAGES.length + 480));
     return () => timers.forEach(clearTimeout);
-  }, [reduced]);
+  }, [reduced, armed]);
 
   // Lock body scroll so the page never shifts under the curtain.
   useEffect(() => {
@@ -80,9 +103,9 @@ export function LoadingCurtain() {
     };
   }, [show]);
 
-  const dismiss = () => {
-    if (ready) setShow(false);
-  };
+  // Tap anywhere to push through, even before the stages finish — the
+  // curtain is decorative, not a gate. Faster respect for the visitor.
+  const dismiss = () => setShow(false);
 
   return (
     <AnimatePresence>
@@ -90,25 +113,26 @@ export function LoadingCurtain() {
         <motion.div
           aria-hidden
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, filter: "blur(8px)" }}
-          transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1] }}
+          exit={{ opacity: 0, filter: "blur(6px)", pointerEvents: "none" }}
+          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           onPointerDown={dismiss}
           style={{
             position: "fixed",
             inset: 0,
             zIndex: 99998,
             overflow: "hidden",
-            cursor: ready ? "pointer" : "wait",
+            cursor: "pointer",
             background:
               "radial-gradient(ellipse 90% 70% at 50% 45%, rgba(28,16,10,1) 0%, #050302 78%)",
           }}
         >
-          {/* Pigment smoke — three layers, different speeds + parallax */}
+          {/* Pigment smoke — two soft layers. Lighter than three, still
+              reads as a moving atmosphere with cursor parallax. */}
           <SmokeLayer
             x={px}
             y={py}
             hue="rgba(232,150,80,0.18)"
-            scale={1.35}
+            scale={1.5}
             duration={26}
             parallax={36}
             reduced={!!reduced}
@@ -116,22 +140,12 @@ export function LoadingCurtain() {
           <SmokeLayer
             x={px}
             y={py}
-            hue="rgba(180,80,40,0.14)"
-            scale={1.7}
-            duration={42}
-            parallax={-50}
+            hue="rgba(80,40,28,0.18)"
+            scale={2}
+            duration={48}
+            parallax={-32}
             reduced={!!reduced}
-            delay={4}
-          />
-          <SmokeLayer
-            x={px}
-            y={py}
-            hue="rgba(60,38,28,0.22)"
-            scale={2.1}
-            duration={58}
-            parallax={22}
-            reduced={!!reduced}
-            delay={9}
+            delay={6}
           />
 
           {/* Central Core only. The six World PNGs belong on the hero,
@@ -468,7 +482,7 @@ function SmokeLayer({
           background: `radial-gradient(ellipse ${60 * scale}% ${
             48 * scale
           }% at 50% 50%, ${hue} 0%, transparent 72%)`,
-          filter: "blur(48px)",
+          filter: "blur(36px)",
           willChange: "transform",
         }}
       />
