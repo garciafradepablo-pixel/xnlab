@@ -376,10 +376,19 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               })();
         const distFromHover =
           hoveredRank === null ? null : Math.abs(myRank - hoveredRank);
-        // Dock falloff: 1 at hovered, ~0.67 one step away, ~0.33 two
-        // steps, 0 at three. Multiplied into the scale and glow boost.
+        // Tight Dock falloff: only the hovered orb is the protagonist;
+        // its immediate neighbour gets a very subtle lift; everything
+        // else stays untouched. Three or four orbs all growing reads as
+        // "the whole row reacted" — exactly the opposite of the Dock
+        // gesture we want.
         const dockBoost =
-          distFromHover === null ? 0 : Math.max(0, 1 - distFromHover / 3);
+          distFromHover === null
+            ? 0
+            : distFromHover === 0
+            ? 1
+            : distFromHover === 1
+            ? 0.22
+            : 0;
         const dimmed = centralHover;
         const side = mult < 0 ? "-" : "+";
         const dist = Math.abs(mult);
@@ -428,19 +437,25 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               >
                 <motion.div
                   animate={{
-                    scale: sc * (1 + dockBoost * 0.32),
-                    opacity: dimmed ? op * 0.45 : Math.min(1, op + dockBoost * 0.25),
-                    filter: `drop-shadow(0 0 ${
-                      8 + dockBoost * 28
-                    }px ${w.color.glow}) drop-shadow(0 0 ${
-                      dockBoost * 12
-                    }px rgba(255,255,255,${dockBoost * 0.22}))`,
+                    // Hovered: +42%. Neighbour: +9%. Others: untouched.
+                    scale: sc * (1 + dockBoost * 0.42),
+                    opacity: dimmed
+                      ? op * 0.45
+                      : Math.min(1, op + (isHover ? 0.35 : 0)),
+                    // Glow lives almost entirely on the hovered orb.
+                    // The neighbour gets a whisper to acknowledge the
+                    // gesture without competing for attention.
+                    filter: isHover
+                      ? `drop-shadow(0 0 36px ${w.color.glow}) drop-shadow(0 0 18px rgba(255,255,255,0.32))`
+                      : dockBoost > 0
+                      ? `drop-shadow(0 0 10px ${w.color.glow})`
+                      : "none",
                     y: [0, -3, 0],
                   }}
                   transition={{
-                    scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
-                    opacity: { duration: 0.4, ease: [0.22, 1, 0.36, 1] },
-                    filter: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
+                    scale: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
+                    opacity: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
+                    filter: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
                     y: { duration: 6.5 + idx * 0.4, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
                   }}
                   style={{ position: "relative", width: "100%", height: "100%", willChange: "transform, filter" }}
