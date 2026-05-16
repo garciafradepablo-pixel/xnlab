@@ -464,17 +464,17 @@ export const mythology = {
       ],
     },
   },
-  chio: {
-    name: "CHIO",
+  xio: {
+    name: "XIO",
     role: { en: "Reactive creature of the anomalies", es: "Criatura reactiva de las anomalías" },
     body: {
       en: [
-        "When a world becomes unstable, fractures appear in its Core and release shards. CHIO finds these fragments.",
-        "Each shard transforms it. New forms, new gestures, new energies emerge. CHIO is how the studio remembers what the worlds taught us — not as a record, but as a body that keeps changing.",
+        "When a world becomes unstable, fractures appear in its Core and release shards. XIO finds these fragments.",
+        "Each shard transforms it. New forms, new gestures, new energies emerge. XIO is how the studio remembers what the worlds taught us — not as a record, but as a body that keeps changing.",
       ],
       es: [
-        "Cuando un mundo se vuelve inestable, aparecen fracturas en su Núcleo y liberan fragmentos. CHIO encuentra esos fragmentos.",
-        "Cada fragmento la transforma. Surgen nuevas formas, nuevos gestos, nuevas energías. CHIO es la manera en que el estudio recuerda lo que los mundos nos enseñaron — no como un registro, sino como un cuerpo que sigue cambiando.",
+        "Cuando un mundo se vuelve inestable, aparecen fracturas en su Núcleo y liberan fragmentos. XIO encuentra esos fragmentos.",
+        "Cada fragmento la transforma. Surgen nuevas formas, nuevos gestos, nuevas energías. XIO es la manera en que el estudio recuerda lo que los mundos nos enseñaron — no como un registro, sino como un cuerpo que sigue cambiando.",
       ],
     },
   },

@@ -8,7 +8,7 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 
 - [Home](https://xnlab.io): Landing — wordmark, problem statement, services preview, the six worlds, proof, apply.
 - [Services](https://xnlab.io/services): Six engagements with pricing in EUR — Campaign System (from €5,000), Digital Atmosphere (from €10,000), Brand World (from €25,000), Visual Engine (from €4,000/month), Technical / Growth Add-ons (from €1,500), Upgrade Sprint (from €2,500–€4,000).
-- [The Universe](https://xnlab.io/worlds): Entry to the XNLAB universe. Mythology (Central Core, ORUN, CHIO, anomalies) and the six World Cores.
+- [The Universe](https://xnlab.io/worlds): Entry to the XNLAB universe. Mythology (Central Core, ORUN, XIO, anomalies) and the six World Cores.
 - [World 01 — Hospitality & Experience](https://xnlab.io/worlds/hospitality-experience): Amber Gold. Hospitality brand systems, atmosphere design, restaurant identity.
 - [World 02 — Nightlife & Cultural Events](https://xnlab.io/worlds/nightlife-cultural-events): Electric Violet. Club identity, event direction, cultural venue branding.
 - [World 03 — Luxury & Lifestyle Brands](https://xnlab.io/worlds/luxury-lifestyle-brands): Ivory Pearl. Fashion identity, perfume direction, editorial systems.
@@ -31,7 +31,7 @@ The studio operates from a single mark — XNLAB — and a single email: studio@
 
 - **The Central Core** — dark crimson sphere of liquid obsidian glass with a metallic X forged inside. The studio itself.
 - **ORUN** — observer of worlds. Records, never intervenes.
-- **CHIO** — reactive creature. Transforms through the shards released when a world becomes unstable.
+- **XIO** — reactive creature. Transforms through the shards released when a world becomes unstable.
 - **Anomalies** — fractures in a Core release shards. Material for evolution, not errors.
 
 ## Practice

@@ -21,7 +21,10 @@ const en = {
     "A restaurant does not need the same atmosphere as a music artist. A luxury brand does not move like a nightlife event. A digital world does not breathe like architecture.",
     "XNLAB uses each Core to define visual language, campaign direction, motion style, content system, digital presence and emotional memory.",
   ],
-  loreLabel: "Mythology",
+  loreLabel: "Studio Lore",
+  loreTitle: "Inside the Central Core",
+  loreSub: "The two presences that watch over every project we accept — and what we do when a world fractures.",
+  loreAnomalies: "Anomalies",
   centralLabel: "The Central Core",
   worldsLabel: "Six Worlds, one universe",
   worldsIntro:
@@ -48,7 +51,10 @@ const es = {
     "Un restaurante no necesita la misma atmósfera que un artista musical. Una marca de lujo no se mueve como un evento nocturno. Un mundo digital no respira como una arquitectura.",
     "XNLAB usa cada Núcleo para definir lenguaje visual, dirección de campaña, estilo de animación, sistema de contenido, presencia digital y memoria emocional.",
   ],
-  loreLabel: "Mitología",
+  loreLabel: "Lore del estudio",
+  loreTitle: "Dentro del Núcleo Central",
+  loreSub: "Las dos presencias que cuidan cada proyecto que aceptamos — y lo que hacemos cuando un mundo se fractura.",
+  loreAnomalies: "Anomalías",
   centralLabel: "El Núcleo Central",
   worldsLabel: "Seis mundos, un universo",
   worldsIntro:
@@ -219,44 +225,9 @@ export default function WorldsIndex() {
         </div>
       </section>
 
-      {/* ORUN + CHIO + Anomalies */}
-      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,7vw,96px) clamp(72px,10vw,140px)", maxWidth: 1120, margin: "0 auto", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
-        {[
-          { label: mythology.orun.name, role: mythology.orun.role[lang], body: mythology.orun.body[lang] },
-          { label: mythology.chio.name, role: mythology.chio.role[lang], body: mythology.chio.body[lang] },
-          { label: mythology.anomalies[lang].title, role: undefined, body: mythology.anomalies[lang].body },
-        ].map((m, i) => (
-          <R key={m.label} delay={0.05 * i}>
-            <div
-              style={{
-                display: "grid",
-                gap: "clamp(28px,3vw,48px)",
-                padding: "clamp(40px,5vw,72px) 0",
-                borderTop: "1px solid rgba(255,255,255,0.06)",
-              }}
-              className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
-            >
-              <div>
-                <p style={labelStyle}>{m.label}</p>
-                {m.role && (
-                  <p style={{ marginTop: 8, fontFamily: serif, fontStyle: "italic", fontSize: "clamp(1rem,1.3vw,1.2rem)", color: "rgba(255,255,255,0.55)" }}>
-                    {m.role}
-                  </p>
-                )}
-              </div>
-              <div style={{ maxWidth: 720 }}>
-                {m.body.map((p, j) => (
-                  <p key={j} style={{ marginBottom: j === m.body.length - 1 ? 0 : "1.1em", fontSize: "clamp(1rem,1.22vw,1.12rem)", lineHeight: 1.72, color: "rgba(255,255,255,0.72)", fontWeight: 300 }}>
-                    {p}
-                  </p>
-                ))}
-              </div>
-            </div>
-          </R>
-        ))}
-      </section>
-
-      {/* The 6 Worlds */}
+      {/* The 6 Worlds — moved above the mythology so commercial
+          information arrives first. Companies visiting this page want
+          to see the production systems, not the studios internal lore. */}
       <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,5vw,72px) clamp(72px,10vw,140px)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto clamp(40px,6vw,80px)", textAlign: "center" }}>
           <p style={{ ...labelStyle, marginBottom: 24 }}>{t.worldsLabel}</p>
@@ -369,6 +340,62 @@ export default function WorldsIndex() {
               </Link>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* Studio Lore — moved to the bottom of the page so the
+          commercial information (Central Core + the 6 Worlds) arrives
+          first. ORUN and XIO sit side-by-side as the two presences
+          inside the Core; Anomalies is the quiet footer paragraph. */}
+      <section style={{ padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <div style={{ maxWidth: 1120, margin: "0 auto" }}>
+          <R>
+            <div style={{ textAlign: "center", marginBottom: "clamp(40px,5vw,72px)" }}>
+              <p style={{ ...labelStyle, marginBottom: 16 }}>{t.loreLabel}</p>
+              <h2 style={{ fontSize: "clamp(1.6rem,3vw,2.6rem)", fontWeight: 400, lineHeight: 1.1, letterSpacing: "-0.035em", color: "white", textShadow: tsS, margin: 0 }}>
+                {t.loreTitle}
+              </h2>
+              <p style={{ marginTop: "clamp(12px,1.6vw,20px)", fontFamily: serif, fontStyle: "italic", fontSize: "clamp(1rem,1.35vw,1.25rem)", lineHeight: 1.4, color: "rgba(232,183,131,0.78)", letterSpacing: "-0.005em", maxWidth: 620, marginLeft: "auto", marginRight: "auto" }}>
+                {t.loreSub}
+              </p>
+            </div>
+          </R>
+          <div
+            style={{
+              display: "grid",
+              gap: "clamp(28px,3.6vw,56px)",
+              alignItems: "start",
+            }}
+            className="grid-cols-1 md:grid-cols-2"
+          >
+            {[mythology.orun, mythology.xio].map((m) => (
+              <R key={m.name}>
+                <div style={{ padding: "clamp(24px,3vw,40px)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, background: "rgba(10,8,6,0.4)", height: "100%" }}>
+                  <p style={{ ...labelStyle, marginBottom: 8, color: "rgba(232,183,131,0.85)", letterSpacing: "0.42em" }}>{m.name}</p>
+                  <p style={{ margin: 0, fontFamily: serif, fontStyle: "italic", fontSize: "clamp(1rem,1.3vw,1.2rem)", color: "rgba(255,255,255,0.6)", marginBottom: "clamp(18px,2.2vw,28px)" }}>
+                    {m.role[lang]}
+                  </p>
+                  {m.body[lang].map((p, j) => (
+                    <p key={j} style={{ marginBottom: j === m.body[lang].length - 1 ? 0 : "1em", fontSize: "clamp(0.95rem,1.12vw,1.05rem)", lineHeight: 1.68, color: "rgba(255,255,255,0.7)", fontWeight: 300 }}>
+                      {p}
+                    </p>
+                  ))}
+                </div>
+              </R>
+            ))}
+          </div>
+          <R delay={0.15}>
+            <div style={{ marginTop: "clamp(40px,5vw,72px)", paddingTop: "clamp(28px,3.6vw,48px)", borderTop: "1px solid rgba(255,255,255,0.06)", display: "grid", gap: "clamp(20px,2.4vw,32px)" }} className="grid-cols-1 md:grid-cols-[minmax(160px,200px)_1fr]">
+              <p style={{ ...labelStyle, color: "rgba(232,183,131,0.65)", margin: 0 }}>{t.loreAnomalies}</p>
+              <div style={{ maxWidth: 720 }}>
+                {mythology.anomalies[lang].body.map((p, j) => (
+                  <p key={j} style={{ marginBottom: j === mythology.anomalies[lang].body.length - 1 ? 0 : "1em", fontSize: "clamp(0.92rem,1.1vw,1.05rem)", lineHeight: 1.7, color: "rgba(255,255,255,0.6)", fontWeight: 300 }}>
+                    {p}
+                  </p>
+                ))}
+              </div>
+            </div>
+          </R>
         </div>
       </section>
 
