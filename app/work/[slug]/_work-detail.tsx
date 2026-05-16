@@ -17,7 +17,7 @@ const ui = {
     gallery: "Gallery",
     credits: "Credits",
     contact: "Start a project",
-    next: "Next study →",
+    next: "Next study",
   },
   es: {
     back: "← Todos los estudios",
@@ -29,7 +29,7 @@ const ui = {
     gallery: "Galería",
     credits: "Créditos",
     contact: "Iniciar un proyecto",
-    next: "Siguiente estudio →",
+    next: "Siguiente estudio",
   },
 };
 

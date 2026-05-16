@@ -17,7 +17,7 @@ const ui = {
     notes: "Notes",
     practice: "We make",
     contact: "Start a project",
-    next: "Next world →",
+    next: "Next world",
     back: "← All worlds",
   },
   es: {
@@ -27,7 +27,7 @@ const ui = {
     notes: "Notas",
     practice: "Hacemos",
     contact: "Iniciar un proyecto",
-    next: "Siguiente mundo →",
+    next: "Siguiente mundo",
     back: "← Todos los mundos",
   },
 };
@@ -414,18 +414,6 @@ function NextWorldButton({ next, label }: { next: World; label: string }) {
           {next.number}
         </span>
         <span style={{ color: "rgba(255,255,255,0.85)" }}>{next.color.name}</span>
-      </span>
-      <span
-        aria-hidden
-        style={{
-          position: "relative",
-          zIndex: 2,
-          fontSize: "1.05em",
-          color: next.color.hex,
-          marginLeft: 4,
-        }}
-      >
-        →
       </span>
     </Link>
   );

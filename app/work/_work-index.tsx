@@ -131,7 +131,7 @@ function Row({ project, index, lang }: { project: Project; index: number; lang: 
               viewport={{ once: true }}
               transition={{ duration: 1.4, delay: 0.7 }}
             >
-              {lang === "en" ? "View world →" : "Ver mundo →"}
+              {lang === "en" ? "View world" : "Ver mundo"}
             </motion.p>
           </div>
         </div>

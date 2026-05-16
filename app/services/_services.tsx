@@ -685,16 +685,6 @@ export default function Services() {
                     >
                       {lang === "en" ? "Read the system" : "Leer el sistema"}
                     </span>
-                    <span
-                      style={{
-                        fontFamily: serif,
-                        fontStyle: "italic",
-                        fontSize: 18,
-                        color: "#e8b783",
-                      }}
-                    >
-                      →
-                    </span>
                   </div>
                 )}
               </div>

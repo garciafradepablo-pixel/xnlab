@@ -206,17 +206,6 @@ export function SiteFooter({ lang }: { lang: Lang }) {
           }}
         >
           {t.bookingsCta}
-          <span
-            style={{
-              fontFamily: serif,
-              fontStyle: "italic",
-              fontSize: 16,
-              color: "#e8b783",
-              transform: "translateY(-1px)",
-            }}
-          >
-            →
-          </span>
         </Link>
       </div>
 
@@ -464,9 +453,6 @@ export function SiteFooter({ lang }: { lang: Lang }) {
             }}
           >
             studio@xnlab.io
-            <span style={{ fontFamily: serif, fontStyle: "italic", color: "#e8b783", fontSize: 15 }}>
-              →
-            </span>
           </a>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <p style={{ ...eyebrow, margin: 0 }}>{t.appointment}</p>

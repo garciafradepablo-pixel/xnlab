@@ -24,7 +24,7 @@ const ui = {
     audience: "Built for",
     pairs: "Often paired with",
     cta: "Start a project",
-    next: "Next system →",
+    next: "Next system",
   },
   es: {
     back: "← Todos los sistemas",
@@ -38,7 +38,7 @@ const ui = {
     audience: "Para quién",
     pairs: "Suele combinarse con",
     cta: "Iniciar un proyecto",
-    next: "Siguiente sistema →",
+    next: "Siguiente sistema",
   },
 };
 
@@ -472,7 +472,6 @@ export default function ServiceDetailPage({ service }: { service: ServiceDetail 
                     <Orb world={world} size={24} />
                   </span>
                   {lang === "en" ? `Anchored in the ${world.color.name} world` : `Anclado en el mundo ${world.color.name}`}
-                  <span style={{ fontFamily: serif, fontStyle: "italic", color: "#e8b783" }}>→</span>
                 </Link>
               </R>
             )}

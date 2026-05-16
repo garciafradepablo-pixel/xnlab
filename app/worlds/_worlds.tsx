@@ -350,7 +350,6 @@ export default function WorldsIndex() {
                   }}
                 >
                   {t.enter}
-                  <span aria-hidden style={{ fontSize: "1.1em" }}>→</span>
                 </span>
               </Link>
             </motion.div>

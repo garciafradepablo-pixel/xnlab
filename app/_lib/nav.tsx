@@ -411,7 +411,6 @@ function MobileSection({
         }}
       >
         <span>{title}</span>
-        <span style={{ color: "rgba(232,183,131,0.85)", fontSize: 14, fontWeight: 400 }}>→</span>
       </Link>
       <div>{children}</div>
     </div>
@@ -625,23 +624,6 @@ function WorldRow({
           {title}
         </span>
       </div>
-      <span
-        data-arrow
-        aria-hidden
-        style={{
-          fontFamily: serif,
-          fontStyle: "italic",
-          fontSize: 18,
-          color: numberColor,
-          alignSelf: "center",
-          opacity: 0,
-          transform: "translateX(-6px)",
-          transition: "opacity 0.4s, transform 0.4s",
-          pointerEvents: "none",
-        }}
-      >
-        →
-      </span>
     </Link>
   );
 }
@@ -854,23 +836,6 @@ function ServiceRow({
         >
           {body}
         </p>
-        <span
-          data-arrow
-          aria-hidden
-          style={{
-            fontFamily: serif,
-            fontStyle: "italic",
-            fontSize: 14,
-            color: "rgba(232,183,131,0.85)",
-            opacity: 0,
-            transform: "translateX(-6px)",
-            transition: "opacity 0.4s, transform 0.4s",
-            pointerEvents: "none",
-            flexShrink: 0,
-          }}
-        >
-          →
-        </span>
       </div>
     </Link>
   );
@@ -1051,23 +1016,6 @@ function MovementRow({
         >
           {body}
         </p>
-        <span
-          data-arrow
-          aria-hidden
-          style={{
-            fontFamily: serif,
-            fontStyle: "italic",
-            fontSize: 14,
-            color: "rgba(232,183,131,0.85)",
-            opacity: 0,
-            transform: "translateX(-6px)",
-            transition: "opacity 0.4s, transform 0.4s",
-            pointerEvents: "none",
-            flexShrink: 0,
-          }}
-        >
-          →
-        </span>
       </div>
     </Link>
   );
