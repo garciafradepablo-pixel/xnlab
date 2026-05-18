@@ -317,6 +317,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               textDecoration: "none",
               color: "inherit",
               outline: "none",
+              borderRadius: "50%",
+              WebkitTapHighlightColor: "transparent",
             }}
           >
             <motion.div
@@ -455,6 +457,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   textDecoration: "none",
                   color: "inherit",
                   outline: "none",
+                  borderRadius: "50%",
+                  WebkitTapHighlightColor: "transparent",
                 }}
               >
                 <motion.div
