@@ -1,11 +1,12 @@
 "use client";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useInView } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
+import { AtelierStar } from "./ornaments";
 
 type HeroCopy = {
   eyebrow: string;
@@ -68,6 +69,17 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const sphY = useTransform(sy, [-1, 1], [-3, 3]);
   const symX = useTransform(sx, [-1, 1], [-12, 12]);
   const symY = useTransform(sy, [-1, 1], [-8, 8]);
+
+  // Pause the heaviest continuous animations (the back-orbits and
+  // chrome X linear rotations on large images) when the hero leaves
+  // the viewport. The breath loops on small gradient divs are cheap
+  // enough to leave running; the two rotations are the expensive
+  // ones — large DOM nodes carrying a Next/Image, repainted every
+  // frame. Skipping their rAF callbacks while the visitor is reading
+  // sections further down the page cuts the steady-state CPU/GPU
+  // cost meaningfully. The state is preserved on return via
+  // framer-motion's animate={false} freeze pattern.
+  const inView = useInView(ref, { amount: 0.15 });
 
   useEffect(() => {
     if (reduced) return;
@@ -169,11 +181,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           background:
             "radial-gradient(ellipse at center, rgba(228,180,128,0.13) 0%, rgba(190,140,90,0.05) 35%, rgba(60,40,30,0.012) 58%, transparent 75%)",
-          filter: "blur(60px)",
+          filter: "blur(28px)",
           willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: [0.85, 1, 0.85], scale: [1, 1.04, 1] }}
+        animate={inView ? { opacity: [0.85, 1, 0.85], scale: [1, 1.04, 1] } : { opacity: 0.9, scale: 1 }}
         transition={{
           opacity: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
           scale: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
@@ -199,11 +211,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           borderRadius: "50%",
           background:
             "radial-gradient(ellipse at center, rgba(255,235,200,0.10) 0%, rgba(255,220,180,0.035) 30%, transparent 58%)",
-          filter: "blur(64px)",
+          filter: "blur(28px)",
           willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.05, 1] }}
+        animate={inView ? { opacity: [0.7, 1, 0.7], scale: [1, 1.05, 1] } : { opacity: 0.85, scale: 1 }}
         transition={{
           opacity: { duration: 12, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
           scale: { duration: 12, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
@@ -222,16 +234,28 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           borderRadius: "50%",
           background:
             "radial-gradient(ellipse at center, rgba(200,180,255,0.045) 0%, rgba(180,160,255,0.015) 40%, transparent 65%)",
-          filter: "blur(70px)",
+          filter: "blur(28px)",
           willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 0.7 }}
-        animate={{ opacity: [0.4, 0.65, 0.4], scale: [1, 1.07, 1] }}
+        animate={inView ? { opacity: [0.4, 0.65, 0.4], scale: [1, 1.07, 1] } : { opacity: 0.5, scale: 1 }}
         transition={{
           opacity: { duration: 14, ease: "easeInOut", repeat: Infinity, delay: 1.1 },
           scale: { duration: 14, ease: "easeInOut", repeat: Infinity, delay: 1.1 },
         }}
       />
+
+      {/* LAYER 1C — Brand crest. The quiet zone at the top of the
+          hero used to be empty atmosphere; now it carries an editorial
+          signature — a small horizontal frieze of brand marks plus a
+          sparse drift of micro-sigils in the corners. Reads as the
+          masthead of a quiet studio: identity, restraint, variety.
+          zIndex 6 sits above the warm aureole (zIndex 4) and below
+          the dome / wordmark so the crest never competes with the
+          name. All breath rhythms differ so the frieze never feels
+          synchronised — that asymmetry is the "infinity of visual
+          styles" within a coherent brand voice. */}
+      <BrandCrest />
 
       {/* LAYER 2A — back orbits. Static outer wrapper does the
           centering transform so the orbital image stays anchored to
@@ -265,7 +289,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               just decoration. */}
           <motion.div
             style={{ width: "100%", height: "100%", willChange: "transform" }}
-            animate={{ rotate: 360 }}
+            animate={inView ? { rotate: 360 } : false}
             transition={{ duration: 180, ease: "linear", repeat: Infinity }}
           >
             <Image
@@ -634,11 +658,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           borderRadius: "50%",
           background:
             "radial-gradient(circle at center, rgba(232,150,90,0.18) 0%, rgba(212,140,80,0.07) 28%, rgba(140,80,40,0.02) 52%, transparent 72%)",
-          filter: "blur(56px)",
+          filter: "blur(28px)",
           willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 0.8 }}
-        animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.06, 1] }}
+        animate={inView ? { opacity: [0.7, 1, 0.7], scale: [1, 1.06, 1] } : { opacity: 0.85, scale: 1 }}
         transition={{
           opacity: { duration: 13, ease: "easeInOut", repeat: Infinity, delay: 0.9 },
           scale: { duration: 13, ease: "easeInOut", repeat: Infinity, delay: 0.9 },
@@ -674,15 +698,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
         >
           <motion.div
-            style={{ width: "100%", height: "100%", willChange: "transform" }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 220, ease: "linear", repeat: Infinity }}
+            style={{ width: "100%", height: "100%" }}
+            animate={inView ? { scale: [1, 1.025, 1], y: [0, -4, 0] } : { scale: 1, y: 0 }}
+            transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
           >
-            <motion.div
-              style={{ width: "100%", height: "100%" }}
-              animate={{ scale: [1, 1.025, 1], y: [0, -4, 0] }}
-              transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
-            >
               <Image
                 src="/images/hero/05_main_bottom_symbol.png"
                 alt=""
@@ -705,7 +724,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   filter: "drop-shadow(0 0 36px rgba(222,144,84,0.5))",
                 }}
               />
-            </motion.div>
           </motion.div>
         </motion.div>
       </div>
@@ -848,5 +866,183 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         }}
       />
     </section>
+  );
+}
+
+// Brand crest — the editorial signature that lives in the quiet zone
+// at the top of the hero. A horizontal frieze with the wordmark in
+// micro-caps, the founding numeral, two AtelierStar sigils flanking
+// the centre, and three drifting micro-sigils anchored to the
+// corners. Each element breathes on its own rhythm so the frieze
+// reads as a small ecosystem of identity — a crest that's never
+// frozen, never synchronised, never loud.
+function BrandCrest() {
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height: "clamp(80px, 14svh, 160px)",
+        zIndex: 6,
+        pointerEvents: "none",
+      }}
+    >
+      {/* Centred masthead — appears after the orbs have settled so the
+          eye lands on the constellation first and the crest reads as
+          a quiet stamp afterward. Generous letter-spacing reads as
+          editorial dateline, not as a logo lockup. */}
+      <motion.div
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 1.2 }}
+        style={{
+          position: "absolute",
+          top: "clamp(28px, 5svh, 64px)",
+          left: "50%",
+          transform: "translateX(-50%)",
+          display: "flex",
+          alignItems: "center",
+          gap: "clamp(16px, 2.2vw, 36px)",
+          whiteSpace: "nowrap",
+        }}
+      >
+        <motion.span
+          aria-hidden
+          animate={{ opacity: [0.32, 0.6, 0.32] }}
+          transition={{ duration: 8, ease: "easeInOut", repeat: Infinity }}
+          style={{
+            display: "inline-block",
+            width: 4,
+            height: 4,
+            borderRadius: "50%",
+            background: "rgba(232,183,131,0.7)",
+            boxShadow: "0 0 8px rgba(232,183,131,0.5)",
+          }}
+        />
+        <span
+          style={{
+            fontSize: "clamp(9px, 0.72vw, 10.5px)",
+            letterSpacing: "0.46em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+            color: "rgba(232,183,131,0.6)",
+            textShadow: "0 1px 12px rgba(0,0,0,0.85)",
+          }}
+        >
+          XNLAB
+        </span>
+        <AtelierStar
+          size={8}
+          color="rgba(232,183,131,0.82)"
+          shadow="rgba(232,183,131,0.55)"
+        />
+        <span
+          style={{
+            fontFamily: "var(--font-serif, 'Cormorant Garamond', Georgia, serif)",
+            fontStyle: "italic",
+            fontSize: "clamp(10px, 0.82vw, 12px)",
+            letterSpacing: "0.32em",
+            color: "rgba(232,183,131,0.55)",
+            textShadow: "0 1px 12px rgba(0,0,0,0.85)",
+          }}
+        >
+          MMXXII
+        </span>
+        <AtelierStar
+          size={6}
+          color="rgba(232,183,131,0.7)"
+          shadow="rgba(232,183,131,0.45)"
+        />
+        <motion.span
+          aria-hidden
+          animate={{ opacity: [0.32, 0.6, 0.32] }}
+          transition={{ duration: 9, ease: "easeInOut", repeat: Infinity, delay: 1.5 }}
+          style={{
+            display: "inline-block",
+            width: 4,
+            height: 4,
+            borderRadius: "50%",
+            background: "rgba(232,183,131,0.7)",
+            boxShadow: "0 0 8px rgba(232,183,131,0.5)",
+          }}
+        />
+      </motion.div>
+
+      {/* Three drifting micro-sigils anchored to the corners — each
+          a different size and breath rhythm so the frieze reads as an
+          ecosystem of identity rather than a logo lockup repeated.
+          Hidden on mobile where the top zone is already tight. */}
+      <motion.div
+        className="hidden md:block"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2.2, delay: 1.5 }}
+        style={{
+          position: "absolute",
+          top: "clamp(40px, 6svh, 72px)",
+          left: "clamp(48px, 8vw, 140px)",
+        }}
+      >
+        <AtelierStar
+          size={5}
+          color="rgba(232,183,131,0.55)"
+          shadow="rgba(232,183,131,0.32)"
+        />
+      </motion.div>
+      <motion.div
+        className="hidden md:block"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2.2, delay: 1.8 }}
+        style={{
+          position: "absolute",
+          top: "clamp(36px, 5.5svh, 60px)",
+          right: "clamp(48px, 8vw, 140px)",
+        }}
+      >
+        <AtelierStar
+          size={7}
+          color="rgba(232,183,131,0.62)"
+          shadow="rgba(232,183,131,0.38)"
+        />
+      </motion.div>
+      <motion.div
+        className="hidden lg:block"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 2.2, delay: 2.1 }}
+        style={{
+          position: "absolute",
+          top: "clamp(78px, 11svh, 130px)",
+          left: "calc(50% + clamp(180px, 22vw, 360px))",
+        }}
+      >
+        <AtelierStar
+          size={4}
+          color="rgba(232,183,131,0.48)"
+          shadow="rgba(232,183,131,0.28)"
+        />
+      </motion.div>
+
+      {/* Hairline — a single thin amber thread crossing horizontally
+          between the centred frieze and the dome, signing the top of
+          the hero like a masthead rule. Pure gradient, no animation,
+          so the eye registers a frame, not motion. */}
+      <div
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: "clamp(70px, 10svh, 118px)",
+          left: "20%",
+          right: "20%",
+          height: 1,
+          background:
+            "linear-gradient(to right, transparent 0%, rgba(232,183,131,0.22) 30%, rgba(232,183,131,0.32) 50%, rgba(232,183,131,0.22) 70%, transparent 100%)",
+        }}
+      />
+    </div>
   );
 }
