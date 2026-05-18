@@ -22,12 +22,14 @@ type OrbProps = {
 //
 // Where to drop the PNGs:
 //   public/images/worlds/central.png            ← the dark crimson Central Core
-//   public/images/worlds/hospitality.png        ← amber gold sphere
-//   public/images/worlds/nightlife.png          ← electric violet sphere
-//   public/images/worlds/lifestyle.png          ← ivory pearl sphere
-//   public/images/worlds/architecture.png       ← mineral stone sphere
-//   public/images/worlds/music.png              ← midnight indigo sphere
-//   public/images/worlds/digital.png            ← iridescent cyan sphere
+//   public/images/worlds/product.png            ← amber gold sphere
+//   public/images/worlds/retail-physical.png    ← electric violet sphere
+//   public/images/worlds/customer-ops.png       ← ivory pearl sphere
+//   public/images/worlds/communication.png      ← mineral stone sphere
+//   public/images/worlds/owned-digital.png      ← midnight indigo sphere
+//   public/images/worlds/community.png          ← iridescent cyan sphere
+// (Asset filenames are kept under the previous naming; the `image` field
+//  on each World in _lib/worlds.ts still points at those files.)
 // PNG with transparent background. 1000x1000 minimum is enough. The orb image
 // can sit naturally on the dark site; mix-blend is not required but works if you
 // want extra atmospheric integration.
@@ -48,7 +50,7 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
   const tintColor = usesOwnImage ? null : world?.color.hex;
   const tintOpacity = isCentral
     ? 0.55
-    : world?.slug === "luxury-lifestyle-brands" || world?.slug === "architecture-spatial-design"
+    : world?.slug === "customer-operations" || world?.slug === "communication"
     ? 0.32
     : 0.5;
 

@@ -1,55 +1,57 @@
 # Xnlab Studio (XNLAB)
 
-> Digital Atmosphere Studio for Premium Brands. XNLAB creates cinematic websites, campaign systems and AI-enhanced visual worlds for hospitality, architecture, wellness, nightlife and culture-led brands. By application only.
+> Atmosphere systems for modern hospitality. XNLAB designs the atmosphere of hotels, restaurants, nightlife venues, wellness destinations, cultural hospitality and experiential formats. By appointment.
 
-The studio operates from a single mark — XNLAB — and a single email: studio@xnlab.io. Work happens through fixed-scope projects (no hourly billing) and a monthly Visual Engine offer for brands that need continuous direction. Direction over content. AI extends production; it does not dilute the direction.
+The studio operates from a single mark — XNLAB — and a single email: studio@xnlab.io. Engagements are calibrated to scope and discussed on the call. XNLAB does not publish tiers; it publishes capacity. A small number of selected engagements remain for 2026.
+
+## What XNLAB does
+
+XNLAB builds atmosphere systems for hospitality operators who already perform commercially and need the next layer — cultural presence, perception, memorability. The work is six systems wide: Atmosphere Systems, Cultural Presence, Experiential Identity, Digital Amplification, Hospitality Worldbuilding, Venue Perception Design.
+
+## Who XNLAB works with
+
+Hospitality operators across six rooms:
+- Hotels & Resorts — atmosphere systems where arrival, stay and departure each carry their own gravity.
+- Restaurants & Bars — rooms that set the conversation before the first dish.
+- Nightlife Venues — clubs and late venues that have to hold shape across seven hours.
+- Wellness Destinations — spas, retreats and wellness destinations where silence is the primary service.
+- Cultural Hospitality — museum cafes, gallery dining, library bars and residency programs.
+- Experiential Hospitality — pop-ups, traveling concepts and immersive formats that land in a different city next month.
 
 ## Pages
 
-- [Home](https://xnlab.io): Landing — wordmark, problem statement, services preview, the six worlds, proof, apply.
-- [Services](https://xnlab.io/services): Six engagements with pricing in EUR — Campaign System (from €5,000), Digital Atmosphere (from €10,000), Brand World (from €25,000), Visual Engine (from €4,000/month), Technical / Growth Add-ons (from €1,500), Upgrade Sprint (from €2,500–€4,000).
-- [The Universe](https://xnlab.io/worlds): Entry to the XNLAB universe. Mythology (Central Core, ORUN, XIO, anomalies) and the six World Cores.
-- [World 01 — Hospitality & Experience](https://xnlab.io/worlds/hospitality-experience): Amber Gold. Hospitality brand systems, atmosphere design, restaurant identity.
-- [World 02 — Nightlife & Cultural Events](https://xnlab.io/worlds/nightlife-cultural-events): Electric Violet. Club identity, event direction, cultural venue branding.
-- [World 03 — Luxury & Lifestyle Brands](https://xnlab.io/worlds/luxury-lifestyle-brands): Ivory Pearl. Fashion identity, perfume direction, editorial systems.
-- [World 04 — Architecture & Spatial Design](https://xnlab.io/worlds/architecture-spatial-design): Mineral Stone Grey. Architectural brand systems, spatial identity.
-- [World 05 — Music & Cultural Artists](https://xnlab.io/worlds/music-cultural-artists): Midnight Indigo. Artist identity, album direction, tour aesthetic.
-- [World 06 — Cultural & Digital Worlds](https://xnlab.io/worlds/cultural-digital-worlds): Iridescent Cyan. Digital identity, AI-native direction, generative aesthetics.
-- [Selected Works](https://xnlab.io/work): Case studies (currently 3 internal studies; real client work in progress).
-- [About](https://xnlab.io/about): Studio philosophy, approach, beliefs, practice areas.
-- [Process](https://xnlab.io/process): How we work in four movements — Diagnose, Direct, Build, Activate. Each engagement closes a perception gap and ships a coherent system.
-- [Collaboration](https://xnlab.io/collaboration): Practical notes on engaging the studio — when to reach out, what to send, the first conversation, engagement shape.
-- [Manifesto](https://xnlab.io/manifesto): Six statements on worldbuilding, atmosphere and restraint.
-- [Atmospheres](https://xnlab.io/atmospheres): Six sensory vignettes — one per World Core. Prose snapshots of the rooms and moments we design.
-- [Now](https://xnlab.io/now): A live note from inside the studio. What we are working on, reading, listening to, observing. Updated periodically.
-- [Lab Records](https://xnlab.io/lab-records): Editorial cultural observations from inside the studio. Long-form reading on hospitality branding, cinematic luxury, music worldbuilding, atmospheric design.
-- [References / Library](https://xnlab.io/references): Curated set of books, architects, films, hotels and makers that inform the studio's work.
-- [Contact](https://xnlab.io/contact): Apply for a project. By application only. Fields: name, email, brand, website, industry, project type, timeline, estimated investment (EUR), message.
+- [Home](https://xnlab.io): Atmosphere systems for modern hospitality — perception diagnostic, six rooms, signals from the lab, six systems, contact.
+- [The Universe](https://xnlab.io/worlds): Six rooms of modern hospitality. Each room carries its own gravity, materials and pacing.
+- [Room 01 — Hotels & Resorts](https://xnlab.io/worlds/hotels-resorts): Amber Gold. Hotels and resorts where arrival, stay and departure each have their own gravity.
+- [Room 02 — Restaurants & Bars](https://xnlab.io/worlds/restaurants-bars): Midnight Indigo. Restaurants and cocktail bars where the room sets the conversation before the first dish.
+- [Room 03 — Nightlife Venues](https://xnlab.io/worlds/nightlife-venues): Electric Violet. Clubs and late venues that hold shape across seven hours.
+- [Room 04 — Wellness Destinations](https://xnlab.io/worlds/wellness-destinations): Ivory Pearl. Spas and retreats where silence is the primary service.
+- [Room 05 — Cultural Hospitality](https://xnlab.io/worlds/cultural-hospitality): Mineral Stone Grey. Hospitality as the room next to the work.
+- [Room 06 — Experiential Hospitality](https://xnlab.io/worlds/experiential-hospitality): Iridescent Cyan. Pop-ups and traveling concepts that have to land in a different city next month.
+- [Atelier Studies](https://xnlab.io/studies): Internal hospitality studies — perception, direction, atmosphere, amplification.
+- [Manifesto](https://xnlab.io/manifesto): Six statements on hospitality, atmosphere and restraint.
+- [Lab Records](https://xnlab.io/lab-records): Editorial observations from inside the studio. Long-form reading on hospitality, atmospheric design and cultural presence.
+- [Contact](https://xnlab.io/contact): Write to the studio. Short intake (name, email, studio/brand/project, the room you operate in, what you're trying to do, when you'd like to begin). studio@xnlab.io is open in parallel.
 - [Colophon](https://xnlab.io/imprint): Studio details, typography credits, technical stack, brief privacy and terms notes.
 
-## Universe mythology
+## Six systems (the operating spine)
 
-- **The Central Core** — dark crimson sphere of liquid obsidian glass with a metallic X forged inside. The studio itself.
-- **ORUN** — observer of worlds. Records, never intervenes.
-- **XIO** — reactive creature. Transforms through the shards released when a world becomes unstable.
-- **Anomalies** — fractures in a Core release shards. Material for evolution, not errors.
-
-## Practice
-
-- Hospitality Systems — atmospheres designed to be remembered.
-- Nightlife Atmospheres — dark, cinematic environments for cultural energy.
-- Emotional Architecture — spaces shaped through silence, light and material.
-- Living Identities — symbols, avatars and identities with presence.
+- **Atmosphere Systems** — Light, sound, material, scent and pacing, directed as one operating system across every room of the brand.
+- **Cultural Presence** — The conditions that turn a venue from a transaction into a cultural reference.
+- **Experiential Identity** — Identity engineered for what the guest does, not what they read.
+- **Digital Amplification** — Surfaces and editorial pacing that carry the room's atmosphere into search, social and press.
+- **Hospitality Worldbuilding** — Universe design across multiple venues, formats and cities, held by one creative spine.
+- **Venue Perception Design** — Audit, diagnosis and re-direction for venues whose physical presence has outpaced their image.
 
 ## Engagement model
 
-- Fixed-scope projects, paid in milestones (no hourly billing).
-- Monthly Visual Engine for brands that need continuous creative direction.
-- All pricing quoted in EUR.
-- Four-movement process: Diagnose, Direct, Build, Activate.
-- Selected clients: four to six brands per year.
+- Engagements calibrated to scope, discussed on the call.
+- No published tiers; capacity is what's published.
+- A small number of selected engagements remain for 2026.
+- Hospitality operators only.
 
 ## Contact
 
 - Email: studio@xnlab.io
-- Availability: By application only.
+- Availability: By appointment.
+- Cities: Marbella · Madrid · Worldwide.

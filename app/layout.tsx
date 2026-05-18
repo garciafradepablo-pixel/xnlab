@@ -3,9 +3,10 @@ import { Inter, Cormorant_Garamond } from "next/font/google";
 import "./globals.css";
 import { DustStyles } from "./_lib/atoms";
 import { ScrollProgress, FilmGrain } from "./_lib/chrome";
-import { Cursor } from "./_lib/cursor";
 import { BackToTop } from "./_lib/back-to-top";
 import { Analytics } from "@vercel/analytics/next";
+import { getNonce } from "./_lib/csp";
+import { AmbientBackdrop } from "./_lib/ambient-backdrop";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -20,9 +21,14 @@ const cormorant = Cormorant_Garamond({
 });
 
 const SITE = "https://xnlab.io";
-const TITLE = "XNLAB — Creative Direction & AI Studio · Brand Worlds, Web Design, SEO";
+// TITLE carries the canonical spelling plus the spaced and acronym
+// variants people actually type when they remember the name partially
+// ("xn lab", "xn studio", "xnl"). Google indexes title text aggressively
+// for brand queries, so seating the variants here is the single
+// highest-leverage hook for variant ranking.
+const TITLE = "XNLAB — Atmosphere Systems for Brands, Customers and Channels.";
 const DESCRIPTION =
-  "XNLAB is a creative direction and AI studio for premium brands. Brand worlds, cinematic websites, campaign systems, AI content, process automation, branding upgrade, SEO and conversion. Hospitality, nightlife, luxury, architecture, music and culture-led companies. By appointment.";
+  "XNLAB (also XN Lab, XN Studio, XNL — pronounced «X-N-Lab», sometimes heard as «x en la app») designs atmosphere systems across the six surfaces a modern brand reaches its customer through — product, owned digital, retail and physical, customer operations, communication and community. By appointment.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -31,95 +37,75 @@ export const metadata: Metadata = {
   applicationName: "Xnlab Studio",
   generator: "Next.js",
   keywords: [
-    // English — core commercial terms
-    "creative direction studio",
-    "creative direction agency",
-    "AI agency",
-    "AI content agency",
-    "AI content studio",
-    "AI creative direction",
-    "AI brand direction",
-    "process automation agency",
-    "AI-assisted creative direction",
-    "AI workflow automation for brands",
-    "brand identity agency",
-    "branding agency premium",
-    "branding upgrade",
-    "rebranding agency",
-    "web design agency",
-    "premium web design",
-    "luxury web design",
-    "cinematic web design agency",
-    "boutique web design studio",
-    "SEO agency",
-    "technical SEO services",
-    "conversion optimisation studio",
-    "SEO for premium brands",
-    "campaign systems",
+    // Brand name and every variant people actually search for. These
+    // sit first because brand queries are the most direct purchase
+    // intent we receive, and the studio's name is unusual enough that
+    // typing variants are common ("xn lab" with a space, "x n lab",
+    // "xn studio", "xnl", and the phonetic mis-hear "x en la app" /
+    // "x en lab" / "xen lab").
+    "XNLAB",
+    "XN Lab",
+    "XN-Lab",
+    "Xn lab",
+    "x n lab",
+    "Xnlab",
+    "Xnlab Studio",
+    "XN Studio",
+    "XNL",
+    "XN Lab Studio",
+    "x en la app",
+    "x en lab",
+    "xen lab",
+    "xnlab atmosphere systems",
+    "xnlab brand studio",
+    "xn studio Marbella",
+    "xn studio Madrid",
+    // Core territory — atmosphere systems across brand surfaces
+    "atmosphere systems",
+    "atmosphere systems for brands",
+    "brand atmosphere design",
+    "brand atmosphere studio",
+    "brand creative direction",
     "brand worldbuilding",
-    "visual identity systems",
-    "art direction studio",
-    "digital atmosphere studio",
-    "premium brand websites",
-    "Next.js web design studio",
-    // Sectors / audiences
-    "hospitality branding",
-    "boutique hotel website design",
-    "restaurant brand identity",
-    "nightlife visual identity",
-    "nightlife venue branding",
-    "luxury brand direction",
-    "luxury lifestyle branding",
-    "fashion brand identity studio",
-    "perfume brand direction",
-    "architecture studio website design",
-    "architecture brand identity",
-    "wellness brand identity",
-    "music artist visual identity",
-    "album visual direction",
-    "tour visual direction",
-    "cultural brand direction",
-    "digital-native brand identity",
-    // Spanish — core commercial terms
-    "agencia de dirección creativa",
-    "estudio de dirección creativa",
-    "dirección creativa para marcas premium",
-    "agencia de IA",
-    "agencia de contenido IA",
-    "empresas de contenido IA",
-    "automatización de procesos",
-    "automatización con IA",
-    "estudio creativo con IA",
-    "dirección creativa con IA",
+    "brand perception audit",
+    "experiential brand identity",
+    "cultural presence for brands",
+    "brand digital amplification",
+    "brand-customer-channel design",
+    // Surface verticals — the six XNLAB worlds
+    "product atmosphere design",
+    "product brand systems",
+    "product launch direction",
+    "owned digital atmosphere",
+    "dashboard and account UX direction",
+    "retail and physical brand atmosphere",
+    "flagship store atmosphere design",
+    "pop-up and event identity",
+    "customer operations brand direction",
+    "support voice and tone direction",
+    "onboarding sequence design",
+    "communication atmosphere systems",
+    "editorial direction across paid owned earned",
+    "community and culture programming",
+    "brand worldbuilding across partners and territories",
+    // Applied vertical — kept so legacy hospitality searches still land here
+    "hospitality atmosphere design (applied)",
+    "luxury hospitality creative direction (applied)",
+    // Spanish — brand core
+    "sistemas de atmósfera",
+    "sistemas de atmósfera de marca",
+    "dirección creativa de marca",
     "branding premium",
-    "agencia de branding",
-    "mejora de branding",
-    "rebranding premium",
-    "agencia de diseño web",
-    "diseño web premium",
-    "diseño web cinematográfico",
-    "diseño web de lujo",
-    "agencia SEO",
-    "SEO premium",
-    "consultoría SEO",
-    "optimización de conversión",
-    "sistemas de campaña",
-    "worldbuilding de marca",
-    "identidad visual premium",
-    "atmósfera digital",
-    "estudio de atmósfera digital",
-    // Sectores
-    "branding para hostelería",
-    "diseño web para hoteles",
-    "identidad para restaurantes",
-    "branding para vida nocturna",
-    "identidad de marca de lujo",
-    "branding para moda",
-    "dirección visual de perfumes",
-    "branding para arquitectura",
-    "identidad visual para artistas",
-    "dirección de álbum",
-    "branding cultural",
+    "atmósfera de producto",
+    "diseño de atmósfera para producto",
+    "atmósfera digital propia",
+    "identidad para retail y físico",
+    "operaciones de cliente y voz de servicio",
+    "comunicación de marca",
+    "programación de comunidad y cultura",
+    "brand worldbuilding",
+    "auditoría de percepción de marca",
+    "estudio de atmósfera",
     // Brand
     "XNLAB",
     "Xnlab Studio",
@@ -196,64 +182,97 @@ const jsonLd = {
   additionalType: ["https://schema.org/CreativeWork", "https://schema.org/SoftwareApplication"],
   name: "XNLAB",
   legalName: "Xnlab Studio",
-  alternateName: ["Xnlab Studio", "XNLAB Studio", "Xnlab"],
+  // Every name variant the brand answers to. Google uses
+  // `alternateName` to map mis-typed brand queries (with spaces,
+  // dashes, phonetic mis-hears) back to the same entity, so the
+  // Knowledge Panel and brand SERP serve XNLAB for "xn lab", "xn
+  // studio", "xnl", "xen lab", etc.
+  alternateName: [
+    "XN Lab",
+    "XN-Lab",
+    "Xn lab",
+    "X N Lab",
+    "Xnlab",
+    "Xnlab Studio",
+    "XN Studio",
+    "XNL",
+    "XN Lab Studio",
+    "x en la app",
+    "xen lab",
+    "x en lab",
+  ],
   url: SITE,
   description: DESCRIPTION,
   email: "studio@xnlab.io",
-  foundingDate: "2023-01-01",
+  foundingDate: "2022-01-01",
   areaServed: "Worldwide",
   serviceArea: { "@type": "Place", name: "Worldwide" },
-  slogan: "Creative direction and AI studio for premium brands.",
+  slogan: "Atmosphere systems for brands, customers and channels.",
+  // Image + logo give Google an entity card without us needing a
+  // Knowledge Panel. Logo is required for the "publisher" slot in
+  // article / news rich results; the hero chrome image gives the
+  // brand image carousel something to use.
+  logo: {
+    "@type": "ImageObject",
+    url: `${SITE}/icon`,
+    width: 512,
+    height: 512,
+  },
+  image: `${SITE}/images/01_hero_chrome.jpg`,
+  // Premium positioning hint for ProfessionalService listings.
+  // Four-symbol scale is the schema convention for "luxury".
+  priceRange: "$$$$",
+  contactPoint: [
+    {
+      "@type": "ContactPoint",
+      email: "studio@xnlab.io",
+      contactType: "client enquiries",
+      areaServed: "Worldwide",
+      availableLanguage: ["English", "Spanish"],
+    },
+  ],
   knowsAbout: [
-    // Core practice
-    "Creative direction",
-    "Art direction",
-    "Worldbuilding",
-    "Atmosphere design",
+    // The territory — atmosphere systems across brand surfaces
+    "Atmosphere systems",
+    "Atmosphere systems for brands",
+    "Brand atmosphere design",
+    "Brand creative direction",
+    "Brand worldbuilding",
+    "Brand perception audit",
+    "Experiential brand identity",
+    "Cultural presence for brands",
+    "Brand digital amplification",
+    "Perception engineering",
+    "Cultural positioning",
+    "Atmosphere deployment",
+    "Identity reconstruction",
+    "Emotional architecture",
+    "Cinematic brand systems",
+    // Practice surfaces — the six XNLAB worlds
+    "Product brand systems",
+    "Owned digital atmosphere",
+    "Retail and physical brand atmosphere",
+    "Customer operations brand direction",
+    "Communication atmosphere systems",
+    "Community and culture programming",
+    // Generic discipline tags
     "Brand identity systems",
     "Visual identity direction",
-    "Campaign direction",
-    "Cinematic web design",
-    "Premium web design",
+    "Editorial design",
+    "Motion identity",
     "Web design and development",
     "Next.js web development",
-    "User experience design",
-    "Motion design",
-    "Editorial design",
-    // AI capabilities
-    "AI creative direction",
-    "AI-assisted brand direction",
-    "AI content production",
-    "AI image generation for brands",
-    "AI workflow automation",
-    "Process automation",
-    "Generative aesthetics",
-    "AI-native visual identity",
+    // Applied verticals — kept for legacy search continuity
+    "Hospitality atmosphere systems (applied vertical)",
+    "Boutique hotel brand direction (applied)",
+    "Restaurant identity systems (applied)",
+    "Cultural hospitality (applied)",
     // SEO and growth
     "Technical SEO",
     "Search engine optimization",
     "Structured data and schema markup",
     "Conversion rate optimization",
     "Performance optimization",
-    "Web analytics direction",
-    // Sectors
-    "Hospitality brand direction",
-    "Boutique hotel branding",
-    "Restaurant identity systems",
-    "Nightlife and cultural events branding",
-    "Nightclub visual identity",
-    "Luxury lifestyle brand direction",
-    "Fashion brand identity",
-    "Perfume and beauty direction",
-    "Architecture and spatial design",
-    "Architectural brand systems",
-    "Wellness brand direction",
-    "Music and cultural artists",
-    "Artist visual identity",
-    "Album direction",
-    "Cultural and digital worlds",
-    "Digital-native brand identity",
-    "AI-native cultural brands",
   ],
   knowsLanguage: ["en", "es"],
   // Add real social profiles here when published. Empty until then to avoid 404s in Google's eyes.
@@ -283,163 +302,107 @@ const serviceLd = {
   "@graph": [
     {
       "@type": "Service",
-      name: "Hospitality Experience",
-      serviceType: "Hospitality brand identity and atmosphere design",
+      name: "Product",
+      serviceType: "Product atmosphere systems",
       description:
-        "Atmospheres, identities and visual systems for boutique hotels, restaurants and hospitality groups. Designed to be remembered, not described.",
+        "Atmosphere systems for the product itself — app, hardware, software. First-launch direction, loading micro-motion, empty-state voice and cross-surface consistency between product, account and brand.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Hospitality operators, boutique hotel owners" },
+      audience: { "@type": "Audience", audienceType: "Product, design and brand leaders at scale" },
+      url: `${SITE}/worlds/product`,
     },
     {
       "@type": "Service",
-      name: "Nightlife and Cultural Events",
-      serviceType: "Nightlife brand identity and venue direction",
+      name: "Owned Digital",
+      serviceType: "Owned digital atmosphere systems",
       description:
-        "Dark, cinematic visual systems for clubs, bars and cultural venues. Identity as a complete sensory programme — light, motion, sound, surface.",
+        "Atmosphere systems for the brand's own surfaces — web, marketing site, account, dashboard. Editorial tempo across owned media. Considered reading, patient return.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Nightclub operators, cultural venue directors" },
+      audience: { "@type": "Audience", audienceType: "Heads of brand, marketing and digital" },
+      url: `${SITE}/worlds/owned-digital`,
     },
     {
       "@type": "Service",
-      name: "Luxury Lifestyle Brands",
-      serviceType: "Luxury and lifestyle brand identity direction",
+      name: "Retail & Physical",
+      serviceType: "Retail and physical atmosphere systems",
       description:
-        "Brand worlds for luxury fashion, beauty, wellness and lifestyle houses. Identity as a complete cultural object — surface, motion, copy, atmosphere.",
+        "Flagship and retail atmosphere — threshold, light, material, sound. Pop-up, kiosk, branch and event identity engineered to ship and recompose. Service choreography across the floor.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Luxury and lifestyle brand owners" },
+      audience: { "@type": "Audience", audienceType: "Heads of retail, store design and experiential marketing" },
+      url: `${SITE}/worlds/retail-physical`,
     },
     {
       "@type": "Service",
-      name: "Architecture and Spatial Design",
-      serviceType: "Spatial and architectural identity direction",
+      name: "Customer Operations",
+      serviceType: "Customer operations atmosphere systems",
       description:
-        "Spaces shaped through silence, light and material. Architectural identity as the first layer of brand emotion.",
+        "Atmosphere systems for onboarding, support and post-sale. Templates rewritten in the studio voice, response tempo calibrated, tone of the apology rehearsed.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Architects, developers, cultural institutions" },
+      audience: { "@type": "Audience", audienceType: "Heads of customer experience, support and operations" },
+      url: `${SITE}/worlds/customer-operations`,
     },
     {
       "@type": "Service",
-      name: "Music and Cultural Artists",
-      serviceType: "Visual identity and direction for artists and labels",
+      name: "Communication",
+      serviceType: "Communication atmosphere systems",
       description:
-        "Visual worlds for musicians, labels and cultural artists. Cover art, motion, web presence and cinematic launch direction.",
+        "Editorial direction across paid, owned and earned. Campaign direction, motion register, voice and tempo. PR atmosphere — the materials a journalist actually wants to open.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Recording artists, labels, cultural producers" },
+      audience: { "@type": "Audience", audienceType: "CMOs, heads of marketing and communications" },
+      url: `${SITE}/worlds/communication`,
     },
     {
       "@type": "Service",
-      name: "Cultural Digital Worlds",
-      serviceType: "Digital identity and worldbuilding",
+      name: "Community & Culture",
+      serviceType: "Community and culture atmosphere systems",
       description:
-        "Symbols, avatars and digital identities with presence. Built to live across physical space, digital surface and cultural memory.",
+        "Cultural programming — partnerships, residencies, publishing, content programs. Community architecture. Brand worldbuilding across territories, languages and partners.",
       provider: { "@type": "Organization", name: "XNLAB", url: SITE },
       areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Cultural brands, digital-native projects" },
-    },
-    // Cross-cutting capability services. These match the search
-    // intents around AI agency, creative direction agency, SEO agency,
-    // web design agency, automation. Same studio, different doorway.
-    {
-      "@type": "Service",
-      name: "Creative Direction",
-      serviceType: "Creative direction agency for premium brands",
-      description:
-        "Creative direction for brands that already convert and need the next level. Atmosphere, palette, motion language, copy register and campaign direction, produced as one decision instead of a folder of options. Agencia de dirección creativa para marcas premium.",
-      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
-      areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Founders, marketing directors, brand owners" },
-      url: `${SITE}/services`,
-    },
-    {
-      "@type": "Service",
-      name: "AI Creative Direction and AI Content",
-      serviceType: "AI agency for brand content and visual direction",
-      description:
-        "AI-native visual direction and AI content production for premium brands. Image generation, motion, asset extension and generative aesthetics governed by human creative direction. Agencia de IA y contenido IA. AI studio for brand image, motion and editorial output.",
-      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
-      areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Brand teams, founders, cultural producers" },
-      url: `${SITE}/services/visual-engine`,
-    },
-    {
-      "@type": "Service",
-      name: "Process Automation for Brand Operations",
-      serviceType: "AI workflow and process automation studio",
-      description:
-        "AI workflow automation for content production, campaign assembly and brand operations. Automatización de procesos con IA para marcas. Reduces manual production load without diluting the creative direction above it.",
-      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
-      areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Operations leads, marketing directors" },
-      url: `${SITE}/services/visual-engine`,
-    },
-    {
-      "@type": "Service",
-      name: "Branding Upgrade and Rebranding",
-      serviceType: "Brand identity upgrade for established premium brands",
-      description:
-        "Targeted brand upgrade for companies that already operate at a high level and want their image to match. Identity, typography, motion language, copy, surfaces and atmospheric direction. Mejora de branding y rebranding premium.",
-      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
-      areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Established premium brands seeking the next layer" },
-      url: `${SITE}/services/perception-upgrade-sprint`,
-    },
-    {
-      "@type": "Service",
-      name: "Premium Web Design and Development",
-      serviceType: "Cinematic web design and Next.js development studio",
-      description:
-        "Cinematic, single-page and multi-page websites for premium brands. Direction, motion language, copy, structured data and Next.js build. Agencia de diseño web premium para marcas que ya operan a alto nivel.",
-      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
-      areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Hospitality, luxury, architecture, music, cultural brands" },
-      url: `${SITE}/services/digital-atmosphere`,
-    },
-    {
-      "@type": "Service",
-      name: "Technical SEO and Conversion Optimisation",
-      serviceType: "SEO agency for premium brands and cultural companies",
-      description:
-        "Technical SEO, structured data, analytics, conversion clarity and accessibility tuning. Agencia SEO premium para marcas y compañías culturales que ya tienen sitio y quieren rendir como tal.",
-      provider: { "@type": "Organization", name: "XNLAB", url: SITE },
-      areaServed: "Worldwide",
-      audience: { "@type": "Audience", audienceType: "Brands with existing websites that need to perform" },
-      url: `${SITE}/services/seo-conversion-layer`,
+      audience: { "@type": "Audience", audienceType: "Brand directors, programme leads and cultural strategists" },
+      url: `${SITE}/worlds/community-culture`,
     },
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // CSP nonce per request — minted by proxy.ts, read here and
+  // forwarded onto every inline <script> we emit so a strict policy
+  // can drop 'unsafe-inline' without breaking JSON-LD.
+  const nonce = await getNonce();
   return (
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`} style={{background:"#060606"}}>
       <body style={{margin:0,padding:0,background:"#060606",overflowX:"hidden"}}>
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
         />
         <script
+          nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }}
         />
         <a href="#main" className="xn-skip">Skip to content</a>
         <DustStyles />
+        <AmbientBackdrop />
         <FilmGrain />
         <ScrollProgress />
-        <Cursor />
         <BackToTop />
-        <div id="main">{children}</div>
+        <div id="main" style={{ position: "relative", zIndex: 1 }}>{children}</div>
         <Analytics />
       </body>
     </html>

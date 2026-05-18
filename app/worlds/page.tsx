@@ -2,14 +2,14 @@ import type { Metadata } from "next";
 import Worlds from "./_worlds";
 
 export const metadata: Metadata = {
-  title: "Worlds — XNLAB Visual Systems for Hospitality, Nightlife, Luxury, Architecture & Music",
+  title: "Worlds — Six Surfaces of Modern Brand-Building · XNLAB",
   description:
-    "Explore the six XNLAB Worlds: emotional systems for hospitality, nightlife, luxury, architecture, music and digital culture.",
+    "The six XNLAB worlds — product, owned digital, retail and physical, customer operations, communication and community. The six surfaces where a modern brand reaches its customer, each with its own physics.",
   alternates: { canonical: "/worlds" },
   openGraph: {
-    title: "Worlds · XNLAB",
+    title: "Worlds · Six Surfaces of Modern Brand-Building · XNLAB",
     description:
-      "Six emotional systems. Six ways to build presence. The XNLAB methodology for premium brands.",
+      "Six surfaces where a modern brand touches its customer. Each one calibrated, each one signed by the same hand.",
     url: "https://xnlab.io/worlds",
     type: "article",
   },

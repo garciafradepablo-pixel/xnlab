@@ -16,7 +16,7 @@ const ui = {
     result: "Result",
     gallery: "Gallery",
     credits: "Credits",
-    contact: "Start a project",
+    contact: "Write to the studio",
     next: "Next study",
   },
   es: {
@@ -28,7 +28,7 @@ const ui = {
     result: "Resultado",
     gallery: "Galería",
     credits: "Créditos",
-    contact: "Iniciar un proyecto",
+    contact: "Escribir al estudio",
     next: "Siguiente estudio",
   },
 };
@@ -53,7 +53,7 @@ export default function WorkDetail({ project }: { project: Project }) {
       style={{
         minHeight: "100vh",
         overflowX: "hidden",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
       }}
@@ -84,7 +84,7 @@ export default function WorkDetail({ project }: { project: Project }) {
         >
           <WordmarkLink />
           <Link
-            href="/work"
+            href="/studies"
             style={{
               fontSize: 11,
               letterSpacing: "0.22em",
@@ -97,6 +97,7 @@ export default function WorkDetail({ project }: { project: Project }) {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{
               display: "flex",
               alignItems: "center",
@@ -465,7 +466,7 @@ export default function WorkDetail({ project }: { project: Project }) {
         </Link>
         <div style={{ marginTop: 32 }}>
           <Link
-            href="/work"
+            href="/studies"
             style={{
               fontSize: 11,
               letterSpacing: "0.28em",

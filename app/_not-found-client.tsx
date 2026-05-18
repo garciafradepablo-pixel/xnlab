@@ -11,9 +11,9 @@ const en = {
   cta: "Return home",
   alt: "Or visit",
   links: [
-    { label: "Selected Works", href: "/work" },
-    { label: "About the Studio", href: "/about" },
-    { label: "Start a project", href: "/contact" },
+    { label: "Worlds", href: "/worlds" },
+    { label: "Atelier Studies", href: "/studies" },
+    { label: "Write to the studio", href: "/contact" },
   ],
 };
 
@@ -25,9 +25,9 @@ const es = {
   cta: "Volver al inicio",
   alt: "O visita",
   links: [
-    { label: "Proyectos Seleccionados", href: "/work" },
-    { label: "Sobre el Estudio", href: "/about" },
-    { label: "Iniciar un proyecto", href: "/contact" },
+    { label: "Mundos", href: "/worlds" },
+    { label: "Estudios de Atelier", href: "/studies" },
+    { label: "Escribir al estudio", href: "/contact" },
   ],
 };
 
@@ -38,7 +38,7 @@ export default function NotFoundClient() {
     <main
       style={{
         minHeight: "100svh",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
         position: "relative",
@@ -146,6 +146,8 @@ export default function NotFoundClient() {
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
+                  onFocus={(e) => (e.currentTarget.style.color = "white")}
+                  onBlur={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.7)")}
                 >
                   {l.label}
                 </Link>

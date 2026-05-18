@@ -2,171 +2,153 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useState } from "react";
-import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
-import { Magnetic } from "../_lib/chrome";
+import { ts, tsS, serif, R, Dust, useLang } from "../_lib/atoms";
 import { WordmarkLink } from "../_lib/wordmark";
+import { OtherCorners } from "../_lib/other-corners";
 import { sendContactEmail } from "./actions";
 
 const en = {
-  eyebrow: "Start a project · 2026",
-  h1a: "Tell us what you",
-  h1b: "are building.",
+  eyebrow: "Write to the studio",
+  h1a: "Write to",
+  h1b: "the studio.",
   lead:
-    "If the project has atmosphere, ambition or cultural weight, we want to understand it. XNLAB takes four to six engagements each year. Every one is selected, scoped and quoted with care — and a small number of 2026 slots remain.",
+    "We respond personally to every message that fits. One place remains for Cycle MMXXVI.",
   fields: {
     name: "Name",
     email: "Email",
-    brand: "Brand / Project",
-    website: "Website or Instagram",
-    world: "Industry",
-    projectType: "Project type",
-    timeline: "Timeline",
-    budget: "Engagement intensity",
-    msg: "Tell us more",
+    brand: "Company · brand · project",
+    room: "Where you reach your customer today (in a sentence)",
+    msg: "What you're trying to do",
+    when: "When you'd like to begin",
+    scaleLabel: "Scale of the brand",
+    scaleHint: "Optional. Helps us read the message with the right weight.",
+    scaleOptions: [
+      "Under 1M customers",
+      "1–10M customers",
+      "10–100M customers",
+      "100M+ customers",
+      "Enterprise · B2B at scale",
+    ],
   },
-  worlds: [
-    "Hospitality & Experience",
-    "Nightlife & Cultural Events",
-    "Luxury & Lifestyle Brands",
-    "Architecture & Spatial Design",
-    "Music & Cultural Artists",
-    "Cultural & Digital Worlds",
-    "Wellness",
-    "Other",
-  ],
-  projectTypes: [
-    "Campaign System",
-    "Digital Atmosphere",
-    "Brand World",
-    "Visual Engine",
-    "SEO & Conversion Layer",
-    "Perception Upgrade Sprint",
-    "Not sure yet",
-  ],
-  timelines: [
-    "Within 1 month",
-    "1–3 months",
-    "3–6 months",
-    "6+ months",
-    "Flexible / Exploratory",
-  ],
-  budgets: [
-    "Surgical layer · single intervention",
-    "Focused launch · single campaign",
-    "Cinematic surface · single page",
-    "Complete world · full system",
-    "Continuous direction · monthly engagement",
-    "Bespoke · beyond scope, let's talk",
-    "Not sure yet",
-  ],
-  submit: "Send project request",
-  sending: "Transmitting…",
+  submit: "Send to the studio",
+  sending: "Sending…",
   privacy:
-    "Every request is read by the studio. We respond when there is a real fit. studio@xnlab.io.",
-  okSent: "Your request has entered the lab. We will review the project and respond if there is a fit.",
+    "Every message is read by the studio. studio@xnlab.io is open in parallel.",
+  okSent: "Received. A confirmation is on its way to your inbox. The studio replies personally.",
   okMailto: "Email opened — check your mail client.",
   back: "← Home",
-  studioLabel: "Studio",
-  studioInfo: ["By appointment only", "studio@xnlab.io"],
+  admission: {
+    label: "Before you write",
+    cycleLabel: "Cycle MMXXVI",
+    cycleWindow: "January — 30 June MMXXVI",
+    cycleStatus: "One place remains.",
+    cycleNote:
+      "Cycles close at six brands. We do not stretch the studio to make a seventh fit.",
+    notServedLabel: "We do not work with",
+    notServed: [
+      "Brands whose primary logic is volume or commodity pricing.",
+      "Categories that cannot be addressed in long form — crypto, gambling, fast fashion.",
+      "Briefs framed as RFPs, pitches, or competitive tenders.",
+    ],
+    discoveryLabel: "How an engagement begins",
+    discovery:
+      "Discoveries are extended by the studio, not requested. Forty-five minutes, by invitation, recorded by the studio and never published. If we both recognise the work, a partner-signed proposal follows within seven days.",
+    referral:
+      "Most new conversations arrive through an existing brand — a CEO, a CMO, a founder, a programme director. A line of context — who pointed you, what you have read of ours — helps the studio reply with weight.",
+  },
+  dossier: {
+    eyebrow: "Not ready to write yet",
+    title: "Request the studio dossier.",
+    body: "A short document. How the studio operates, the six surfaces we work across, a ledger of recent engagements. Sent personally by the studio.",
+    cta: "Request the dossier",
+  },
 };
 const es = {
-  eyebrow: "Iniciar un proyecto · 2026",
-  h1a: "Cuéntanos qué",
-  h1b: "estás construyendo.",
+  eyebrow: "Escribe al estudio",
+  h1a: "Escribe al",
+  h1b: "estudio.",
   lead:
-    "Si el proyecto tiene atmósfera, ambición o peso cultural, queremos entenderlo. XNLAB toma de cuatro a seis encargos al año. Cada uno se selecciona, se acota y se cotiza con cuidado — y quedan unos pocos huecos para 2026.",
+    "Respondemos personalmente a cada mensaje que encaja. Queda una plaza para el ciclo MMXXVI.",
   fields: {
     name: "Nombre",
     email: "Email",
-    brand: "Marca / Proyecto",
-    website: "Web o Instagram",
-    world: "Industria",
-    projectType: "Tipo de proyecto",
-    timeline: "Plazo",
-    budget: "Intensidad del encargo",
-    msg: "Cuéntanos más",
+    brand: "Empresa · marca · proyecto",
+    room: "Por dónde llegas hoy a tu cliente (en una frase)",
+    msg: "Qué intentas hacer",
+    when: "Cuándo te gustaría empezar",
+    scaleLabel: "Escala de la marca",
+    scaleHint: "Opcional. Nos ayuda a leer el mensaje con el peso adecuado.",
+    scaleOptions: [
+      "Menos de 1M de clientes",
+      "1–10M de clientes",
+      "10–100M de clientes",
+      "100M+ de clientes",
+      "Enterprise · B2B a escala",
+    ],
   },
-  worlds: [
-    "Hospitality & Experience",
-    "Nightlife & Cultural Events",
-    "Luxury & Lifestyle Brands",
-    "Architecture & Spatial Design",
-    "Music & Cultural Artists",
-    "Cultural & Digital Worlds",
-    "Wellness",
-    "Otro",
-  ],
-  projectTypes: [
-    "Campaign System",
-    "Atmósfera Digital",
-    "Mundo de Marca",
-    "Motor Visual",
-    "SEO y Conversión",
-    "Sprint de Mejora de Percepción",
-    "Aún por definir",
-  ],
-  timelines: [
-    "En menos de 1 mes",
-    "1–3 meses",
-    "3–6 meses",
-    "6+ meses",
-    "Flexible / Exploratorio",
-  ],
-  budgets: [
-    "Capa quirúrgica · intervención puntual",
-    "Lanzamiento enfocado · una campaña",
-    "Superficie cinematográfica · una página",
-    "Mundo completo · sistema integral",
-    "Dirección continua · encargo mensual",
-    "Hecho a medida · más allá del alcance",
-    "Aún por definir",
-  ],
-  submit: "Enviar solicitud",
+  submit: "Enviar al estudio",
   sending: "Enviando…",
   privacy:
-    "Cada solicitud la lee el estudio. Respondemos cuando hay un encaje real. studio@xnlab.io.",
-  okSent: "Tu solicitud ha entrado en el laboratorio. Revisaremos el proyecto y responderemos si hay un encaje.",
+    "Cada mensaje lo lee el estudio. studio@xnlab.io permanece abierto en paralelo.",
+  okSent: "Recibido. Te llega una confirmación al inbox. El estudio responde en persona.",
   okMailto: "Email abierto — revisa tu cliente de correo.",
   back: "← Inicio",
-  studioLabel: "Estudio",
-  studioInfo: ["Solo con cita previa", "studio@xnlab.io"],
+  admission: {
+    label: "Antes de escribir",
+    cycleLabel: "Ciclo MMXXVI",
+    cycleWindow: "Enero — 30 de junio MMXXVI",
+    cycleStatus: "Queda una plaza.",
+    cycleNote:
+      "Los ciclos cierran a seis marcas. No estiramos el estudio para que entre una séptima.",
+    notServedLabel: "No trabajamos con",
+    notServed: [
+      "Marcas cuya lógica principal es el volumen o el precio commodity.",
+      "Categorías que no pueden dirigirse en formato largo — cripto, juego online, fast fashion.",
+      "Encargos planteados como RFPs, pitches o concursos.",
+    ],
+    discoveryLabel: "Cómo se abre un encargo",
+    discovery:
+      "El discovery lo extiende el estudio, no se solicita. Cuarenta y cinco minutos, por invitación, grabado por el estudio y nunca publicado. Si los dos reconocemos el trabajo, llega una propuesta firmada por un socio en siete días.",
+    referral:
+      "La mayoría de conversaciones nuevas llegan por recomendación de una marca activa — un CEO, un CMO, un fundador, un director de programa. Una línea de contexto — quién te apuntó, qué has leído nuestro — ayuda al estudio a responder con peso.",
+  },
+  dossier: {
+    eyebrow: "Aún no es momento de escribir",
+    title: "Pide el dossier del estudio.",
+    body: "Un documento corto. Cómo opera el estudio, las seis superficies en las que trabajamos, un registro de los encargos recientes. Lo envía el estudio en persona.",
+    cta: "Pedir el dossier",
+  },
 };
 
 type FormState = {
   name: string;
   email: string;
   brand: string;
-  website: string;
-  world: string;
-  projectType: string;
-  timeline: string;
-  budget: string;
+  room: string;
   msg: string;
+  when: string;
+  scale: string;
 };
 
 const empty: FormState = {
   name: "",
   email: "",
   brand: "",
-  website: "",
-  world: "",
-  projectType: "",
-  timeline: "",
-  budget: "",
+  room: "",
   msg: "",
+  when: "",
+  scale: "",
 };
 
 function buildMailto(f: FormState) {
-  const subject = `XNLAB Application — ${f.world || "General"} — ${f.name || "Unknown"}`;
+  const subject = `XNLAB — ${f.brand || f.name || "Enquiry"}`;
   const lines = [
     `Name: ${f.name}`,
     `Email: ${f.email}`,
-    f.brand ? `Brand / Project: ${f.brand}` : null,
-    f.website ? `Website / Instagram: ${f.website}` : null,
-    `Industry: ${f.world || "—"}`,
-    f.projectType ? `Project type: ${f.projectType}` : null,
-    f.timeline ? `Timeline: ${f.timeline}` : null,
-    f.budget ? `Engagement intensity: ${f.budget}` : null,
+    f.brand ? `Company / brand / project: ${f.brand}` : null,
+    f.room ? `Where they reach the customer: ${f.room}` : null,
+    f.scale ? `Scale: ${f.scale}` : null,
+    f.when ? `Timeline: ${f.when}` : null,
     "",
     f.msg,
   ].filter(Boolean) as string[];
@@ -208,15 +190,17 @@ export default function Contact() {
   const [gotcha, setGotcha] = useState("");
   const [sentMode, setSentMode] = useState<null | "sent" | "mailto">(null);
   const [sending, setSending] = useState(false);
-  const upd = (k: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+  const upd =
+    (k: keyof FormState) =>
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+      setForm((f) => ({ ...f, [k]: e.target.value }));
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.email || !form.msg || sending) return;
     setSending(true);
     try {
-      const result = await sendContactEmail({ ...form, _gotcha: gotcha });
+      const result = await sendContactEmail({ ...form, lang, _gotcha: gotcha });
       if (result.ok) {
         setSentMode("sent");
         return;
@@ -238,7 +222,7 @@ export default function Contact() {
       style={{
         minHeight: "100vh",
         overflowX: "hidden",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
       }}
@@ -282,6 +266,7 @@ export default function Contact() {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{
               display: "flex",
               alignItems: "center",
@@ -306,7 +291,7 @@ export default function Contact() {
         style={{
           position: "relative",
           padding: "clamp(140px,18vh,200px) clamp(24px,7vw,96px) clamp(48px,7vw,96px)",
-          maxWidth: 1120,
+          maxWidth: 880,
           margin: "0 auto",
         }}
       >
@@ -314,9 +299,9 @@ export default function Contact() {
         <p style={{ ...labelStyle, marginBottom: 28, position: "relative", zIndex: 5 }}>{t.eyebrow}</p>
         <h1
           style={{
-            fontSize: "clamp(2.6rem,7vw,7rem)",
+            fontSize: "clamp(2.6rem,7vw,6.4rem)",
             fontWeight: 400,
-            lineHeight: 0.92,
+            lineHeight: 0.94,
             letterSpacing: "-0.055em",
             textShadow: tsS,
             position: "relative",
@@ -327,12 +312,12 @@ export default function Contact() {
             gap: 0,
           }}
         >
-          <W text={t.h1a} delay={0} />
+          <span>{t.h1a}</span>
           <span style={{ fontFamily: serif, fontStyle: "italic", color: "rgba(255,255,255,0.7)", fontSize: "1.18em" }}>
-            <W text={t.h1b} delay={0.12} />
+            {t.h1b}
           </span>
         </h1>
-        <R delay={0.3}>
+        <R delay={0.2}>
           <p
             style={{
               marginTop: "clamp(28px,3.5vw,44px)",
@@ -340,7 +325,7 @@ export default function Contact() {
               lineHeight: 1.72,
               color: "rgba(255,255,255,0.7)",
               fontWeight: 300,
-              maxWidth: 700,
+              maxWidth: 620,
               textShadow: ts,
             }}
           >
@@ -349,21 +334,242 @@ export default function Contact() {
         </R>
       </section>
 
+      {/* ADMISSION — what high-end firms hand a prospect before letting
+          them write the first line. Cycle window with explicit
+          remaining capacity (real scarcity), sectors not served
+          (selectivity by exclusion is a stronger signal than a list of
+          what we do), and the discovery protocol. Sits between the
+          lead and the form so the visitor reads the conditions before
+          deciding whether they qualify. */}
+      <section
+        aria-labelledby="admission-heading"
+        style={{
+          padding: "0 clamp(24px,7vw,96px) clamp(40px,5vw,72px)",
+          maxWidth: 1080,
+          margin: "0 auto",
+        }}
+      >
+        <R delay={0.28}>
+          <div
+            style={{
+              position: "relative",
+              padding: "clamp(28px,3.4vw,44px) clamp(24px,3vw,40px)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              background:
+                "linear-gradient(180deg, rgba(232,183,131,0.025) 0%, rgba(4,3,2,0.4) 100%)",
+            }}
+          >
+            <h2
+              id="admission-heading"
+              style={{
+                fontSize: 10,
+                fontWeight: 500,
+                letterSpacing: "0.42em",
+                textTransform: "uppercase",
+                color: "rgba(232,183,131,0.78)",
+                margin: 0,
+                marginBottom: "clamp(20px,2.4vw,32px)",
+              }}
+            >
+              {t.admission.label}
+            </h2>
+
+            <div
+              className="grid-cols-1 md:grid-cols-[1fr_1.2fr]"
+              style={{
+                display: "grid",
+                gap: "clamp(24px,3vw,44px)",
+                alignItems: "start",
+              }}
+            >
+              {/* Cycle status block — same vocabulary as the Standing
+                  panel on the home, so a returning visitor sees the
+                  same studio they read about. */}
+              <div>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    marginBottom: 12,
+                  }}
+                >
+                  <motion.span
+                    aria-hidden
+                    animate={{ opacity: [0.45, 1, 0.45], scale: [1, 1.25, 1] }}
+                    transition={{ duration: 3.6, ease: "easeInOut", repeat: Infinity }}
+                    style={{
+                      width: 7,
+                      height: 7,
+                      borderRadius: "50%",
+                      background: "#e8b783",
+                      boxShadow: "0 0 12px 1px rgba(232,183,131,0.65)",
+                      display: "inline-block",
+                    }}
+                  />
+                  <span
+                    style={{
+                      ...labelStyle,
+                      color: "rgba(232,183,131,0.9)",
+                      marginBottom: 0,
+                    }}
+                  >
+                    {t.admission.cycleLabel}
+                  </span>
+                </div>
+                <p
+                  style={{
+                    fontFamily: serif,
+                    fontStyle: "italic",
+                    fontSize: "clamp(1.5rem,2.4vw,2.2rem)",
+                    fontWeight: 400,
+                    lineHeight: 1.05,
+                    letterSpacing: "-0.01em",
+                    color: "white",
+                    margin: "0 0 4px",
+                    textShadow: tsS,
+                  }}
+                >
+                  {t.admission.cycleStatus}
+                </p>
+                <p
+                  style={{
+                    fontSize: "clamp(0.88rem,1.05vw,1rem)",
+                    lineHeight: 1.65,
+                    color: "rgba(255,255,255,0.55)",
+                    fontWeight: 300,
+                    margin: "0 0 18px",
+                  }}
+                >
+                  {t.admission.cycleWindow}
+                </p>
+                {/* Capacity meter — 5/6 filled, mirrors Standing */}
+                <div
+                  aria-label={lang === "en" ? "Five of six places taken" : "Cinco de seis plazas ocupadas"}
+                  role="img"
+                  style={{ display: "flex", gap: 6, marginBottom: 16 }}
+                >
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <span
+                      key={i}
+                      aria-hidden
+                      style={{
+                        flex: 1,
+                        height: 4,
+                        background:
+                          i < 5
+                            ? "rgba(232,183,131,0.7)"
+                            : "rgba(255,255,255,0.08)",
+                        boxShadow:
+                          i < 5 ? "0 0 8px rgba(232,183,131,0.45)" : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+                <p
+                  style={{
+                    fontSize: 11,
+                    lineHeight: 1.7,
+                    color: "rgba(255,255,255,0.5)",
+                    fontWeight: 300,
+                    margin: 0,
+                  }}
+                >
+                  {t.admission.cycleNote}
+                </p>
+              </div>
+
+              {/* Conditions block — sectors not served + discovery. The
+                  exclusion list is the single most expensive piece of
+                  copy on the page. */}
+              <div>
+                <p style={{ ...labelStyle, marginBottom: 12 }}>
+                  {t.admission.notServedLabel}
+                </p>
+                <ul
+                  style={{
+                    listStyle: "none",
+                    padding: 0,
+                    margin: 0,
+                    marginBottom: "clamp(22px,2.6vw,32px)",
+                  }}
+                >
+                  {t.admission.notServed.map((line, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        position: "relative",
+                        padding: "8px 0 8px 22px",
+                        fontSize: "clamp(0.9rem,1.1vw,1.02rem)",
+                        lineHeight: 1.6,
+                        color: "rgba(255,255,255,0.78)",
+                        fontWeight: 300,
+                        borderTop:
+                          i === 0
+                            ? "1px solid rgba(255,255,255,0.05)"
+                            : "none",
+                        borderBottom: "1px solid rgba(255,255,255,0.05)",
+                      }}
+                    >
+                      <span
+                        aria-hidden
+                        style={{
+                          position: "absolute",
+                          left: 0,
+                          top: "calc(50% - 0.5px)",
+                          width: 12,
+                          height: 1,
+                          background: "rgba(232,183,131,0.55)",
+                        }}
+                      />
+                      {line}
+                    </li>
+                  ))}
+                </ul>
+
+                <p style={{ ...labelStyle, marginBottom: 8 }}>
+                  {t.admission.discoveryLabel}
+                </p>
+                <p
+                  style={{
+                    fontSize: "clamp(0.92rem,1.1vw,1.04rem)",
+                    lineHeight: 1.72,
+                    color: "rgba(255,255,255,0.72)",
+                    fontWeight: 300,
+                    margin: "0 0 14px",
+                  }}
+                >
+                  {t.admission.discovery}
+                </p>
+                <p
+                  style={{
+                    fontFamily: serif,
+                    fontStyle: "italic",
+                    fontSize: "clamp(0.95rem,1.12vw,1.08rem)",
+                    lineHeight: 1.6,
+                    color: "rgba(255,255,255,0.55)",
+                    margin: 0,
+                  }}
+                >
+                  {t.admission.referral}
+                </p>
+              </div>
+            </div>
+          </div>
+        </R>
+      </section>
+
       <section
         style={{
           padding: "0 clamp(24px,7vw,96px) clamp(80px,10vw,140px)",
-          maxWidth: 1120,
+          maxWidth: 880,
           margin: "0 auto",
-          display: "grid",
-          gap: "clamp(48px,6vw,96px)",
         }}
       >
         <form onSubmit={onSubmit} noValidate style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }}>
           <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
             <R>
-              <label style={labelStyle} htmlFor="name">
-                {t.fields.name}
-              </label>
+              <label style={labelStyle} htmlFor="name">{t.fields.name}</label>
               <input
                 id="name"
                 name="name"
@@ -377,9 +583,7 @@ export default function Contact() {
               />
             </R>
             <R delay={0.05}>
-              <label style={labelStyle} htmlFor="email">
-                {t.fields.email}
-              </label>
+              <label style={labelStyle} htmlFor="email">{t.fields.email}</label>
               <input
                 id="email"
                 name="email"
@@ -395,166 +599,35 @@ export default function Contact() {
             </R>
           </div>
 
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
-            <R delay={0.1}>
-              <label style={labelStyle} htmlFor="brand">
-                {t.fields.brand}
-              </label>
-              <input
-                id="brand"
-                name="brand"
-                value={form.brand}
-                onChange={upd("brand")}
-                autoComplete="organization"
-                style={fieldStyle}
-                onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
-                onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
-              />
-            </R>
-            <R delay={0.11}>
-              <label style={labelStyle} htmlFor="website">
-                {t.fields.website}
-              </label>
-              <input
-                id="website"
-                name="website"
-                value={form.website}
-                onChange={upd("website")}
-                autoComplete="url"
-                placeholder="@username · website.com"
-                style={fieldStyle}
-                onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
-                onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
-              />
-            </R>
-          </div>
+          <R delay={0.1}>
+            <label style={labelStyle} htmlFor="brand">{t.fields.brand}</label>
+            <input
+              id="brand"
+              name="brand"
+              value={form.brand}
+              onChange={upd("brand")}
+              autoComplete="organization"
+              style={fieldStyle}
+              onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+              onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+            />
+          </R>
 
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
-            <R delay={0.12}>
-              <label style={labelStyle} htmlFor="world">
-                {t.fields.world}
-              </label>
-              <select
-                id="world"
-                name="world"
-                value={form.world}
-                onChange={upd("world")}
-                style={{
-                  ...fieldStyle,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  MozAppearance: "none",
-                  cursor: "pointer",
-                  backgroundImage:
-                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
-                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
-                  backgroundSize: "6px 6px",
-                  backgroundRepeat: "no-repeat",
-                  color: form.world ? "white" : "rgba(255,255,255,0.45)",
-                }}
-              >
-                <option value="" style={{ background: "#060606" }}>—</option>
-                {t.worlds.map((opt) => (
-                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
-                ))}
-              </select>
-            </R>
-            <R delay={0.13}>
-              <label style={labelStyle} htmlFor="budget">
-                {t.fields.budget}
-              </label>
-              <select
-                id="budget"
-                name="budget"
-                value={form.budget}
-                onChange={upd("budget")}
-                style={{
-                  ...fieldStyle,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  MozAppearance: "none",
-                  cursor: "pointer",
-                  backgroundImage:
-                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
-                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
-                  backgroundSize: "6px 6px",
-                  backgroundRepeat: "no-repeat",
-                  color: form.budget ? "white" : "rgba(255,255,255,0.45)",
-                }}
-              >
-                <option value="" style={{ background: "#060606" }}>—</option>
-                {t.budgets.map((opt) => (
-                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
-                ))}
-              </select>
-            </R>
-          </div>
-
-          <div style={{ display: "grid", gap: "clamp(28px,3vw,40px)" }} className="grid-cols-1 md:grid-cols-2">
-            <R delay={0.135}>
-              <label style={labelStyle} htmlFor="projectType">
-                {t.fields.projectType}
-              </label>
-              <select
-                id="projectType"
-                name="projectType"
-                value={form.projectType}
-                onChange={upd("projectType")}
-                style={{
-                  ...fieldStyle,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  MozAppearance: "none",
-                  cursor: "pointer",
-                  backgroundImage:
-                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
-                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
-                  backgroundSize: "6px 6px",
-                  backgroundRepeat: "no-repeat",
-                  color: form.projectType ? "white" : "rgba(255,255,255,0.45)",
-                }}
-              >
-                <option value="" style={{ background: "#060606" }}>—</option>
-                {t.projectTypes.map((opt) => (
-                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
-                ))}
-              </select>
-            </R>
-            <R delay={0.138}>
-              <label style={labelStyle} htmlFor="timeline">
-                {t.fields.timeline}
-              </label>
-              <select
-                id="timeline"
-                name="timeline"
-                value={form.timeline}
-                onChange={upd("timeline")}
-                style={{
-                  ...fieldStyle,
-                  appearance: "none",
-                  WebkitAppearance: "none",
-                  MozAppearance: "none",
-                  cursor: "pointer",
-                  backgroundImage:
-                    "linear-gradient(45deg,transparent 50%,rgba(255,255,255,0.5) 50%),linear-gradient(135deg,rgba(255,255,255,0.5) 50%,transparent 50%)",
-                  backgroundPosition: "calc(100% - 14px) 22px, calc(100% - 8px) 22px",
-                  backgroundSize: "6px 6px",
-                  backgroundRepeat: "no-repeat",
-                  color: form.timeline ? "white" : "rgba(255,255,255,0.45)",
-                }}
-              >
-                <option value="" style={{ background: "#060606" }}>—</option>
-                {t.timelines.map((opt) => (
-                  <option key={opt} value={opt} style={{ background: "#060606" }}>{opt}</option>
-                ))}
-              </select>
-            </R>
-          </div>
+          <R delay={0.12}>
+            <label style={labelStyle} htmlFor="room">{t.fields.room}</label>
+            <input
+              id="room"
+              name="room"
+              value={form.room}
+              onChange={upd("room")}
+              style={fieldStyle}
+              onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+              onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+            />
+          </R>
 
           <R delay={0.14}>
-            <label style={labelStyle} htmlFor="msg">
-              {t.fields.msg}
-            </label>
+            <label style={labelStyle} htmlFor="msg">{t.fields.msg}</label>
             <textarea
               id="msg"
               name="msg"
@@ -568,33 +641,116 @@ export default function Contact() {
             />
           </R>
 
+          <R delay={0.16}>
+            <label style={labelStyle} htmlFor="when">{t.fields.when}</label>
+            <input
+              id="when"
+              name="when"
+              value={form.when}
+              onChange={upd("when")}
+              style={fieldStyle}
+              onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.7)")}
+              onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.18)")}
+            />
+          </R>
+
+          {/* Scale — optional. Five pill toggles. Lets the studio read
+              the message with the right weight without ever asking for
+              a budget. Empty default; the lead does not have to commit. */}
           <R delay={0.18}>
+            <fieldset style={{ border: "none", padding: 0, margin: 0 }}>
+              <legend style={{ ...labelStyle, marginBottom: 14 }}>{t.fields.scaleLabel}</legend>
+              <div
+                role="radiogroup"
+                aria-label={t.fields.scaleLabel}
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "8px 10px",
+                  marginTop: 4,
+                }}
+              >
+                {t.fields.scaleOptions.map((opt) => {
+                  const active = form.scale === opt;
+                  return (
+                    <label
+                      key={opt}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        padding: "0.55rem 0.95rem",
+                        fontSize: "clamp(11px,0.85vw,12.5px)",
+                        fontWeight: 400,
+                        letterSpacing: "0.02em",
+                        color: active ? "white" : "rgba(255,255,255,0.62)",
+                        background: active ? "rgba(232,183,131,0.16)" : "transparent",
+                        border: `1px solid ${active ? "rgba(232,183,131,0.6)" : "rgba(255,255,255,0.14)"}`,
+                        borderRadius: 100,
+                        cursor: "pointer",
+                        transition: "background 0.3s, border-color 0.3s, color 0.3s",
+                      }}
+                    >
+                      <input
+                        type="radio"
+                        name="scale"
+                        value={opt}
+                        checked={active}
+                        onChange={() => setForm((f) => ({ ...f, scale: opt }))}
+                        style={{
+                          position: "absolute",
+                          width: 1,
+                          height: 1,
+                          padding: 0,
+                          margin: -1,
+                          overflow: "hidden",
+                          clip: "rect(0,0,0,0)",
+                          whiteSpace: "nowrap",
+                          border: 0,
+                        }}
+                      />
+                      {opt}
+                    </label>
+                  );
+                })}
+              </div>
+              <p
+                style={{
+                  marginTop: 12,
+                  fontSize: 11,
+                  lineHeight: 1.6,
+                  color: "rgba(255,255,255,0.38)",
+                }}
+              >
+                {t.fields.scaleHint}
+              </p>
+            </fieldset>
+          </R>
+
+          <R delay={0.22}>
             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "clamp(20px,3vw,40px)", justifyContent: "space-between" }}>
               <p style={{ fontSize: 11, lineHeight: 1.7, color: "rgba(255,255,255,0.42)", maxWidth: 480 }}>{t.privacy}</p>
-              <Magnetic>
-                <motion.button
-                  type="submit"
-                  disabled={sending || sentMode !== null}
-                  whileTap={{ scale: 0.98 }}
-                  style={{
-                    padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
-                    fontSize: "clamp(10px,0.85vw,12px)",
-                    fontWeight: 500,
-                    letterSpacing: "0.28em",
-                    textTransform: "uppercase",
-                    color: "#060606",
-                    background: "white",
-                    border: "none",
-                    borderRadius: 100,
-                    cursor: sending || sentMode !== null ? "not-allowed" : "pointer",
-                    whiteSpace: "nowrap",
-                    opacity: sending || sentMode !== null ? 0.7 : 1,
-                    transition: "opacity 0.3s",
-                  }}
-                >
-                  {sending ? t.sending : t.submit}
-                </motion.button>
-              </Magnetic>
+              <motion.button
+                type="submit"
+                disabled={sending || sentMode !== null}
+                whileTap={{ scale: 0.98 }}
+                style={{
+                  padding: "0.95rem clamp(1.4rem,3vw,2.6rem)",
+                  fontSize: "clamp(10px,0.85vw,12px)",
+                  fontWeight: 500,
+                  letterSpacing: "0.28em",
+                  textTransform: "uppercase",
+                  color: "#060606",
+                  background: "white",
+                  border: "none",
+                  borderRadius: 100,
+                  cursor: sending || sentMode !== null ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                  opacity: sending || sentMode !== null ? 0.7 : 1,
+                  transition: "opacity 0.3s",
+                }}
+              >
+                {sending ? t.sending : t.submit}
+              </motion.button>
             </div>
           </R>
 
@@ -614,6 +770,8 @@ export default function Contact() {
 
           {sentMode !== null && (
             <motion.p
+              role="status"
+              aria-live="polite"
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5 }}
@@ -628,57 +786,124 @@ export default function Contact() {
             </motion.p>
           )}
         </form>
+      </section>
 
-        <R delay={0.05}>
+      {/* Dossier — second funnel entry. For visitors not ready to write
+          a full message, a one-click mailto requesting the studio's
+          dossier. Doubles top-of-funnel without diluting the form. */}
+      <section
+        aria-labelledby="dossier-heading"
+        style={{
+          padding: "clamp(28px,3.4vw,48px) clamp(24px,7vw,96px) clamp(36px,4.4vw,64px)",
+          maxWidth: 1080,
+          margin: "0 auto",
+        }}
+      >
+        <R>
           <div
             style={{
+              position: "relative",
+              padding: "clamp(28px,3.4vw,44px) clamp(24px,3vw,40px)",
+              border: "1px solid rgba(255,255,255,0.07)",
+              background:
+                "linear-gradient(180deg, rgba(232,183,131,0.018) 0%, rgba(4,3,2,0.4) 100%)",
               display: "grid",
-              gap: "clamp(24px,3vw,40px)",
-              paddingTop: "clamp(48px,6vw,80px)",
-              borderTop: "1px solid rgba(255,255,255,0.06)",
+              gap: "clamp(20px,2.4vw,32px)",
+              alignItems: "center",
             }}
-            className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]"
+            className="grid-cols-1 md:grid-cols-[1.4fr_auto]"
           >
-            <p style={labelStyle}>{t.studioLabel}</p>
             <div>
-              {t.studioInfo.map((line, i) => {
-                const isEmail = line.includes("@");
-                return isEmail ? (
-                  <a
-                    key={i}
-                    href={`mailto:${line}`}
-                    style={{
-                      display: "block",
-                      fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
-                      lineHeight: 2,
-                      color: "rgba(255,255,255,0.78)",
-                      textDecoration: "none",
-                      fontWeight: 300,
-                      transition: "color 0.3s",
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.78)")}
-                  >
-                    {line}
-                  </a>
-                ) : (
-                  <p
-                    key={i}
-                    style={{
-                      fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
-                      lineHeight: 2,
-                      color: "rgba(255,255,255,0.55)",
-                      fontWeight: 300,
-                    }}
-                  >
-                    {line}
-                  </p>
-                );
-              })}
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.42em",
+                  textTransform: "uppercase",
+                  color: "rgba(232,183,131,0.78)",
+                  margin: 0,
+                  marginBottom: 12,
+                }}
+              >
+                {t.dossier.eyebrow}
+              </p>
+              <h2
+                id="dossier-heading"
+                style={{
+                  margin: 0,
+                  fontFamily: serif,
+                  fontStyle: "italic",
+                  fontSize: "clamp(1.5rem,2.4vw,2.2rem)",
+                  fontWeight: 400,
+                  lineHeight: 1.1,
+                  letterSpacing: "-0.01em",
+                  color: "white",
+                  textShadow: tsS,
+                }}
+              >
+                {t.dossier.title}
+              </h2>
+              <p
+                style={{
+                  marginTop: 14,
+                  fontSize: "clamp(0.94rem,1.1vw,1.04rem)",
+                  lineHeight: 1.7,
+                  color: "rgba(255,255,255,0.66)",
+                  fontWeight: 300,
+                  maxWidth: 620,
+                }}
+              >
+                {t.dossier.body}
+              </p>
             </div>
+            <Link
+              href="/dossier"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "0.85rem 1.6rem",
+                fontSize: "clamp(10px,0.85vw,12px)",
+                fontWeight: 500,
+                letterSpacing: "0.28em",
+                textTransform: "uppercase",
+                color: "rgba(232,183,131,0.92)",
+                textDecoration: "none",
+                border: "1px solid rgba(232,183,131,0.5)",
+                background: "rgba(232,183,131,0.04)",
+                borderRadius: 999,
+                whiteSpace: "nowrap",
+                transition: "background 0.45s, border-color 0.45s, color 0.45s",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "rgba(232,183,131,0.18)";
+                e.currentTarget.style.borderColor = "rgba(232,183,131,0.85)";
+                e.currentTarget.style.color = "white";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "rgba(232,183,131,0.04)";
+                e.currentTarget.style.borderColor = "rgba(232,183,131,0.5)";
+                e.currentTarget.style.color = "rgba(232,183,131,0.92)";
+              }}
+              onFocus={(e) => {
+                e.currentTarget.style.background = "rgba(232,183,131,0.18)";
+                e.currentTarget.style.borderColor = "rgba(232,183,131,0.85)";
+                e.currentTarget.style.color = "white";
+              }}
+              onBlur={(e) => {
+                e.currentTarget.style.background = "rgba(232,183,131,0.04)";
+                e.currentTarget.style.borderColor = "rgba(232,183,131,0.5)";
+                e.currentTarget.style.color = "rgba(232,183,131,0.92)";
+              }}
+            >
+              {t.dossier.cta}
+              <span aria-hidden style={{ fontSize: 14 }}>→</span>
+            </Link>
           </div>
         </R>
       </section>
+
+      <OtherCorners lang={lang} exclude="contact" />
     </main>
   );
 }

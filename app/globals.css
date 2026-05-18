@@ -12,6 +12,11 @@ body {
 
 * {
   box-sizing: border-box;
+  /* Kill the default iOS / Android grey tap rectangle on every
+     interactive element. Premium sites never show this; the focus-visible
+     amber outline below carries keyboard feedback, and the per-component
+     hover/focus handlers carry touch feedback editorially. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Smarter line breaks on headings (Safari 17.4+, Chrome 114+, Firefox 121+) */

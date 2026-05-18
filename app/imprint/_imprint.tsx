@@ -12,8 +12,16 @@ const en = {
     {
       label: "Studio",
       rows: [
-        ["Legal name", "Xnlab Studio"],
-        ["Public mark", "XNLAB"],
+        ["Commercial mark", "Xnlab Studio"],
+        ["Wordmark", "XNLAB"],
+        ["Practice founded", "MMXXII"],
+        ["Offices", "Marbella · Madrid"],
+        ["Operating range", "Europe · MENA"],
+        ["Languages", "EN · ES · FR · AR"],
+        ["Currencies", "EUR · USD · GBP · AED"],
+        ["Current cycle", "MMXXVI · January — June · One place remains"],
+        ["Discovery", "Forty-five minutes · by invitation"],
+        ["Accountability", "Partner-signed · single point"],
         ["Contact", "studio@xnlab.io"],
         ["Availability", "By appointment only"],
       ],
@@ -47,6 +55,8 @@ const en = {
   privacy: [
     "We use Vercel Analytics — anonymous, cookieless, GDPR-friendly. No third-party trackers, no advertising pixels, no profile building.",
     "Our contact form delivers your message directly to studio@xnlab.io. We never share your details and do not use them for anything else.",
+    "Legal basis for processing is your consent, given when you submit the form. Messages are kept only as long as needed to attend the enquiry — typically until the project closes or you ask us to delete them. Hosting is provided by Vercel (USA, EU–US Data Privacy Framework); transactional email by Resend (USA, same framework). No other processors involved.",
+    "You may request access, rectification, deletion, restriction, portability or object to the processing of your data at studio@xnlab.io. You also have the right to complain to the Spanish Data Protection Agency (AEPD) at aepd.es.",
   ],
   termsLabel: "Use",
   terms: [
@@ -66,8 +76,16 @@ const es = {
     {
       label: "Estudio",
       rows: [
-        ["Nombre legal", "Xnlab Studio"],
-        ["Marca pública", "XNLAB"],
+        ["Marca comercial", "Xnlab Studio"],
+        ["Logotipo", "XNLAB"],
+        ["Práctica fundada", "MMXXII"],
+        ["Sedes", "Marbella · Madrid"],
+        ["Radio operativo", "Europa · MENA"],
+        ["Idiomas", "ES · EN · FR · AR"],
+        ["Divisas", "EUR · USD · GBP · AED"],
+        ["Ciclo actual", "MMXXVI · enero — junio · Queda una plaza"],
+        ["Discovery", "Cuarenta y cinco minutos · por invitación"],
+        ["Responsabilidad", "Firmado por un socio · punto único"],
         ["Contacto", "studio@xnlab.io"],
         ["Disponibilidad", "Solo con cita previa"],
       ],
@@ -99,8 +117,10 @@ const es = {
   ],
   privacyLabel: "Privacidad",
   privacy: [
-    "Usamos Vercel Analytics — anónimo, sin cookies, compatible con GDPR. Sin rastreadores de terceros, sin píxeles publicitarios, sin construcción de perfiles.",
+    "Usamos Vercel Analytics — anónimo, sin cookies, compatible con RGPD. Sin rastreadores de terceros, sin píxeles publicitarios, sin construcción de perfiles.",
     "Nuestro formulario de contacto entrega tu mensaje directamente a studio@xnlab.io. No compartimos tus datos ni los usamos para nada más.",
+    "La base legal del tratamiento es tu consentimiento, otorgado al enviar el formulario. Los mensajes se conservan únicamente el tiempo necesario para atender la consulta — habitualmente hasta el cierre del proyecto o hasta que solicites su supresión. El alojamiento lo presta Vercel (EE.UU., Marco de Privacidad de Datos UE–EE.UU.); el envío de correo, Resend (EE.UU., mismo marco). No intervienen otros encargados.",
+    "Puedes solicitar acceso, rectificación, supresión, limitación, portabilidad u oponerte al tratamiento de tus datos en studio@xnlab.io. También puedes presentar reclamación ante la Agencia Española de Protección de Datos (AEPD) en aepd.es.",
   ],
   termsLabel: "Uso",
   terms: [
@@ -168,6 +188,7 @@ export default function Imprint() {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>

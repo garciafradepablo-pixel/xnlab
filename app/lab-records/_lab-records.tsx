@@ -5,13 +5,14 @@ import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { WordmarkLink } from "../_lib/wordmark";
 import { records } from "../_lib/lab-records";
 import { worlds } from "../_lib/worlds";
+import { OtherCorners } from "../_lib/other-corners";
 
 const en = {
   eyebrow: "Lab Records",
   h1a: "Field notes from",
   h1b: "the laboratory.",
-  lead: "Editorial observations on hospitality, luxury, music, architecture and the next decade of cultural identity. Slow reading. Updated when there is something to say.",
-  cta: "Start a project",
+  lead: "Editorial observations on brand, customer and channel — applied across hospitality, retail, product and culture. Slow reading. Updated when there is something to say.",
+  cta: "Write to the studio",
   back: "← Home",
   read: "Read",
 };
@@ -20,8 +21,8 @@ const es = {
   eyebrow: "Lab Records",
   h1a: "Notas de campo",
   h1b: "del laboratorio.",
-  lead: "Observaciones editoriales sobre hospitalidad, lujo, música, arquitectura y la próxima década de los sistemas de identidad cultural. Lectura lenta. Se actualiza cuando hay algo que decir.",
-  cta: "Iniciar un proyecto",
+  lead: "Observaciones editoriales sobre marca, cliente y canal — aplicadas en hostelería, retail, producto y cultura. Lectura lenta. Se actualiza cuando hay algo que decir.",
+  cta: "Escribir al estudio",
   back: "← Inicio",
   read: "Leer",
 };
@@ -51,7 +52,7 @@ export default function LabRecordsIndex() {
       style={{
         minHeight: "100svh",
         overflowX: "hidden",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
         position: "relative",
@@ -87,6 +88,7 @@ export default function LabRecordsIndex() {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>
@@ -223,6 +225,7 @@ export default function LabRecordsIndex() {
           </Link>
         </R>
       </section>
+      <OtherCorners lang={lang} exclude="lab-records" />
     </main>
   );
 }

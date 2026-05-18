@@ -1,12 +1,11 @@
 "use client";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useScroll } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
-import { LuxButton } from "./lux-button";
 import { AtelierStar } from "./ornaments";
 
 type HeroCopy = {
@@ -15,8 +14,6 @@ type HeroCopy = {
   s2: string;
   s3: string;
   s4: string;
-  heroCta1: string;
-  heroCta2: string;
 };
 
 // Six World Cores arranged in a dome above the wordmark. The central
@@ -32,7 +29,7 @@ type HeroCopy = {
 // Sizes and spacing scale with the viewport. The mins were chosen so the
 // outermost orb (mult ±3) fits inside a 375px viewport with breathing
 // room: 3·UNIT + ORB/2 must stay under half-viewport minus padding.
-const ORB_SIZE = "clamp(36px,6.4vw,100px)";
+const ORB_SIZE = "clamp(28px,4.4vw,68px)";
 // dy in viewport-height units so the dome's gentle arc scales with the
 // section height. Same numeric values as before (3.5%, 2%, 0.6%).
 // Each orb carries its own depth profile. The constellation reads as an
@@ -48,8 +45,8 @@ const PLAN = [
   { idx: 4, mult: 2,  dy: 2.6, delay: 1.5,  op: 0.78, sc: 0.92 },
   { idx: 5, mult: 3,  dy: 4.6, delay: 1.55, op: 0.55, sc: 0.82 },
 ];
-const UNIT = "clamp(50px,8.5vw,145px)";
-const CENTRAL_SIZE = "clamp(44px,7.6vw,118px)";
+const UNIT = "clamp(40px,6vw,104px)";
+const CENTRAL_SIZE = "clamp(34px,5.2vw,82px)";
 // Dome top position: a single source of truth that scales with viewport
 // height — header position on mobile (~100px from top), more centred
 // on tall desktops (~260px). Without this, top:14% looked like a header
@@ -72,6 +69,18 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const sphY = useTransform(sy, [-1, 1], [-3, 3]);
   const symX = useTransform(sx, [-1, 1], [-12, 12]);
   const symY = useTransform(sy, [-1, 1], [-8, 8]);
+
+  // Scroll-tied breath for the Atelier sigil that watermarks the hero.
+  // As the visitor scrolls down through the first viewport, the sigil
+  // compresses ~5% and dims slightly — the site is exhaling. As they
+  // scroll back up, it expands again. Bound to the hero section ref so
+  // it only animates while the sigil is on screen.
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: ref,
+    offset: ["start start", "end start"],
+  });
+  const sigilScale = useTransform(heroScroll, [0, 1], [1, 0.95]);
+  const sigilOpacity = useTransform(heroScroll, [0, 0.8], [0.6, 0.18]);
 
   useEffect(() => {
     if (reduced) return;
@@ -222,8 +231,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           top: "50%",
           translateX: "-50%",
           translateY: "-50%",
-          width: "clamp(320px,55vw,680px)",
-          height: "clamp(320px,55vw,680px)",
+          width: "clamp(240px,38vw,460px)",
+          height: "clamp(240px,38vw,460px)",
           pointerEvents: "none",
         }}
         initial={{ opacity: 0, scale: 3.8, filter: "blur(32px)", rotate: -12 }}
@@ -234,9 +243,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           src="/images/hero/03_back_orbits.png"
           alt=""
           fill
-          sizes="(max-width: 768px) 80vw, 55vw"
+          sizes="(max-width: 768px) 60vw, 38vw"
           loading="eager"
-          style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.16 }}
+          style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.06 }}
         />
       </motion.div>
 
@@ -499,11 +508,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       })}
 
       {/* LAYER 2D — Atelier sigil. The four-point star (the same symbol
-          inside the XNLAB mark) sits at the geometric centre of the hero,
-          breathing quietly between the orbital swirl behind it and the
-          wordmark in front of it. Acts as the brand watermark embedded
-          in the atmosphere. zIndex 9 puts it above all background
-          imagery and orbs but below the wordmark and CTAs (10/30). */}
+          inside the XNLAB mark) is pinned to the lower third of the hero,
+          aligned with the CTA height in the previous design so it reads
+          as the signature beneath the wordmark, not as a watermark on it.
+          zIndex 9 puts it above all background imagery and orbs but
+          below the wordmark and CTAs (10/30). */}
       <div
         aria-hidden
         style={{
@@ -511,16 +520,27 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           inset: 0,
           zIndex: 9,
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-end",
           justifyContent: "center",
           pointerEvents: "none",
-          paddingBottom: "clamp(0px, 8svh, 80px)",
+          paddingBottom: "clamp(60px, 11svh, 140px)",
         }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 0.6, scale: 1 }}
           transition={{ duration: 2.2, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          style={{
+            // Scroll-driven breath layered on top of the entry animation.
+            // After mount the entry transition resolves to scale 1 /
+            // opacity 0.6; from there these motion values take over and
+            // bind continuous compression to scroll progress through
+            // the hero. AtelierStar's internal infinite breath keeps
+            // running underneath — the two combine to a living watermark.
+            scale: sigilScale,
+            opacity: sigilOpacity,
+            willChange: "transform, opacity",
+          }}
         >
           <AtelierStar
             size={72}
@@ -565,10 +585,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.p>
         <motion.h1
           style={{
-            fontSize: "clamp(88px,16vw,220px)",
+            fontSize: "clamp(56px,9.6vw,138px)",
             fontWeight: 400,
-            letterSpacing: "-0.04em",
-            lineHeight: 0.86,
+            letterSpacing: "-0.045em",
+            lineHeight: 0.88,
             color: "white",
             textAlign: "center",
             textShadow: "0 2px 60px rgba(0,0,0,0.85)",
@@ -583,20 +603,18 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               engines and read by screen readers as the page's H1. */}
           <span className="sr-only">
             {lang === "en"
-              ? " — Digital Atmosphere Studio for Premium Brands. Creative direction for hospitality, nightlife, architecture, wellness, artists and culture-led brands."
-              : " — Estudio de Atmósfera Digital para Marcas Premium. Dirección creativa para hospitalidad, vida nocturna, arquitectura, wellness, artistas y marcas con voz cultural."}
+              ? " (also XN Lab, XN Studio, XNL, Xnlab Studio; pronounced X-N-Lab, sometimes heard as «x en la app») — Atmosphere systems for brands, customers and channels. Product, owned digital, retail and physical, customer operations, communication and community — the six surfaces where a modern brand reaches its customer. By appointment."
+              : " (también XN Lab, XN Studio, XNL, Xnlab Studio; se pronuncia X-N-Lab, a veces se oye como «x en la app») — Sistemas de atmósfera para marcas, clientes y canales. Producto, digital propio, retail y físico, operaciones de cliente, comunicación y comunidad — las seis superficies por las que una marca moderna llega a su cliente. Solo con cita previa."}
           </span>
         </motion.h1>
       </div>
 
-      {/* LAYER 2C — chrome X behind the wordmark.
-          Position mirrors the wordmark's flex centring: 50% vertical
-          minus half of the wordmark's paddingBottom so the symbol
-          sits on the exact vertical centre of the XNLAB letters at
-          every viewport size. Earlier the symbol was hard-coded to
-          top:62% which drifted away from the wordmark on tall
-          desktop viewports, making the X read as a separate object
-          above the title instead of being woven through it. */}
+      {/* LAYER 2C — chrome X rising from below the hero edge.
+          The symbol's vertical CENTRE sits BELOW the bottom of the
+          hero (negative bottom offset), so only the top arc of the
+          chrome X peeks above the page edge. Reads as a halo rising
+          out of the next section rather than a foreground watermark.
+          Clamp keeps it sensible across viewports. */}
       <motion.div
         style={{
           position: "absolute",
@@ -604,9 +622,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           x: symX,
           y: symY,
           left: "50%",
-          top: "calc(50% - clamp(0px, 4svh, 40px))",
+          bottom: "clamp(-110px, -8vh, -60px)",
           translateX: "-50%",
-          translateY: "-50%",
+          translateY: "50%",
           width: "clamp(180px,32vw,420px)",
           height: "clamp(180px,32vw,420px)",
           pointerEvents: "none",
@@ -668,130 +686,97 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alignItems: "center",
           justifyContent: "flex-end",
           paddingBottom: "clamp(20px,3vh,36px)",
-          gap: "clamp(16px,2.4vh,28px)",
+          gap: "clamp(26px,3.6vh,44px)",
           pointerEvents: "none",
         }}
       >
+        {/* Strapline — the lead phrase + small-caps dek. The two share
+            the same max-width so they read as one block, and the gap
+            between them and the dek's letter-spacing have been opened
+            so the lines never feel pinched between the wordmark above
+            and the CTA below. `text-wrap: balance` evens out line
+            lengths so the dek does not wrap with a lone word at the
+            end. */}
         <motion.div
-          style={{ textAlign: "center", padding: "0 clamp(20px,5vw,48px)" }}
+          style={{
+            textAlign: "center",
+            padding: "0 clamp(20px,5vw,48px)",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: "clamp(14px,1.8vw,22px)",
+          }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.4, delay: 1.95 }}
         >
           <p
             style={{
+              margin: 0,
               fontSize: "clamp(12px,1.05vw,14px)",
-              lineHeight: 1.55,
-              color: "rgba(255,255,255,0.78)",
+              lineHeight: 1.6,
+              color: "rgba(255,255,255,0.82)",
               fontWeight: 300,
               textShadow: tsS,
               letterSpacing: "0.005em",
               maxWidth: "min(620px, 90vw)",
-              margin: "0 auto",
+              textWrap: "balance",
             }}
           >
             {copy.s1} {copy.s2}
           </p>
           <p
             style={{
+              margin: 0,
               fontSize: "clamp(9px,0.78vw,10px)",
-              lineHeight: 1.7,
-              color: "rgba(255,255,255,0.42)",
+              lineHeight: 1.95,
+              color: "rgba(255,255,255,0.48)",
               fontWeight: 500,
-              letterSpacing: "0.28em",
+              letterSpacing: "0.22em",
               textTransform: "uppercase",
-              marginTop: 12,
               textShadow: ts,
-              maxWidth: "min(560px, 90vw)",
-              margin: "12px auto 0",
+              maxWidth: "min(620px, 90vw)",
+              textWrap: "balance",
             }}
           >
             {copy.s3} {copy.s4}
           </p>
-        </motion.div>
-
-        {/* Dual CTA — primary (Start a project) + secondary (Explore worlds).
-            Sits between the strapline and the scroll cue. pointerEvents
-            re-enabled on the wrapping flex container to make them clickable. */}
-        <motion.div
-          style={{
-            display: "flex",
-            flexWrap: "wrap",
-            justifyContent: "center",
-            alignItems: "center",
-            gap: "clamp(10px,1.6vw,18px)",
-            pointerEvents: "auto",
-          }}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 1.2, delay: 2.15, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <LuxButton href="/contact" variant="solid" arrow={false}>
-            {copy.heroCta1}
-          </LuxButton>
-          <LuxButton href="/services" variant="minimal">
-            {copy.heroCta2}
-          </LuxButton>
-        </motion.div>
-
-        {/* Scroll cue — refined.
-            A descending light pulse inside a thin guide line, infinite
-            loop. Reads as a slow film exposure dropping, not a
-            mechanical button. The track stays static; only the lit
-            segment moves, creating the impression of light travelling
-            down into the page. */}
-        <motion.div
-          aria-hidden
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 14,
-          }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1.4, delay: 2.45 }}
-        >
-          <span
+          {/* Scarcity signal — quiet, real, anchored to the studio
+              pulse tooltip. Premium minimalism, not a banner. Amber
+              dot to align with the indicator above. */}
+          <p
             style={{
-              fontSize: 9,
-              letterSpacing: "0.5em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.48)",
+              margin: 0,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 10,
+              fontSize: "clamp(9px,0.78vw,10px)",
+              lineHeight: 1,
+              color: "rgba(232,183,131,0.78)",
               fontWeight: 500,
-              textShadow: "0 1px 10px rgba(0,0,0,0.85)",
-              paddingLeft: "0.5em",
+              letterSpacing: "0.28em",
+              textTransform: "uppercase",
+              textShadow: ts,
             }}
           >
-            Scroll
-          </span>
-          {/* Static track */}
-          <span
-            style={{
-              position: "relative",
-              display: "inline-block",
-              width: 1,
-              height: 42,
-              background: "rgba(255,255,255,0.14)",
-              overflow: "hidden",
-            }}
-          >
-            {/* Travelling light pulse */}
-            <motion.span
+            <span
+              aria-hidden
               style={{
-                position: "absolute",
-                left: 0,
-                width: 1,
-                height: 14,
-                background:
-                  "linear-gradient(to bottom, transparent 0%, rgba(232,183,131,0.95) 50%, transparent 100%)",
-                filter: "drop-shadow(0 0 4px rgba(232,183,131,0.8))",
+                width: 5,
+                height: 5,
+                borderRadius: "50%",
+                background: "#e8b783",
+                boxShadow: "0 0 8px rgba(232,183,131,0.55)",
+                display: "inline-block",
               }}
-              animate={{ top: ["-14px", "42px"] }}
-              transition={{ duration: 2.4, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.4 }}
             />
-          </span>
+            {lang === "en"
+              ? "5 of 6 engaged · One place remains"
+              : "5 de 6 con encargo · Queda una plaza"}
+          </p>
         </motion.div>
+
+
       </div>
 
       <div

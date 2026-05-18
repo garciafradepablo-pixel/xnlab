@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { records, getRecord } from "../../_lib/lab-records";
 import LabRecord from "./_lab-record";
+import { getNonce } from "../../_lib/csp";
 
 export async function generateStaticParams() {
   return records.map((r) => ({ slug: r.slug }));
@@ -68,7 +69,9 @@ export default async function Page({
           url: "https://xnlab.io",
           logo: {
             "@type": "ImageObject",
-            url: "https://xnlab.io/icon.png",
+            url: "https://xnlab.io/icon",
+            width: 512,
+            height: 512,
           },
         },
         mainEntityOfPage: {
@@ -90,9 +93,11 @@ export default async function Page({
     ],
   };
 
+  const nonce = await getNonce();
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />

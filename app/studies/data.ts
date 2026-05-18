@@ -1,6 +1,10 @@
-// Selected Studies — internal XNLAB visual systems.
-// Each entry follows the Problem · Direction · System · Surfaces · Result
-// editorial framework. Slugs become URLs at /work/<slug>.
+// Atelier Studies — internal XNLAB visual systems published while
+// the first wave of client work matures. Each entry follows the
+// Problem · Direction · System · Surfaces · Result editorial framework
+// — the same framework we use in every client engagement.
+// Slugs become URLs at /studies/<slug>.
+
+import type { WorldSlug } from "../_lib/worlds";
 
 export type Discipline =
   | "Hospitality Experience"
@@ -20,6 +24,9 @@ export type Project = {
   number: string;
   title: string;
   discipline: Discipline;
+  // Brand-surface taxonomy (post-pivot) — used to cross-link studies
+  // from world detail pages. Optional so legacy entries don't break.
+  worldSlug?: WorldSlug;
   year: string;
   location: { en: string; es: string };
   hero: string;
@@ -43,6 +50,7 @@ export const projects: Project[] = [
     number: "001",
     title: "Hospitality Atmosphere Study",
     discipline: "Hospitality Experience",
+    worldSlug: "retail-physical",
     year: "2023",
     location: { en: "Studio Study · Internal", es: "Estudio Interno · Borrador" },
     hero: "/images/03_emotional_curtains.jpg",
@@ -99,6 +107,7 @@ export const projects: Project[] = [
     number: "002",
     title: "Nightlife Visual System",
     discipline: "Nightlife & Cultural Events",
+    worldSlug: "communication",
     year: "2024",
     location: { en: "Studio Study · Internal", es: "Estudio Interno · Borrador" },
     hero: "/images/04_sensorium_blue.jpg",
@@ -155,6 +164,7 @@ export const projects: Project[] = [
     number: "003",
     title: "Architectural Identity",
     discipline: "Architecture & Spatial Design",
+    worldSlug: "retail-physical",
     year: "2025",
     location: { en: "Studio Study · Internal", es: "Estudio Interno · Borrador" },
     hero: "/images/07_sculptural_white.jpg",

@@ -1,12 +1,12 @@
 "use client";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { useMounted } from "./atoms";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { AmbientAudio } from "./audio";
 import { WordmarkLink } from "./wordmark";
-import { worlds } from "./worlds";
+import { worlds, type World } from "./worlds";
 import { Orb } from "./orb";
 
 const serif = "var(--font-serif,'Cormorant Garamond',Georgia,serif)";
@@ -16,54 +16,17 @@ type NavLang = "en" | "es";
 type NavCopy = {
   nw: string;
   nse: string;
-  np: string;
   na: string;
 };
 
-type MenuKey = "worlds" | "services" | "process";
-
-const SERVICES = (lang: NavLang): Array<[string, string, string]> =>
-  lang === "en"
-    ? [
-        ["Campaign System", "2–3 weeks", "A focused launch across digital surfaces."],
-        ["Digital Atmosphere", "4–6 weeks", "Cinematic single-page world."],
-        ["Brand World", "8–12 weeks", "Full multi-page system."],
-        ["Visual Engine", "Monthly", "Continuous creative direction."],
-        ["SEO & Conversion Layer", "1–2 weeks", "SEO, structure, analytics, conversion."],
-        ["Perception Upgrade", "2–4 weeks", "Two-to-four-week intensive."],
-      ]
-    : [
-        ["Campaign System", "2–3 semanas", "Lanzamiento puntual en superficies digitales."],
-        ["Atmósfera Digital", "4–6 semanas", "Mundo cinematográfico de una sola página."],
-        ["Mundo de Marca", "8–12 semanas", "Sistema multipágina completo."],
-        ["Motor Visual", "Mensual", "Dirección creativa continua."],
-        ["SEO y Conversión", "1–2 semanas", "SEO, estructura, analítica, conversión."],
-        ["Sprint de Percepción", "2–4 semanas", "Intensivo de dos a cuatro semanas."],
-      ];
-
-const MOVEMENTS = (lang: NavLang): Array<[string, string, string]> =>
-  lang === "en"
-    ? [
-        ["01", "Diagnose", "Name the perception gap."],
-        ["02", "Direct", "Set one single direction."],
-        ["03", "Build", "Identity, copy, motion, code."],
-        ["04", "Activate", "Launch, tune, stay through the first month."],
-      ]
-    : [
-        ["01", "Diagnosticar", "Nombrar el gap de percepción."],
-        ["02", "Dirigir", "Fijar una sola dirección."],
-        ["03", "Construir", "Identidad, redacción, animación, código."],
-        ["04", "Activar", "Lanzar, afinar, quedarse durante el primer mes."],
-      ];
+type MenuKey = "worlds";
 
 export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void; t: NavCopy }) {
   const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState<MenuKey | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useMounted();
 
   useEffect(() => {
     const h = () => setScrolled(window.scrollY > 80);
@@ -82,7 +45,6 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
 
   const items: Array<{ key: MenuKey | "apply"; label: string; href: string; menu: boolean }> = [
     { key: "worlds", label: t.nw, href: "/worlds", menu: true },
-    { key: "services", label: t.nse, href: "/services", menu: true },
     { key: "apply", label: t.na, href: "/contact", menu: false },
   ];
 
@@ -117,18 +79,47 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
           gap: 16,
         }}
       >
-        <WordmarkLink />
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* Studio pulse — small breathing amber dot to the left of
+              the wordmark. A persistent signal that the lab is on
+              right now: not a decorative LED, more like the indicator
+              light on professional studio gear. 3.6s loop, subtle
+              opacity + scale. Hover reveals a small status caption. */}
+          <div
+            aria-label={lang === "en" ? "Studio observing" : "Estudio activo"}
+            title={lang === "en" ? "Studio observing · Cycle MMXXVI · One place remains" : "Estudio activo · Ciclo MMXXVI · Queda una plaza"}
+            style={{ position: "relative", width: 10, height: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
+          >
+            <motion.span
+              aria-hidden
+              animate={{ opacity: [0.45, 1, 0.45], scale: [1, 1.22, 1] }}
+              transition={{ duration: 3.6, ease: "easeInOut", repeat: Infinity }}
+              style={{
+                width: 7,
+                height: 7,
+                borderRadius: "50%",
+                background: "#e8b783",
+                boxShadow: "0 0 12px 1px rgba(232,183,131,0.65)",
+                display: "inline-block",
+              }}
+            />
+          </div>
+          <WordmarkLink />
+        </div>
 
         {/* Desktop nav items — hidden below md */}
         <div
           className="hidden md:flex"
           style={{
-            gap: "clamp(12px,3vw,56px)",
-            fontSize: "clamp(9px,1vw,11px)",
+            // 4 items at md (768px) need a tighter floor so they don't
+            // collide with the wordmark + lang toggle + audio control
+            // and force an early wrap. Tracking holds the editorial feel.
+            gap: "clamp(12px,2.6vw,56px)",
+            fontSize: "clamp(10.5px,1.08vw,12.5px)",
             fontWeight: 400,
             letterSpacing: "0.22em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.55)",
+            color: "rgba(255,255,255,0.6)",
           }}
         >
           {items.map((it) => {
@@ -139,9 +130,27 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
             return (
               <div
                 key={it.key}
-                onMouseEnter={() => {
+                onMouseEnter={(e) => {
                   if (it.menu) setOpen(it.key as MenuKey);
                   else setOpen(null);
+                  const line = e.currentTarget.querySelector("[data-nav-line]") as HTMLElement | null;
+                  if (line) line.style.transform = "translateX(-50%) scaleX(1)";
+                }}
+                onMouseLeave={(e) => {
+                  const line = e.currentTarget.querySelector("[data-nav-line]") as HTMLElement | null;
+                  if (line) line.style.transform = "translateX(-50%) scaleX(0)";
+                }}
+                // Keyboard parity — onFocus/onBlur bubble from the
+                // child Link via React's focusin/focusout, so Tab-ing
+                // through the nav draws the same amber underline that
+                // mouse hover does.
+                onFocus={(e) => {
+                  const line = e.currentTarget.querySelector("[data-nav-line]") as HTMLElement | null;
+                  if (line) line.style.transform = "translateX(-50%) scaleX(1)";
+                }}
+                onBlur={(e) => {
+                  const line = e.currentTarget.querySelector("[data-nav-line]") as HTMLElement | null;
+                  if (line) line.style.transform = "translateX(-50%) scaleX(0)";
                 }}
                 style={{ position: "relative", padding: "22px 0" }}
               >
@@ -157,6 +166,27 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
                 >
                   {it.label}
                 </Link>
+                {/* Hover underline — a thin amber line that draws from
+                    the centre out on mouse enter and retracts on leave.
+                    Sits BELOW the active-route dot so both can coexist
+                    on the current route without colliding. */}
+                <span
+                  data-nav-line
+                  aria-hidden
+                  style={{
+                    position: "absolute",
+                    left: "50%",
+                    bottom: 8,
+                    width: "70%",
+                    height: 1,
+                    background:
+                      "linear-gradient(to right, transparent 0%, rgba(232,183,131,0.85) 50%, transparent 100%)",
+                    transform: "translateX(-50%) scaleX(0)",
+                    transformOrigin: "center",
+                    transition: "transform 0.55s cubic-bezier(0.22,1,0.36,1)",
+                    pointerEvents: "none",
+                  }}
+                />
                 {/* Active indicator — small amber dot below the label
                     on the current route. Premium, restrained. */}
                 {onRoute && (
@@ -183,16 +213,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
         </div>
 
         <div style={{ display: "flex", alignItems: "center", gap: "clamp(12px,2vw,22px)" }}>
-          {/* Desktop-only ambient audio control */}
-          <span className="hidden md:flex" style={{ alignItems: "center" }}>
-            <AmbientAudio
-              label={{
-                on: lang === "en" ? "Atmosphere on" : "Atmósfera activa",
-                off: lang === "en" ? "Atmosphere off" : "Atmósfera silenciosa",
-              }}
-            />
-          </span>
-          <button
+<button
             onClick={() => set(lang === "en" ? "es" : "en")}
             aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{
@@ -303,14 +324,12 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
           >
             <div
               style={{
-                maxWidth: open === "process" ? 760 : 880,
+                maxWidth: 980,
                 margin: "0 auto",
-                padding: "clamp(16px,1.8vw,24px) clamp(18px,2.6vw,32px) clamp(18px,2.2vw,28px)",
+                padding: "clamp(18px,2vw,26px) clamp(20px,2.8vw,36px) clamp(20px,2.4vw,32px)",
               }}
             >
               {open === "worlds" && <WorldsMenu lang={lang} onSelect={() => setOpen(null)} />}
-              {open === "services" && <ServicesMenu lang={lang} onSelect={() => setOpen(null)} />}
-              {open === "process" && <ProcessMenu lang={lang} onSelect={() => setOpen(null)} />}
             </div>
           </motion.div>
         )}
@@ -345,28 +364,28 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               WebkitOverflowScrolling: "touch",
             }}
           >
-            <div style={{ padding: "clamp(24px,8vw,40px) clamp(20px,5vw,32px) 80px" }}>
+            <div style={{ padding: "clamp(32px,10vw,56px) clamp(22px,5.5vw,40px) 96px" }}>
               <MobileSection title={t.nw} href="/worlds" onClose={() => setMobileOpen(false)}>
                 <WorldsMenu lang={lang} onSelect={() => setMobileOpen(false)} compact />
-              </MobileSection>
-              <MobileSection title={t.nse} href="/services" onClose={() => setMobileOpen(false)}>
-                <ServicesMenu lang={lang} onSelect={() => setMobileOpen(false)} compact />
               </MobileSection>
               <Link
                 href="/contact"
                 onClick={() => setMobileOpen(false)}
                 style={{
                   display: "block",
-                  marginTop: 28,
-                  padding: "16px 20px",
+                  marginTop: 36,
+                  padding: "20px 28px",
                   background: "white",
                   color: "#060606",
                   textDecoration: "none",
                   textAlign: "center",
                   fontSize: 12,
                   fontWeight: 500,
-                  letterSpacing: "0.28em",
+                  letterSpacing: "0.32em",
                   textTransform: "uppercase",
+                  borderRadius: 999,
+                  boxShadow:
+                    "0 16px 60px -16px rgba(232,183,131,0.4), 0 0 0 1px rgba(255,255,255,0.04) inset",
                 }}
               >
                 {t.na}
@@ -393,166 +412,165 @@ function MobileSection({
   children: React.ReactNode;
 }) {
   return (
-    <div style={{ marginBottom: 24, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 20 }}>
+    <section style={{ marginBottom: 56 }}>
       <Link
         href={href}
         onClick={onClose}
         style={{
           display: "flex",
-          alignItems: "center",
+          alignItems: "baseline",
           justifyContent: "space-between",
-          fontSize: 12,
-          letterSpacing: "0.32em",
+          fontSize: 15,
+          letterSpacing: "0.42em",
           textTransform: "uppercase",
           color: "white",
           textDecoration: "none",
           fontWeight: 500,
-          marginBottom: 14,
+          marginBottom: 24,
+          padding: "0 4px",
         }}
       >
         <span>{title}</span>
+        <span
+          aria-hidden
+          style={{
+            fontSize: 11,
+            letterSpacing: "0.32em",
+            color: "rgba(232,183,131,0.9)",
+            fontWeight: 500,
+          }}
+        >
+          →
+        </span>
       </Link>
       <div>{children}</div>
-    </div>
+    </section>
   );
 }
 
-function MenuCard({
+// Shared footer strip that closes a menu with a poetic note and a
+// commercial CTA into the section's own index page. Same layout for
+// worlds, services and process so the dropdowns feel like one family.
+function MenuFooter({
   href,
-  number,
-  numberColor,
-  title,
-  meta,
-  sub,
-  compact,
+  cta,
+  note,
   onSelect,
 }: {
   href: string;
-  number: string;
-  numberColor?: string;
-  title: string;
-  meta?: string;
-  sub: string;
-  compact?: boolean;
+  cta: string;
+  note: string;
   onSelect?: () => void;
 }) {
   return (
-    <Link
-      href={href}
-      onClick={onSelect}
+    <div
       style={{
-        display: "block",
-        padding: compact ? "14px 16px" : "clamp(16px,1.8vw,24px) clamp(16px,1.8vw,24px)",
-        background: "rgba(255,255,255,0.02)",
-        border: "1px solid rgba(255,255,255,0.06)",
-        borderRadius: 6,
-        textDecoration: "none",
-        color: "inherit",
-        transition: "background 0.3s, border-color 0.3s",
-        minHeight: compact ? 70 : undefined,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.055)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
-        e.currentTarget.style.borderColor = "rgba(255,255,255,0.05)";
+        marginTop: 14,
+        paddingTop: 14,
+        borderTop: "1px solid rgba(255,255,255,0.06)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 16,
+        padding: "14px 14px 0",
       }}
     >
       <p
         style={{
-          fontSize: 10,
-          letterSpacing: "0.34em",
-          textTransform: "uppercase",
-          color: numberColor ?? "rgba(255,255,255,0.55)",
-          fontWeight: 500,
           margin: 0,
-          marginBottom: 8,
-        }}
-      >
-        {number}
-      </p>
-      <p
-        style={{
-          fontSize: compact ? 13.5 : 14.5,
+          fontFamily: serif,
+          fontStyle: "italic",
+          fontSize: 12,
+          color: "rgba(255,255,255,0.5)",
           letterSpacing: "-0.005em",
-          color: "white",
-          fontWeight: 400,
-          margin: 0,
-          marginBottom: meta ? 4 : 3,
         }}
       >
-        {title}
+        {note}
       </p>
-      {meta && (
-        <p
-          style={{
-            fontSize: 10,
-            fontWeight: 500,
-            letterSpacing: "0.32em",
-            textTransform: "uppercase",
-            color: "rgba(232,183,131,0.6)",
-            margin: 0,
-            marginBottom: 6,
-          }}
-        >
-          {meta}
-        </p>
-      )}
-      <p
+      <Link
+        href={href}
+        onClick={onSelect}
         style={{
-          fontSize: compact ? 11 : 11.5,
-          lineHeight: 1.45,
-          color: "rgba(255,255,255,0.55)",
-          fontWeight: 300,
-          margin: 0,
+          fontSize: 10,
+          fontWeight: 500,
+          letterSpacing: "0.32em",
+          textTransform: "uppercase",
+          color: "rgba(232,183,131,0.9)",
+          textDecoration: "none",
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 8,
+          transition: "color 0.3s",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.color = "white";
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.color = "rgba(232,183,131,0.9)";
         }}
       >
-        {sub}
-      </p>
-    </Link>
+        {cta} <span aria-hidden>→</span>
+      </Link>
+    </div>
   );
 }
 
 function WorldRow({
   href,
-  numberLabel,
-  numberColor,
-  title,
-  body,
-  orbSlot,
+  world,
+  lang,
   onSelect,
   compact,
+  index = 0,
 }: {
   href: string;
-  numberLabel: string;
-  numberColor: string;
-  title: string;
-  body: string;
-  orbSlot: React.ReactNode;
+  world: World;
+  lang: NavLang;
   onSelect?: () => void;
   compact?: boolean;
+  index?: number;
 }) {
+  const c = world.color;
+  // Background tint hex with ~8% alpha. Hex8 (#RRGGBBAA) is supported
+  // everywhere we ship, and uses the world's own colour so the hover
+  // beat is signed by the world, not by a generic grey.
+  const tint = `${c.hex}14`;
+  // Compact (mobile drawer): no horizontal dividers, larger title and
+  // orb, pitch always visible, vertical left accent stripe in the
+  // world's colour. Rounded card-like rows. Non-compact (desktop
+  // dropdown): subtle top hairline kept for grid rhythm, smaller type,
+  // rounded hover background.
   return (
+    <motion.div
+      initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{
+        duration: 0.5,
+        ease: [0.22, 1, 0.36, 1],
+        delay: 0.08 + index * 0.045,
+      }}
+      style={{ willChange: "transform, filter, opacity" }}
+    >
     <Link
       href={href}
       onClick={onSelect}
       style={{
         display: "flex",
-        alignItems: "center",
-        gap: compact ? 12 : 16,
-        padding: compact ? "10px 8px" : "14px 12px",
+        alignItems: compact ? "center" : "flex-start",
+        gap: compact ? 20 : 18,
+        padding: compact ? "22px 18px" : "16px 14px",
         textDecoration: "none",
         color: "inherit",
         position: "relative",
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        transition: "background 0.4s, border-color 0.4s",
+        borderTop: compact ? "none" : "1px solid rgba(255,255,255,0.05)",
+        borderRadius: compact ? 16 : 10,
+        marginBottom: compact ? 4 : 0,
+        transition: "background 0.45s ease",
       }}
       onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+        e.currentTarget.style.background = tint;
         const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
-        if (accent) accent.style.transform = "scaleX(1)";
+        if (accent) accent.style.transform = compact ? "scaleY(1)" : "scaleX(1)";
         const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
         if (arrow) {
           arrow.style.opacity = "1";
@@ -562,7 +580,27 @@ function WorldRow({
       onMouseLeave={(e) => {
         e.currentTarget.style.background = "transparent";
         const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
-        if (accent) accent.style.transform = "scaleX(0)";
+        if (accent) accent.style.transform = compact ? "scaleY(0)" : "scaleX(0)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "0";
+          arrow.style.transform = "translateX(-6px)";
+        }
+      }}
+      onFocus={(e) => {
+        e.currentTarget.style.background = tint;
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = compact ? "scaleY(1)" : "scaleX(1)";
+        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+        if (arrow) {
+          arrow.style.opacity = "1";
+          arrow.style.transform = "translateX(0)";
+        }
+      }}
+      onBlur={(e) => {
+        e.currentTarget.style.background = "transparent";
+        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
+        if (accent) accent.style.transform = compact ? "scaleY(0)" : "scaleX(0)";
         const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
         if (arrow) {
           arrow.style.opacity = "0";
@@ -570,61 +608,127 @@ function WorldRow({
         }
       }}
     >
-      {/* Bottom hairline accent in the world's colour. Scales from
-          centre on hover. Subtle commercial signature for each Core. */}
-      <span
-        data-accent
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
-          bottom: -1,
-          height: 1,
-          background: numberColor,
-          opacity: 0.65,
-          transform: "scaleX(0)",
-          transformOrigin: "left center",
-          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
-          pointerEvents: "none",
-        }}
-      />
+      {/* Colour accent. Vertical left stripe in compact (mobile
+          drawer), bottom hairline in non-compact (desktop dropdown).
+          Both scale in from one end on hover. */}
+      {compact ? (
+        <span
+          data-accent
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 0,
+            top: 14,
+            bottom: 14,
+            width: 2,
+            borderRadius: 2,
+            background: c.hex,
+            opacity: 0.85,
+            transform: "scaleY(0)",
+            transformOrigin: "center top",
+            transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+            pointerEvents: "none",
+          }}
+        />
+      ) : (
+        <span
+          data-accent
+          aria-hidden
+          style={{
+            position: "absolute",
+            left: 14,
+            right: 14,
+            bottom: -1,
+            height: 1,
+            background: c.hex,
+            opacity: 0.7,
+            transform: "scaleX(0)",
+            transformOrigin: "left center",
+            transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
+            pointerEvents: "none",
+          }}
+        />
+      )}
       <div
         style={{
-          width: compact ? 36 : 44,
-          height: compact ? 36 : 44,
+          width: compact ? 64 : 52,
+          height: compact ? 64 : 52,
           flexShrink: 0,
+          position: "relative",
+          marginTop: compact ? 0 : 1,
         }}
       >
-        {orbSlot}
+        <Orb world={world} size={compact ? 64 : 52} />
       </div>
-      <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 10 }}>
-        <span
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div
           style={{
-            fontSize: 9,
-            fontWeight: 500,
-            letterSpacing: "0.32em",
-            color: numberColor,
+            display: "flex",
+            alignItems: "baseline",
+            gap: compact ? 14 : 10,
+            flexWrap: "wrap",
+            marginBottom: compact ? 8 : 5,
+          }}
+        >
+          <span
+            style={{
+              fontSize: compact ? 12 : 9,
+              fontWeight: 500,
+              letterSpacing: "0.32em",
+              color: c.hex,
+              opacity: 0.92,
+              flexShrink: 0,
+            }}
+          >
+            {world.number}
+          </span>
+          <span
+            style={{
+              fontSize: compact ? 22 : 14.5,
+              color: "white",
+              letterSpacing: "-0.012em",
+              fontWeight: 400,
+              lineHeight: 1.18,
+            }}
+          >
+            {world.title[lang]}
+          </span>
+        </div>
+        <p
+          style={{
+            margin: 0,
+            fontSize: compact ? 14 : 11.5,
+            lineHeight: compact ? 1.55 : 1.5,
+            color: compact ? "rgba(255,255,255,0.66)" : "rgba(255,255,255,0.58)",
+            fontWeight: 300,
+            letterSpacing: "0.005em",
+            textWrap: "balance",
+          }}
+        >
+          {world.pitch[lang]}
+        </p>
+      </div>
+      {!compact && (
+        <span
+          data-arrow
+          aria-hidden
+          style={{
+            color: c.hex,
+            fontSize: 14,
+            lineHeight: 1,
+            opacity: 0,
+            transform: "translateX(-6px)",
+            transition: "opacity 0.4s, transform 0.4s",
             flexShrink: 0,
+            alignSelf: "center",
+            paddingLeft: 6,
           }}
         >
-          {numberLabel}
+          →
         </span>
-        <span
-          style={{
-            fontSize: compact ? 13 : 14,
-            color: "white",
-            letterSpacing: "-0.005em",
-            fontWeight: 400,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {title}
-        </span>
-      </div>
+      )}
     </Link>
+    </motion.div>
   );
 }
 
@@ -638,8 +742,7 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
             alignItems: "baseline",
             justifyContent: "space-between",
             gap: 16,
-            marginBottom: 6,
-            padding: "0 10px 10px",
+            padding: "0 14px 14px",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
@@ -660,7 +763,7 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
               fontFamily: serif,
               fontStyle: "italic",
               fontSize: 12.5,
-              color: "rgba(232,183,131,0.78)",
+              color: "rgba(232,183,131,0.82)",
               margin: 0,
               letterSpacing: "-0.005em",
             }}
@@ -676,414 +779,100 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
           display: "grid",
           gap: 0,
           gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
-          columnGap: compact ? 0 : 20,
+          columnGap: compact ? 0 : 28,
         }}
       >
-        {worlds.map((w) => (
+        {worlds.map((w, i) => (
           <WorldRow
             key={w.slug}
             href={`/worlds/${w.slug}`}
-            numberLabel={w.number}
-            numberColor={w.color.hex}
-            title={w.title[lang]}
-            body={w.pitch[lang]}
-            orbSlot={<Orb world={w} size={compact ? 36 : 48} />}
+            world={w}
+            lang={lang}
             onSelect={onSelect}
             compact={compact}
+            index={i}
           />
         ))}
       </div>
+      <MoreLinks lang={lang} compact={compact} onSelect={onSelect} />
+      {!compact && (
+        <MenuFooter
+          href="/worlds"
+          cta={lang === "en" ? "Enter the universe" : "Entrar al universo"}
+          note={lang === "en" ? "Selected projects only." : "Solo proyectos seleccionados."}
+          onSelect={onSelect}
+        />
+      )}
     </div>
   );
 }
 
-function ServiceRow({
-  href,
-  numberLabel,
-  duration,
-  title,
-  body,
-  onSelect,
+// Secondary content links — Studies, Lab Records, Manifesto, Imprint.
+// Lives at the foot of the Worlds dropdown so the nav itself stays at
+// two items. Small caps, dot-separated, low emphasis: discoverability
+// without competing with the worlds grid.
+function MoreLinks({
+  lang,
   compact,
+  onSelect,
 }: {
-  href: string;
-  numberLabel: string;
-  duration: string;
-  title: string;
-  body: string;
-  onSelect?: () => void;
+  lang: NavLang;
   compact?: boolean;
+  onSelect?: () => void;
 }) {
+  const items = [
+    { href: "/studies", label: lang === "en" ? "Studies" : "Estudios" },
+    { href: "/lab-records", label: lang === "en" ? "Lab Records" : "Registros" },
+    { href: "/manifesto", label: lang === "en" ? "Manifesto" : "Manifiesto" },
+    { href: "/imprint", label: lang === "en" ? "Imprint" : "Aviso legal" },
+  ];
   return (
-    <Link
-      href={href}
-      onClick={onSelect}
+    <div
       style={{
-        display: "block",
-        padding: compact ? "8px 6px" : "10px 10px",
-        textDecoration: "none",
-        color: "inherit",
-        position: "relative",
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        transition: "background 0.4s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
-        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
-        if (accent) accent.style.transform = "scaleX(1)";
-        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
-        if (arrow) {
-          arrow.style.opacity = "1";
-          arrow.style.transform = "translateX(0)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
-        if (accent) accent.style.transform = "scaleX(0)";
-        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
-        if (arrow) {
-          arrow.style.opacity = "0";
-          arrow.style.transform = "translateX(-6px)";
-        }
+        display: "flex",
+        flexWrap: "wrap",
+        alignItems: "center",
+        justifyContent: compact ? "flex-start" : "center",
+        gap: compact ? "10px 14px" : "10px 18px",
+        padding: compact ? "20px 4px 4px" : "16px 14px 6px",
+        marginTop: compact ? 8 : 6,
+        borderTop: compact ? "1px solid rgba(255,255,255,0.05)" : "none",
       }}
     >
-      <span
-        data-accent
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: 10,
-          right: 10,
-          bottom: -1,
-          height: 1,
-          background: "rgba(232,183,131,0.65)",
-          transform: "scaleX(0)",
-          transformOrigin: "left center",
-          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
-          pointerEvents: "none",
-        }}
-      />
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: 10,
-          marginBottom: 2,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
-          <span
+      {items.map((it, i) => (
+        <span key={it.href} style={{ display: "inline-flex", alignItems: "center", gap: compact ? 10 : 14 }}>
+          <Link
+            href={it.href}
+            onClick={onSelect}
             style={{
-              fontSize: 9,
+              fontSize: compact ? 11 : 10.5,
               fontWeight: 500,
-              letterSpacing: "0.3em",
-              color: "rgba(232,183,131,0.62)",
-            }}
-          >
-            {numberLabel}
-          </span>
-          <span style={{ color: "rgba(255,255,255,0.18)", fontSize: 9 }}>—</span>
-          <span
-            style={{
-              fontSize: compact ? 12.5 : 13,
-              color: "white",
-              letterSpacing: "-0.005em",
-              fontWeight: 400,
-            }}
-          >
-            {title}
-          </span>
-        </div>
-        <span
-          style={{
-            fontSize: 9.5,
-            fontWeight: 500,
-            letterSpacing: "0.28em",
-            textTransform: "uppercase",
-            color: "rgba(255,255,255,0.42)",
-            whiteSpace: "nowrap",
-            flexShrink: 0,
-          }}
-        >
-          {duration}
-        </span>
-      </div>
-      <div
-        style={{
-          display: "flex",
-          alignItems: "baseline",
-          justifyContent: "space-between",
-          gap: 12,
-        }}
-      >
-        <p
-          style={{
-            margin: 0,
-            fontSize: compact ? 10.5 : 11,
-            lineHeight: 1.4,
-            color: "rgba(255,255,255,0.5)",
-            fontWeight: 300,
-            flex: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 1,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {body}
-        </p>
-      </div>
-    </Link>
-  );
-}
-
-function ServicesMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
-  const items = SERVICES(lang);
-  return (
-    <div>
-      {!compact && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            gap: 16,
-            marginBottom: 6,
-            padding: "0 10px 10px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 500,
-              letterSpacing: "0.4em",
+              letterSpacing: "0.28em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.42)",
-              margin: 0,
+              color: "rgba(255,255,255,0.55)",
+              textDecoration: "none",
+              transition: "color 0.35s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = "white";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = "rgba(255,255,255,0.55)";
+            }}
+            onFocus={(e) => {
+              e.currentTarget.style.color = "white";
+            }}
+            onBlur={(e) => {
+              e.currentTarget.style.color = "rgba(255,255,255,0.55)";
             }}
           >
-            {lang === "en" ? "Systems" : "Sistemas"}
-          </p>
-          <p
-            style={{
-              fontFamily: serif,
-              fontStyle: "italic",
-              fontSize: 12.5,
-              color: "rgba(232,183,131,0.78)",
-              margin: 0,
-              letterSpacing: "-0.005em",
-            }}
-          >
-            {lang === "en"
-              ? "Focused or full system."
-              : "Enfocado o sistema completo."}
-          </p>
-        </div>
-      )}
-      <div
-        style={{
-          display: "grid",
-          gap: 0,
-          gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
-          columnGap: compact ? 0 : 20,
-        }}
-      >
-        {items.map(([title, duration, sub], i) => (
-          <ServiceRow
-            key={title}
-            href="/services"
-            numberLabel={`0${i + 1}`}
-            duration={duration}
-            title={title}
-            body={sub}
-            onSelect={onSelect}
-            compact={compact}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function MovementRow({
-  numberLabel,
-  title,
-  body,
-  onSelect,
-  compact,
-}: {
-  numberLabel: string;
-  title: string;
-  body: string;
-  onSelect?: () => void;
-  compact?: boolean;
-}) {
-  return (
-    <Link
-      href="/process"
-      onClick={onSelect}
-      style={{
-        display: "block",
-        padding: compact ? "8px 6px" : "10px 10px",
-        textDecoration: "none",
-        color: "inherit",
-        position: "relative",
-        borderTop: "1px solid rgba(255,255,255,0.05)",
-        transition: "background 0.4s",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "rgba(255,255,255,0.025)";
-        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
-        if (accent) accent.style.transform = "scaleX(1)";
-        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
-        if (arrow) {
-          arrow.style.opacity = "1";
-          arrow.style.transform = "translateX(0)";
-        }
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "transparent";
-        const accent = e.currentTarget.querySelector("[data-accent]") as HTMLElement | null;
-        if (accent) accent.style.transform = "scaleX(0)";
-        const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
-        if (arrow) {
-          arrow.style.opacity = "0";
-          arrow.style.transform = "translateX(-6px)";
-        }
-      }}
-    >
-      <span
-        data-accent
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: 14,
-          right: 14,
-          bottom: -1,
-          height: 1,
-          background: "rgba(232,183,131,0.65)",
-          transform: "scaleX(0)",
-          transformOrigin: "left center",
-          transition: "transform 0.5s cubic-bezier(0.22,1,0.36,1)",
-          pointerEvents: "none",
-        }}
-      />
-      <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 2 }}>
-        <span
-          style={{
-            fontFamily: serif,
-            fontStyle: "italic",
-            fontSize: compact ? 18 : 20,
-            lineHeight: 1,
-            color: "rgba(232,183,131,0.55)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          {numberLabel}
+            {it.label}
+          </Link>
+          {i < items.length - 1 && (
+            <span aria-hidden style={{ color: "rgba(255,255,255,0.2)", fontSize: 10 }}>·</span>
+          )}
         </span>
-        <span
-          style={{
-            fontSize: compact ? 12.5 : 13,
-            color: "white",
-            letterSpacing: "-0.005em",
-            fontWeight: 400,
-          }}
-        >
-          {title}
-        </span>
-      </div>
-      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12 }}>
-        <p
-          style={{
-            margin: 0,
-            fontSize: compact ? 10.5 : 11,
-            lineHeight: 1.4,
-            color: "rgba(255,255,255,0.5)",
-            fontWeight: 300,
-            flex: 1,
-            minWidth: 0,
-            overflow: "hidden",
-            textOverflow: "ellipsis",
-            display: "-webkit-box",
-            WebkitLineClamp: 1,
-            WebkitBoxOrient: "vertical",
-          }}
-        >
-          {body}
-        </p>
-      </div>
-    </Link>
-  );
-}
-
-function ProcessMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
-  const items = MOVEMENTS(lang);
-  return (
-    <div>
-      {!compact && (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-            gap: 16,
-            marginBottom: 6,
-            padding: "0 10px 10px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 9,
-              fontWeight: 500,
-              letterSpacing: "0.4em",
-              textTransform: "uppercase",
-              color: "rgba(255,255,255,0.42)",
-              margin: 0,
-            }}
-          >
-            {lang === "en" ? "Method" : "Método"}
-          </p>
-          <p
-            style={{
-              fontFamily: serif,
-              fontStyle: "italic",
-              fontSize: 12.5,
-              color: "rgba(232,183,131,0.78)",
-              margin: 0,
-              letterSpacing: "-0.005em",
-            }}
-          >
-            {lang === "en"
-              ? "Four movements."
-              : "Cuatro movimientos."}
-          </p>
-        </div>
-      )}
-      <div
-        style={{
-          display: "grid",
-          gap: 0,
-          gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)",
-          columnGap: compact ? 0 : 20,
-        }}
-      >
-        {items.map(([n, title, sub]) => (
-          <MovementRow
-            key={n}
-            numberLabel={n}
-            title={title}
-            body={sub}
-            onSelect={onSelect}
-            compact={compact}
-          />
-        ))}
-      </div>
+      ))}
     </div>
   );
 }

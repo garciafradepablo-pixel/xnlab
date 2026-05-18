@@ -9,61 +9,61 @@ import { worlds, mythology } from "../_lib/worlds";
 
 const en = {
   eyebrow: "The Universe",
-  h1a: "Selected",
-  h1b: "Worlds.",
+  h1a: "Six surfaces.",
+  h1b: "One brand.",
   lead:
-    "Six emotional systems. Six ways to build presence.",
+    "Six surfaces where a modern brand reaches its customer. Six worlds, one studio behind them.",
   methodLabel: "Method",
   methodH: "The Worlds are not decoration.",
-  methodH2: "They are how XNLAB chooses the emotional physics of a project.",
+  methodH2: "They are how XNLAB chooses the physics of every surface a brand touches a customer through.",
   methodBody: [
-    "Each Core defines how a brand should look, move, sound and be remembered across digital surfaces.",
-    "A restaurant does not need the same atmosphere as a music artist. A luxury brand does not move like a nightlife event. A digital world does not breathe like architecture.",
-    "XNLAB uses each Core to define visual language, campaign direction, motion style, content system, digital presence and emotional memory.",
+    "Each Core defines how a brand should look, move, sound and be remembered on one specific surface.",
+    "A product does not need the same atmosphere as a campaign. An owned dashboard does not move like a flagship store. A community programme does not breathe like a service email.",
+    "XNLAB uses each Core to define visual language, motion register, voice, editorial tempo and operational signature — calibrated to the surface, signed by the studio.",
   ],
   loreLabel: "Studio Lore",
   loreTitle: "Inside the Central Core",
-  loreSub: "The two presences that watch over every project we accept — and what we do when a world fractures.",
+  loreSub: "The two presences that watch over every project we accept — and what we do when a surface fractures.",
   loreAnomalies: "Anomalies",
   centralLabel: "The Central Core",
-  worldsLabel: "Six Worlds, one universe",
+  worldsLabel: "Six worlds, one universe",
   worldsIntro:
-    "Each Core represents a discipline of the studio and a register of cultural energy. Different colour. Different material. Different behaviour. Same physics.",
+    "Each Core represents one of the six surfaces a brand touches its customer through. Different colour. Different material. Different behaviour. Same physics.",
   enter: "Enter world",
-  ctaH: "Build something unforgettable.",
+  ctaH: "Build a brand that walks into the conversation before you do.",
   ctaBody:
-    "If you have a brand, a venue, an artist or a digital project that belongs inside this universe, we would like to hear about it.",
-  cta: "Start a project",
+    "If you direct a brand operating at scale and one of the six surfaces is the one that decides its next decade, we would like to hear about it.",
+  cta: "Write to the studio",
   back: "← Home",
 };
 
 const es = {
   eyebrow: "El Universo",
-  h1a: "Mundos",
-  h1b: "seleccionados.",
+  h1a: "Seis superficies.",
+  h1b: "Una marca.",
   lead:
-    "Seis sistemas emocionales. Seis formas de construir presencia.",
+    "Seis superficies por las que una marca moderna llega a su cliente. Seis mundos, un estudio detrás.",
   methodLabel: "Método",
   methodH: "Los Mundos no son decoración.",
-  methodH2: "Son cómo XNLAB elige la física emocional de un proyecto.",
+  methodH2: "Son el modo en que XNLAB elige la física de cada superficie por la que una marca toca a un cliente.",
   methodBody: [
-    "Cada Núcleo define cómo una marca debe verse, moverse, sonar y ser recordada en sus superficies digitales.",
-    "Un restaurante no necesita la misma atmósfera que un artista musical. Una marca de lujo no se mueve como un evento nocturno. Un mundo digital no respira como una arquitectura.",
-    "XNLAB usa cada Núcleo para definir lenguaje visual, dirección de campaña, estilo de animación, sistema de contenido, presencia digital y memoria emocional.",
+    "Cada Núcleo define cómo una marca debe verse, moverse, sonar y ser recordada en una superficie concreta.",
+    "Un producto no necesita la misma atmósfera que una campaña. Un dashboard propio no se mueve como una tienda flagship. Un programa de comunidad no respira como un email de servicio.",
+    "XNLAB usa cada Núcleo para definir lenguaje visual, registro de animación, voz, tempo editorial y firma operativa — calibrados a la superficie, firmados por el estudio.",
   ],
   loreLabel: "Lore del estudio",
   loreTitle: "Dentro del Núcleo Central",
-  loreSub: "Las dos presencias que cuidan cada proyecto que aceptamos — y lo que hacemos cuando un mundo se fractura.",
+  loreSub: "Las dos presencias que cuidan cada proyecto que aceptamos — y lo que hacemos cuando una superficie se fractura.",
   loreAnomalies: "Anomalías",
   centralLabel: "El Núcleo Central",
   worldsLabel: "Seis mundos, un universo",
   worldsIntro:
-    "Cada Núcleo representa una disciplina del estudio y un registro de energía cultural. Color distinto. Material distinto. Comportamiento distinto. Misma física.",
+    "Cada Núcleo representa una de las seis superficies por las que una marca toca a su cliente. Color distinto. Material distinto. Comportamiento distinto. Misma física.",
   enter: "Entrar al mundo",
-  ctaH: "Construye algo inolvidable.",
+  ctaH: "Construye una marca que entre en la conversación antes que tú.",
   ctaBody:
-    "Si tienes una marca, un local, un artista o un proyecto digital que pertenezca a este universo, nos gustaría saber de él.",
-  cta: "Iniciar un proyecto",
+    "Si diriges una marca que opera a escala y una de las seis superficies es la que decide su próxima década, nos gustaría saber de ella.",
+  cta: "Escribir al estudio",
   back: "← Inicio",
 };
 
@@ -84,7 +84,7 @@ export default function WorldsIndex() {
       style={{
         minHeight: "100svh",
         overflowX: "hidden",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
         position: "relative",
@@ -118,6 +118,7 @@ export default function WorldsIndex() {
           <Link href="/" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>{t.back}</Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>
@@ -280,6 +281,22 @@ export default function WorldsIndex() {
                   }
                 }}
                 onMouseLeave={(e) => {
+                  const btn = e.currentTarget.querySelector("[data-enter]") as HTMLElement | null;
+                  if (btn) {
+                    btn.style.background = "transparent";
+                    btn.style.color = w.color.hex;
+                    btn.style.borderColor = `${w.color.hex}66`;
+                  }
+                }}
+                onFocus={(e) => {
+                  const btn = e.currentTarget.querySelector("[data-enter]") as HTMLElement | null;
+                  if (btn) {
+                    btn.style.background = w.color.hex;
+                    btn.style.color = "#060606";
+                    btn.style.borderColor = w.color.hex;
+                  }
+                }}
+                onBlur={(e) => {
                   const btn = e.currentTarget.querySelector("[data-enter]") as HTMLElement | null;
                   if (btn) {
                     btn.style.background = "transparent";

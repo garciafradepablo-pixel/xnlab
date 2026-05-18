@@ -6,34 +6,35 @@ import type { Project } from "./data";
 import { ts, tsS, serif, W, R, useLang } from "../_lib/atoms";
 import { LuxButton } from "../_lib/lux-button";
 import { WordmarkLink } from "../_lib/wordmark";
+import { OtherCorners } from "../_lib/other-corners";
 
 const en = {
-  eyebrow: "Selected Studies",
-  heading1: "Selected",
-  heading2: "Studies.",
+  eyebrow: "Atelier Studies",
+  heading1: "Atelier",
+  heading2: "studies.",
   intro:
-    "Internal visual systems created to show how XNLAB thinks, directs and builds atmosphere. Each study moves through Problem, Direction, System, Surfaces and Result.",
+    "Internal visual systems, published while the first wave of client work matures. Each study moves through Problem, Direction, System, Surfaces and Result — the same framework we use for every engagement.",
   closingEyebrow: "By appointment only · studio@xnlab.io",
-  cta: "Start a project",
+  cta: "Write to the studio",
   back: "← Home",
-  count: (n: number) => `${String(n).padStart(3, "0")} — Works`,
+  count: (n: number) => `${String(n).padStart(3, "0")} — Studies`,
 };
 const es = {
-  eyebrow: "Estudios Seleccionados",
+  eyebrow: "Estudios de Atelier",
   heading1: "Estudios",
-  heading2: "seleccionados.",
+  heading2: "de atelier.",
   intro:
-    "Sistemas visuales internos creados para mostrar cómo XNLAB piensa, dirige y construye atmósfera. Cada estudio recorre Problema, Dirección, Sistema, Superficies y Resultado.",
+    "Sistemas visuales internos, publicados mientras madura la primera ola de trabajo con clientes. Cada estudio recorre Problema, Dirección, Sistema, Superficies y Resultado — el mismo marco con el que afrontamos cada encargo.",
   closingEyebrow: "Solo con cita previa · studio@xnlab.io",
-  cta: "Iniciar un proyecto",
+  cta: "Escribir al estudio",
   back: "← Inicio",
-  count: (n: number) => `${String(n).padStart(3, "0")} — Mundos`,
+  count: (n: number) => `${String(n).padStart(3, "0")} — Estudios`,
 };
 
 function Row({ project, index, lang }: { project: Project; index: number; lang: "en" | "es" }) {
   const height = ["80vh", "70vh", "74vh"][index % 3];
   return (
-    <Link href={`/work/${project.slug}`} style={{ display: "block", color: "inherit", textDecoration: "none" }}>
+    <Link href={`/studies/${project.slug}`} style={{ display: "block", color: "inherit", textDecoration: "none" }}>
       <R style={{ position: "relative", width: "100%", overflow: "hidden" }} delay={0}>
         <div style={{ position: "relative", height, minHeight: 420, width: "100%", overflow: "hidden" }}>
           <motion.div
@@ -148,7 +149,7 @@ export default function WorkIndex({ projects }: { projects: Project[] }) {
       style={{
         minHeight: "100vh",
         overflowX: "hidden",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
       }}
@@ -192,6 +193,7 @@ export default function WorkIndex({ projects }: { projects: Project[] }) {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{
               display: "flex",
               alignItems: "center",
@@ -297,6 +299,7 @@ export default function WorkIndex({ projects }: { projects: Project[] }) {
         </p>
         <LuxButton href="/contact" variant="solid" arrow={false}>{t.cta}</LuxButton>
       </section>
+      <OtherCorners lang={lang} exclude="studies" />
     </main>
   );
 }

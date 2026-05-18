@@ -26,7 +26,6 @@ export default async function Icon() {
             "radial-gradient(circle at 50% 45%, #1a140e 0%, #060606 70%)",
         }}
       >
-        {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={dataUrl}
           width={420}

@@ -71,6 +71,16 @@ export function BackToTop() {
             e.currentTarget.style.borderColor = "rgba(232,183,131,0.45)";
             e.currentTarget.style.color = "rgba(232,183,131,0.9)";
           }}
+          onFocus={(e) => {
+            e.currentTarget.style.background = "rgba(232,183,131,0.12)";
+            e.currentTarget.style.borderColor = "#e8b783";
+            e.currentTarget.style.color = "#e8b783";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.background = "rgba(4,3,2,0.78)";
+            e.currentTarget.style.borderColor = "rgba(232,183,131,0.45)";
+            e.currentTarget.style.color = "rgba(232,183,131,0.9)";
+          }}
         >
           ↑
         </motion.button>

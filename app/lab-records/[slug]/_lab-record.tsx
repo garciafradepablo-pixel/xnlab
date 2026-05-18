@@ -11,13 +11,13 @@ import { worlds } from "../../_lib/worlds";
 const ui = {
   en: {
     back: "← All records",
-    cta: "Start a project",
+    cta: "Write to the studio",
     next: "Next record",
     relatedWorld: "Related World",
   },
   es: {
     back: "← Todos los records",
-    cta: "Iniciar un proyecto",
+    cta: "Escribir al estudio",
     next: "Siguiente record",
     relatedWorld: "Mundo relacionado",
   },
@@ -70,7 +70,7 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
       style={{
         minHeight: "100svh",
         overflowX: "hidden",
-        background: "#060606",
+        background: "transparent",
         color: "white",
         fontFamily: "var(--font-sans,'Inter','Helvetica Neue',sans-serif)",
         position: "relative",
@@ -106,6 +106,7 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>
@@ -225,6 +226,8 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                 onMouseLeave={(e) => (e.currentTarget.style.color = accent)}
+                onFocus={(e) => (e.currentTarget.style.color = "white")}
+                onBlur={(e) => (e.currentTarget.style.color = accent)}
               >
                 {world.title[lang]}
               </Link>
@@ -289,6 +292,12 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
                   e.currentTarget.style.background = "rgba(255,255,255,0.025)";
                 }}
                 onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "transparent";
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.background = "rgba(255,255,255,0.025)";
+                }}
+                onBlur={(e) => {
                   e.currentTarget.style.background = "transparent";
                 }}
               >
@@ -377,6 +386,8 @@ export default function LabRecord({ record }: { record: TLabRecord }) {
               }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
+              onFocus={(e) => (e.currentTarget.style.color = "white")}
+              onBlur={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.5)")}
             >
               {t.next} {next.number} · {next.title[lang]}
             </Link>

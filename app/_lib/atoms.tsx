@@ -1,6 +1,17 @@
 "use client";
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
+
+// Hydration gate. useSyncExternalStore returns the server snapshot
+// (`false`) during SSR + first render, then the client snapshot (`true`)
+// after hydration — without the setState-in-effect cascade a
+// useState/useEffect mounted flag would trigger under React 19.
+const subscribeMountedNoop = () => () => {};
+const getMountedTrue = () => true;
+const getMountedFalse = () => false;
+export function useMounted() {
+  return useSyncExternalStore(subscribeMountedNoop, getMountedTrue, getMountedFalse);
+}
 
 // Shared design tokens
 export const ts = "0 1px 20px rgba(0,0,0,0.9)";
@@ -97,24 +108,106 @@ export function Label({
   );
 }
 
-// Dust particles overlay
-export function Dust({ count = 8, opacity = 0.08 }: { count?: number; opacity?: number }) {
-  const [items, setItems] = useState<
-    { x: number; y: number; s: number; d: number; del: number; anim: string }[]
-  >([]);
-  useEffect(() => {
-    setItems(
-      Array.from({ length: count }, (_, i) => ({
-        x: 10 + Math.random() * 80,
-        y: 10 + Math.random() * 80,
-        s: Math.random() * 3 + 1,
-        d: Math.random() * 18 + 10,
-        del: Math.random() * 8,
-        anim: ["dust0", "dust1", "dust2", "dust3"][i % 4],
-      }))
-    );
-  }, [count]);
-  if (!items.length) return null;
+// Editorial commentary subtitle — the italic gold aside that follows
+// a section heading. Anchored above by a soft amber hairline and
+// balanced wrap so the lines never break awkwardly. Replaces ad-hoc
+// `<p>` blocks that had the same intent but no consistent treatment.
+//
+// Alignment is controlled by Tailwind classes on the wrapper. The
+// default `text-center mx-auto` centres both the hairline and the
+// text on the page axis. For a column inside a side-by-side layout,
+// pass e.g. `text-center lg:text-left mx-auto lg:mx-0` to switch
+// alignment at the responsive breakpoint. Inline styles deliberately
+// do not set text-align or horizontal margin so the class wins.
+export function Commentary({
+  children,
+  delay = 0,
+  maxWidth = 560,
+  className = "text-center mx-auto",
+  style,
+}: {
+  children: React.ReactNode;
+  delay?: number;
+  maxWidth?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  return (
+    <R delay={delay}>
+      <div
+        className={className}
+        style={{
+          maxWidth,
+          marginTop: "clamp(28px,3.4vw,44px)",
+          ...style,
+        }}
+      >
+        <span
+          aria-hidden
+          style={{
+            display: "inline-block",
+            verticalAlign: "middle",
+            width: "clamp(32px,3.8vw,48px)",
+            height: 1,
+            marginBottom: "clamp(14px,1.8vw,22px)",
+            background:
+              "linear-gradient(to right, transparent 0%, rgba(232,183,131,0.6) 50%, transparent 100%)",
+            filter: "drop-shadow(0 0 6px rgba(232,183,131,0.35))",
+          }}
+        />
+        <p
+          style={{
+            margin: 0,
+            fontFamily: serif,
+            fontStyle: "italic",
+            fontSize: "clamp(1.1rem,1.5vw,1.45rem)",
+            lineHeight: 1.5,
+            color: "rgba(232,183,131,0.88)",
+            letterSpacing: "-0.003em",
+            textShadow: ts,
+            textWrap: "balance",
+          }}
+        >
+          {children}
+        </p>
+      </div>
+    </R>
+  );
+}
+
+// Dust particles overlay.
+//
+// `tint` accepts an "r,g,b" triplet (no rgba() wrapper, no #hex — just
+// the comma-separated channels) so the same particle system can speak
+// in any world's colour. Default is the warm cream that lives across
+// the studio's main surface. Used on /worlds/[slug] to drift the
+// particles in that world's accent — same restraint, signed by the
+// sphere the visitor is reading.
+export function Dust({
+  count = 8,
+  opacity = 0.08,
+  tint = "230,205,165",
+}: {
+  count?: number;
+  opacity?: number;
+  tint?: string;
+}) {
+  // Lazy state initializer keeps the random positions stable across
+  // re-renders without a setState-in-effect cascade. The mounted gate
+  // skips render during SSR/hydration so each particle's random style
+  // attrs can't trip a hydration mismatch.
+  const [items] = useState(() =>
+    Array.from({ length: count }, (_, i) => ({
+      x: 10 + Math.random() * 80,
+      y: 10 + Math.random() * 80,
+      s: Math.random() * 3 + 1,
+      d: Math.random() * 18 + 10,
+      del: Math.random() * 8,
+      anim: ["dust0", "dust1", "dust2", "dust3"][i % 4],
+    }))
+  );
+  const mounted = useMounted();
+  if (!mounted) return null;
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 4 }}>
       {items.map((p, i) => (
@@ -131,7 +224,7 @@ export function Dust({ count = 8, opacity = 0.08 }: { count?: number; opacity?: 
             // straight to transparent, with extra CSS blur on top. The
             // particle becomes a real bokeh haze instead of a defined
             // dot. Cinematic film grain feel.
-            background: `radial-gradient(circle, rgba(230,205,165,${opacity * 0.7}) 0%, rgba(230,205,165,${opacity * 0.3}) 30%, transparent 55%)`,
+            background: `radial-gradient(circle, rgba(${tint},${opacity * 0.7}) 0%, rgba(${tint},${opacity * 0.3}) 30%, transparent 55%)`,
             filter: "blur(5px)",
             animation: `${p.anim} ${p.d}s ${p.del}s infinite ease-in-out`,
             transform: "translate(-50%,-50%)",
@@ -150,21 +243,40 @@ export function DustStyles() {
   );
 }
 
-// Bilingual language hook
+// Bilingual language hook — module-level store so the read happens in a
+// useSyncExternalStore snapshot (client-only) instead of a setState-in-
+// effect cascade. Server snapshot is always "en"; client resolves from
+// localStorage, falling back to navigator.language.
+type Lang = "en" | "es";
+let langCache: Lang | null = null;
+const langListeners = new Set<() => void>();
+
+function getLangSnapshot(): Lang {
+  if (langCache) return langCache;
+  const s = window.localStorage.getItem("xn-lang");
+  if (s === "en" || s === "es") return (langCache = s);
+  if (navigator.language?.toLowerCase().startsWith("es")) return (langCache = "es");
+  return (langCache = "en");
+}
+
+function subscribeLang(cb: () => void) {
+  langListeners.add(cb);
+  return () => {
+    langListeners.delete(cb);
+  };
+}
+
+function setLangValue(l: Lang) {
+  langCache = l;
+  window.localStorage.setItem("xn-lang", l);
+  document.documentElement.lang = l;
+  langListeners.forEach((cb) => cb());
+}
+
 export function useLang() {
-  const [lang, setLang] = useState<"en" | "es">("en");
+  const lang = useSyncExternalStore(subscribeLang, getLangSnapshot, () => "en" as Lang);
   useEffect(() => {
-    const s = typeof window !== "undefined" ? window.localStorage.getItem("xn-lang") : null;
-    if (s === "en" || s === "es") setLang(s);
-    else if (
-      typeof navigator !== "undefined" &&
-      navigator.language?.toLowerCase().startsWith("es")
-    )
-      setLang("es");
-  }, []);
-  useEffect(() => {
-    if (typeof document !== "undefined") document.documentElement.lang = lang;
-    if (typeof window !== "undefined") window.localStorage.setItem("xn-lang", lang);
+    document.documentElement.lang = lang;
   }, [lang]);
-  return [lang, setLang] as const;
+  return [lang, setLangValue] as const;
 }

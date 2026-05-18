@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import LabRecords from "./_lab-records";
 import { records } from "../_lib/lab-records";
+import { getNonce } from "../_lib/csp";
 
 export const metadata: Metadata = {
   title: "Lab Records — Notes on Hospitality, Luxury, Music & Digital Atmosphere",
@@ -15,7 +16,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Page() {
+export default async function Page() {
+  const nonce = await getNonce();
   // JSON-LD ItemList so Google parses the archive as a structured collection
   const itemList = {
     "@context": "https://schema.org",
@@ -34,6 +36,7 @@ export default function Page() {
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(itemList) }}
       />

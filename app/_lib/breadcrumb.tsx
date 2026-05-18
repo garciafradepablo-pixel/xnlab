@@ -59,6 +59,8 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.color = "white")}
                   onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
+                  onFocus={(e) => (e.currentTarget.style.color = "white")}
+                  onBlur={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.55)")}
                 >
                   {it.label}
                 </Link>

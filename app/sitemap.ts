@@ -1,8 +1,7 @@
 import type { MetadataRoute } from "next";
-import { projects } from "./work/data";
+import { projects } from "./studies/data";
 import { worlds } from "./_lib/worlds";
 import { records } from "./_lib/lab-records";
-import { serviceDetails } from "./_lib/service-details";
 
 const SITE = "https://xnlab.io";
 
@@ -17,60 +16,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       languages: { en: SITE, es: SITE, "x-default": SITE },
     },
   };
-  const about: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/about`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.8,
-  };
-  const services: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/services`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.95,
-  };
-  const servicesList: MetadataRoute.Sitemap = serviceDetails.map((s) => ({
-    url: `${SITE}/services/${s.slug}`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.9,
-    images: [`${SITE}${s.heroImage}`],
-  }));
-  const process: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/process`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.85,
-  };
   const manifesto: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/manifesto`,
     lastModified: now,
     changeFrequency: "yearly",
     priority: 0.6,
-  };
-  const atmospheres: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/atmospheres`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.7,
-  };
-  const nowPage: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/now`,
-    lastModified: now,
-    changeFrequency: "weekly",
-    priority: 0.75,
-  };
-  const references: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/references`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.6,
-  };
-  const collaboration: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/collaboration`,
-    lastModified: now,
-    changeFrequency: "monthly",
-    priority: 0.7,
   };
   const imprint: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/imprint`,
@@ -84,14 +34,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.8,
   };
+  const dossier: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/dossier`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.85,
+  };
   const workIndex: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/work`,
+    url: `${SITE}/studies`,
     lastModified: now,
     changeFrequency: "monthly",
     priority: 0.9,
   };
   const works: MetadataRoute.Sitemap = projects.map((p) => ({
-    url: `${SITE}/work/${p.slug}`,
+    url: `${SITE}/studies/${p.slug}`,
     lastModified: now,
     changeFrequency: "monthly",
     priority: 0.7,
@@ -121,5 +77,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.7,
   }));
-  return [home, services, ...servicesList, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, about, process, collaboration, manifesto, atmospheres, nowPage, references, workIndex, ...works, contact, imprint];
+  return [home, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
 }

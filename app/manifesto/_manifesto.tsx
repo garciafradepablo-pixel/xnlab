@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ts, tsS, serif, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
+import { OtherCorners } from "../_lib/other-corners";
 
 const en = {
   eyebrow: "Manifesto",
@@ -17,7 +18,7 @@ const en = {
     "Worlds are built slowly. We are patient.",
   ],
   closing: "Read again, slowly.",
-  cta: "Start a project",
+  cta: "Write to the studio",
   back: "← Home",
 };
 
@@ -33,7 +34,7 @@ const es = {
     "Los mundos se construyen despacio. Somos pacientes.",
   ],
   closing: "Léelo otra vez, despacio.",
-  cta: "Iniciar un proyecto",
+  cta: "Escribir al estudio",
   back: "← Inicio",
 };
 
@@ -132,6 +133,7 @@ export default function Manifesto() {
           </Link>
           <button
             onClick={() => setLang(lang === "en" ? "es" : "en")}
+            aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"}
             style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}
           >
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>
@@ -257,6 +259,7 @@ export default function Manifesto() {
           </Link>
         </Magnetic>
       </section>
+      <OtherCorners lang={lang} exclude="manifesto" />
     </main>
   );
 }

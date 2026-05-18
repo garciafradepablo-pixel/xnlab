@@ -26,7 +26,7 @@ export const records: LabRecord[] = [
     number: "001",
     date: "2026-05-12",
     category: { en: "Hospitality", es: "Hospitalidad" },
-    worldSlug: "hospitality-experience",
+    worldSlug: "retail-physical",
     title: {
       en: "The future of hospitality branding is atmospheric.",
       es: "El futuro del branding hotelero es atmosférico.",
@@ -58,7 +58,7 @@ export const records: LabRecord[] = [
     number: "002",
     date: "2026-05-08",
     category: { en: "Music", es: "Música" },
-    worldSlug: "music-cultural-artists",
+    worldSlug: "product",
     title: {
       en: "Artists no longer release music. They release worlds.",
       es: "Los artistas ya no publican música. Publican mundos.",
@@ -90,7 +90,7 @@ export const records: LabRecord[] = [
     number: "003",
     date: "2026-04-30",
     category: { en: "Luxury", es: "Lujo" },
-    worldSlug: "luxury-lifestyle-brands",
+    worldSlug: "communication",
     title: {
       en: "Luxury branding is becoming cinematic.",
       es: "El branding de lujo se está volviendo cinematográfico.",
@@ -122,6 +122,7 @@ export const records: LabRecord[] = [
     number: "004",
     date: "2026-04-18",
     category: { en: "Brand Direction", es: "Dirección de Marca" },
+    worldSlug: "owned-digital",
     title: {
       en: "The perception gap: why expensive brands look cheap online.",
       es: "La distancia de percepción: por qué las marcas caras se ven baratas online.",
@@ -153,7 +154,7 @@ export const records: LabRecord[] = [
     number: "005",
     date: "2026-04-02",
     category: { en: "Digital", es: "Digital" },
-    worldSlug: "cultural-digital-worlds",
+    worldSlug: "product",
     title: {
       en: "Digital atmosphere: the missing layer of modern websites.",
       es: "Atmósfera digital: la capa que le falta a las webs modernas.",
@@ -185,7 +186,7 @@ export const records: LabRecord[] = [
     number: "006",
     date: "2026-03-21",
     category: { en: "Hospitality", es: "Hospitalidad" },
-    worldSlug: "hospitality-experience",
+    worldSlug: "customer-operations",
     title: {
       en: "How boutique hotels can build memory before the booking.",
       es: "Cómo los hoteles boutique pueden construir memoria antes de la reserva.",
@@ -217,6 +218,7 @@ export const records: LabRecord[] = [
     number: "007",
     date: "2026-03-09",
     category: { en: "Direction", es: "Dirección" },
+    worldSlug: "communication",
     title: {
       en: "Why AI content without direction damages premium brands.",
       es: "Por qué el contenido con IA sin dirección daña las marcas premium.",
@@ -248,7 +250,7 @@ export const records: LabRecord[] = [
     number: "008",
     date: "2026-02-24",
     category: { en: "Nightlife", es: "Vida nocturna" },
-    worldSlug: "nightlife-cultural-events",
+    worldSlug: "customer-operations",
     title: {
       en: "The future of nightlife branding is operational, not graphic.",
       es: "El futuro del branding nocturno es operativo, no gráfico.",
@@ -280,6 +282,7 @@ export const records: LabRecord[] = [
     number: "009",
     date: "2026-02-08",
     category: { en: "Worldbuilding", es: "Worldbuilding" },
+    worldSlug: "community-culture",
     title: {
       en: "Brand worldbuilding for culture-led businesses.",
       es: "Worldbuilding de marca para negocios con voz cultural.",
@@ -311,7 +314,7 @@ export const records: LabRecord[] = [
     number: "010",
     date: "2026-01-26",
     category: { en: "Hospitality", es: "Hospitalidad" },
-    worldSlug: "hospitality-experience",
+    worldSlug: "owned-digital",
     title: {
       en: "Why premium restaurants need cinematic websites.",
       es: "Por qué los restaurantes premium necesitan webs cinematográficas.",

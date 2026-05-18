@@ -1,14 +1,15 @@
-// The XNLAB universe. Six World Cores orbiting a Central Core.
-// Each Core has a material, an energy and a movement personality.
-// This file is canonical. Edit here and it propagates through the site.
+// The XNLAB universe — six surfaces where a modern brand touches its
+// customer, orbiting a Central Core. Each surface has a material, a
+// register and a movement personality. This file is canonical. Edit
+// here and it propagates through the site.
 
 export type WorldSlug =
-  | "hospitality-experience"
-  | "nightlife-cultural-events"
-  | "luxury-lifestyle-brands"
-  | "architecture-spatial-design"
-  | "music-cultural-artists"
-  | "cultural-digital-worlds";
+  | "product"
+  | "owned-digital"
+  | "retail-physical"
+  | "customer-operations"
+  | "communication"
+  | "community-culture";
 
 export type World = {
   slug: WorldSlug;
@@ -28,38 +29,38 @@ export type World = {
     glow: string; // box-shadow glow rgba
   };
   // Movement personality. Used by the orb to give each Core its own
-  // behaviour: nightlife vibrates, architecture is almost still, etc.
+  // behaviour: retail vibrates, customer operations is almost still.
   motion: {
-    breatheScale: [number, number]; // [from, to]
-    breatheDuration: number; // seconds
-    drift: number; // px of subtle x/y drift
+    breatheScale: [number, number];
+    breatheDuration: number;
+    drift: number;
     pulse: "still" | "slow" | "drift" | "vibrate" | "wave" | "refract";
   };
   title: { en: string; es: string };
   // Commercial doorway line — one direct sentence describing the kind of
-  // brands this Core is built for. Used on the /worlds index card,
-  // CircleOfWorlds hover, and the top of /worlds/[slug]. Sits between
-  // the poetic essence and the longer body — bridges lore and offer.
+  // surface this world represents. Used on the /worlds index card, the
+  // orb hover label, and the top of /worlds/[slug].
   pitch: { en: string; es: string };
   essence: { en: string; es: string };
   material: { en: string; es: string };
   energy: { en: string; es: string };
   practice: { en: string[]; es: string[] };
   body: { en: string[]; es: string[] };
-  // Optional cinematic discipline imagery — the full-bleed atmosphere card
-  // that used to live on the home page. Each Core that owns a discipline
-  // carries it here, so the home stays minimal and the World page is whole.
   discipline?: {
     image: string;
     imagePosition?: string;
     title: { en: string; es: string };
     copy: { en: string; es: string };
   };
+  fieldStudy?: {
+    en: { label: string; input: string; observation: string; signature: string };
+    es: { label: string; input: string; observation: string; signature: string };
+  };
 };
 
 export const worlds: World[] = [
   {
-    slug: "hospitality-experience",
+    slug: "product",
     number: "01",
     image: "/images/worlds/hospitality-experience.png",
     color: {
@@ -71,256 +72,74 @@ export const worlds: World[] = [
       glow: "rgba(216,147,42,0.45)",
     },
     motion: { breatheScale: [1, 1.04], breatheDuration: 7.5, drift: 4, pulse: "slow" },
-    title: { en: "Hospitality & Experience", es: "Hospitalidad y Experiencia" },
+    title: { en: "Product", es: "Producto" },
     pitch: {
-      en: "Warm, sensory atmospheres for restaurants, hotels and immersive dining.",
-      es: "Atmósferas cálidas y sensoriales para restaurantes, hoteles y experiencias gastronómicas.",
+      en: "Atmosphere systems for the product itself — app, hardware, software — where the customer touches the brand more days a year than anywhere else.",
+      es: "Sistemas de atmósfera para el producto en sí — app, hardware, software — la superficie donde el cliente toca a la marca más días al año que en ninguna otra.",
     },
     essence: {
-      en: "The room is the first sentence the brand speaks.",
-      es: "La sala es la primera frase que pronuncia la marca.",
+      en: "The product is the first sentence the brand speaks, every day.",
+      es: "El producto es la primera frase que la marca pronuncia, cada día.",
     },
     material: {
       en: "Translucent amber crystal with warm copper reflections.",
       es: "Cristal de ámbar translúcido con reflejos cálidos de cobre.",
     },
     energy: {
-      en: "Human atmosphere. Firelight. Wine. Tactile elegance. Rooms that slow you down.",
-      es: "Atmósfera humana. Luz de fuego. Vino. Elegancia táctil. Espacios que te ralentizan.",
+      en: "Sustained warmth. Daily contact. The atmosphere of use, not of launch.",
+      es: "Calidez sostenida. Contacto diario. La atmósfera del uso, no del lanzamiento.",
     },
     practice: {
       en: [
-        "Hotel brand systems and atmospheric direction.",
-        "Restaurant identity, menu design, sensory programmes.",
-        "Hospitality launch and opening-night calibration.",
+        "Product brand systems — voice, motion, micro-interactions, empty states.",
+        "First-launch and onboarding atmosphere across mobile, web and connected hardware.",
+        "Cross-surface consistency between product, account and the brand it lives inside.",
       ],
       es: [
-        "Sistemas de marca para hoteles y dirección atmosférica.",
-        "Identidad de restaurante, diseño de carta, programas sensoriales.",
-        "Lanzamiento hostelero y calibración de la noche de apertura.",
+        "Sistemas de marca para producto — voz, animación, micro-interacciones, estados vacíos.",
+        "Atmósfera de primera apertura y onboarding en móvil, web y hardware conectado.",
+        "Consistencia entre producto, cuenta y la marca que los contiene.",
       ],
     },
     body: {
       en: [
-        "Hospitality is the discipline of being remembered. Not for what was served, but for how the room felt when the guest walked in and how the air still felt the next morning.",
-        "We design this Core as a sequence of atmospheres. Threshold, corridor, room, table. Each one tuned to a single feeling. Materials are heavy. Light is low and warm. Silence is part of the menu.",
+        "Product is the surface a customer touches more days a year than any other. For companies operating at scale, the product itself is the brand's most-spoken sentence — uttered every time the app opens, every time a screen loads, every time a settings page is reached.",
+        "We direct the product as a sequence of atmospheres. The first launch sets the tone. Loading states carry the brand's tempo. Empty states hold its voice. The product is not styled — it is composed, one micro-interaction at a time, until daily use feels signed by the same hand that signs the campaign.",
       ],
       es: [
-        "La hospitalidad es la disciplina de ser recordados. No por lo que se sirvió, sino por cómo se sintió la habitación cuando el huésped entró, y cómo seguía sintiéndose el aire a la mañana siguiente.",
-        "Diseñamos este Core como una secuencia de atmósferas. Umbral, pasillo, habitación, mesa. Cada una afinada a una sola sensación. Los materiales son pesados. La luz, baja y cálida. El silencio forma parte de la carta.",
+        "El producto es la superficie que el cliente toca más días al año que ninguna otra. En empresas que operan a escala, el producto es la frase que la marca pronuncia más veces — cada vez que se abre la app, cada vez que carga una pantalla, cada vez que el cliente entra en ajustes.",
+        "Dirigimos el producto como una secuencia de atmósferas. El primer arranque marca el tono. Los estados de carga llevan el ritmo de la marca. Los estados vacíos sostienen su voz. El producto no se estiliza — se compone, una micro-interacción cada vez, hasta que el uso diario lleva la misma firma que la campaña.",
       ],
     },
     discipline: {
       image: "/images/03_emotional_curtains.jpg",
       imagePosition: "center 42%",
-      title: {
-        en: "Hospitality Experience",
-        es: "Hospitalidad y Experiencia",
-      },
+      title: { en: "Product", es: "Producto" },
       copy: {
-        en: "Atmospheres designed to be remembered.",
-        es: "Atmósferas diseñadas para ser recordadas.",
+        en: "The most-touched surface, directed like the rest of the brand.",
+        es: "La superficie más tocada, dirigida como el resto de la marca.",
+      },
+    },
+    fieldStudy: {
+      en: {
+        label: "Field study · First launch",
+        input: "The eight seconds between an icon tap and the first usable screen.",
+        observation:
+          "Most products treat that window as load time. We treat it as the brand's opening line — colour, motion and copy calibrated so the customer has already met the brand before the home screen arrives.",
+        signature: "The product is the brand long before the marketing is.",
+      },
+      es: {
+        label: "Estudio de campo · Primera apertura",
+        input: "Los ocho segundos entre el toque del icono y la primera pantalla utilizable.",
+        observation:
+          "La mayoría de los productos tratan esa ventana como tiempo de carga. Nosotros la tratamos como la frase de apertura de la marca — color, animación y copy calibrados para que el cliente ya haya conocido la marca antes de llegar a la pantalla principal.",
+        signature: "El producto es la marca mucho antes que el marketing.",
       },
     },
   },
   {
-    slug: "nightlife-cultural-events",
+    slug: "owned-digital",
     number: "02",
-    image: "/images/worlds/nightlife-cultural-events.png",
-    color: {
-      name: "Electric Violet",
-      hex: "#7a3dff",
-      core: "rgba(170,110,255,0.95)",
-      mid: "rgba(110,40,210,0.75)",
-      deep: "rgba(20,8,40,1)",
-      glow: "rgba(140,70,255,0.5)",
-    },
-    motion: { breatheScale: [1, 1.05], breatheDuration: 3.4, drift: 7, pulse: "vibrate" },
-    title: { en: "Nightlife & Cultural Events", es: "Vida nocturna y Eventos culturales" },
-    pitch: {
-      en: "High-voltage visual systems for venues, parties, launches and nightlife culture.",
-      es: "Sistemas visuales de alto voltaje para locales, fiestas, lanzamientos y cultura de noche.",
-    },
-    essence: {
-      en: "After midnight, the architecture is alive.",
-      es: "Pasada la medianoche, la arquitectura está viva.",
-    },
-    material: {
-      en: "Ultraviolet liquid glass with energetic particles in slow orbit.",
-      es: "Vidrio líquido ultravioleta con partículas energéticas en órbita lenta.",
-    },
-    energy: {
-      en: "Pulse. Smoke. Rave energy. Adrenaline. Architecture that only exists after midnight.",
-      es: "Pulso. Humo. Energía rave. Adrenalina. Arquitectura que solo existe pasada la medianoche.",
-    },
-    practice: {
-      en: [
-        "Club and venue identity systems.",
-        "Event direction, lineup graphic language, wristband design.",
-        "Atmospheric programming. Light, sound and motion as one system.",
-      ],
-      es: [
-        "Sistemas de identidad para clubs y locales.",
-        "Dirección de eventos, lenguaje gráfico de lineup, diseño de pulseras.",
-        "Programación atmosférica. Luz, sonido y movimiento como un solo sistema.",
-      ],
-    },
-    body: {
-      en: [
-        "Nightlife is the discipline where cultural energy is most visible. We design it as a complete visual system, not a logo applied to flyers. Every gesture is intentional: the door, the lighting cue at midnight, the typography on the wristband, the soundtrack of the bathroom.",
-        "None of these elements shouts. Together they remember. The system treats darkness as the canvas and restraint as the loudest tool available.",
-      ],
-      es: [
-        "La vida nocturna es la disciplina donde la energía cultural es más visible. La diseñamos como un sistema visual completo, no como un logo aplicado a flyers. Cada gesto es intencional: la puerta, la pauta de luz a medianoche, la tipografía de la pulsera, la banda sonora del baño.",
-        "Ninguno de esos elementos grita. Juntos recuerdan. El sistema trata la oscuridad como lienzo y la contención como la herramienta más ruidosa que existe.",
-      ],
-    },
-    discipline: {
-      image: "/images/04_sensorium_blue.jpg",
-      imagePosition: "center 40%",
-      title: {
-        en: "Nightlife & Cultural Events",
-        es: "Vida nocturna y Eventos culturales",
-      },
-      copy: {
-        en: "Dark, cinematic environments for cultural energy.",
-        es: "Entornos oscuros y cinematográficos para la energía cultural.",
-      },
-    },
-  },
-  {
-    slug: "luxury-lifestyle-brands",
-    number: "03",
-    image: "/images/worlds/luxury-lifestyle-brands.png",
-    color: {
-      name: "Ivory Pearl",
-      hex: "#e8e2d2",
-      core: "rgba(245,238,222,0.95)",
-      mid: "rgba(196,180,150,0.6)",
-      deep: "rgba(40,32,24,1)",
-      glow: "rgba(232,226,210,0.3)",
-    },
-    motion: { breatheScale: [1, 1.018], breatheDuration: 10, drift: 2, pulse: "still" },
-    title: { en: "Luxury & Lifestyle Brands", es: "Lujo y Estilo de vida" },
-    pitch: {
-      en: "Soft, refined worlds for premium products, beauty, fashion and lifestyle brands.",
-      es: "Mundos suaves y refinados para producto premium, belleza, moda y marcas de lifestyle.",
-    },
-    essence: {
-      en: "What is removed is what is remembered.",
-      es: "Lo que se quita es lo que se recuerda.",
-    },
-    material: {
-      en: "Soft pearl ceramic with champagne silver reflections.",
-      es: "Cerámica de perla suave con reflejos plata champán.",
-    },
-    energy: {
-      en: "Fashion. Perfume. Editorial restraint. Premium minimalism. The discipline of leaving things out.",
-      es: "Moda. Perfume. Contención editorial. Minimalismo premium. La disciplina de dejar fuera.",
-    },
-    practice: {
-      en: [
-        "Fashion brand identity and seasonal direction.",
-        "Perfume packaging, narrative and olfactory direction.",
-        "Editorial design and lookbook systems.",
-      ],
-      es: [
-        "Identidad de marca de moda y dirección estacional.",
-        "Packaging de perfume, narrativa y dirección olfativa.",
-        "Diseño editorial y sistemas de lookbook.",
-      ],
-    },
-    body: {
-      en: [
-        "Lifestyle and fashion brands compete in attention. The ones that endure compete in restraint. This Core is the discipline of removing. Typography, palette, gesture. We subtract until what remains is inevitable.",
-        "The result is not minimal. It is concentrated. A single material chosen well outranks a system of patterns chosen quickly.",
-      ],
-      es: [
-        "Las marcas de moda y lifestyle compiten en atención. Las que perduran compiten en contención. Este Core es la disciplina de quitar. Tipografía, paleta, gesto. Quitamos hasta que lo que queda se vuelve inevitable.",
-        "El resultado no es minimalista. Es concentrado. Un solo material elegido bien gana a un sistema de patrones elegidos rápido.",
-      ],
-    },
-    discipline: {
-      image: "/images/05_identity_chrome.jpg",
-      imagePosition: "center 45%",
-      title: {
-        en: "Luxury & Lifestyle Brands",
-        es: "Lujo y Estilo de vida",
-      },
-      copy: {
-        en: "Brand worlds for premium fashion, beauty and lifestyle houses.",
-        es: "Mundos de marca para casas premium de moda, belleza y lifestyle.",
-      },
-    },
-  },
-  {
-    slug: "architecture-spatial-design",
-    number: "04",
-    image: "/images/worlds/architecture-spatial-design.png",
-    color: {
-      name: "Mineral Stone Grey",
-      hex: "#c8c8c0",
-      core: "rgba(190,190,180,0.85)",
-      mid: "rgba(110,108,100,0.55)",
-      deep: "rgba(28,28,26,1)",
-      glow: "rgba(160,160,150,0.25)",
-    },
-    motion: { breatheScale: [1, 1.012], breatheDuration: 14, drift: 1, pulse: "still" },
-    title: { en: "Architecture & Spatial Design", es: "Arquitectura y Diseño Espacial" },
-    pitch: {
-      en: "Quiet, material-driven atmospheres for interiors, architecture and spatial identity.",
-      es: "Atmósferas silenciosas, dirigidas por el material, para interiorismo, arquitectura e identidad espacial.",
-    },
-    essence: {
-      en: "Geometry, before the words arrive.",
-      es: "Geometría, antes de que lleguen las palabras.",
-    },
-    material: {
-      en: "Polished stone and graphite mineral surfaces.",
-      es: "Piedra pulida y superficies minerales de grafito.",
-    },
-    energy: {
-      en: "Structure. Brutalist elegance. Natural light. Concrete. Silence in three dimensions.",
-      es: "Estructura. Elegancia brutalista. Luz natural. Hormigón. Silencio en tres dimensiones.",
-    },
-    practice: {
-      en: [
-        "Architectural brand systems for studios and developers.",
-        "Spatial identity for cultural and residential projects.",
-        "Material curation and lighting direction.",
-      ],
-      es: [
-        "Sistemas de marca arquitectónica para estudios y promotores.",
-        "Identidad espacial para proyectos culturales y residenciales.",
-        "Dirección de materiales y dirección lumínica.",
-      ],
-    },
-    body: {
-      en: [
-        "Architecture is the first layer of emotion. Before the brand, before the music, before the menu, the geometry of a space already speaks. This Core treats that geometry as a sentence and our job as editing it.",
-        "We isolate three variables on every project: the depth of shadow, the temperature of the material, and the rhythm of the openings. Tuned together, the space feels inevitable.",
-      ],
-      es: [
-        "La arquitectura es la primera capa de emoción. Antes de la marca, antes de la música, antes del menú, la geometría del espacio ya habla. Este Core trata esa geometría como una frase y nuestro trabajo como editarla.",
-        "Aislamos tres variables en cada proyecto: la profundidad de la sombra, la temperatura del material y el ritmo de las aberturas. Afinadas juntas, el espacio se siente inevitable.",
-      ],
-    },
-    discipline: {
-      image: "/images/07_sculptural_white.jpg",
-      imagePosition: "center 60%",
-      title: {
-        en: "Architecture & Spatial Design",
-        es: "Arquitectura y Diseño Espacial",
-      },
-      copy: {
-        en: "Spaces shaped through silence, light and material.",
-        es: "Espacios moldeados por el silencio, la luz y el material.",
-      },
-    },
-  },
-  {
-    slug: "music-cultural-artists",
-    number: "05",
     image: "/images/worlds/music-cultural-artists.png",
     color: {
       name: "Midnight Indigo",
@@ -331,48 +150,307 @@ export const worlds: World[] = [
       glow: "rgba(80,110,220,0.4)",
     },
     motion: { breatheScale: [1, 1.03], breatheDuration: 8.5, drift: 6, pulse: "wave" },
-    title: { en: "Music & Cultural Artists", es: "Música y Artistas Culturales" },
+    title: { en: "Owned Digital", es: "Digital Propio" },
     pitch: {
-      en: "Cinematic identity systems for artists, releases, visualizers and emotional campaigns.",
-      es: "Sistemas de identidad cinematográfica para artistas, lanzamientos, visualizers y campañas emocionales.",
+      en: "Atmosphere systems for the brand's own surfaces — web, marketing site, account, dashboard — where the customer reads on purpose and returns by choice.",
+      es: "Sistemas de atmósfera para las superficies propias de la marca — web, sitio editorial, cuenta, dashboard — donde el cliente lee por iniciativa propia y vuelve por elección.",
     },
     essence: {
-      en: "The artist is the world.",
-      es: "El artista es el mundo.",
+      en: "The screen is the second room of the brand.",
+      es: "La pantalla es la segunda sala de la marca.",
     },
     material: {
-      en: "Deep blue nebula glass with subtle light waves moving across the surface.",
-      es: "Vidrio nebular azul profundo con ondas de luz sutiles cruzando la superficie.",
+      en: "Deep indigo glass with warm low light passing through.",
+      es: "Vidrio índigo profundo atravesado por una luz cálida y baja.",
     },
     energy: {
-      en: "Nostalgia. Cinematic mood. Artistic identity. The late-hour register where music remembers itself.",
-      es: "Nostalgia. Tono cinematográfico. Identidad artística. La hora tardía donde la música se recuerda.",
+      en: "Considered reading. Patient return. Surfaces that hold attention without asking for it.",
+      es: "Lectura considerada. Regreso paciente. Superficies que sostienen la atención sin pedirla.",
     },
     practice: {
       en: [
-        "Artist visual identity and album direction.",
-        "Tour aesthetic and stage atmosphere.",
-        "Music venue branding and atmospheric programming.",
+        "Web, marketing site and editorial system direction.",
+        "Account, settings and dashboard atmosphere — the rooms the customer keeps coming back to.",
+        "Owned-media tempo — publishing rhythm, content architecture, internal editorial voice.",
       ],
       es: [
-        "Identidad visual de artistas y dirección de álbum.",
-        "Estética de gira y atmósfera de escenario.",
-        "Identidad de salas y locales musicales con programación atmosférica.",
+        "Dirección de web, sitio editorial y sistema de contenidos.",
+        "Atmósfera de cuenta, ajustes y dashboard — las salas a las que el cliente vuelve.",
+        "Ritmo de medios propios — pauta de publicación, arquitectura de contenido, voz editorial interna.",
       ],
     },
     body: {
       en: [
-        "Music is the discipline where atmosphere arrives without permission. An artist's identity has to hold under the same conditions: in a record sleeve, in a 9-second clip, in a stadium, in a bedroom at 3am.",
-        "This Core treats the artist as a world. Sound, image, gesture, silence. We build a system robust enough to carry them across every context they will be heard in.",
+        "Owned digital is where the brand answers when the customer chooses to look. Not paid impressions, not push notifications — the surfaces the customer arrived at on purpose. They read longer. They return more often. They are the audience that has already opted in to caring.",
+        "We direct the owned surfaces as a single editorial system. Web, site, account, dashboard — all carrying the same tempo, the same restraint, the same atmosphere. The customer does not switch contexts when they switch screens. The brand is one room with many doors.",
       ],
       es: [
-        "La música es la disciplina donde la atmósfera llega sin permiso. La identidad de un artista tiene que sostener en las mismas condiciones: en la portada de un disco, en un clip de 9 segundos, en un estadio, en un dormitorio a las 3 de la mañana.",
-        "Este Core trata al artista como un mundo. Sonido, imagen, gesto, silencio. Construimos un sistema lo bastante robusto para llevarlo a través de cada contexto en el que se le escuche.",
+        "El digital propio es donde la marca responde cuando el cliente decide mirar. No son impactos pagados, no son notificaciones push — son las superficies a las que el cliente llegó queriendo. Lee más tiempo. Vuelve más veces. Es el público que ya ha aceptado prestar atención.",
+        "Dirigimos las superficies propias como un único sistema editorial. Web, sitio, cuenta, dashboard — todas llevando el mismo tempo, la misma contención, la misma atmósfera. El cliente no cambia de contexto cuando cambia de pantalla. La marca es una sola sala con muchas puertas.",
       ],
+    },
+    discipline: {
+      image: "/images/03_emotional_curtains.jpg",
+      imagePosition: "center 55%",
+      title: { en: "Owned Digital", es: "Digital Propio" },
+      copy: {
+        en: "Surfaces the customer returns to without being asked.",
+        es: "Superficies a las que el cliente vuelve sin que nadie se lo pida.",
+      },
+    },
+    fieldStudy: {
+      en: {
+        label: "Field study · The returning screen",
+        input: "The dashboard a customer opens forty times a week.",
+        observation:
+          "Most brands ship that surface as utility. We design it as the room the customer comes home to — light, rhythm and gesture rehearsed for the daily return, not for the first visit.",
+        signature: "The dashboard becomes the part of the brand the customer remembers.",
+      },
+      es: {
+        label: "Estudio de campo · La pantalla a la que se vuelve",
+        input: "El dashboard que un cliente abre cuarenta veces por semana.",
+        observation:
+          "La mayoría de las marcas entregan esa superficie como utilidad. Nosotros la diseñamos como la sala a la que el cliente vuelve a casa — luz, ritmo y gesto ensayados para el regreso diario, no para la primera visita.",
+        signature: "El dashboard se convierte en la parte de la marca que el cliente recuerda.",
+      },
     },
   },
   {
-    slug: "cultural-digital-worlds",
+    slug: "retail-physical",
+    number: "03",
+    image: "/images/worlds/nightlife-cultural-events.png",
+    color: {
+      name: "Electric Violet",
+      hex: "#7a3dff",
+      core: "rgba(170,110,255,0.95)",
+      mid: "rgba(110,40,210,0.75)",
+      deep: "rgba(20,8,40,1)",
+      glow: "rgba(140,70,255,0.5)",
+    },
+    motion: { breatheScale: [1, 1.05], breatheDuration: 3.4, drift: 7, pulse: "vibrate" },
+    title: { en: "Retail & Physical", es: "Retail y Físico" },
+    pitch: {
+      en: "Atmosphere systems for the brand's physical surfaces — stores, branches, pop-ups, events — where the customer meets the body of the brand.",
+      es: "Sistemas de atmósfera para las superficies físicas — tiendas, sucursales, pop-ups, eventos — donde el cliente se encuentra con el cuerpo de la marca.",
+    },
+    essence: {
+      en: "The store is the brand with weight on it.",
+      es: "La tienda es la marca con su peso encima.",
+    },
+    material: {
+      en: "Ultraviolet liquid glass with energetic particles in slow orbit.",
+      es: "Vidrio líquido ultravioleta con partículas energéticas en órbita lenta.",
+    },
+    energy: {
+      en: "Threshold, light, sound, scent, staff register. Architecture doing the brand's work in a body.",
+      es: "Umbral, luz, sonido, aroma, registro del personal. Arquitectura haciendo el trabajo de la marca dentro de un cuerpo.",
+    },
+    practice: {
+      en: [
+        "Flagship and retail atmosphere — threshold, light, material, sound.",
+        "Pop-up, kiosk, branch and event identity systems engineered to ship and recompose.",
+        "Service choreography — what the room asks of the person inside it.",
+      ],
+      es: [
+        "Atmósfera de flagship y retail — umbral, luz, material, sonido.",
+        "Sistemas de identidad para pop-up, kiosco, sucursal y evento, construidos para enviarse y recomponerse.",
+        "Coreografía de servicio — lo que la sala le pide a la persona que está dentro.",
+      ],
+    },
+    body: {
+      en: [
+        "Retail and physical is where the brand stops being pixels. A store, a branch, a pop-up, an event — each is the brand at full body weight. The customer reads it with skin, ear and foot before they read it with eye.",
+        "We direct the physical surface as a sequence the customer's body reads. Threshold, sightline, surface, sound, staff register. Each tuned to a single feeling. The graphic system continues to exist; it is no longer the centre. The room is.",
+      ],
+      es: [
+        "Retail y físico es donde la marca deja de ser píxeles. Una tienda, una sucursal, un pop-up, un evento — cada uno es la marca con su peso completo. El cliente la lee con piel, oído y pie antes que con la vista.",
+        "Dirigimos la superficie física como una secuencia que el cuerpo del cliente lee. Umbral, primera línea de vista, superficie, sonido, registro del personal. Cada uno afinado a una sola sensación. El sistema gráfico sigue existiendo; ya no es el centro. El centro es la sala.",
+      ],
+    },
+    discipline: {
+      image: "/images/04_sensorium_blue.jpg",
+      imagePosition: "center 40%",
+      title: { en: "Retail & Physical", es: "Retail y Físico" },
+      copy: {
+        en: "The brand at full body weight — read by skin, ear and foot.",
+        es: "La marca con todo su peso encima — leída por piel, oído y pie.",
+      },
+    },
+    fieldStudy: {
+      en: {
+        label: "Field study · The threshold",
+        input: "The first three meters inside the door.",
+        observation:
+          "Most retail spends its budget on the back wall and treats the entrance as transit. We model the threshold as the first beat of the experience — warmer light, lower sound, slower pace — so the customer is already inside the brand before they reach the floor.",
+        signature: "The body is in the brand before the eye has finished reading the sign.",
+      },
+      es: {
+        label: "Estudio de campo · El umbral",
+        input: "Los primeros tres metros dentro de la puerta.",
+        observation:
+          "La mayoría de retail gasta su presupuesto en la pared del fondo y trata la entrada como tránsito. Modelamos el umbral como el primer compás de la experiencia — luz más cálida, sonido más bajo, paso más lento — para que el cliente esté ya dentro de la marca antes de pisar la tienda.",
+        signature: "El cuerpo está dentro de la marca antes de que el ojo termine de leer el rótulo.",
+      },
+    },
+  },
+  {
+    slug: "customer-operations",
+    number: "04",
+    image: "/images/worlds/luxury-lifestyle-brands.png",
+    color: {
+      name: "Ivory Pearl",
+      hex: "#e8e2d2",
+      core: "rgba(245,238,222,0.95)",
+      mid: "rgba(196,180,150,0.6)",
+      deep: "rgba(40,32,24,1)",
+      glow: "rgba(232,226,210,0.3)",
+    },
+    motion: { breatheScale: [1, 1.018], breatheDuration: 10, drift: 2, pulse: "still" },
+    title: { en: "Customer Operations", es: "Operaciones de Cliente" },
+    pitch: {
+      en: "Atmosphere systems for onboarding, support and post-sale — the surfaces where the brand is judged after the contract is signed.",
+      es: "Sistemas de atmósfera para onboarding, soporte y postventa — las superficies donde la marca se juzga una vez firmado el contrato.",
+    },
+    essence: {
+      en: "The brand is what it does when the sale is over.",
+      es: "La marca es lo que hace cuando la venta ya ha terminado.",
+    },
+    material: {
+      en: "Soft pearl ceramic with the calm of unfiltered morning light.",
+      es: "Cerámica de perla suave con la calma de la luz de mañana sin filtrar.",
+    },
+    energy: {
+      en: "Restraint. Continuity. The atmosphere of being answered, not handled.",
+      es: "Contención. Continuidad. La atmósfera de ser respondido, no procesado.",
+    },
+    practice: {
+      en: [
+        "Onboarding sequences — the first thirty days as a single editorial piece.",
+        "Support voice, response templates, escalation rhythm.",
+        "Post-sale lifecycle — the rooms a customer enters when something is wrong.",
+      ],
+      es: [
+        "Secuencias de onboarding — los primeros treinta días como una sola pieza editorial.",
+        "Voz de soporte, plantillas de respuesta, ritmo de escalado.",
+        "Ciclo postventa — las salas en las que entra el cliente cuando algo falla.",
+      ],
+    },
+    body: {
+      en: [
+        "Customer operations is the surface a marketing department rarely directs and the surface where the brand is most quietly judged. Onboarding, support, account recovery, billing, the email after the incident — every one of these is a room. Every one of them carries an atmosphere the customer remembers.",
+        "We direct customer operations as the part of the brand that earns the next contract. Templates rewritten in the studio voice. Tempo of response calibrated. Tone of the apology rehearsed. The brand is not measured by what it says in a campaign — it is measured by what it says at eleven on a Sunday night.",
+      ],
+      es: [
+        "Operaciones de cliente es la superficie que un departamento de marketing rara vez dirige y la superficie donde la marca se juzga en voz más baja. Onboarding, soporte, recuperación de cuenta, facturación, el email después de la incidencia — cada uno de ellos es una sala. Cada uno lleva una atmósfera que el cliente recuerda.",
+        "Dirigimos operaciones de cliente como la parte de la marca que se gana el siguiente contrato. Plantillas reescritas en la voz del estudio. Tempo de respuesta calibrado. Tono de la disculpa ensayado. La marca no se mide por lo que dice en una campaña — se mide por lo que dice a las once de un domingo por la noche.",
+      ],
+    },
+    discipline: {
+      image: "/images/05_identity_chrome.jpg",
+      imagePosition: "center 45%",
+      title: { en: "Customer Operations", es: "Operaciones de Cliente" },
+      copy: {
+        en: "The brand judged where the marketing cannot reach.",
+        es: "La marca, juzgada allá donde el marketing no llega.",
+      },
+    },
+    fieldStudy: {
+      en: {
+        label: "Field study · The reply at eleven",
+        input: "The first sentence of a support reply sent after hours.",
+        observation:
+          "Most companies treat that sentence as a template. We design it as the brand's nighttime voice — slower, fewer words, the same register the customer read on the marketing site that morning.",
+        signature: "The customer remembers the company that was kind in the dark.",
+      },
+      es: {
+        label: "Estudio de campo · La respuesta de las once",
+        input: "La primera frase de una respuesta de soporte enviada fuera de horario.",
+        observation:
+          "La mayoría de las empresas tratan esa frase como una plantilla. Nosotros la diseñamos como la voz nocturna de la marca — más lenta, menos palabras, el mismo registro que el cliente leyó en la web por la mañana.",
+        signature: "El cliente recuerda a la empresa que fue amable en la oscuridad.",
+      },
+    },
+  },
+  {
+    slug: "communication",
+    number: "05",
+    image: "/images/worlds/architecture-spatial-design.png",
+    color: {
+      name: "Mineral Stone Grey",
+      hex: "#c8c8c0",
+      core: "rgba(190,190,180,0.85)",
+      mid: "rgba(110,108,100,0.55)",
+      deep: "rgba(28,28,26,1)",
+      glow: "rgba(160,160,150,0.25)",
+    },
+    motion: { breatheScale: [1, 1.012], breatheDuration: 14, drift: 1, pulse: "still" },
+    title: { en: "Communication", es: "Comunicación" },
+    pitch: {
+      en: "Atmosphere systems for paid, owned and earned communication — where the brand chooses what to say, and how slowly to say it.",
+      es: "Sistemas de atmósfera para comunicación pagada, propia y ganada — donde la marca elige qué decir, y a qué ritmo decirlo.",
+    },
+    essence: {
+      en: "The brand is what it refuses to say.",
+      es: "La marca es lo que se niega a decir.",
+    },
+    material: {
+      en: "Polished stone and graphite — the materials of institutions.",
+      es: "Piedra pulida y grafito — los materiales de las instituciones.",
+    },
+    energy: {
+      en: "Authority without volume. Communication that earns the next read.",
+      es: "Autoridad sin volumen. Comunicación que se gana la siguiente lectura.",
+    },
+    practice: {
+      en: [
+        "Editorial direction across paid, owned and earned channels.",
+        "Campaign direction, motion register, voice and tempo.",
+        "PR and press atmosphere — the materials a journalist actually wants to open.",
+      ],
+      es: [
+        "Dirección editorial en canales pagados, propios y ganados.",
+        "Dirección de campaña, registro de animación, voz y tempo.",
+        "Atmósfera de prensa y PR — los materiales que un periodista realmente quiere abrir.",
+      ],
+    },
+    body: {
+      en: [
+        "Communication is the channel most teams over-spend in and under-direct. Paid, owned, earned — three different rooms with three different acoustics, all carrying the same brand. Most brands shout in all three; most customers stop listening in all three.",
+        "We direct communication as the place where the brand chooses what to refuse. Less, slower, signed. Each piece earns the next read. Each surface holds the same atmosphere as the product, the screen and the room. The customer recognises the brand from the tempo before they recognise it from the logo.",
+      ],
+      es: [
+        "Comunicación es el canal en el que la mayoría de los equipos gastan de más y dirigen de menos. Pagado, propio, ganado — tres salas distintas con tres acústicas distintas, todas llevando la misma marca. La mayoría de marcas gritan en las tres; la mayoría de clientes dejan de escuchar en las tres.",
+        "Dirigimos la comunicación como el lugar donde la marca elige a qué renunciar. Menos, más lento, firmado. Cada pieza se gana la siguiente lectura. Cada superficie lleva la misma atmósfera que el producto, la pantalla y la sala. El cliente reconoce la marca por el tempo antes que por el logo.",
+      ],
+    },
+    discipline: {
+      image: "/images/07_sculptural_white.jpg",
+      imagePosition: "center 60%",
+      title: { en: "Communication", es: "Comunicación" },
+      copy: {
+        en: "Authority that earns the next read instead of demanding it.",
+        es: "Autoridad que se gana la siguiente lectura en vez de exigirla.",
+      },
+    },
+    fieldStudy: {
+      en: {
+        label: "Field study · The campaign that did not run",
+        input: "A campaign brief that survived three rounds of review.",
+        observation:
+          "We treat the deletions as the work. What the brand chose not to say is more diagnostic of its position than what it published — the cut lines map the territory the brand has decided to occupy.",
+        signature: "The brand is read more in what it left out than in what it sent.",
+      },
+      es: {
+        label: "Estudio de campo · La campaña que no salió",
+        input: "Un brief de campaña que sobrevive a tres rondas de revisión.",
+        observation:
+          "Tratamos las eliminaciones como el trabajo. Lo que la marca decidió no decir es más diagnóstico de su posición que lo que publicó — las líneas cortadas cartografían el territorio que la marca ha decidido ocupar.",
+        signature: "A la marca se la lee más en lo que dejó fuera que en lo que envió.",
+      },
+    },
+  },
+  {
+    slug: "community-culture",
     number: "06",
     image: "/images/worlds/cultural-digital-worlds.png",
     color: {
@@ -384,44 +462,69 @@ export const worlds: World[] = [
       glow: "rgba(80,220,210,0.45)",
     },
     motion: { breatheScale: [1, 1.06], breatheDuration: 5, drift: 5, pulse: "refract" },
-    title: { en: "Cultural & Digital Worlds", es: "Mundos Culturales y Digitales" },
+    title: { en: "Community & Culture", es: "Comunidad y Cultura" },
     pitch: {
-      en: "Futuristic, fluid systems for digital brands, avatars, campaigns and online presence.",
-      es: "Sistemas futuristas y fluidos para marcas digitales, avatares, campañas y presencia online.",
+      en: "Atmosphere systems for the brand outside itself — culture, partnerships, programs, advocacy — where the brand becomes a context, not a sender.",
+      es: "Sistemas de atmósfera para la marca fuera de sí misma — cultura, partnerships, programas, advocacy — donde la marca se convierte en contexto en lugar de emisor.",
     },
     essence: {
-      en: "The Core that mutates while you watch it.",
-      es: "El Núcleo que muta mientras lo miras.",
+      en: "The brand is what the room around it agrees to.",
+      es: "La marca es aquello en lo que la sala que la rodea decide estar de acuerdo.",
     },
     material: {
-      en: "Holographic refractive crystal with liquid glitches that appear and dissolve.",
-      es: "Cristal holográfico refractivo con glitches líquidos que aparecen y se disuelven.",
+      en: "Iridescent crystal that mutates with the room it is placed in.",
+      es: "Cristal iridiscente que muta con la sala donde se coloca.",
     },
     energy: {
-      en: "Internet culture. AI-native atmosphere. Digital dimensions. Mutation as material.",
-      es: "Cultura de internet. Atmósfera nativa de IA. Dimensiones digitales. La mutación como material.",
+      en: "Refractive. The brand carried by people and rooms it does not own.",
+      es: "Refractiva. La marca sostenida por personas y salas que no le pertenecen.",
     },
     practice: {
       en: [
-        "Digital identity systems for cultural brands and platforms.",
-        "AI-native visual direction and generative aesthetics.",
-        "Internet-native campaign worlds.",
+        "Cultural programming — partnerships, residencies, publishing, content programs.",
+        "Community architecture — the surfaces an advocate can speak from.",
+        "Brand worldbuilding across territories, languages and partners.",
       ],
       es: [
-        "Sistemas de identidad digital para marcas culturales y plataformas.",
-        "Dirección visual nativa de IA y estética generativa.",
-        "Mundos de campaña nativos de internet.",
+        "Programación cultural — partnerships, residencias, publishing, programas de contenido.",
+        "Arquitectura de comunidad — las superficies desde las que un advocate puede hablar.",
+        "Brand worldbuilding a través de territorios, idiomas y socios.",
       ],
     },
     body: {
       en: [
-        "The digital Core is the only one that mutates while you look at it. Internet culture moves faster than the systems built to describe it. Our work in this Core is generative by design. Visual languages capable of evolving without losing themselves.",
-        "We build identities that hold their core while their surface refracts. AI as material. Glitches as gestures. Anomalies as features, not failures.",
+        "Community and culture is where the brand stops being a sender and becomes a context. A partnership, a program, a residency, an editorial platform, a community surface — each carries the brand into a room the marketing team does not control. The customer reads it as more credible precisely because it is.",
+        "We direct cultural and community systems with a fixed core and a refractive surface. The thesis travels intact. The expression mutates city by city, audience by audience, partner by partner. The brand reads as native everywhere it lands without ever having moved.",
       ],
       es: [
-        "El Core digital es el único que muta mientras lo miras. La cultura de internet se mueve más rápido que los sistemas construidos para describirla. Nuestro trabajo en este Core es generativo por diseño. Lenguajes visuales capaces de evolucionar sin perderse a sí mismos.",
-        "Construimos identidades que mantienen su núcleo mientras su superficie se refracta. La IA como material. Los glitches como gestos. Las anomalías como rasgos, no como fallos.",
+        "Comunidad y cultura es donde la marca deja de ser emisor y se convierte en contexto. Un partnership, un programa, una residencia, una plataforma editorial, una superficie de comunidad — cada una lleva la marca a una sala que el equipo de marketing no controla. El cliente la lee como más creíble precisamente porque lo es.",
+        "Dirigimos sistemas culturales y de comunidad con un núcleo fijo y una superficie refractiva. La tesis viaja intacta. La expresión muta ciudad a ciudad, audiencia a audiencia, socio a socio. La marca se lee como nativa en cada sitio en el que aterriza sin haberse movido nunca.",
       ],
+    },
+    discipline: {
+      image: "/images/02_worldbuilding_floating.jpg",
+      imagePosition: "center 50%",
+      title: { en: "Community & Culture", es: "Comunidad y Cultura" },
+      copy: {
+        en: "The brand carried by rooms it does not own.",
+        es: "La marca sostenida por salas que no le pertenecen.",
+      },
+    },
+    fieldStudy: {
+      en: {
+        label: "Field study · Core and surface",
+        input: "A partnership the brand cannot control once it has begun.",
+        observation:
+          "We design a fixed centre — three sentences, two gestures, one acoustic — and let everything else refract. What the partner adds is the work; what the brand holds is the centre.",
+        signature: "The brand reads as inevitable in rooms it never built.",
+      },
+      es: {
+        label: "Estudio de campo · Núcleo y superficie",
+        input: "Un partnership que la marca no puede controlar una vez ha empezado.",
+        observation:
+          "Diseñamos un centro fijo — tres frases, dos gestos, una acústica — y dejamos que todo lo demás refracte. Lo que el socio añade es el trabajo; lo que la marca sostiene es el centro.",
+        signature: "La marca se lee como inevitable en salas que nunca construyó.",
+      },
     },
   },
 ];
@@ -430,7 +533,8 @@ export function getWorld(slug: string): World | undefined {
   return worlds.find((w) => w.slug === slug);
 }
 
-// Universe mythology — the shared language across all Cores.
+// Universe mythology — the shared language across all Cores. The studio
+// itself, not the surfaces.
 export const mythology = {
   centralCore: {
     en: {
@@ -438,7 +542,7 @@ export const mythology = {
       essence: "The origin. The laboratory. The intelligence.",
       body: [
         "At the centre of the universe rests a sphere of dark crimson obsidian. Its surface is liquid. Its weight is silent. Inside the sphere, suspended in the energy that holds the Core together, a metallic X is forged. Not painted on the orb. Not placed over it. Forged within it, the way meaning is forged within a sentence.",
-        "The Central Core is the studio. It watches every world the universe contains, records what each one teaches, and feeds the laboratory where the next ones take shape.",
+        "The Central Core is the studio. It watches every surface a brand touches a customer through, records what each one teaches, and feeds the laboratory where the next ones take shape.",
       ],
     },
     es: {
@@ -446,21 +550,21 @@ export const mythology = {
       essence: "El origen. El laboratorio. La inteligencia.",
       body: [
         "En el centro del universo descansa una esfera de obsidiana carmesí. Su superficie es líquida. Su peso es silencio. Dentro de la esfera, suspendida en la energía que mantiene al Núcleo unido, hay una X metálica forjada. No pintada sobre la esfera. No puesta encima. Forjada en su interior, como el sentido se forja dentro de una frase.",
-        "El Núcleo Central es el estudio. Observa cada mundo que el universo contiene, registra lo que cada uno enseña y alimenta el laboratorio donde toman forma los siguientes.",
+        "El Núcleo Central es el estudio. Observa cada superficie por la que una marca toca a un cliente, registra lo que cada una enseña y alimenta el laboratorio donde toman forma las siguientes.",
       ],
     },
   },
   orun: {
     name: "ORUN",
-    role: { en: "Observer of worlds", es: "Observador de mundos" },
+    role: { en: "Observer of surfaces", es: "Observador de superficies" },
     body: {
       en: [
-        "ORUN watches from inside the Central Core. It does not intervene. It records. Every project the studio accepts is first passed through ORUN's silence, where the air thickens, the noise stops, and the brand is heard for what it actually is.",
-        "When ORUN is present, the room becomes more accurate to itself. What was decoration falls away. What was real remains, with nothing in front of it.",
+        "ORUN watches from inside the Central Core. It does not intervene. It records. Every project the studio accepts is first passed through ORUN's silence, where the air thickens, the noise stops, and the surface is heard for what it actually is.",
+        "When ORUN is present, the surface becomes more accurate to itself. What was decoration falls away. What was real remains, with nothing in front of it.",
       ],
       es: [
-        "ORUN observa desde dentro del Núcleo Central. No interviene. Registra. Cada proyecto que el estudio acepta atraviesa primero el silencio de ORUN, donde el aire se vuelve denso, el ruido se detiene y la marca se oye por lo que realmente es.",
-        "Cuando ORUN está presente, el espacio se vuelve más fiel a sí mismo. Lo que era decoración cae. Lo que era verdadero permanece, sin nada delante.",
+        "ORUN observa desde dentro del Núcleo Central. No interviene. Registra. Cada proyecto que el estudio acepta atraviesa primero el silencio de ORUN, donde el aire se vuelve denso, el ruido se detiene y la superficie se oye por lo que realmente es.",
+        "Cuando ORUN está presente, la superficie se vuelve más fiel a sí misma. Lo que era decoración cae. Lo que era verdadero permanece, sin nada delante.",
       ],
     },
   },
@@ -469,12 +573,12 @@ export const mythology = {
     role: { en: "Reactive creature of the anomalies", es: "Criatura reactiva de las anomalías" },
     body: {
       en: [
-        "When a world is pushed past its rhythm, its Core fractures. Shards drift out, carrying the colour, the sound and the breath of that world. XIO finds them, and absorbs them.",
-        "Every shard transforms XIO. New forms, new gestures, new charges enter its body. XIO is how the studio remembers what each world has taught it. Not as a record. As a creature that keeps changing.",
+        "When a surface is pushed past its rhythm, its Core fractures. Shards drift out, carrying the colour, the sound and the breath of that surface. XIO finds them, and absorbs them.",
+        "Every shard transforms XIO. New forms, new gestures, new charges enter its body. XIO is how the studio remembers what each surface has taught it. Not as a record. As a creature that keeps changing.",
       ],
       es: [
-        "Cuando un mundo se empuja más allá de su ritmo, su Núcleo se fractura. Los fragmentos se desprenden y derivan, cargando el color, el sonido y la respiración de ese mundo. XIO los encuentra y los absorbe.",
-        "Cada fragmento la transforma. Nuevas formas, nuevos gestos, nuevas cargas entran en su cuerpo. XIO es la manera en que el estudio recuerda lo que cada mundo le ha enseñado. No como registro. Como criatura que sigue cambiando.",
+        "Cuando una superficie se empuja más allá de su ritmo, su Núcleo se fractura. Los fragmentos se desprenden y derivan, cargando el color, el sonido y la respiración de esa superficie. XIO los encuentra y los absorbe.",
+        "Cada fragmento la transforma. Nuevas formas, nuevos gestos, nuevas cargas entran en su cuerpo. XIO es la manera en que el estudio recuerda lo que cada superficie le ha enseñado. No como registro. Como criatura que sigue cambiando.",
       ],
     },
   },
@@ -482,14 +586,14 @@ export const mythology = {
     en: {
       title: "Anomalies",
       body: [
-        "Worlds are not stable. When a Core is pushed beyond its rhythm, fractures appear in its surface. Light leaks through the seams. Shards form and drift outward, each one carrying a fragment of signal.",
+        "Surfaces are not stable. When a Core is pushed beyond its rhythm, fractures appear in its skin. Light leaks through the seams. Shards form and drift outward, each one carrying a fragment of signal.",
         "We do not treat these moments as failure. The shards are the material the universe is built from. Every evolution of our practice has begun with a fracture we refused to repair.",
       ],
     },
     es: {
       title: "Anomalías",
       body: [
-        "Los mundos no son estables. Cuando un Núcleo se empuja más allá de su ritmo, aparecen fracturas en su superficie. La luz se escapa por las costuras. Los fragmentos se desprenden y derivan, cargados de señal.",
+        "Las superficies no son estables. Cuando un Núcleo se empuja más allá de su ritmo, aparecen fracturas en su piel. La luz se escapa por las costuras. Los fragmentos se desprenden y derivan, cargados de señal.",
         "No tratamos esos momentos como errores. Los fragmentos son el material con el que se construye el universo. Cada evolución de nuestro trabajo ha empezado en una fractura que no quisimos reparar.",
       ],
     },
