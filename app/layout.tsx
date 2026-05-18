@@ -7,6 +7,7 @@ import { BackToTop } from "./_lib/back-to-top";
 import { Analytics } from "@vercel/analytics/next";
 import { getNonce } from "./_lib/csp";
 import { AmbientBackdrop } from "./_lib/ambient-backdrop";
+import { LoadingSplash } from "./_lib/loading-splash";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -59,7 +60,6 @@ export const metadata: Metadata = {
     "xnlab atmosphere systems",
     "xnlab brand studio",
     "xn studio Marbella",
-    "xn studio Madrid",
     // Core territory — atmosphere systems across brand surfaces
     "atmosphere systems",
     "atmosphere systems for brands",
@@ -403,6 +403,11 @@ export default async function RootLayout({
         <ScrollProgress />
         <BackToTop />
         <div id="main" style={{ position: "relative", zIndex: 1 }}>{children}</div>
+        {/* First-visit splash — particle burst overture. Mounts after
+            the page, gated by sessionStorage so it fires once per
+            session and never on internal navigation. Returns null on
+            prefers-reduced-motion. */}
+        <LoadingSplash />
         <Analytics />
       </body>
     </html>

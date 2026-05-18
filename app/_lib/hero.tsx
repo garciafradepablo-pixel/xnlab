@@ -663,48 +663,91 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           values with `translateX: "-50%"` on the same element causes
           Framer Motion to drop the centering and shoves the symbol off
           to one side — the same bug the Central Core split fixes. */}
+      {/* Copper halo behind the chrome X — a warm centred radial that
+          acts as the rim-light from which the chrome sculpture catches
+          its reflections. Sits at zIndex 6 (BELOW the X at 7, ABOVE
+          the back orbits at 3) so the X reads as if rising out of it.
+          Breathes on a 13s loop, slower than the wordmark aureole so
+          the two atmospherics phase against each other instead of
+          pulsing in unison. */}
+      <motion.div
+        aria-hidden
+        style={{
+          position: "absolute",
+          zIndex: 6,
+          left: "50%",
+          top: "50%",
+          width: "clamp(360px, 56vw, 760px)",
+          height: "clamp(360px, 56vw, 760px)",
+          transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
+          pointerEvents: "none",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(circle at center, rgba(232,150,90,0.18) 0%, rgba(212,140,80,0.07) 28%, rgba(140,80,40,0.02) 52%, transparent 72%)",
+          filter: "blur(56px)",
+          willChange: "transform, opacity",
+        }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.06, 1] }}
+        transition={{
+          opacity: { duration: 13, ease: "easeInOut", repeat: Infinity, delay: 0.9 },
+          scale: { duration: 13, ease: "easeInOut", repeat: Infinity, delay: 0.9 },
+        }}
+      />
+
+      {/* LAYER 2C — chrome X as the centerpiece of the background.
+          Anchored to the hero's vertical centre so the chrome X
+          gravitates BEHIND the XNLAB wordmark (zIndex 10). The Y
+          translate offset mirrors the wordmark's paddingBottom so the
+          two share the same optical centre. Scale up on desktop so the
+          sculpture has real weight, opacity lifted so it reads as
+          present (not vestigial), and a continuous slow rotation on
+          a 220s loop makes the chrome catch new highlights as the
+          visitor dwells — imperceptible per frame, registers as
+          "the sculpture is breathing" over time. */}
       <div
         style={{
           position: "absolute",
           zIndex: 7,
           left: "50%",
-          // Anchored to the hero's vertical centre so the chrome X
-          // gravitates BEHIND the XNLAB wordmark (zIndex 10) rather
-          // than peeking from the bottom edge. The small upward
-          // offset on the Y translate mirrors the wordmark's own
-          // paddingBottom (clamp(0, 8svh, 80px)) so the two share the
-          // same optical centre.
           top: "50%",
-          width: "clamp(180px,32vw,420px)",
-          height: "clamp(180px,32vw,420px)",
+          width: "clamp(200px, 36vw, 460px)",
+          height: "clamp(200px, 36vw, 460px)",
           transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
           pointerEvents: "none",
         }}
       >
         <motion.div
           style={{ x: symX, y: symY, width: "100%", height: "100%" }}
-          initial={{ opacity: 0, filter: "blur(14px)" }}
-          animate={{ opacity: 1, filter: "blur(0px)" }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
+          initial={{ opacity: 0, filter: "blur(18px)", scale: 0.94 }}
+          animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
         >
           <motion.div
-            style={{ width: "100%", height: "100%" }}
-            animate={{ scale: [1, 1.01, 1], y: [0, -3, 0] }}
-            transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+            style={{ width: "100%", height: "100%", willChange: "transform" }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 220, ease: "linear", repeat: Infinity }}
           >
-            <Image
-              src="/images/hero/05_main_bottom_symbol.png"
-              alt=""
-              fill
-              sizes="(max-width: 768px) 260px, 420px"
-              loading="eager"
-              style={{
-                objectFit: "contain",
-                mixBlendMode: "screen",
-                opacity: 0.55,
-                filter: "drop-shadow(0 0 24px rgba(212,140,80,0.42))",
-              }}
-            />
+            <motion.div
+              style={{ width: "100%", height: "100%" }}
+              animate={{ scale: [1, 1.025, 1], y: [0, -4, 0] }}
+              transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+            >
+              <Image
+                src="/images/hero/05_main_bottom_symbol.png"
+                alt=""
+                fill
+                sizes="(max-width: 768px) 300px, 460px"
+                loading="eager"
+                style={{
+                  objectFit: "contain",
+                  mixBlendMode: "screen",
+                  opacity: 0.62,
+                  filter:
+                    "drop-shadow(0 0 26px rgba(232,150,90,0.45)) drop-shadow(0 0 52px rgba(212,140,80,0.24))",
+                }}
+              />
+            </motion.div>
           </motion.div>
         </motion.div>
       </div>
