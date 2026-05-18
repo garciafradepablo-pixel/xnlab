@@ -38,12 +38,12 @@ const ORB_SIZE = "clamp(28px,4.4vw,68px)";
 // scale, deeper vertical drop). Inner orbs sit closer to the viewer
 // (full opacity, full scale, almost at the apex of the arc).
 const PLAN = [
-  { idx: 0, mult: -3, dy: 4.6, delay: 1.55, op: 0.55, sc: 0.82 },
-  { idx: 1, mult: -2, dy: 2.6, delay: 1.5,  op: 0.78, sc: 0.92 },
-  { idx: 2, mult: -1, dy: 0.6, delay: 1.45, op: 1,    sc: 1    },
-  { idx: 3, mult: 1,  dy: 0.6, delay: 1.45, op: 1,    sc: 1    },
-  { idx: 4, mult: 2,  dy: 2.6, delay: 1.5,  op: 0.78, sc: 0.92 },
-  { idx: 5, mult: 3,  dy: 4.6, delay: 1.55, op: 0.55, sc: 0.82 },
+  { idx: 0, mult: -3, dy: 4.6, delay: 0.85, op: 0.55, sc: 0.82 },
+  { idx: 1, mult: -2, dy: 2.6, delay: 0.8,  op: 0.78, sc: 0.92 },
+  { idx: 2, mult: -1, dy: 0.6, delay: 0.75, op: 1,    sc: 1    },
+  { idx: 3, mult: 1,  dy: 0.6, delay: 0.75, op: 1,    sc: 1    },
+  { idx: 4, mult: 2,  dy: 2.6, delay: 0.8,  op: 0.78, sc: 0.92 },
+  { idx: 5, mult: 3,  dy: 4.6, delay: 0.85, op: 0.55, sc: 0.82 },
 ];
 const UNIT = "clamp(40px,6vw,104px)";
 const CENTRAL_SIZE = "clamp(34px,5.2vw,82px)";
@@ -118,7 +118,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           (the original chrome aura around the wordmark area survives
           softly) without distinct light artifacts behind the orbs. */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.32 }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.46 }}>
           <Image
             src="/images/hero/01_background_mobile.png"
             alt=""
@@ -129,40 +129,45 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{
               objectFit: "cover",
               objectPosition: "center",
-              filter: "blur(32px) saturate(0.85)",
+              filter: "blur(28px) saturate(0.9)",
             }}
           />
         </div>
-        {/* Vignette mask — kills any residual baked-in highlight in
-            the constellation zone (top third of the hero) where the
-            orbs live. Concentrated darkness top, atmospheric warmth
-            in the middle, fade-to-page-black at the bottom. */}
+        {/* Vignette mask — softer top so the chrome aura survives,
+            mid-section opens up for atmosphere to read through, and
+            a controlled bottom fade carries the eye into the next
+            section. Pulled the constellation-zone darkness down so
+            the orbs sit in light, not in a black box. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to bottom, rgba(4,3,2,0.92) 0%, rgba(4,3,2,0.7) 14%, rgba(4,3,2,0.35) 38%, rgba(4,3,2,0.55) 70%, rgba(6,4,2,1) 100%)",
+              "linear-gradient(to bottom, rgba(4,3,2,0.82) 0%, rgba(4,3,2,0.55) 14%, rgba(4,3,2,0.22) 38%, rgba(4,3,2,0.5) 70%, rgba(6,4,2,1) 100%)",
           }}
         />
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "radial-gradient(ellipse at 50% 50%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.5) 75%, rgba(3,2,1,0.85) 100%)",
+            background: "radial-gradient(ellipse at 50% 50%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.42) 75%, rgba(3,2,1,0.78) 100%)",
           }}
         />
       </div>
 
-      {/* BLACK INTRO */}
+      {/* BLACK INTRO — kept short so the first frame the visitor sees
+          is already content, not a black wash. 0.6s fade is enough to
+          give the cinematic veil without delaying the wordmark. */}
       <motion.div
         style={{ position: "absolute", inset: 0, zIndex: 2, background: "#030201", pointerEvents: "none" }}
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
-        transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.1 }}
+        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0 }}
       />
 
-      {/* Warm aureole unifying the dome */}
+      {/* Warm aureole unifying the dome — enters with a soft expansion
+          and then breathes continuously on a 9s loop, so the warm
+          atmosphere behind the wordmark is alive instead of frozen. */}
       <motion.div
         style={{
           position: "absolute",
@@ -174,80 +179,117 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           height: "clamp(360px, 38vh, 600px)",
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at center, rgba(228,180,128,0.09) 0%, rgba(190,140,90,0.035) 35%, rgba(60,40,30,0.008) 58%, transparent 75%)",
-          filter: "blur(64px)",
+            "radial-gradient(ellipse at center, rgba(228,180,128,0.13) 0%, rgba(190,140,90,0.05) 35%, rgba(60,40,30,0.012) 58%, transparent 75%)",
+          filter: "blur(60px)",
+          willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 4.2, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
+        animate={{ opacity: [0.85, 1, 0.85], scale: [1, 1.04, 1] }}
+        transition={{
+          opacity: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
+          scale: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
+        }}
       />
 
-      {/* SHEEN top-right */}
+      {/* CONCENTRIC SHEEN — replaces the previous off-centre top-right
+          and bottom-left sheens with two centred radials anchored to
+          the wordmark axis. Reads as a single light source breathing
+          around the constellation, instead of two unrelated corner
+          spotlights pulling the eye diagonally. Warm core + cool
+          counter-glow stacked at the same centre. */}
       <motion.div
         style={{
           position: "absolute",
-          top: "-10%",
-          right: "-5%",
+          left: "50%",
+          top: "52%",
+          transform: "translate(-50%, -50%)",
           zIndex: 4,
-          width: "45vw",
-          height: "45vw",
+          width: "min(140vw, 1900px)",
+          height: "min(140vh, 1400px)",
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            "radial-gradient(ellipse at center, rgba(255,235,200,0.085) 0%, rgba(255,220,180,0.035) 38%, transparent 62%)",
+            "radial-gradient(ellipse at center, rgba(255,235,200,0.10) 0%, rgba(255,220,180,0.035) 30%, transparent 58%)",
+          filter: "blur(64px)",
+          willChange: "transform, opacity",
+        }}
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: [0.7, 1, 0.7], scale: [1, 1.05, 1] }}
+        transition={{
+          opacity: { duration: 12, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
+          scale: { duration: 12, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
+        }}
+      />
+      <motion.div
+        style={{
+          position: "absolute",
+          left: "50%",
+          top: "52%",
+          transform: "translate(-50%, -50%)",
+          zIndex: 4,
+          width: "min(110vw, 1500px)",
+          height: "min(110vh, 1100px)",
+          pointerEvents: "none",
+          borderRadius: "50%",
+          background:
+            "radial-gradient(ellipse at center, rgba(200,180,255,0.045) 0%, rgba(180,160,255,0.015) 40%, transparent 65%)",
           filter: "blur(70px)",
+          willChange: "transform, opacity",
         }}
-        initial={{ opacity: 0, scale: 0.6 }}
-        animate={{ opacity: [0, 0.55, 0.35], scale: [0.6, 1.1, 1.4] }}
-        transition={{ duration: 4.2, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
-      />
-      <motion.div
-        style={{
-          position: "absolute",
-          bottom: "-10%",
-          left: "-5%",
-          zIndex: 4,
-          width: "40vw",
-          height: "40vw",
-          pointerEvents: "none",
-          borderRadius: "50%",
-          background:
-            "radial-gradient(ellipse at center, rgba(200,180,255,0.038) 0%, rgba(180,160,255,0.012) 40%, transparent 65%)",
-          filter: "blur(80px)",
+        initial={{ opacity: 0, scale: 0.7 }}
+        animate={{ opacity: [0.4, 0.65, 0.4], scale: [1, 1.07, 1] }}
+        transition={{
+          opacity: { duration: 14, ease: "easeInOut", repeat: Infinity, delay: 1.1 },
+          scale: { duration: 14, ease: "easeInOut", repeat: Infinity, delay: 1.1 },
         }}
-        initial={{ opacity: 0, scale: 0.5 }}
-        animate={{ opacity: [0, 0.4, 0.18], scale: [0.5, 1.0, 1.3] }}
-        transition={{ duration: 4.2, ease: [0.22, 1, 0.36, 1], delay: 2.2 }}
       />
 
-      {/* LAYER 2A — back orbits */}
-      <motion.div
+      {/* LAYER 2A — back orbits. Static outer wrapper does the
+          centering transform so the orbital image stays anchored to
+          the hero centre; the motion child carries the parallax
+          x/y and the cinematic entry transform. Mixing motion `x` with
+          `translateX: "-50%"` on the same node was pulling the orbit
+          off-centre relative to the wordmark. */}
+      <div
         style={{
           position: "absolute",
           zIndex: 3,
-          x: orbX,
-          y: orbY,
           left: "50%",
           top: "50%",
-          translateX: "-50%",
-          translateY: "-50%",
           width: "clamp(240px,38vw,460px)",
           height: "clamp(240px,38vw,460px)",
+          transform: "translate(-50%, -50%)",
           pointerEvents: "none",
         }}
-        initial={{ opacity: 0, scale: 3.8, filter: "blur(32px)", rotate: -12 }}
-        animate={{ opacity: 1, scale: 1, filter: "blur(0px)", rotate: 0 }}
-        transition={{ duration: 2.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
       >
-        <Image
-          src="/images/hero/03_back_orbits.png"
-          alt=""
-          fill
-          sizes="(max-width: 768px) 60vw, 38vw"
-          loading="eager"
-          style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.06 }}
-        />
-      </motion.div>
+        <motion.div
+          style={{ x: orbX, y: orbY, width: "100%", height: "100%" }}
+          initial={{ opacity: 0, scale: 3.8, filter: "blur(32px)", rotate: -12 }}
+          animate={{ opacity: 1, scale: 1, filter: "blur(0px)", rotate: 0 }}
+          transition={{ duration: 2.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+        >
+          {/* Continuous slow rotation on the orbital trace — 180s per
+              revolution. Imperceptible per-frame, but over a 5-second
+              dwell the eye reads "the field is alive" without ever
+              catching motion in the act. The opacity is also lifted
+              slightly so the trace contributes to atmosphere, not
+              just decoration. */}
+          <motion.div
+            style={{ width: "100%", height: "100%", willChange: "transform" }}
+            animate={{ rotate: 360 }}
+            transition={{ duration: 180, ease: "linear", repeat: Infinity }}
+          >
+            <Image
+              src="/images/hero/03_back_orbits.png"
+              alt=""
+              fill
+              sizes="(max-width: 768px) 60vw, 38vw"
+              loading="eager"
+              style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.09 }}
+            />
+          </motion.div>
+        </motion.div>
+      </div>
 
       {/* LAYER 2B — Central Core, the dome's apex. A static wrapper holds
           the anchor + centring transform; the motion child carries the
@@ -270,7 +312,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
           initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 1.2 }}
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
         >
           <Link
             href="/worlds"
@@ -295,14 +337,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 // hovered we do not dim or shrink it — the world orb
                 // claims the protagonist position through scale and
                 // glow, not by dimming the centre. Silence over
-                // contrast.
+                // contrast. Breath is wider than the satellites so
+                // the centre feels heavier and more anchored.
                 scale: centralHover ? 1.22 : 1,
                 opacity: 1,
-                y: [0, -4, 0],
+                y: [0, -7, 0],
               }}
               transition={{
                 scale: { duration: 0.55, ease: [0.22, 1, 0.36, 1] },
-                y: { duration: 7.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
+                y: { duration: 8.5, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
               }}
               style={{ position: "relative", width: "100%", height: "100%" }}
             >
@@ -438,13 +481,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     filter: isHover
                       ? `drop-shadow(0 0 28px ${w.color.glow}) drop-shadow(0 0 52px ${w.color.glow}) drop-shadow(0 0 14px rgba(255,255,255,0.35))`
                       : "none",
-                    y: [0, -3, 0],
+                    y: [0, -6, 0],
                   }}
                   transition={{
                     scale: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
                     opacity: { duration: 0.35, ease: [0.22, 1, 0.36, 1] },
                     filter: { duration: 0.5, ease: [0.22, 1, 0.36, 1] },
-                    y: { duration: 6.5 + idx * 0.4, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
+                    y: { duration: 5.5 + idx * 0.45, ease: "easeInOut", repeat: Infinity, repeatType: "loop" },
                   }}
                   style={{ position: "relative", width: "100%", height: "100%", willChange: "transform, filter" }}
                 >
@@ -508,11 +551,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       })}
 
       {/* LAYER 2D — Atelier sigil. The four-point star (the same symbol
-          inside the XNLAB mark) is pinned to the lower third of the hero,
-          aligned with the CTA height in the previous design so it reads
-          as the signature beneath the wordmark, not as a watermark on it.
-          zIndex 9 puts it above all background imagery and orbs but
-          below the wordmark and CTAs (10/30). */}
+          inside the XNLAB mark) gravitates BEHIND the wordmark — not
+          above, not below. Mirrors the wordmark's own paddingBottom so
+          the two share the same vertical centre. zIndex 9 keeps the
+          sigil immediately behind the wordmark (zIndex 10), reading
+          as a watermark embedded in the atmosphere. */}
       <div
         aria-hidden
         style={{
@@ -520,16 +563,16 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           inset: 0,
           zIndex: 9,
           display: "flex",
-          alignItems: "flex-end",
+          alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
-          paddingBottom: "clamp(60px, 11svh, 140px)",
+          paddingBottom: "clamp(0px, 8svh, 80px)",
         }}
       >
         <motion.div
           initial={{ opacity: 0, scale: 0.6 }}
           animate={{ opacity: 0.6, scale: 1 }}
-          transition={{ duration: 2.2, delay: 1.2, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 1.6, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
           style={{
             // Scroll-driven breath layered on top of the entry animation.
             // After mount the entry transition resolves to scale 1 /
@@ -595,7 +638,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           }}
           initial={{ opacity: 0, filter: "blur(22px)", scale: 1.04 }}
           animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
-          transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
+          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
         >
           XNLAB
           {/* SEO-only descriptive heading — invisible to sighted users
@@ -615,51 +658,63 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           chrome X peeks above the page edge. Reads as a halo rising
           out of the next section rather than a foreground watermark.
           Clamp keeps it sensible across viewports. */}
-      <motion.div
+      {/* Static outer wrapper handles the centering transform; the
+          motion child carries only the parallax x/y. Mixing `x` motion
+          values with `translateX: "-50%"` on the same element causes
+          Framer Motion to drop the centering and shoves the symbol off
+          to one side — the same bug the Central Core split fixes. */}
+      <div
         style={{
           position: "absolute",
           zIndex: 7,
-          x: symX,
-          y: symY,
           left: "50%",
-          bottom: "clamp(-110px, -8vh, -60px)",
-          translateX: "-50%",
-          translateY: "50%",
+          // Anchored to the hero's vertical centre so the chrome X
+          // gravitates BEHIND the XNLAB wordmark (zIndex 10) rather
+          // than peeking from the bottom edge. The small upward
+          // offset on the Y translate mirrors the wordmark's own
+          // paddingBottom (clamp(0, 8svh, 80px)) so the two share the
+          // same optical centre.
+          top: "50%",
           width: "clamp(180px,32vw,420px)",
           height: "clamp(180px,32vw,420px)",
+          transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
           pointerEvents: "none",
         }}
-        initial={{ opacity: 0, filter: "blur(14px)" }}
-        animate={{ opacity: 1, filter: "blur(0px)" }}
-        transition={{ duration: 2.6, ease: [0.22, 1, 0.36, 1], delay: 1.0 }}
       >
         <motion.div
-          style={{ width: "100%", height: "100%" }}
-          animate={{ scale: [1, 1.01, 1], y: [0, -3, 0] }}
-          transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+          style={{ x: symX, y: symY, width: "100%", height: "100%" }}
+          initial={{ opacity: 0, filter: "blur(14px)" }}
+          animate={{ opacity: 1, filter: "blur(0px)" }}
+          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
         >
-          <Image
-            src="/images/hero/05_main_bottom_symbol.png"
-            alt=""
-            fill
-            sizes="(max-width: 768px) 260px, 420px"
-            loading="eager"
-            style={{
-              objectFit: "contain",
-              mixBlendMode: "screen",
-              opacity: 0.55,
-              filter: "drop-shadow(0 0 24px rgba(212,140,80,0.42))",
-            }}
-          />
+          <motion.div
+            style={{ width: "100%", height: "100%" }}
+            animate={{ scale: [1, 1.01, 1], y: [0, -3, 0] }}
+            transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+          >
+            <Image
+              src="/images/hero/05_main_bottom_symbol.png"
+              alt=""
+              fill
+              sizes="(max-width: 768px) 260px, 420px"
+              loading="eager"
+              style={{
+                objectFit: "contain",
+                mixBlendMode: "screen",
+                opacity: 0.55,
+                filter: "drop-shadow(0 0 24px rgba(212,140,80,0.42))",
+              }}
+            />
+          </motion.div>
         </motion.div>
-      </motion.div>
+      </div>
 
       {/* HAZE */}
       <motion.div
         style={{ position: "absolute", inset: 0, zIndex: 25, pointerEvents: "none" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 5, delay: 1.4 }}
+        transition={{ duration: 3.5, delay: 0.7 }}
       >
         <Image
           src="/images/hero/02_haze_overlay.png"
@@ -708,7 +763,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.4, delay: 1.95 }}
+          transition={{ duration: 1.0, delay: 0.9 }}
         >
           <p
             style={{
@@ -771,8 +826,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               }}
             />
             {lang === "en"
-              ? "5 of 6 engaged · One place remains"
-              : "5 de 6 con encargo · Queda una plaza"}
+              ? "First cycle of MMXXVI · Open"
+              : "Primer ciclo de MMXXVI · Abierto"}
           </p>
         </motion.div>
 
