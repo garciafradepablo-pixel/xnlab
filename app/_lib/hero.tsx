@@ -1,12 +1,11 @@
 "use client";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useScroll } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
-import { AtelierStar } from "./ornaments";
 
 type HeroCopy = {
   eyebrow: string;
@@ -69,18 +68,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const sphY = useTransform(sy, [-1, 1], [-3, 3]);
   const symX = useTransform(sx, [-1, 1], [-12, 12]);
   const symY = useTransform(sy, [-1, 1], [-8, 8]);
-
-  // Scroll-tied breath for the Atelier sigil that watermarks the hero.
-  // As the visitor scrolls down through the first viewport, the sigil
-  // compresses ~5% and dims slightly — the site is exhaling. As they
-  // scroll back up, it expands again. Bound to the hero section ref so
-  // it only animates while the sigil is on screen.
-  const { scrollYProgress: heroScroll } = useScroll({
-    target: ref,
-    offset: ["start start", "end start"],
-  });
-  const sigilScale = useTransform(heroScroll, [0, 1], [1, 0.95]);
-  const sigilOpacity = useTransform(heroScroll, [0, 0.8], [0.6, 0.18]);
 
   useEffect(() => {
     if (reduced) return;
@@ -550,49 +537,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         );
       })}
 
-      {/* LAYER 2D — Atelier sigil. The four-point star (the same symbol
-          inside the XNLAB mark) gravitates BEHIND the wordmark — not
-          above, not below. Mirrors the wordmark's own paddingBottom so
-          the two share the same vertical centre. zIndex 9 keeps the
-          sigil immediately behind the wordmark (zIndex 10), reading
-          as a watermark embedded in the atmosphere. */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: 0,
-          zIndex: 9,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          pointerEvents: "none",
-          paddingBottom: "clamp(0px, 8svh, 80px)",
-        }}
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={{ opacity: 0.6, scale: 1 }}
-          transition={{ duration: 1.6, delay: 0.6, ease: [0.22, 1, 0.36, 1] }}
-          style={{
-            // Scroll-driven breath layered on top of the entry animation.
-            // After mount the entry transition resolves to scale 1 /
-            // opacity 0.6; from there these motion values take over and
-            // bind continuous compression to scroll progress through
-            // the hero. AtelierStar's internal infinite breath keeps
-            // running underneath — the two combine to a living watermark.
-            scale: sigilScale,
-            opacity: sigilOpacity,
-            willChange: "transform, opacity",
-          }}
-        >
-          <AtelierStar
-            size={72}
-            color="rgba(232,183,131,0.85)"
-            shadow="rgba(232,183,131,0.65)"
-          />
-        </motion.div>
-      </div>
-
       {/* LAYER 3 — XNLAB wordmark. Pulled a touch above the visual centre
           on shorter viewports so it sits closer to the dome, removing the
           empty zone between them. Falls back to centred on tall screens. */}
@@ -628,7 +572,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.p>
         <motion.h1
           style={{
-            fontSize: "clamp(56px,9.6vw,138px)",
+            fontSize: "clamp(56px,8vw,118px)",
             fontWeight: 400,
             letterSpacing: "-0.045em",
             lineHeight: 0.88,
