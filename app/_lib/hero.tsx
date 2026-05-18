@@ -28,7 +28,7 @@ type HeroCopy = {
 // Sizes and spacing scale with the viewport. The mins were chosen so the
 // outermost orb (mult ±3) fits inside a 375px viewport with breathing
 // room: 3·UNIT + ORB/2 must stay under half-viewport minus padding.
-const ORB_SIZE = "clamp(28px,4.4vw,68px)";
+const ORB_SIZE = "clamp(28px,5vw,88px)";
 // dy in viewport-height units so the dome's gentle arc scales with the
 // section height. Same numeric values as before (3.5%, 2%, 0.6%).
 // Each orb carries its own depth profile. The constellation reads as an
@@ -44,8 +44,8 @@ const PLAN = [
   { idx: 4, mult: 2,  dy: 2.6, delay: 0.8,  op: 0.78, sc: 0.92 },
   { idx: 5, mult: 3,  dy: 4.6, delay: 0.85, op: 0.55, sc: 0.82 },
 ];
-const UNIT = "clamp(40px,6vw,104px)";
-const CENTRAL_SIZE = "clamp(34px,5.2vw,82px)";
+const UNIT = "clamp(40px,7vw,130px)";
+const CENTRAL_SIZE = "clamp(34px,6vw,108px)";
 // Dome top position: a single source of truth that scales with viewport
 // height — header position on mobile (~100px from top), more centred
 // on tall desktops (~260px). Without this, top:14% looked like a header
@@ -88,9 +88,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       style={{
         position: "relative",
         width: "100%",
-        // 100svh on regular phones, capped at 880px on tall viewports
-        // so the hero never grows past a comfortable luxury frame.
-        height: "min(100svh, 880px)",
+        // 100svh on regular phones and most desktops; capped at 1100px
+        // on very tall viewports (≥1440 high) so the hero stays
+        // cinematic at 4K / ultrawide without losing its proportion
+        // on smaller screens.
+        height: "min(100svh, 1100px)",
         minHeight: 560,
         overflow: "hidden",
         background: "#060402",
@@ -572,7 +574,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.p>
         <motion.h1
           style={{
-            fontSize: "clamp(56px,8vw,118px)",
+            fontSize: "clamp(56px,9.5vw,156px)",
             fontWeight: 400,
             letterSpacing: "-0.045em",
             lineHeight: 0.88,
@@ -621,8 +623,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           zIndex: 6,
           left: "50%",
           top: "50%",
-          width: "clamp(360px, 56vw, 760px)",
-          height: "clamp(360px, 56vw, 760px)",
+          width: "clamp(360px, 64vw, 980px)",
+          height: "clamp(360px, 64vw, 980px)",
           transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
           pointerEvents: "none",
           borderRadius: "50%",
@@ -655,8 +657,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           zIndex: 7,
           left: "50%",
           top: "50%",
-          width: "clamp(200px, 36vw, 460px)",
-          height: "clamp(200px, 36vw, 460px)",
+          width: "clamp(200px, 42vw, 600px)",
+          height: "clamp(200px, 42vw, 600px)",
           transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
           pointerEvents: "none",
         }}
@@ -681,7 +683,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 src="/images/hero/05_main_bottom_symbol.png"
                 alt=""
                 fill
-                sizes="(max-width: 768px) 300px, 460px"
+                sizes="(max-width: 768px) 300px, 600px"
                 loading="eager"
                 style={{
                   objectFit: "contain",
