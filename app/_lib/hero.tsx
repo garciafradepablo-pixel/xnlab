@@ -122,24 +122,24 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             }}
           />
         </div>
-        {/* Vignette mask — softer top so the chrome aura survives,
-            mid-section opens up for atmosphere to read through, and
-            a controlled bottom fade carries the eye into the next
-            section. Pulled the constellation-zone darkness down so
-            the orbs sit in light, not in a black box. */}
+        {/* Vignette mask — the first 14% used to sit at 82% black,
+            which read as "the page didn't load" when the visitor
+            scrolled back to the top. Top stops lifted so the chrome
+            aura survives from the first pixel; mid stays open, bottom
+            fade still carries the eye into the next section. */}
         <div
           style={{
             position: "absolute",
             inset: 0,
             background:
-              "linear-gradient(to bottom, rgba(4,3,2,0.82) 0%, rgba(4,3,2,0.55) 14%, rgba(4,3,2,0.22) 38%, rgba(4,3,2,0.5) 70%, rgba(6,4,2,1) 100%)",
+              "linear-gradient(to bottom, rgba(4,3,2,0.42) 0%, rgba(4,3,2,0.28) 14%, rgba(4,3,2,0.18) 38%, rgba(4,3,2,0.5) 70%, rgba(6,4,2,1) 100%)",
           }}
         />
         <div
           style={{
             position: "absolute",
             inset: 0,
-            background: "radial-gradient(ellipse at 50% 50%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.42) 75%, rgba(3,2,1,0.78) 100%)",
+            background: "radial-gradient(ellipse at 50% 50%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.32) 75%, rgba(3,2,1,0.62) 100%)",
           }}
         />
       </div>
@@ -273,7 +273,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               alt=""
               fill
               sizes="(max-width: 768px) 60vw, 38vw"
-              loading="eager"
+              loading="lazy"
               style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.09 }}
             />
           </motion.div>
@@ -688,13 +688,21 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 alt=""
                 fill
                 sizes="(max-width: 768px) 300px, 600px"
-                loading="eager"
+                // Decorative chrome sculpture — not LCP. Lazy keeps the
+                // 1.4 MB PNG off the critical path; the entry transition
+                // (blur(18px) → 0, scale 0.94 → 1, opacity 0 → 1 over
+                // 1.6s) gives the image time to decode and fade in
+                // without ever being on the first-paint hot path.
+                loading="lazy"
                 style={{
                   objectFit: "contain",
                   mixBlendMode: "screen",
                   opacity: 0.62,
-                  filter:
-                    "drop-shadow(0 0 26px rgba(232,150,90,0.45)) drop-shadow(0 0 52px rgba(212,140,80,0.24))",
+                  // Single stronger drop-shadow instead of two stacked.
+                  // Stacked drop-shadows blow up paint cost — Chromium
+                  // re-rasterises the full layer per shadow. One wider
+                  // shadow reads as the same atmospheric copper rim.
+                  filter: "drop-shadow(0 0 36px rgba(222,144,84,0.5))",
                 }}
               />
             </motion.div>
@@ -714,7 +722,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alt=""
           fill
           sizes="100vw"
-          loading="eager"
+          loading="lazy"
           style={{ objectFit: "cover", objectPosition: "center top", mixBlendMode: "screen", opacity: 0.055 }}
         />
       </motion.div>
