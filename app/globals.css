@@ -81,9 +81,13 @@ h1, h2, h3, p {
   transform: translate(-50%, 0);
 }
 
-/* Smooth scroll for in-page anchors, respecting reduced-motion */
+/* Smooth scroll for in-page anchors, respecting reduced-motion.
+   `scroll-padding-top` keeps anchor targets clear of the fixed 64px
+   nav so jumping to /#services lands the heading visible instead of
+   tucked under the chrome. */
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: 80px;
 }
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -162,4 +166,17 @@ select:focus-visible {
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
   }
+}
+
+/* CircleOfWorlds — caption visibility by input type.
+   Inline `display: flex` in the component would override a
+   Tailwind `md:hidden` class, causing both captions to render
+   on desktop. Gating via media query (hover-capability)
+   prevents that and reads more semantically: the centred caption
+   belongs to pointer devices, the below caption belongs to touch. */
+[data-xn-caption="desktop"] { display: none; }
+[data-xn-caption="mobile"] { display: flex; }
+@media (hover: hover) and (pointer: fine) {
+  [data-xn-caption="desktop"] { display: flex; }
+  [data-xn-caption="mobile"] { display: none; }
 }

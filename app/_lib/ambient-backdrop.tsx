@@ -2,7 +2,7 @@
 import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
 
 // AmbientBackdrop — the site's fixed atmospheric stage, mounted once
-// in the root layout. Four layers stacked behind every page:
+// in the root layout. Five layers stacked behind every page:
 //
 //   1. Warm amber wash anchored top-centre (the studio's primary light
 //      source). Drifts upward as the visitor scrolls — as if walking
@@ -11,15 +11,18 @@ import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion
 //      the opposite direction to keep the air balanced.
 //   3. Warm amber accent on the upper right — breaks symmetry without
 //      announcing itself.
-//   4. Heavy radial vignette so the edges of every viewport feel dark
+//   4. Centered breathing halo — a slow continuous pulse around the
+//      page axis that gives the room a heartbeat. The "After Effects"
+//      layer: it's what turns a still gradient into a living atmosphere.
+//   5. Heavy radial vignette so the edges of every viewport feel dark
 //      and the centre always reads as the lit area.
 //
 // All low opacity. All pointer-events:none. Reduced-motion respected.
 //
-// The scroll-tied drift is what turns the static gradient into a room.
-// It runs at ~1/4 the scroll speed (subtle parallax) and is bound to
-// the document scroll progress, so the light moves continuously across
-// the visitor's entire journey, not just one section's worth.
+// Blur values intentionally kept under 50px — large blurs on fixed
+// full-viewport elements that animate transform are the single most
+// expensive paint operation a scroll page can carry, and visible
+// quality plateaus past ~48px on these soft gradient sources.
 export function AmbientBackdrop() {
   const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll();
@@ -48,8 +51,8 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse 95% 65% at 50% -2%, rgba(216,147,42,0.22) 0%, rgba(180,110,40,0.08) 28%, rgba(40,18,8,0.025) 55%, transparent 78%)",
-          filter: "blur(40px)",
+            "radial-gradient(ellipse 95% 65% at 50% -2%, rgba(216,147,42,0.26) 0%, rgba(180,110,40,0.10) 28%, rgba(40,18,8,0.03) 55%, transparent 78%)",
+          filter: "blur(36px)",
           y: reduced ? "0%" : warmY,
           opacity: reduced ? 1 : warmOpacity,
           willChange: "transform, opacity",
@@ -63,8 +66,8 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse 75% 60% at 8% 95%, rgba(124,140,224,0.12) 0%, rgba(80,110,220,0.035) 38%, transparent 68%)",
-          filter: "blur(70px)",
+            "radial-gradient(ellipse 75% 60% at 8% 95%, rgba(124,140,224,0.14) 0%, rgba(80,110,220,0.04) 38%, transparent 68%)",
+          filter: "blur(44px)",
           y: reduced ? "0%" : coolY,
           opacity: reduced ? 1 : coolOpacity,
           willChange: "transform, opacity",
@@ -78,12 +81,42 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse 80% 50% at 88% 38%, rgba(232,183,131,0.06) 0%, rgba(180,110,40,0.018) 40%, transparent 70%)",
-          filter: "blur(80px)",
+            "radial-gradient(ellipse 80% 50% at 88% 38%, rgba(232,183,131,0.07) 0%, rgba(180,110,40,0.022) 40%, transparent 70%)",
+          filter: "blur(44px)",
           y: reduced ? "0%" : accentY,
           x: reduced ? "0%" : accentX,
           willChange: "transform",
         }}
+      />
+      {/* Centered breathing halo — the page's continuous heartbeat.
+          A soft amber radial pinned to the viewport centre that
+          scale-pulses on an 11s loop. It's what registers as
+          "atmosphere is alive" to the visitor without ever announcing
+          itself as motion. Reduced motion → static at scale 1. */}
+      <motion.div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 70% 55% at 50% 48%, rgba(232,183,131,0.08) 0%, rgba(180,110,40,0.025) 40%, transparent 70%)",
+          filter: "blur(40px)",
+          transformOrigin: "50% 50%",
+          willChange: "transform, opacity",
+        }}
+        initial={{ scale: 1, opacity: 0.85 }}
+        animate={
+          reduced
+            ? { scale: 1, opacity: 0.85 }
+            : { scale: [1, 1.06, 1], opacity: [0.78, 1, 0.78] }
+        }
+        transition={
+          reduced
+            ? undefined
+            : { duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }
+        }
       />
       <div
         aria-hidden

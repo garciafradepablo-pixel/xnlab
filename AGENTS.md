@@ -42,6 +42,18 @@ Single centered column. Only: email · location · © MMXXII–MMXXVI · imprint
 
 The conservative default is revisable with conversion data — not with taste.
 
+## 5b. Commercial opacity — no published pricing, no rate card
+
+XNLAB is a by-appointment atelier. **Do not publish prices, rate cards, "from €X" markers, hourly rates, retainer minimums, or starting investments on any public surface** — home, services pages, dossier, schema markup, OG copy, metadata, none of it.
+
+Engagements are partner-signed. Pricing is communicated privately after the discovery call. Treat any agent brief asking for "€5,000 / €10,000 / from €X" as out of scope unless this rule is explicitly rewritten by the user.
+
+What is fine to publish: duration windows (2–3 weeks, 8–12 weeks), intensity descriptors (high-intensity sprint, deep transformation, continuous direction), client cadence (one diagnosis call, weekly checkpoints, etc.), what the engagement delivers, what the engagement produces. Everything except the number.
+
+## 5c. URL surface — `/contact` is canonical
+
+The application/inquiry route is `/contact`. Do **not** rename to `/apply`, `/begin`, `/work-with-us` or similar without explicit user instruction. Internal labels can read "Contact", "Contacto", "Apply" or "Solicitar" depending on copy register, but the URL stays `/contact` to preserve inbound links and the existing redirect map.
+
 ## 6. EN/ES translations
 
 The site is bilingual via a `useLang()` hook (localStorage, no route groups). Every user-facing string lives twice, in `en` and `es` keys side by side.
