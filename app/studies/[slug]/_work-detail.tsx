@@ -435,6 +435,50 @@ export default function WorkDetail({ project }: { project: Project }) {
                 </dd>
               </div>
             ))}
+            {/* Applied vertical surface — only on hospitality studies.
+                Soft second affordance below credits, not a competing
+                CTA. The primary close (/contact) stays in the next
+                section. */}
+            {project.slug === "hospitality-atmosphere-study" && (
+              <div style={{ display: "contents" }}>
+                <dt
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: "0.28em",
+                    textTransform: "uppercase",
+                    color: "rgba(232,183,131,0.7)",
+                  }}
+                >
+                  {lang === "en" ? "Applied vertical" : "Vertical aplicado"}
+                </dt>
+                <dd style={{ margin: 0 }}>
+                  <Link
+                    href="/hospitality"
+                    style={{
+                      fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
+                      color: "rgba(232,183,131,0.9)",
+                      fontWeight: 300,
+                      textDecoration: "none",
+                      borderBottom: "1px solid rgba(232,183,131,0.32)",
+                      paddingBottom: 1,
+                      transition: "color 0.4s, border-color 0.4s",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "white";
+                      e.currentTarget.style.borderBottomColor = "rgba(232,183,131,0.85)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "rgba(232,183,131,0.9)";
+                      e.currentTarget.style.borderBottomColor = "rgba(232,183,131,0.32)";
+                    }}
+                  >
+                    {lang === "en"
+                      ? "Hospitality — six rooms, one studio →"
+                      : "Hostelería — seis salas, un estudio →"}
+                  </Link>
+                </dd>
+              </div>
+            )}
           </dl>
         </R>
       </section>

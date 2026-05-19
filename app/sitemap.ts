@@ -40,6 +40,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.85,
   };
+  // /hospitality — applied vertical for premium hospitality founders.
+  // High priority because it's the dedicated entry point for the
+  // hospitality target. Home stays brand × customer × channel.
+  const hospitality: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/hospitality`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.92,
+  };
   const workIndex: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/studies`,
     lastModified: now,
@@ -77,5 +86,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.7,
   }));
-  return [home, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
+  return [home, worldsIndex, ...worldsList, hospitality, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
 }

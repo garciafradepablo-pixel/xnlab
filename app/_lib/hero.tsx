@@ -84,12 +84,33 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
     if (reduced) return;
     const el = ref.current;
     if (!el) return;
+    // Desktop only — touch and small viewports never see the parallax
+    // effect cleanly anyway, and they pay the full cost of mousemove
+    // firing at ~60Hz driving six useTransform chains. Gating to a
+    // fine-pointer + ≥1024px viewport keeps the CPU/main-thread cost
+    // off mobile entirely.
+    const matchesDesktop = () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 1024px) and (pointer: fine)").matches;
+    if (!matchesDesktop()) return;
+    // rAF throttle — mousemove fires per pixel; the spring only needs
+    // one update per frame. Coalescing to rAF cuts the handler's effective
+    // rate to the display's refresh, eliminating redundant spring updates.
+    let pending = false;
+    let lastEvent: MouseEvent | null = null;
     const fn = (e: MouseEvent) => {
-      const { left, top, width, height } = el.getBoundingClientRect();
-      rawX.set(((e.clientX - left) / width - 0.5) * 2);
-      rawY.set(((e.clientY - top) / height - 0.5) * 2);
+      lastEvent = e;
+      if (pending) return;
+      pending = true;
+      requestAnimationFrame(() => {
+        pending = false;
+        if (!lastEvent) return;
+        const { left, top, width, height } = el.getBoundingClientRect();
+        rawX.set(((lastEvent.clientX - left) / width - 0.5) * 2);
+        rawY.set(((lastEvent.clientY - top) / height - 0.5) * 2);
+      });
     };
-    el.addEventListener("mousemove", fn);
+    el.addEventListener("mousemove", fn, { passive: true });
     return () => el.removeEventListener("mousemove", fn);
   }, [rawX, rawY, reduced]);
 
@@ -195,60 +216,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           scale: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
         }}
       />
-
-      {/* CONCENTRIC SHEEN — replaces the previous off-centre top-right
-          and bottom-left sheens with two centred radials anchored to
-          the wordmark axis. Reads as a single light source breathing
-          around the constellation, instead of two unrelated corner
-          spotlights pulling the eye diagonally. Warm core + cool
-          counter-glow stacked at the same centre. */}
-      <motion.div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "52%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 4,
-          width: "min(140vw, 1900px)",
-          height: "min(140vh, 1400px)",
-          pointerEvents: "none",
-          borderRadius: "50%",
-          background:
-            "radial-gradient(ellipse at center, rgba(255,235,200,0.10) 0%, rgba(255,220,180,0.035) 30%, transparent 58%)",
-          filter: "blur(28px)",
-          willChange: "transform, opacity",
-        }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={inView ? { opacity: [0.7, 1, 0.7], scale: [1, 1.05, 1] } : { opacity: 0.85, scale: 1 }}
-        transition={{
-          opacity: { duration: 12, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
-          scale: { duration: 12, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
-        }}
-      />
-      <motion.div
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "52%",
-          transform: "translate(-50%, -50%)",
-          zIndex: 4,
-          width: "min(110vw, 1500px)",
-          height: "min(110vh, 1100px)",
-          pointerEvents: "none",
-          borderRadius: "50%",
-          background:
-            "radial-gradient(ellipse at center, rgba(200,180,255,0.045) 0%, rgba(180,160,255,0.015) 40%, transparent 65%)",
-          filter: "blur(28px)",
-          willChange: "transform, opacity",
-        }}
-        initial={{ opacity: 0, scale: 0.7 }}
-        animate={inView ? { opacity: [0.4, 0.65, 0.4], scale: [1, 1.07, 1] } : { opacity: 0.5, scale: 1 }}
-        transition={{
-          opacity: { duration: 14, ease: "easeInOut", repeat: Infinity, delay: 1.1 },
-          scale: { duration: 14, ease: "easeInOut", repeat: Infinity, delay: 1.1 },
-        }}
-      />
-
 
       {/* LAYER 2A — back orbits. Static outer wrapper does the
           centering transform so the orbital image stays anchored to
@@ -582,12 +549,21 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         <motion.p
           style={{
             fontSize: "clamp(10px,0.85vw,11px)",
-            letterSpacing: "0.52em",
-            // letter-spacing adds space after every glyph, including
-            // the last — which visually pushes the line right of true
-            // centre. Compensate with an equal left pad so the eye
-            // reads it as centred under the wordmark.
-            paddingLeft: "0.52em",
+            // Letter-spacing tightens on mobile so the long ES eyebrow
+            // ("Estudio de atmósfera de marca · MMXXII") doesn't outrun
+            // a 390px viewport. Caps at 0.52em on desktop where the
+            // editorial dateline reads as intended.
+            letterSpacing: "clamp(0.22em, 1.4vw, 0.52em)",
+            // Match the trailing letter-spacing so the line reads as
+            // optically centred under the wordmark (without this the
+            // last glyph's right margin pushes the line off-centre).
+            paddingLeft: "clamp(0.22em, 1.4vw, 0.52em)",
+            // Without an explicit max-width the flex-column parent sizes
+            // this paragraph to its max-content (one long line) and lets
+            // it overflow the viewport on mobile. Capping it forces a
+            // clean wrap; balance keeps the two lines even.
+            maxWidth: "92vw",
+            textWrap: "balance",
             textTransform: "uppercase",
             color: "rgba(255,255,255,0.45)",
             fontWeight: 400,
