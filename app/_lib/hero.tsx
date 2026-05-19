@@ -36,13 +36,24 @@ const ORB_SIZE = "clamp(28px,5vw,88px)";
 // of identical jewels. Outer orbs sit further back (lower opacity, smaller
 // scale, deeper vertical drop). Inner orbs sit closer to the viewer
 // (full opacity, full scale, almost at the apex of the arc).
+// Equalized constellation — every surface a brand reaches its
+// customer through carries the same visual weight. The arc is still
+// present (the centre is the Central Core, the outers drop slightly)
+// but the depth gradient has been flattened so no surface reads as
+// "secondary". Six rooms, equal citizens.
+//
+//   op: 0.94 → 1 → 1 → 0.94 instead of 0.55 → 1 → 0.55
+//   sc: 0.94 → 1 → 1 → 0.94 instead of 0.82 → 1 → 0.82
+//   dy: outer drop softened so the dome is a gentle smile, not an
+//       alveolus pocket — keeps the spatial arrangement, removes
+//       the hierarchy.
 const PLAN = [
-  { idx: 0, mult: -3, dy: 4.6, delay: 0.85, op: 0.55, sc: 0.82 },
-  { idx: 1, mult: -2, dy: 2.6, delay: 0.8,  op: 0.78, sc: 0.92 },
-  { idx: 2, mult: -1, dy: 0.6, delay: 0.75, op: 1,    sc: 1    },
-  { idx: 3, mult: 1,  dy: 0.6, delay: 0.75, op: 1,    sc: 1    },
-  { idx: 4, mult: 2,  dy: 2.6, delay: 0.8,  op: 0.78, sc: 0.92 },
-  { idx: 5, mult: 3,  dy: 4.6, delay: 0.85, op: 0.55, sc: 0.82 },
+  { idx: 0, mult: -3, dy: 2.8, delay: 0.85, op: 0.94, sc: 0.94 },
+  { idx: 1, mult: -2, dy: 1.6, delay: 0.8,  op: 0.97, sc: 0.97 },
+  { idx: 2, mult: -1, dy: 0.4, delay: 0.75, op: 1,    sc: 1    },
+  { idx: 3, mult: 1,  dy: 0.4, delay: 0.75, op: 1,    sc: 1    },
+  { idx: 4, mult: 2,  dy: 1.6, delay: 0.8,  op: 0.97, sc: 0.97 },
+  { idx: 5, mult: 3,  dy: 2.8, delay: 0.85, op: 0.94, sc: 0.94 },
 ];
 const UNIT = "clamp(40px,7vw,130px)";
 const CENTRAL_SIZE = "clamp(34px,6vw,108px)";
@@ -206,7 +217,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           background:
             "radial-gradient(ellipse at center, rgba(228,180,128,0.13) 0%, rgba(190,140,90,0.05) 35%, rgba(60,40,30,0.012) 58%, transparent 75%)",
-          filter: "blur(28px)",
           willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 0.85 }}
