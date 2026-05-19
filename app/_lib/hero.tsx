@@ -6,7 +6,6 @@ import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
-import { AtelierStar } from "./ornaments";
 
 type HeroCopy = {
   eyebrow: string;
@@ -125,8 +124,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             alt=""
             fill
             sizes="100vw"
+            // Eager, but NOT fetchPriority high — the chrome X (LAYER
+            // 2C) is the page's LCP and should win the priority queue.
+            // This image renders behind a 28px blur, so quality is
+            // dropped to 45 — invisible loss after the blur, 40-50%
+            // payload savings on the AVIF/WebP variant.
             loading="eager"
-            fetchPriority="high"
+            quality={45}
             style={{
               objectFit: "cover",
               objectPosition: "center",
@@ -245,17 +249,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         }}
       />
 
-      {/* LAYER 1C — Brand crest. The quiet zone at the top of the
-          hero used to be empty atmosphere; now it carries an editorial
-          signature — a small horizontal frieze of brand marks plus a
-          sparse drift of micro-sigils in the corners. Reads as the
-          masthead of a quiet studio: identity, restraint, variety.
-          zIndex 6 sits above the warm aureole (zIndex 4) and below
-          the dome / wordmark so the crest never competes with the
-          name. All breath rhythms differ so the frieze never feels
-          synchronised — that asymmetry is the "infinity of visual
-          styles" within a coherent brand voice. */}
-      <BrandCrest />
 
       {/* LAYER 2A — back orbits. Static outer wrapper does the
           centering transform so the orbital image stays anchored to
@@ -276,7 +269,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         }}
       >
         <motion.div
-          style={{ x: orbX, y: orbY, width: "100%", height: "100%" }}
+          style={{ position: "relative", x: orbX, y: orbY, width: "100%", height: "100%" }}
           initial={{ opacity: 0, scale: 3.8, filter: "blur(32px)", rotate: -12 }}
           animate={{ opacity: 1, scale: 1, filter: "blur(0px)", rotate: 0 }}
           transition={{ duration: 2.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
@@ -288,7 +281,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               slightly so the trace contributes to atmosphere, not
               just decoration. */}
           <motion.div
-            style={{ width: "100%", height: "100%", willChange: "transform" }}
+            style={{ position: "relative", width: "100%", height: "100%", willChange: "transform" }}
             animate={inView ? { rotate: 360 } : false}
             transition={{ duration: 180, ease: "linear", repeat: Infinity }}
           >
@@ -297,7 +290,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               alt=""
               fill
               sizes="(max-width: 768px) 60vw, 38vw"
+              // Screen-blend at 9% opacity, rotating continuously.
+              // Quality 50 saves payload without visible loss.
               loading="lazy"
+              quality={50}
               style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.09 }}
             />
           </motion.div>
@@ -587,6 +583,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{
             fontSize: "clamp(10px,0.85vw,11px)",
             letterSpacing: "0.52em",
+            // letter-spacing adds space after every glyph, including
+            // the last — which visually pushes the line right of true
+            // centre. Compensate with an equal left pad so the eye
+            // reads it as centred under the wordmark.
+            paddingLeft: "0.52em",
             textTransform: "uppercase",
             color: "rgba(255,255,255,0.45)",
             fontWeight: 400,
@@ -653,7 +654,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           top: "50%",
           width: "clamp(360px, 64vw, 980px)",
           height: "clamp(360px, 64vw, 980px)",
-          transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
+          transform: "translate(-50%, calc(-50% + clamp(40px, 8svh, 90px)))",
           pointerEvents: "none",
           borderRadius: "50%",
           background:
@@ -687,18 +688,18 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           top: "50%",
           width: "clamp(200px, 42vw, 600px)",
           height: "clamp(200px, 42vw, 600px)",
-          transform: "translate(-50%, calc(-50% - clamp(0px, 4svh, 40px)))",
+          transform: "translate(-50%, calc(-50% + clamp(40px, 8svh, 90px)))",
           pointerEvents: "none",
         }}
       >
         <motion.div
-          style={{ x: symX, y: symY, width: "100%", height: "100%" }}
+          style={{ position: "relative", x: symX, y: symY, width: "100%", height: "100%" }}
           initial={{ opacity: 0, filter: "blur(18px)", scale: 0.94 }}
           animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
           transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
         >
           <motion.div
-            style={{ width: "100%", height: "100%" }}
+            style={{ position: "relative", width: "100%", height: "100%" }}
             animate={inView ? { scale: [1, 1.025, 1], y: [0, -4, 0] } : { scale: 1, y: 0 }}
             transition={{ duration: 11, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
           >
@@ -707,12 +708,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 alt=""
                 fill
                 sizes="(max-width: 768px) 300px, 600px"
-                // Decorative chrome sculpture — not LCP. Lazy keeps the
-                // 1.4 MB PNG off the critical path; the entry transition
-                // (blur(18px) → 0, scale 0.94 → 1, opacity 0 → 1 over
-                // 1.6s) gives the image time to decode and fade in
-                // without ever being on the first-paint hot path.
-                loading="lazy"
+                // Now centred behind the wordmark above the fold, Next
+                // detects this as the page's LCP — so we mark it as
+                // priority. That sets loading="eager" + fetchPriority
+                // ="high" and pre-emits the <link rel="preload"> hint
+                // in the HTML so the optimized AVIF/WebP variant is on
+                // the critical path. The entry transition (blur(18px)
+                // → 0, scale 0.94 → 1, opacity 0 → 1 over 1.6s) gives
+                // the image room to decode and fade in cleanly.
+                priority
                 style={{
                   objectFit: "contain",
                   mixBlendMode: "screen",
@@ -740,12 +744,16 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alt=""
           fill
           sizes="100vw"
+          // Screen-blend overlay at 5.5% opacity. Quality 40 is enough
+          // for an effect that is statistically invisible at full
+          // resolution. 50%+ payload savings.
           loading="lazy"
+          quality={40}
           style={{ objectFit: "cover", objectPosition: "center top", mixBlendMode: "screen", opacity: 0.055 }}
         />
       </motion.div>
 
-      <Dust count={10} opacity={0.07} />
+      <Dust count={6} opacity={0.07} />
 
       {/* Bottom — strapline + scroll cue stacked in one column so they
           never collide on short viewports. Single flex container at the
@@ -869,180 +877,3 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   );
 }
 
-// Brand crest — the editorial signature that lives in the quiet zone
-// at the top of the hero. A horizontal frieze with the wordmark in
-// micro-caps, the founding numeral, two AtelierStar sigils flanking
-// the centre, and three drifting micro-sigils anchored to the
-// corners. Each element breathes on its own rhythm so the frieze
-// reads as a small ecosystem of identity — a crest that's never
-// frozen, never synchronised, never loud.
-function BrandCrest() {
-  return (
-    <div
-      aria-hidden
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        right: 0,
-        height: "clamp(80px, 14svh, 160px)",
-        zIndex: 6,
-        pointerEvents: "none",
-      }}
-    >
-      {/* Centred masthead — appears after the orbs have settled so the
-          eye lands on the constellation first and the crest reads as
-          a quiet stamp afterward. Generous letter-spacing reads as
-          editorial dateline, not as a logo lockup. */}
-      <motion.div
-        initial={{ opacity: 0, y: -4 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 1.2 }}
-        style={{
-          position: "absolute",
-          top: "clamp(28px, 5svh, 64px)",
-          left: "50%",
-          transform: "translateX(-50%)",
-          display: "flex",
-          alignItems: "center",
-          gap: "clamp(16px, 2.2vw, 36px)",
-          whiteSpace: "nowrap",
-        }}
-      >
-        <motion.span
-          aria-hidden
-          animate={{ opacity: [0.32, 0.6, 0.32] }}
-          transition={{ duration: 8, ease: "easeInOut", repeat: Infinity }}
-          style={{
-            display: "inline-block",
-            width: 4,
-            height: 4,
-            borderRadius: "50%",
-            background: "rgba(232,183,131,0.7)",
-            boxShadow: "0 0 8px rgba(232,183,131,0.5)",
-          }}
-        />
-        <span
-          style={{
-            fontSize: "clamp(9px, 0.72vw, 10.5px)",
-            letterSpacing: "0.46em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-            color: "rgba(232,183,131,0.6)",
-            textShadow: "0 1px 12px rgba(0,0,0,0.85)",
-          }}
-        >
-          XNLAB
-        </span>
-        <AtelierStar
-          size={8}
-          color="rgba(232,183,131,0.82)"
-          shadow="rgba(232,183,131,0.55)"
-        />
-        <span
-          style={{
-            fontFamily: "var(--font-serif, 'Cormorant Garamond', Georgia, serif)",
-            fontStyle: "italic",
-            fontSize: "clamp(10px, 0.82vw, 12px)",
-            letterSpacing: "0.32em",
-            color: "rgba(232,183,131,0.55)",
-            textShadow: "0 1px 12px rgba(0,0,0,0.85)",
-          }}
-        >
-          MMXXII
-        </span>
-        <AtelierStar
-          size={6}
-          color="rgba(232,183,131,0.7)"
-          shadow="rgba(232,183,131,0.45)"
-        />
-        <motion.span
-          aria-hidden
-          animate={{ opacity: [0.32, 0.6, 0.32] }}
-          transition={{ duration: 9, ease: "easeInOut", repeat: Infinity, delay: 1.5 }}
-          style={{
-            display: "inline-block",
-            width: 4,
-            height: 4,
-            borderRadius: "50%",
-            background: "rgba(232,183,131,0.7)",
-            boxShadow: "0 0 8px rgba(232,183,131,0.5)",
-          }}
-        />
-      </motion.div>
-
-      {/* Three drifting micro-sigils anchored to the corners — each
-          a different size and breath rhythm so the frieze reads as an
-          ecosystem of identity rather than a logo lockup repeated.
-          Hidden on mobile where the top zone is already tight. */}
-      <motion.div
-        className="hidden md:block"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.2, delay: 1.5 }}
-        style={{
-          position: "absolute",
-          top: "clamp(40px, 6svh, 72px)",
-          left: "clamp(48px, 8vw, 140px)",
-        }}
-      >
-        <AtelierStar
-          size={5}
-          color="rgba(232,183,131,0.55)"
-          shadow="rgba(232,183,131,0.32)"
-        />
-      </motion.div>
-      <motion.div
-        className="hidden md:block"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.2, delay: 1.8 }}
-        style={{
-          position: "absolute",
-          top: "clamp(36px, 5.5svh, 60px)",
-          right: "clamp(48px, 8vw, 140px)",
-        }}
-      >
-        <AtelierStar
-          size={7}
-          color="rgba(232,183,131,0.62)"
-          shadow="rgba(232,183,131,0.38)"
-        />
-      </motion.div>
-      <motion.div
-        className="hidden lg:block"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 2.2, delay: 2.1 }}
-        style={{
-          position: "absolute",
-          top: "clamp(78px, 11svh, 130px)",
-          left: "calc(50% + clamp(180px, 22vw, 360px))",
-        }}
-      >
-        <AtelierStar
-          size={4}
-          color="rgba(232,183,131,0.48)"
-          shadow="rgba(232,183,131,0.28)"
-        />
-      </motion.div>
-
-      {/* Hairline — a single thin amber thread crossing horizontally
-          between the centred frieze and the dome, signing the top of
-          the hero like a masthead rule. Pure gradient, no animation,
-          so the eye registers a frame, not motion. */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute",
-          top: "clamp(70px, 10svh, 118px)",
-          left: "20%",
-          right: "20%",
-          height: 1,
-          background:
-            "linear-gradient(to right, transparent 0%, rgba(232,183,131,0.22) 30%, rgba(232,183,131,0.32) 50%, rgba(232,183,131,0.22) 70%, transparent 100%)",
-        }}
-      />
-    </div>
-  );
-}

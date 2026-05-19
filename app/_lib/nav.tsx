@@ -43,8 +43,11 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
     };
   }, [mobileOpen]);
 
-  const items: Array<{ key: MenuKey | "apply"; label: string; href: string; menu: boolean }> = [
+  const items: Array<{ key: MenuKey | "apply" | "systems"; label: string; href: string; menu: boolean }> = [
     { key: "worlds", label: t.nw, href: "/worlds", menu: true },
+    // Systems → anchor to the home-page services section. On any page
+    // it routes to /#services and the browser scrolls to the section.
+    { key: "systems", label: t.nse, href: "/#services", menu: false },
     { key: "apply", label: t.na, href: "/contact", menu: false },
   ];
 
@@ -87,7 +90,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               opacity + scale. Hover reveals a small status caption. */}
           <div
             aria-label={lang === "en" ? "Studio observing" : "Estudio activo"}
-            title={lang === "en" ? "Studio observing · Cycle MMXXVI · One place remains" : "Estudio activo · Ciclo MMXXVI · Queda una plaza"}
+            title={lang === "en" ? "Studio observing · First cycle of MMXXVI · Open" : "Estudio activo · Primer ciclo de MMXXVI · Abierto"}
             style={{ position: "relative", width: 10, height: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             <motion.span
@@ -232,7 +235,15 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
             }}
           >
             <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.25)", transition: "color 0.3s" }}>EN</span>
-            <span style={{ color: "rgba(255,255,255,0.18)" }}>·</span>
+            <span
+              aria-hidden
+              style={{
+                display: "inline-block",
+                width: 12,
+                height: 1,
+                background: "rgba(232,183,131,0.32)",
+              }}
+            />
             <span style={{ color: lang === "es" ? "white" : "rgba(255,255,255,0.25)", transition: "color 0.3s" }}>ES</span>
           </button>
 

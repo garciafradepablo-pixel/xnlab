@@ -7,24 +7,25 @@ import { ts, tsS, serif, W, R, useLang } from "../_lib/atoms";
 import { LuxButton } from "../_lib/lux-button";
 import { WordmarkLink } from "../_lib/wordmark";
 import { OtherCorners } from "../_lib/other-corners";
+import { SiteFooter } from "../_lib/site-footer";
 
 const en = {
-  eyebrow: "Atelier Studies",
-  heading1: "Atelier",
+  eyebrow: "Applied Studies",
+  heading1: "Applied",
   heading2: "studies.",
   intro:
-    "Internal visual systems, published while the first wave of client work matures. Each study moves through Problem, Direction, System, Surfaces and Result — the same framework we use for every engagement.",
+    "The five-beat framework — Problem, Direction, System, Surfaces, Result — that every paid engagement passes through. Published openly while the work directed for clients remains under confidentiality.",
   closingEyebrow: "By appointment only · studio@xnlab.io",
   cta: "Write to the studio",
   back: "← Home",
   count: (n: number) => `${String(n).padStart(3, "0")} — Studies`,
 };
 const es = {
-  eyebrow: "Estudios de Atelier",
+  eyebrow: "Estudios aplicados",
   heading1: "Estudios",
-  heading2: "de atelier.",
+  heading2: "aplicados.",
   intro:
-    "Sistemas visuales internos, publicados mientras madura la primera ola de trabajo con clientes. Cada estudio recorre Problema, Dirección, Sistema, Superficies y Resultado — el mismo marco con el que afrontamos cada encargo.",
+    "El marco de cinco compases — Problema, Dirección, Sistema, Superficies, Resultado — por el que pasa cada encargo. Publicados abiertamente mientras el trabajo dirigido para clientes permanece bajo confidencialidad.",
   closingEyebrow: "Solo con cita previa · studio@xnlab.io",
   cta: "Escribir al estudio",
   back: "← Inicio",
@@ -300,6 +301,7 @@ export default function WorkIndex({ projects }: { projects: Project[] }) {
         <LuxButton href="/contact" variant="solid" arrow={false}>{t.cta}</LuxButton>
       </section>
       <OtherCorners lang={lang} exclude="studies" />
+        <SiteFooter lang={lang} />
     </main>
   );
 }

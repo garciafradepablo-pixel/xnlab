@@ -6,6 +6,7 @@ import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
 import { Orb } from "../_lib/orb";
 import { worlds, mythology } from "../_lib/worlds";
+import { SiteFooter } from "../_lib/site-footer";
 
 const en = {
   eyebrow: "The Universe",
@@ -19,11 +20,11 @@ const en = {
   methodBody: [
     "Each Core defines how a brand should look, move, sound and be remembered on one specific surface.",
     "A product does not need the same atmosphere as a campaign. An owned dashboard does not move like a flagship store. A community programme does not breathe like a service email.",
-    "XNLAB uses each Core to define visual language, motion register, voice, editorial tempo and operational signature — calibrated to the surface, signed by the studio.",
+    "XNLAB uses each Core to define visual language, motion register, voice, editorial tempo and operational signature, calibrated to the surface, signed by the studio.",
   ],
   loreLabel: "Studio Lore",
   loreTitle: "Inside the Central Core",
-  loreSub: "The two presences that watch over every project we accept — and what we do when a surface fractures.",
+  loreSub: "The two presences that watch over every project we accept. And what we do when a surface fractures.",
   loreAnomalies: "Anomalies",
   centralLabel: "The Central Core",
   worldsLabel: "Six worlds, one universe",
@@ -53,7 +54,7 @@ const es = {
   ],
   loreLabel: "Lore del estudio",
   loreTitle: "Dentro del Núcleo Central",
-  loreSub: "Las dos presencias que cuidan cada proyecto que aceptamos — y lo que hacemos cuando una superficie se fractura.",
+  loreSub: "Las dos presencias que cuidan cada proyecto que aceptamos. Y lo que hacemos cuando una superficie se fractura.",
   loreAnomalies: "Anomalías",
   centralLabel: "El Núcleo Central",
   worldsLabel: "Seis mundos, un universo",
@@ -473,6 +474,7 @@ export default function WorldsIndex() {
           </R>
         </div>
       </section>
+        <SiteFooter lang={lang} />
     </main>
   );
 }

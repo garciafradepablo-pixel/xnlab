@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { WordmarkLink } from "../_lib/wordmark";
+import { SiteFooter } from "../_lib/site-footer";
 
 const en = {
   eyebrow: "Colophon",
@@ -15,11 +16,9 @@ const en = {
         ["Commercial mark", "Xnlab Studio"],
         ["Wordmark", "XNLAB"],
         ["Practice founded", "MMXXII"],
-        ["Offices", "Marbella · Madrid"],
-        ["Operating range", "Europe · MENA"],
-        ["Languages", "EN · ES · FR · AR"],
+                        ["Languages", "EN · ES · FR · AR"],
         ["Currencies", "EUR · USD · GBP · AED"],
-        ["Current cycle", "MMXXVI · January — June · One place remains"],
+        ["Current cycle", "MMXXVI · January — June · Open"],
         ["Discovery", "Forty-five minutes · by invitation"],
         ["Accountability", "Partner-signed · single point"],
         ["Contact", "studio@xnlab.io"],
@@ -79,11 +78,9 @@ const es = {
         ["Marca comercial", "Xnlab Studio"],
         ["Logotipo", "XNLAB"],
         ["Práctica fundada", "MMXXII"],
-        ["Sedes", "Marbella · Madrid"],
-        ["Radio operativo", "Europa · MENA"],
-        ["Idiomas", "ES · EN · FR · AR"],
+                        ["Idiomas", "ES · EN · FR · AR"],
         ["Divisas", "EUR · USD · GBP · AED"],
-        ["Ciclo actual", "MMXXVI · enero — junio · Queda una plaza"],
+        ["Ciclo actual", "MMXXVI · enero — junio · Abierto"],
         ["Discovery", "Cuarenta y cinco minutos · por invitación"],
         ["Responsabilidad", "Firmado por un socio · punto único"],
         ["Contacto", "studio@xnlab.io"],
@@ -315,6 +312,7 @@ export default function Imprint() {
           {t.updated} — {updated}
         </p>
       </section>
+        <SiteFooter lang={lang} />
     </main>
   );
 }

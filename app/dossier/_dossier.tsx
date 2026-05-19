@@ -1,10 +1,11 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ts, tsS, serif, R, Dust, useLang } from "../_lib/atoms";
 import { WordmarkLink } from "../_lib/wordmark";
 import { requestDossier } from "./actions";
+import { SiteFooter } from "../_lib/site-footer";
 
 // ---------------------------------------------------------------
 // Copy — EN / ES
@@ -20,7 +21,7 @@ const en = {
     h1a: "A short document.",
     h1b: "Sent by the studio.",
     lead:
-      "How the studio operates, the six surfaces we work across, the position on AI, the discovery protocol. Released as a private read for visitors considering an engagement. Cycles close at six brands. One place remains.",
+      "How the studio operates, the six surfaces we work across, the position on AI, the discovery protocol. Released as a private read for visitors considering an engagement. The first cycle of MMXXVI is open. Cycles close at six brands.",
     emailLabel: "Email",
     emailPlaceholder: "you@company.com",
     submit: "Request the dossier",
@@ -108,7 +109,7 @@ const en = {
           {
             n: "01",
             name: "Atmosphere Systems",
-            note: "Light, sound, material, motion and pacing — directed as one operating system across product, screen and room.",
+            note: "Light, sound, material, motion and pacing, directed as one operating system across product, screen and room.",
           },
           {
             n: "02",
@@ -151,7 +152,7 @@ const en = {
         title: "How an engagement begins",
         body: [
           "Discoveries are extended by the studio, not requested. Forty-five minutes, by invitation, recorded by the studio and never published. If we both recognise the work, a partner-signed proposal follows within seven days.",
-          "Most new conversations arrive through an existing brand — a CEO, a CMO, a founder, a programme director. A line of context — who pointed you, what you have read of ours — helps the studio reply with weight.",
+          "Most new conversations arrive through an existing brand. A CEO, a CMO, a founder, a programme director. A line of context — who pointed you, what you have read of ours — helps the studio reply with weight.",
         ],
       },
       {
@@ -190,7 +191,7 @@ const es = {
     h1a: "Un documento corto.",
     h1b: "Lo envía el estudio.",
     lead:
-      "Cómo opera el estudio, las seis superficies en las que trabajamos, la posición sobre IA, el protocolo de discovery. Se entrega como lectura privada a quienes consideran abrir un encargo. Los ciclos cierran a seis marcas. Queda una plaza.",
+      "Cómo opera el estudio, las seis superficies en las que trabajamos, la posición sobre IA, el protocolo de discovery. Se entrega como lectura privada a quienes consideran abrir un encargo. El primer ciclo de MMXXVI está abierto. Los ciclos cierran a seis marcas.",
     emailLabel: "Email",
     emailPlaceholder: "tu@empresa.com",
     submit: "Pedir el dossier",
@@ -278,7 +279,7 @@ const es = {
           {
             n: "01",
             name: "Sistemas de Atmósfera",
-            note: "Luz, sonido, material, animación y ritmo — dirigidos como un solo sistema operativo entre producto, pantalla y sala.",
+            note: "Luz, sonido, material, animación y ritmo, dirigidos como un solo sistema operativo entre producto, pantalla y sala.",
           },
           {
             n: "02",
@@ -321,7 +322,7 @@ const es = {
         title: "Cómo se abre un encargo",
         body: [
           "El discovery lo extiende el estudio, no se solicita. Cuarenta y cinco minutos, por invitación, grabado por el estudio y nunca publicado. Si los dos reconocemos el trabajo, llega una propuesta firmada por un socio en siete días.",
-          "La mayoría de conversaciones nuevas llegan por recomendación de una marca activa — un CEO, un CMO, un fundador, un director de programa. Una línea de contexto — quién te apuntó, qué has leído nuestro — ayuda al estudio a responder con peso.",
+          "La mayoría de conversaciones nuevas llegan por recomendación de una marca activa. Un CEO, un CMO, un fundador, un director de programa. Una línea de contexto — quién te apuntó, qué has leído nuestro — ayuda al estudio a responder con peso.",
         ],
       },
       {
@@ -368,24 +369,40 @@ type KvsSection = Extract<Section, { kvs: unknown }>;
 
 const STORAGE_KEY = "xn-dossier-unlocked";
 
+// useSyncExternalStore helpers — server snapshot is always `false` (no
+// sessionStorage on the server), client snapshot reads the gate flag.
+// No subscription needed: the value only flips via setExplicitUnlocked
+// during submit, never from an external source.
+const subscribeNoop = () => () => {};
+const getPersistedUnlocked = () => {
+  try {
+    return sessionStorage.getItem(STORAGE_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+const getPersistedUnlockedServer = () => false;
+
 export default function Dossier() {
   const [lang, setLang] = useLang();
   const t: Copy = lang === "en" ? en : es;
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [unlocked, setUnlocked] = useState(false);
+  const [explicitUnlocked, setExplicitUnlocked] = useState(false);
   const [confirmShown, setConfirmShown] = useState(false);
 
   // Restore prior unlock so repeat visits skip the gate. Session storage,
   // not localStorage — the dossier is a per-session courtesy, not a
-  // permanent entitlement. If the user opens a new window they re-submit,
-  // which feeds the studio a fresh signal of return interest.
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem(STORAGE_KEY) === "1") setUnlocked(true);
-    } catch {}
-  }, []);
+  // permanent entitlement. The read happens via useSyncExternalStore so
+  // server renders the gate (false) and the client transitions cleanly
+  // to the unlocked state without a setState-in-effect cascade.
+  const persistedUnlocked = useSyncExternalStore(
+    subscribeNoop,
+    getPersistedUnlocked,
+    getPersistedUnlockedServer,
+  );
+  const unlocked = persistedUnlocked || explicitUnlocked;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -398,7 +415,7 @@ export default function Dossier() {
         try {
           sessionStorage.setItem(STORAGE_KEY, "1");
         } catch {}
-        setUnlocked(true);
+        setExplicitUnlocked(true);
         setConfirmShown(true);
         return;
       }
@@ -439,6 +456,7 @@ export default function Dossier() {
           <Document key="doc" t={t} confirmShown={confirmShown} />
         )}
       </AnimatePresence>
+        <SiteFooter lang={lang} />
     </main>
   );
 }

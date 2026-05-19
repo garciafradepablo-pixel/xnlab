@@ -6,6 +6,7 @@ import { WordmarkLink } from "../_lib/wordmark";
 import { records } from "../_lib/lab-records";
 import { worlds } from "../_lib/worlds";
 import { OtherCorners } from "../_lib/other-corners";
+import { SiteFooter } from "../_lib/site-footer";
 
 const en = {
   eyebrow: "Lab Records",
@@ -226,6 +227,7 @@ export default function LabRecordsIndex() {
         </R>
       </section>
       <OtherCorners lang={lang} exclude="lab-records" />
+        <SiteFooter lang={lang} />
     </main>
   );
 }

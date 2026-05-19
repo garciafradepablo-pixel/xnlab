@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Project } from "../data";
 import { ts, tsS, serif, W, R, useLang } from "../../_lib/atoms";
 import { WordmarkLink } from "../../_lib/wordmark";
+import { SiteFooter } from "../../_lib/site-footer";
 
 const ui = {
   en: {
@@ -438,6 +439,9 @@ export default function WorkDetail({ project }: { project: Project }) {
         </R>
       </section>
 
+      {/* Closing section — single dominant verb per page (AGENTS §5).
+          The "Next study" affordance moves to the footer of this
+          section as a small inline back-link, not a competing CTA. */}
       <section
         style={{
           padding: "clamp(64px,9vw,120px) clamp(20px,5vw,64px)",
@@ -464,21 +468,22 @@ export default function WorkDetail({ project }: { project: Project }) {
         >
           {t.contact}
         </Link>
-        <div style={{ marginTop: 32 }}>
+        <div style={{ marginTop: "clamp(40px,5vw,72px)" }}>
           <Link
             href="/studies"
             style={{
-              fontSize: 11,
-              letterSpacing: "0.28em",
+              fontSize: 10,
+              letterSpacing: "0.34em",
               textTransform: "uppercase",
-              color: "rgba(255,255,255,0.5)",
+              color: "rgba(255,255,255,0.34)",
               textDecoration: "none",
             }}
           >
-            {t.next}
+            {t.back}
           </Link>
         </div>
       </section>
+        <SiteFooter lang={lang} />
     </main>
   );
 }

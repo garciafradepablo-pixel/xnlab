@@ -151,8 +151,8 @@ export const projects: Project[] = [
       es: "Un local que se reconoce en la oscuridad. El sistema visual sobrevive a cada contexto al que la noche lo somete, desde la puerta a la una de la madrugada hasta la foto de portada del lunes.",
     },
     pullQuote: {
-      en: "Restraint, used loudly.",
-      es: "Contención, usada en voz alta.",
+      en: "Every operational call is also a brand call.",
+      es: "Cada decisión operativa es también una decisión de marca.",
     },
     credits: [
       { role: "Direction", value: "Xnlab Studio" },

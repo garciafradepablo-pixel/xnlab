@@ -5,23 +5,49 @@ import Link from "next/link";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
 
-// "Six worlds. One laboratory." Six orbs on a circle plus a shared
-// caption surface for the active world.
+// "Six surfaces. One brand." Six orbs on a circle plus TWO caption
+// surfaces for the active world — and each one carries a different
+// beat, never the same sentence twice:
 //
-// Responsive layout:
-// — Desktop (md+, hover-capable): caption sits absolutely centred in
-//   the hexagonal void, fading between worlds. The constellation
-//   reads as one piece.
-// — Mobile / touch: caption sits in its OWN block BELOW the
-//   constellation. Touch already fires `setHovered` on tap, but on a
-//   small screen the centred caption visually collides with the CTA
-//   stacked above the constellation. A dedicated caption row removes
-//   the overlap and uses the touch tap as the natural disclosure.
-//   Auto-clears after 3.5s if the user does not tap a different orb.
+//  ── Centred (inside the hex void) → PITCH. The atelier framing:
+//      what the surface is, where the customer touches the brand.
+//  ── Below (under the cluster) → OUTCOME. The sales framing: what
+//      closing the gap on this surface actually produces, the line a
+//      CMO can quote upward.
+//
+// On touch devices the centred caption is unreachable (no hover) so
+// the below caption shows BOTH (title + pitch + outcome) stacked, as
+// a single disclosure block.
 export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
   const active = hovered ? worlds.find((w) => w.slug === hovered) : null;
+
+  // Input type — pointer devices get the split (pitch centred, outcome
+  // below); touch devices get a single combined caption below.
+  //
+  // Hydration safety: on the server we don't know the visitor's input
+  // type, so we render BOTH caption containers (empty, since `active`
+  // is null until hover). After mount we read matchMedia and the
+  // unused container unmounts cleanly. This avoids the SSR-vs-client
+  // div presence mismatch that the previous "default true" assumption
+  // produced on touch devices.
+  const [mounted, setMounted] = useState(false);
+  const [isPointer, setIsPointer] = useState(true);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    setMounted(true);
+    const mq = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const update = () => setIsPointer(mq.matches);
+    update();
+    mq.addEventListener?.("change", update);
+    return () => mq.removeEventListener?.("change", update);
+  }, []);
+  // SSR renders the centred caption (matches the desktop default).
+  // On touch, after mount, the centred caption unmounts cleanly.
+  // The below caption always renders (different content per input
+  // type — outcome on pointer, combined on touch).
+  const showCentred = !mounted || isPointer;
 
   const { scrollYProgress } = useScroll({
     target: ref,
@@ -29,12 +55,9 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
   });
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [0.94, 1, 1.04]);
 
-  // Auto-dismiss the active caption on touch — without an explicit
-  // pointer-leave event, mobile users would otherwise see the last
-  // tapped world locked in until they tapped another orb.
   useEffect(() => {
     if (!hovered) return;
-    const id = window.setTimeout(() => setHovered(null), 3500);
+    const id = window.setTimeout(() => setHovered(null), 5000);
     return () => window.clearTimeout(id);
   }, [hovered]);
 
@@ -45,7 +68,7 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        gap: "clamp(16px,2vw,28px)",
+        gap: "clamp(20px,2.4vw,36px)",
       }}
     >
       <motion.div
@@ -57,41 +80,46 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
           scale,
         }}
       >
-        {/* Desktop centre stage — absolute, hidden on touch */}
-        <div
-          className="hidden md:flex"
-          aria-hidden={!active}
-          style={{
-            position: "absolute",
-            inset: 0,
-            alignItems: "center",
-            justifyContent: "center",
-            pointerEvents: "none",
-            zIndex: 5,
-          }}
-        >
-          <AnimatePresence mode="wait">
-            {active && (
-              <motion.div
-                key={active.slug}
-                initial={{ opacity: 0, y: 4 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -4 }}
-                transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                style={{
-                  width: "clamp(150px, 22vw, 240px)",
-                  textAlign: "center",
-                  padding: "0 12px",
-                }}
-              >
-                <CaptionContent active={active} lang={lang} />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+        {/* Centred caption — PITCH only, kept compact so it lives inside
+            the hex void without crowding the orbs. SSR-rendered to
+            match the desktop default; unmounts on touch after the
+            first matchMedia read. */}
+        {showCentred && (
+          <div
+            aria-hidden={!active}
+            style={{
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              pointerEvents: "none",
+              zIndex: 5,
+            }}
+          >
+            <AnimatePresence mode="wait">
+              {active && (
+                <motion.div
+                  key={active.slug + "-pitch"}
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -4 }}
+                  transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                  style={{
+                    width: "clamp(150px, 22vw, 240px)",
+                    textAlign: "center",
+                    padding: "0 12px",
+                  }}
+                >
+                  <CaptionPitch active={active} lang={lang} />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
 
-        {worlds.map((w, i) => {
-          const angle = -90 + i * 60;
+        {worlds.map((w) => {
+          const angle = -90 + worlds.indexOf(w) * 60;
           const isHover = hovered === w.slug;
           return (
             <div
@@ -135,18 +163,18 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
         })}
       </motion.div>
 
-      {/* Mobile caption row — sits BELOW the constellation as a
-          dedicated disclosure block, so the touch tap reveals the
-          world without colliding with the CTA above. Fixed min-height
-          so the layout does not jump as the caption fades in / out. */}
+      {/* Below-cluster caption — OUTCOME on pointer devices (sales beat
+          that complements the pitch centred above); COMBINED (title +
+          pitch + outcome) on touch where there's no centre stage. Fixed
+          min-height stops the layout from jumping as captions swap in
+          and out. */}
       <div
-        className="md:hidden"
         aria-hidden={!active}
         style={{
-          width: "min(360px, 100%)",
-          minHeight: 92,
+          width: "min(560px, 100%)",
+          minHeight: 96,
           display: "flex",
-          alignItems: "center",
+          alignItems: "flex-start",
           justifyContent: "center",
           textAlign: "center",
           padding: "8px 12px",
@@ -155,14 +183,18 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
         <AnimatePresence mode="wait">
           {active && (
             <motion.div
-              key={active.slug}
+              key={active.slug + "-outcome"}
               initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
               transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
               style={{ width: "100%" }}
             >
-              <CaptionContent active={active} lang={lang} />
+              {isPointer ? (
+                <CaptionOutcome active={active} lang={lang} />
+              ) : (
+                <CaptionCombined active={active} lang={lang} />
+              )}
             </motion.div>
           )}
         </AnimatePresence>
@@ -171,9 +203,8 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
   );
 }
 
-// Shared caption renderer so desktop centre stage and mobile below
-// block stay in perfect typographic sync.
-function CaptionContent({
+// Centred caption — pitch. The atelier framing: what the surface IS.
+function CaptionPitch({
   active,
   lang,
 }: {
@@ -210,6 +241,114 @@ function CaptionContent({
         }}
       >
         {active.pitch[lang]}
+      </p>
+    </>
+  );
+}
+
+// Below-cluster caption — outcome. The sales beat: what closing the
+// gap on this surface produces, framed as a quotable sentence. Italic
+// serif so it reads as the studio's own voice, distinct from the
+// small-caps pitch above.
+function CaptionOutcome({
+  active,
+  lang,
+}: {
+  active: (typeof worlds)[number];
+  lang: "en" | "es";
+}) {
+  const serif = "var(--font-serif, 'Cormorant Garamond', Georgia, serif)";
+  return (
+    <>
+      <p
+        style={{
+          margin: 0,
+          fontSize: 10,
+          letterSpacing: "0.36em",
+          textTransform: "uppercase",
+          color: "rgba(255,255,255,0.42)",
+          fontWeight: 500,
+        }}
+      >
+        {lang === "en" ? "What it produces" : "Lo que produce"}
+      </p>
+      <p
+        style={{
+          margin: "12px 0 0",
+          fontFamily: serif,
+          fontStyle: "italic",
+          fontSize: "clamp(1rem, 1.28vw, 1.22rem)",
+          lineHeight: 1.4,
+          color: active.color.hex,
+          opacity: 0.92,
+          letterSpacing: "-0.005em",
+          textWrap: "balance",
+          maxWidth: 520,
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        {active.outcome[lang]}
+      </p>
+    </>
+  );
+}
+
+// Combined caption — touch fallback when the centre stage is hidden.
+// Stacks title + pitch + outcome so the tap reveals every beat.
+function CaptionCombined({
+  active,
+  lang,
+}: {
+  active: (typeof worlds)[number];
+  lang: "en" | "es";
+}) {
+  const serif = "var(--font-serif, 'Cormorant Garamond', Georgia, serif)";
+  return (
+    <>
+      <p
+        style={{
+          margin: 0,
+          fontSize: 10,
+          letterSpacing: "0.36em",
+          textTransform: "uppercase",
+          color: active.color.hex,
+          fontWeight: 600,
+        }}
+      >
+        {active.title[lang]}
+      </p>
+      <p
+        style={{
+          margin: "10px 0 0",
+          fontSize: 12.5,
+          lineHeight: 1.55,
+          color: "rgba(255,255,255,0.78)",
+          fontWeight: 300,
+          textWrap: "balance",
+          maxWidth: 520,
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        {active.pitch[lang]}
+      </p>
+      <p
+        style={{
+          margin: "12px 0 0",
+          fontFamily: serif,
+          fontStyle: "italic",
+          fontSize: 14,
+          lineHeight: 1.4,
+          color: active.color.hex,
+          opacity: 0.9,
+          textWrap: "balance",
+          maxWidth: 520,
+          marginLeft: "auto",
+          marginRight: "auto",
+        }}
+      >
+        {active.outcome[lang]}
       </p>
     </>
   );

@@ -83,8 +83,8 @@ const SIGNALS: Signal[] = [
       es: "Voz de Servicio · Fuera de Horario",
     },
     note: {
-      en: "What was decoration falls away. What remains has nothing in front of it — and answers at eleven.",
-      es: "Lo que era decoración se cae. Lo que queda no tiene nada delante — y contesta a las once.",
+      en: "What was decoration falls away. What remains has nothing in front of it. And answers at eleven.",
+      es: "Lo que era decoración se cae. Lo que queda no tiene nada delante. Y contesta a las once.",
     },
     material: {
       en: "ORUN pass · response-time atmosphere · three-line template rewrite",

@@ -30,58 +30,10 @@ type Entry = {
   worldSlug: typeof worlds[number]["slug"];
 };
 
-const ENGAGEMENTS: Entry[] = [
-  {
-    index: "R/01",
-    sector: { en: "Global brand", es: "Marca global" },
-    scope: {
-      en: "Two surfaces under extended direction",
-      es: "Dos superficies bajo dirección prolongada",
-    },
-    territory: { en: "Europe · MENA", es: "Europa · MENA" },
-    worldSlug: "product",
-  },
-  {
-    index: "R/02",
-    sector: { en: "Category leader", es: "Líder de categoría" },
-    scope: {
-      en: "One identity in rework",
-      es: "Una identidad en rediseño",
-    },
-    territory: { en: "Western Europe", es: "Europa Occidental" },
-    worldSlug: "communication",
-  },
-  {
-    index: "R/03",
-    sector: { en: "Heritage house", es: "Casa patrimonial" },
-    scope: {
-      en: "One brand world in atmosphere rework",
-      es: "Un universo de marca en rediseño",
-    },
-    territory: { en: "Iberia", es: "Iberia" },
-    worldSlug: "retail-physical",
-  },
-  {
-    index: "R/04",
-    sector: { en: "Hospitality (applied)", es: "Hostelería (aplicado)" },
-    scope: {
-      en: "Two properties · vertical study",
-      es: "Dos propiedades · estudio vertical",
-    },
-    territory: { en: "Iberia", es: "Iberia" },
-    worldSlug: "community-culture",
-  },
-  {
-    index: "R/05",
-    sector: { en: "Cultural institution", es: "Institución cultural" },
-    scope: {
-      en: "One programmatic platform · launch",
-      es: "Una plataforma programática · lanzamiento",
-    },
-    territory: { en: "Q3 MMXXVI", es: "T3 MMXXVI" },
-    worldSlug: "owned-digital",
-  },
-];
+// First cycle of MMXXVI is open. No engagements are published.
+// Direction begins when the work is recognised — the roster will
+// fill itself only with names the studio carries with their permission.
+const ENGAGEMENTS: Entry[] = [];
 
 // Practice ledger — eight operating facts. Hand-curated, deliberately
 // short. The valuation move here is not bragging about scale; it's
@@ -97,10 +49,6 @@ const LEDGER: LedgerEntry[] = [
     value: { en: "Twelve weeks", es: "Doce semanas" },
   },
   {
-    label: { en: "Average engagement", es: "Encargo medio" },
-    value: { en: "Thirty-two weeks", es: "Treinta y dos semanas" },
-  },
-  {
     label: { en: "Retainer engagements", es: "Retainer" },
     value: {
       en: "Twelve to thirty-six months",
@@ -109,11 +57,11 @@ const LEDGER: LedgerEntry[] = [
   },
   {
     label: { en: "Currencies served", es: "Divisas" },
-    value: { en: "EUR · USD · GBP · AED", es: "EUR · USD · GBP · AED" },
+    value: { en: "EUR · USD · GBP", es: "EUR · USD · GBP" },
   },
   {
     label: { en: "Languages of operation", es: "Idiomas de trabajo" },
-    value: { en: "EN · ES · FR · AR", es: "ES · EN · FR · AR" },
+    value: { en: "EN · ES", es: "ES · EN" },
   },
   {
     label: { en: "Studio response", es: "Respuesta del estudio" },
@@ -133,44 +81,44 @@ const LEDGER: LedgerEntry[] = [
 
 const COPY = {
   en: {
-    label: "002.5 — Standing",
-    h1a: "What the studio holds,",
-    h1b: "right now.",
-    sub: "An anonymized roster of brands currently under direction. A dossier, not a portfolio — every name we direct trades on quiet.",
-    rosterLabel: "Currently under direction",
+    label: "002.5 — Position",
+    h1a: "First cycle,",
+    h1b: "open.",
+    sub: "The studio has not yet published its engagements. Direction begins when the work is recognised. What we publish about a brand rests on its permission, not on ours.",
+    rosterLabel: "Currently",
     cycleLabel: "Cycle MMXXVI",
     cycleWindow: "January — June",
-    cycleStatus: "One place remains.",
+    cycleStatus: "First cycle open.",
     cycleNote:
       "Cycles close at six brands. We do not stretch the studio to make a seventh fit.",
     trust1:
-      "Most new engagements arrive through an existing brand — a CEO, a CMO, a founder, a programme director.",
+      "New engagements arrive through introduction. The studio replies in writing, signed, within forty-eight hours.",
     trust2:
-      "Practice founded MMXXII · Marbella · Madrid · By appointment.",
+      "Practice founded MMXXII · By appointment.",
     ledgerLabel: "How the studio operates",
     signature:
-      "Every engagement is partner-signed. Single point of accountability. Written deliverables only — the studio does not present decks.",
+      "Every engagement is partner-signed. Single point of accountability. Written deliverables only. The studio does not present decks.",
     closed: "Closed",
     open: "Open",
   },
   es: {
     label: "002.5 — Posición",
-    h1a: "Lo que el estudio tiene",
-    h1b: "en sus manos ahora.",
-    sub: "Un censo anónimo de marcas bajo dirección. Un dossier, no un portfolio — cada nombre que dirigimos opera en silencio.",
-    rosterLabel: "Actualmente bajo dirección",
+    h1a: "Primer ciclo,",
+    h1b: "abierto.",
+    sub: "El estudio aún no ha publicado sus encargos. La dirección empieza cuando el trabajo se reconoce. Lo que publicamos sobre una marca depende de su permiso, no del nuestro.",
+    rosterLabel: "Actualmente",
     cycleLabel: "Ciclo MMXXVI",
     cycleWindow: "Enero — junio",
-    cycleStatus: "Queda una plaza.",
+    cycleStatus: "Primer ciclo abierto.",
     cycleNote:
       "Los ciclos cierran a seis marcas. No estiramos el estudio para que entre una séptima.",
     trust1:
-      "La mayoría de los nuevos encargos llega por recomendación de una marca activa — un CEO, un CMO, un fundador, un director de programa.",
+      "Los encargos nuevos llegan por presentación. El estudio responde por escrito, firmado, dentro de cuarenta y ocho horas.",
     trust2:
-      "Práctica fundada en MMXXII · Marbella · Madrid · Solo con cita previa.",
+      "Práctica fundada en MMXXII · Solo con cita previa.",
     ledgerLabel: "Cómo opera el estudio",
     signature:
-      "Cada encargo lo firma un socio del estudio. Un único punto de responsabilidad. Entregables escritos — el estudio no presenta decks.",
+      "Cada encargo lo firma un socio del estudio. Un único punto de responsabilidad. Entregables escritos. El estudio no presenta decks.",
     closed: "Cerrado",
     open: "Abierto",
   },
@@ -189,7 +137,7 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
         overflow: "hidden",
       }}
     >
-      <Dust count={8} opacity={0.05} />
+      <Dust count={5} opacity={0.05} />
       <div
         aria-hidden
         style={{
@@ -240,8 +188,65 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
             alignItems: "start",
           }}
         >
-          {/* Roster */}
+          {/* Roster — only renders when ENGAGEMENTS is non-empty.
+              In the first cycle (no published engagements) we show a
+              single italic line instead of a label sitting above a
+              blank list. Honesty over scaffolding. */}
           <div>
+            {ENGAGEMENTS.length === 0 ? (
+              <div
+                style={{
+                  border: "1px solid rgba(232,183,131,0.18)",
+                  background:
+                    "linear-gradient(180deg, rgba(232,183,131,0.04) 0%, rgba(4,3,2,0.4) 100%)",
+                  padding: "clamp(24px,3vw,36px) clamp(20px,2.4vw,30px)",
+                }}
+              >
+                <p
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 500,
+                    letterSpacing: "0.42em",
+                    textTransform: "uppercase",
+                    color: "rgba(232,183,131,0.78)",
+                    margin: 0,
+                    marginBottom: 14,
+                  }}
+                >
+                  {lang === "en" ? "Currently" : "Actualmente"}
+                </p>
+                <p
+                  style={{
+                    margin: 0,
+                    fontFamily: serif,
+                    fontStyle: "italic",
+                    fontSize: "clamp(1.15rem,1.5vw,1.42rem)",
+                    lineHeight: 1.38,
+                    color: "rgba(255,255,255,0.86)",
+                    letterSpacing: "-0.005em",
+                    textShadow: tsS,
+                  }}
+                >
+                  {lang === "en"
+                    ? "The first cycle of MMXXVI is in motion. The studio has not yet published its engagements."
+                    : "El primer ciclo de MMXXVI está en marcha. El estudio aún no ha publicado sus encargos."}
+                </p>
+                <p
+                  style={{
+                    margin: "14px 0 0",
+                    fontSize: "clamp(0.92rem,1.1vw,1rem)",
+                    lineHeight: 1.7,
+                    color: "rgba(255,255,255,0.52)",
+                    fontWeight: 300,
+                  }}
+                >
+                  {lang === "en"
+                    ? "When a brand under direction grants its permission, its name will appear here."
+                    : "Cuando una marca bajo dirección dé su permiso, su nombre aparecerá aquí."}
+                </p>
+              </div>
+            ) : (
+              <>
             <p
               style={{
                 fontSize: 10,
@@ -344,6 +349,8 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
                 );
               })}
             </ol>
+              </>
+            )}
           </div>
 
           {/* Cycle status panel */}

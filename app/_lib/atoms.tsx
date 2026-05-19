@@ -208,8 +208,13 @@ export function Dust({
   );
   const mounted = useMounted();
   if (!mounted) return null;
+  // Mobile: skip the dust particles entirely. They are pure decoration,
+  // already near-invisible (opacity 0.03-0.08), and each particle is a
+  // separately-animated blurred div — heavy on mobile GPU for almost
+  // zero visual return. Tailwind `hidden md:block` ships zero motion
+  // nodes below 768px.
   return (
-    <div style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 4 }}>
+    <div className="hidden md:block" style={{ position: "absolute", inset: 0, overflow: "hidden", pointerEvents: "none", zIndex: 4 }}>
       {items.map((p, i) => (
         <div
           key={i}

@@ -28,8 +28,11 @@ const SITE = "https://xnlab.io";
 // for brand queries, so seating the variants here is the single
 // highest-leverage hook for variant ranking.
 const TITLE = "XNLAB — Atmosphere Systems for Brands, Customers and Channels.";
+// DESCRIPTION value-first. The commercial promise lands inside Google's
+// ~155-160 char SERP truncation. Brand-name variants stay indexable but
+// move to the tail so they don't eat the first impression.
 const DESCRIPTION =
-  "XNLAB (also XN Lab, XN Studio, XNL — pronounced «X-N-Lab», sometimes heard as «x en la app») designs atmosphere systems across the six surfaces a modern brand reaches its customer through — product, owned digital, retail and physical, customer operations, communication and community. By appointment.";
+  "Atmosphere systems across the six surfaces a modern brand reaches its customer through — product, owned digital, retail, customer operations, communication, community. By appointment. (XNLAB · XN Lab · XN Studio · XNL.)";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
@@ -379,22 +382,34 @@ export default async function RootLayout({
   // can drop 'unsafe-inline' without breaking JSON-LD.
   const nonce = await getNonce();
   return (
-    <html lang="en" className={`${inter.variable} ${cormorant.variable}`} style={{background:"#060606"}}>
-      <body style={{margin:0,padding:0,background:"#060606",overflowX:"hidden"}}>
+    <html lang="en" className={`${inter.variable} ${cormorant.variable}`} style={{background:"#060606"}} suppressHydrationWarning>
+      <body style={{margin:0,padding:0,background:"#060606",overflowX:"hidden"}} suppressHydrationWarning>
+        {/* JSON-LD blocks carry a per-request CSP nonce. The browser
+            strips the nonce attribute value off <script> tags once
+            CSP has validated them — by the time React hydrates, the
+            DOM reads nonce="" while the server rendered nonce="abc…",
+            producing a hydration mismatch warning on every page load.
+            suppressHydrationWarning is the documented React fix for
+            this exact case: the script content is identical between
+            server and client, only the post-CSP nonce attribute
+            differs, and React should not try to reconcile it. */}
         <script
           nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+          suppressHydrationWarning
         />
         <script
           nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteLd) }}
+          suppressHydrationWarning
         />
         <script
           nonce={nonce}
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceLd) }}
+          suppressHydrationWarning
         />
         <a href="#main" className="xn-skip">Skip to content</a>
         <DustStyles />

@@ -4,8 +4,8 @@ import Link from "next/link";
 type Lang = "en" | "es";
 
 const COPY: Record<Lang, { location: string; imprint: string }> = {
-  en: { location: "Marbella · Madrid · Worldwide", imprint: "Imprint" },
-  es: { location: "Marbella · Madrid · Internacional", imprint: "Aviso legal" },
+  en: { location: "Europe & World · By appointment", imprint: "Imprint" },
+  es: { location: "Europa y Mundo · Solo con cita previa", imprint: "Aviso legal" },
 };
 
 const lineStyle: React.CSSProperties = {
@@ -19,7 +19,6 @@ const lineStyle: React.CSSProperties = {
 
 export function SiteFooter({ lang }: { lang: Lang }) {
   const t = COPY[lang];
-  const year = new Date().getFullYear();
   return (
     <footer
       style={{
@@ -45,7 +44,7 @@ export function SiteFooter({ lang }: { lang: Lang }) {
       </a>
       <p style={lineStyle}>{t.location}</p>
       <p style={{ ...lineStyle, color: "rgba(255,255,255,0.28)" }}>
-        © {year} XNLAB
+        © MMXXII–MMXXVI XNLAB
         <span style={{ margin: "0 14px", color: "rgba(255,255,255,0.18)" }}>·</span>
         <Link
           href="/imprint"

@@ -12,6 +12,7 @@ import type { World } from "../../_lib/worlds";
 import { worlds } from "../../_lib/worlds";
 import { records } from "../../_lib/lab-records";
 import { projects } from "../../studies/data";
+import { SiteFooter } from "../../_lib/site-footer";
 
 const ui = {
   en: {
@@ -669,6 +670,7 @@ export default function WorldDetail({ world }: { world: World }) {
           <NextWorldButton next={next} label={t.next} lang={lang} />
         </div>
       </section>
+        <SiteFooter lang={lang} />
     </main>
   );
 }

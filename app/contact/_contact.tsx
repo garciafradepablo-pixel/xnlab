@@ -6,13 +6,14 @@ import { ts, tsS, serif, R, Dust, useLang } from "../_lib/atoms";
 import { WordmarkLink } from "../_lib/wordmark";
 import { OtherCorners } from "../_lib/other-corners";
 import { sendContactEmail } from "./actions";
+import { SiteFooter } from "../_lib/site-footer";
 
 const en = {
   eyebrow: "Write to the studio",
   h1a: "Write to",
   h1b: "the studio.",
   lead:
-    "We respond personally to every message that fits. One place remains for Cycle MMXXVI.",
+    "We respond personally to every message that fits. The first cycle of MMXXVI is open.",
   fields: {
     name: "Name",
     email: "Email",
@@ -41,7 +42,7 @@ const en = {
     label: "Before you write",
     cycleLabel: "Cycle MMXXVI",
     cycleWindow: "January — 30 June MMXXVI",
-    cycleStatus: "One place remains.",
+    cycleStatus: "Open.",
     cycleNote:
       "Cycles close at six brands. We do not stretch the studio to make a seventh fit.",
     notServedLabel: "We do not work with",
@@ -54,7 +55,7 @@ const en = {
     discovery:
       "Discoveries are extended by the studio, not requested. Forty-five minutes, by invitation, recorded by the studio and never published. If we both recognise the work, a partner-signed proposal follows within seven days.",
     referral:
-      "Most new conversations arrive through an existing brand — a CEO, a CMO, a founder, a programme director. A line of context — who pointed you, what you have read of ours — helps the studio reply with weight.",
+      "Most new conversations arrive through an existing brand. A CEO, a CMO, a founder, a programme director. A line of context — who pointed you, what you have read of ours — helps the studio reply with weight.",
   },
   dossier: {
     eyebrow: "Not ready to write yet",
@@ -62,13 +63,19 @@ const en = {
     body: "A short document. How the studio operates, the six surfaces we work across, a ledger of recent engagements. Sent personally by the studio.",
     cta: "Request the dossier",
   },
+  reading: {
+    eyebrow: "Want the studio to read first",
+    title: "A short reading.",
+    body: "Five questions. Three minutes. The studio reads your answers and replies in person when the work suggests a fit.",
+    cta: "Take the reading",
+  },
 };
 const es = {
   eyebrow: "Escribe al estudio",
   h1a: "Escribe al",
   h1b: "estudio.",
   lead:
-    "Respondemos personalmente a cada mensaje que encaja. Queda una plaza para el ciclo MMXXVI.",
+    "Respondemos personalmente a cada mensaje que encaja. El primer ciclo de MMXXVI está abierto.",
   fields: {
     name: "Nombre",
     email: "Email",
@@ -97,7 +104,7 @@ const es = {
     label: "Antes de escribir",
     cycleLabel: "Ciclo MMXXVI",
     cycleWindow: "Enero — 30 de junio MMXXVI",
-    cycleStatus: "Queda una plaza.",
+    cycleStatus: "Abierto.",
     cycleNote:
       "Los ciclos cierran a seis marcas. No estiramos el estudio para que entre una séptima.",
     notServedLabel: "No trabajamos con",
@@ -110,13 +117,19 @@ const es = {
     discovery:
       "El discovery lo extiende el estudio, no se solicita. Cuarenta y cinco minutos, por invitación, grabado por el estudio y nunca publicado. Si los dos reconocemos el trabajo, llega una propuesta firmada por un socio en siete días.",
     referral:
-      "La mayoría de conversaciones nuevas llegan por recomendación de una marca activa — un CEO, un CMO, un fundador, un director de programa. Una línea de contexto — quién te apuntó, qué has leído nuestro — ayuda al estudio a responder con peso.",
+      "La mayoría de conversaciones nuevas llegan por recomendación de una marca activa. Un CEO, un CMO, un fundador, un director de programa. Una línea de contexto — quién te apuntó, qué has leído nuestro — ayuda al estudio a responder con peso.",
   },
   dossier: {
     eyebrow: "Aún no es momento de escribir",
     title: "Pide el dossier del estudio.",
     body: "Un documento corto. Cómo opera el estudio, las seis superficies en las que trabajamos, un registro de los encargos recientes. Lo envía el estudio en persona.",
     cta: "Pedir el dossier",
+  },
+  reading: {
+    eyebrow: "Si prefieres que el estudio lea primero",
+    title: "Una lectura breve.",
+    body: "Cinco preguntas. Tres minutos. El estudio lee tus respuestas y responde en persona cuando el trabajo apunta a un encaje.",
+    cta: "Hacer la lectura",
   },
 };
 
@@ -788,6 +801,12 @@ export default function Contact() {
         </form>
       </section>
 
+      {/* Reading CTA removed from /contact per AGENTS §5 — one verb
+          dominant per page. Form is the verb; dossier is the single
+          alternative (atelier-coded, passive). The /reading route
+          itself remains accessible directly and from the footer for
+          visitors who arrive via search. */}
+
       {/* Dossier — second funnel entry. For visitors not ready to write
           a full message, a one-click mailto requesting the studio's
           dossier. Doubles top-of-funnel without diluting the form. */}
@@ -904,6 +923,7 @@ export default function Contact() {
       </section>
 
       <OtherCorners lang={lang} exclude="contact" />
+        <SiteFooter lang={lang} />
     </main>
   );
 }

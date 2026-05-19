@@ -5,17 +5,18 @@ import { ts, tsS, serif, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
 import { OtherCorners } from "../_lib/other-corners";
+import { SiteFooter } from "../_lib/site-footer";
 
 const en = {
   eyebrow: "Manifesto",
   intro: "Six statements.",
   statements: [
     "We design presence, not content.",
-    "We work in silence — and call it concentration.",
+    "Direction lives upstream of execution. Most studios skip the upstream.",
     "Atmospheres before identities. Identities before logos.",
-    "A space well designed is a space well remembered.",
-    "Restraint is the loudest tool we own.",
-    "Worlds are built slowly. We are patient.",
+    "A brand that survives a fifteen-second clip was built to.",
+    "Restraint is the rarest discipline we hire for.",
+    "Direction compounds. Campaigns expire.",
   ],
   closing: "Read again, slowly.",
   cta: "Write to the studio",
@@ -27,11 +28,11 @@ const es = {
   intro: "Seis afirmaciones.",
   statements: [
     "Diseñamos presencia, no contenido.",
-    "Trabajamos en silencio — y lo llamamos concentración.",
+    "La dirección vive aguas arriba de la ejecución. La mayoría de los estudios empieza después.",
     "Atmósferas antes que identidades. Identidades antes que logos.",
-    "Un espacio bien diseñado es un espacio bien recordado.",
-    "La contención es la herramienta más ruidosa que tenemos.",
-    "Los mundos se construyen despacio. Somos pacientes.",
+    "Una marca que sobrevive a un clip de quince segundos fue construida para hacerlo.",
+    "La contención es la disciplina más rara que contratamos.",
+    "La dirección se acumula. Las campañas caducan.",
   ],
   closing: "Léelo otra vez, despacio.",
   cta: "Escribir al estudio",
@@ -260,6 +261,7 @@ export default function Manifesto() {
         </Magnetic>
       </section>
       <OtherCorners lang={lang} exclude="manifesto" />
+        <SiteFooter lang={lang} />
     </main>
   );
 }

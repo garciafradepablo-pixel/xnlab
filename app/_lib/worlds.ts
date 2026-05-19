@@ -41,6 +41,13 @@ export type World = {
   // surface this world represents. Used on the /worlds index card, the
   // orb hover label, and the top of /worlds/[slug].
   pitch: { en: string; es: string };
+  // Sales-side complement to pitch: what closing the gap on this
+  // surface produces. Same atelier voice but framed as outcome — the
+  // sentence a CMO can quote upward. Used on the home CircleOfWorlds
+  // below-cluster caption so the centred caption (pitch) and the
+  // below caption (outcome) carry two different beats of the same
+  // moment instead of repeating themselves.
+  outcome: { en: string; es: string };
   essence: { en: string; es: string };
   material: { en: string; es: string };
   energy: { en: string; es: string };
@@ -74,8 +81,12 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.04], breatheDuration: 7.5, drift: 4, pulse: "slow" },
     title: { en: "Product", es: "Producto" },
     pitch: {
-      en: "Atmosphere systems for the product itself — app, hardware, software — where the customer touches the brand more days a year than anywhere else.",
-      es: "Sistemas de atmósfera para el producto en sí — app, hardware, software — la superficie donde el cliente toca a la marca más días al año que en ninguna otra.",
+      en: "We direct app, hardware and software as a sequence of atmospheres — first launch, motion, empty states, micro-interactions — until daily use carries the same signature as the campaign.",
+      es: "Dirigimos app, hardware y software como una secuencia de atmósferas — primera apertura, animación, estados vacíos, micro-interacciones — hasta que el uso diario lleva la misma firma que la campaña.",
+    },
+    outcome: {
+      en: "When the first eight seconds of the app match the brand, daily use becomes the strongest advertising the company has.",
+      es: "Cuando los primeros ocho segundos de la app coinciden con la marca, el uso diario se convierte en la publicidad más fuerte de la empresa.",
     },
     essence: {
       en: "The product is the first sentence the brand speaks, every day.",
@@ -152,8 +163,12 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.03], breatheDuration: 8.5, drift: 6, pulse: "wave" },
     title: { en: "Owned Digital", es: "Digital Propio" },
     pitch: {
-      en: "Atmosphere systems for the brand's own surfaces — web, marketing site, account, dashboard — where the customer reads on purpose and returns by choice.",
-      es: "Sistemas de atmósfera para las superficies propias de la marca — web, sitio editorial, cuenta, dashboard — donde el cliente lee por iniciativa propia y vuelve por elección.",
+      en: "We compose web, marketing site, account and dashboard as a single editorial system — one tempo, one restraint, one room read through many doors.",
+      es: "Componemos web, sitio editorial, cuenta y dashboard como un solo sistema editorial — un tempo, una contención, una sala que se lee a través de muchas puertas.",
+    },
+    outcome: {
+      en: "The dashboard the customer opens forty times a week becomes the room they remember the brand from.",
+      es: "El dashboard que el cliente abre cuarenta veces a la semana se convierte en la sala desde la que recuerda la marca.",
     },
     essence: {
       en: "The screen is the second room of the brand.",
@@ -230,16 +245,20 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.05], breatheDuration: 3.4, drift: 7, pulse: "vibrate" },
     title: { en: "Retail & Physical", es: "Retail y Físico" },
     pitch: {
-      en: "Atmosphere systems for the brand's physical surfaces — stores, branches, pop-ups, events — where the customer meets the body of the brand.",
-      es: "Sistemas de atmósfera para las superficies físicas — tiendas, sucursales, pop-ups, eventos — donde el cliente se encuentra con el cuerpo de la marca.",
+      en: "We choreograph stores, branches, pop-ups and events — threshold, light, material, sound, staff register — so the body reads the brand before the eye finishes the sign.",
+      es: "Coreografiamos tiendas, sucursales, pop-ups y eventos — umbral, luz, material, sonido, registro del personal — para que el cuerpo lea la marca antes de que el ojo termine de leer el rótulo.",
+    },
+    outcome: {
+      en: "The first three meters inside the door decide what the customer tells a friend the next morning.",
+      es: "Los tres primeros metros tras cruzar la puerta deciden lo que el cliente le cuenta a un amigo a la mañana siguiente.",
     },
     essence: {
       en: "The store is the brand with weight on it.",
       es: "La tienda es la marca con su peso encima.",
     },
     material: {
-      en: "Liquid glass under pressure — the brand at full body weight.",
-      es: "Vidrio líquido bajo presión — la marca con todo su peso encima.",
+      en: "Liquid glass under pressure. The brand at full body weight.",
+      es: "Vidrio líquido bajo presión. La marca con todo su peso encima.",
     },
     energy: {
       en: "Threshold, light, sound, scent, staff register. Architecture doing the brand's work in a body.",
@@ -249,7 +268,7 @@ export const worlds: World[] = [
       en: [
         "Flagship and retail atmosphere — threshold, light, material, sound.",
         "Pop-up, kiosk, branch and event identity systems engineered to ship and recompose.",
-        "Service choreography — what the room asks of the person inside it.",
+        "Service choreography. What the room asks of the person inside it.",
       ],
       es: [
         "Atmósfera de flagship y retail — umbral, luz, material, sonido.",
@@ -308,8 +327,12 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.018], breatheDuration: 10, drift: 2, pulse: "still" },
     title: { en: "Customer Operations", es: "Operaciones de Cliente" },
     pitch: {
-      en: "Atmosphere systems for onboarding, support and post-sale — the surfaces where the brand is judged after the contract is signed.",
-      es: "Sistemas de atmósfera para onboarding, soporte y postventa — las superficies donde la marca se juzga una vez firmado el contrato.",
+      en: "We rewrite onboarding, support and post-sale in the studio voice — templates, response tempo, escalation rhythm — until the brand answers the same on Sunday at eleven as on Monday at ten.",
+      es: "Reescribimos onboarding, soporte y postventa en la voz del estudio — plantillas, tempo de respuesta, ritmo de escalado — hasta que la marca responde igual el domingo a las once que el lunes a las diez.",
+    },
+    outcome: {
+      en: "Customers remember the brand that answered with care at eleven on a Sunday night. And that memory renews the contract.",
+      es: "El cliente recuerda a la marca que contestó con cuidado un domingo a las once de la noche. Y esa memoria renueva el contrato.",
     },
     essence: {
       en: "The brand is what it does when the sale is over.",
@@ -386,8 +409,12 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.012], breatheDuration: 14, drift: 1, pulse: "still" },
     title: { en: "Communication", es: "Comunicación" },
     pitch: {
-      en: "Atmosphere systems for paid, owned and earned communication — where the brand chooses what to say, and how slowly to say it.",
-      es: "Sistemas de atmósfera para comunicación pagada, propia y ganada — donde la marca elige qué decir, y a qué ritmo decirlo.",
+      en: "We direct paid, owned and earned communication as one editorial atmosphere — fewer pieces, slower tempo, every line signed by the same hand.",
+      es: "Dirigimos la comunicación pagada, propia y ganada como una sola atmósfera editorial — menos piezas, tempo más lento, cada línea firmada por la misma mano.",
+    },
+    outcome: {
+      en: "Restraint earns the next read instead of demanding it. The brand stops being noise and starts being expected.",
+      es: "La contención se gana la siguiente lectura en vez de exigirla. La marca deja de ser ruido y empieza a esperarse.",
     },
     essence: {
       en: "The brand is what it refuses to say.",
@@ -464,8 +491,12 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.06], breatheDuration: 5, drift: 5, pulse: "refract" },
     title: { en: "Community & Culture", es: "Comunidad y Cultura" },
     pitch: {
-      en: "Atmosphere systems for the brand outside itself — culture, partnerships, programs, advocacy — where the brand becomes a context, not a sender.",
-      es: "Sistemas de atmósfera para la marca fuera de sí misma — cultura, partnerships, programas, advocacy — donde la marca se convierte en contexto en lugar de emisor.",
+      en: "We build a fixed core and a refractive surface — three sentences, two gestures, one acoustic — so the thesis travels intact while expression mutates city by city, partner by partner.",
+      es: "Construimos un núcleo fijo y una superficie refractiva — tres frases, dos gestos, una acústica — para que la tesis viaje intacta mientras la expresión muta ciudad a ciudad, socio a socio.",
+    },
+    outcome: {
+      en: "The brand carried into rooms it does not own becomes the brand customers describe as inevitable.",
+      es: "La marca llevada a salas que no posee se convierte en la marca que los clientes describen como inevitable.",
     },
     essence: {
       en: "The brand is what the room around it agrees to.",
@@ -515,14 +546,14 @@ export const worlds: World[] = [
         label: "Field study · Core and surface",
         input: "A partnership the brand cannot control once it has begun.",
         observation:
-          "We design a fixed centre — three sentences, two gestures, one acoustic — and let everything else refract. What the partner adds is the work; what the brand holds is the centre.",
+          "We design a fixed centre — three sentences, two gestures, one acoustic. And let everything else refract. What the partner adds is the work; what the brand holds is the centre.",
         signature: "The brand reads as inevitable in rooms it never built.",
       },
       es: {
         label: "Estudio de campo · Núcleo y superficie",
         input: "Un partnership que la marca no puede controlar una vez ha empezado.",
         observation:
-          "Diseñamos un centro fijo — tres frases, dos gestos, una acústica — y dejamos que todo lo demás refracte. Lo que el socio añade es el trabajo; lo que la marca sostiene es el centro.",
+          "Diseñamos un centro fijo — tres frases, dos gestos, una acústica. Y dejamos que todo lo demás refracte. Lo que el socio añade es el trabajo; lo que la marca sostiene es el centro.",
         signature: "La marca se lee como inevitable en salas que nunca construyó.",
       },
     },
