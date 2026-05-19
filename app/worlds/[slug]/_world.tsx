@@ -221,7 +221,7 @@ export default function WorldDetail({ world }: { world: World }) {
 
       {/* Discipline — cinematic atmosphere card, present when the Core owns one */}
       {world.discipline && (
-        <section style={{ position: "relative", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <section style={{ position: "relative" }}>
           <div style={{ position: "relative", width: "100%", height: "clamp(70svh,82vh,92svh)", minHeight: 480, overflow: "hidden" }}>
             <Image
               src={world.discipline.image}
@@ -284,12 +284,12 @@ export default function WorldDetail({ world }: { world: World }) {
       )}
 
       {/* Material + Energy */}
-      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,7vw,96px) clamp(56px,8vw,100px)", maxWidth: 1120, margin: "0 auto", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,7vw,96px) clamp(56px,8vw,100px)", maxWidth: 1120, margin: "0 auto" }}>
         {[
           { label: t.material, value: world.material[lang] },
           { label: t.energy, value: world.energy[lang] },
         ].map((row, i) => (
-          <R key={row.label} delay={0.04 * i}>
+          <R key={row.label} delay={0.05 * i}>
             <div
               style={{
                 display: "grid",
@@ -318,7 +318,7 @@ export default function WorldDetail({ world }: { world: World }) {
       </section>
 
       {/* Notes (body copy) */}
-      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,7vw,96px)", maxWidth: 1120, margin: "0 auto", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,7vw,96px)", maxWidth: 1120, margin: "0 auto" }}>
         <R>
           <p style={{ ...labelStyle, marginBottom: 32 }}>{t.notes}</p>
         </R>
@@ -341,7 +341,7 @@ export default function WorldDetail({ world }: { world: World }) {
       </section>
 
       {/* Practice deliverables */}
-      <section style={{ padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px) clamp(72px,10vw,140px)", maxWidth: 1120, margin: "0 auto", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <section style={{ padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px) clamp(72px,10vw,140px)", maxWidth: 1120, margin: "0 auto" }}>
         <div
           style={{
             display: "grid",
@@ -354,7 +354,7 @@ export default function WorldDetail({ world }: { world: World }) {
           </R>
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {world.practice[lang].map((d, i) => (
-              <R key={d} delay={0.04 * i}>
+              <R key={d} delay={0.05 * i}>
                 <li
                   style={{
                     padding: "clamp(14px,1.8vw,22px) 0",
@@ -664,7 +664,7 @@ export default function WorldDetail({ world }: { world: World }) {
       {/* CTA + Next world — two pills stacked; the second tinted to the
           colour of the next world so the visitor sees the universe
           continue, not just a footnote link. */}
-      <section style={{ padding: "clamp(56px,7vw,96px) clamp(20px,5vw,64px) clamp(64px,9vw,120px)", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <section style={{ padding: "clamp(56px,7vw,96px) clamp(20px,5vw,64px) clamp(64px,9vw,120px)", textAlign: "center" }}>
         <LuxButton href="/contact" variant="solid" arrow={false}>{t.contact}</LuxButton>
         <div style={{ marginTop: "clamp(28px,3.6vw,48px)" }}>
           <NextWorldButton next={next} label={t.next} lang={lang} />

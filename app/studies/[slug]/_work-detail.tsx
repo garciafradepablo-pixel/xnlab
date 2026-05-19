@@ -446,7 +446,6 @@ export default function WorkDetail({ project }: { project: Project }) {
         style={{
           padding: "clamp(64px,9vw,120px) clamp(20px,5vw,64px)",
           textAlign: "center",
-          borderTop: "1px solid rgba(255,255,255,0.04)",
         }}
       >
         <Link

@@ -132,7 +132,7 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
       id="standing"
       style={{
         position: "relative",
-        padding: "clamp(40px,4.8vw,72px) clamp(20px,5vw,64px) clamp(32px,4vw,56px)",
+        padding: "clamp(56px,6vw,96px) clamp(20px,5vw,64px)",
         borderTop: "1px solid rgba(255,255,255,0.05)",
         overflow: "hidden",
       }}

@@ -175,7 +175,7 @@ export default function WorldsIndex() {
           Worlds are a system, not just lore. Sits between the hero
           and the mythology so the visitor first understands the
           professional logic of the universe before entering it. */}
-      <section style={{ position: "relative", padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px)", borderTop: "1px solid rgba(255,255,255,0.05)", maxWidth: 1120, margin: "0 auto" }}>
+      <section style={{ position: "relative", padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px)", maxWidth: 1120, margin: "0 auto" }}>
         <div style={{ display: "grid", gap: "clamp(36px,4.6vw,72px)" }} className="grid-cols-1 md:grid-cols-[minmax(160px,220px)_1fr]">
           <div>
             <R><p style={labelStyle}>{t.methodLabel}</p></R>
@@ -203,7 +203,7 @@ export default function WorldsIndex() {
       </section>
 
       {/* Central Core */}
-      <section style={{ position: "relative", padding: "clamp(48px,7vw,120px) clamp(24px,7vw,96px) clamp(72px,10vw,140px)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <section style={{ position: "relative", padding: "clamp(48px,7vw,120px) clamp(24px,7vw,96px) clamp(72px,10vw,140px)" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr", gap: "clamp(40px,6vw,80px)", alignItems: "center" }} className="md:grid-cols-2">
           <div style={{ display: "flex", justifyContent: "center" }}>
             <div style={{ width: "clamp(240px,26vw,360px)", height: "clamp(240px,26vw,360px)" }}>
@@ -230,7 +230,7 @@ export default function WorldsIndex() {
       {/* The 6 Worlds — moved above the mythology so commercial
           information arrives first. Companies visiting this page want
           to see the production systems, not the studios internal lore. */}
-      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,5vw,72px) clamp(72px,10vw,140px)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <section style={{ padding: "clamp(48px,7vw,100px) clamp(24px,5vw,72px) clamp(72px,10vw,140px)" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto clamp(40px,6vw,80px)", textAlign: "center" }}>
           <p style={{ ...labelStyle, marginBottom: 24 }}>{t.worldsLabel}</p>
           <h2 style={{ fontSize: "clamp(1.8rem,3.4vw,3rem)", fontWeight: 400, lineHeight: 1.1, letterSpacing: "-0.035em", color: "white", textShadow: tsS, marginBottom: "clamp(20px,2.5vw,32px)" }}>
@@ -379,7 +379,7 @@ export default function WorldsIndex() {
           commercial information (Central Core + the 6 Worlds) arrives
           first. ORUN and XIO sit side-by-side as the two presences
           inside the Core; Anomalies is the quiet footer paragraph. */}
-      <section style={{ padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px)", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+      <section style={{ padding: "clamp(56px,8vw,120px) clamp(24px,7vw,96px)" }}>
         <div style={{ maxWidth: 1120, margin: "0 auto" }}>
           <R>
             <div style={{ textAlign: "center", marginBottom: "clamp(40px,5vw,72px)" }}>
@@ -432,7 +432,7 @@ export default function WorldsIndex() {
       </section>
 
       {/* CTA */}
-      <section style={{ padding: "clamp(80px,11vw,160px) clamp(20px,5vw,64px)", textAlign: "center", borderTop: "1px solid rgba(255,255,255,0.06)", position: "relative" }}>
+      <section style={{ padding: "clamp(80px,11vw,160px) clamp(20px,5vw,64px)", textAlign: "center", position: "relative" }}>
         <Dust count={6} opacity={0.06} />
         <div style={{ maxWidth: 720, margin: "0 auto", position: "relative", zIndex: 5 }}>
           <R>

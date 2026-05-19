@@ -818,12 +818,12 @@ function Document({ t, confirmShown }: { t: Copy; confirmShown: boolean }) {
         ))}
       </div>
 
-      {/* Closing — single CTA, no stacking */}
+      {/* Closing — single CTA, no stacking. No hard divider; the
+          AmbientBackdrop carries the transition. */}
       <div
         style={{
           marginTop: "clamp(56px,7vw,96px)",
           paddingTop: "clamp(28px,3vw,40px)",
-          borderTop: "1px solid rgba(255,255,255,0.08)",
           textAlign: "left",
         }}
       >

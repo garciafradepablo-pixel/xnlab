@@ -244,7 +244,7 @@ export default function Imprint() {
 
       <section style={{ padding: "0 clamp(24px,7vw,96px) clamp(60px,9vw,120px)", maxWidth: 1120, margin: "0 auto" }}>
         {t.sections.map((s, i) => (
-          <R key={s.label} delay={0.04 * i}>
+          <R key={s.label} delay={0.05 * i}>
             <div
               style={{
                 display: "grid",
@@ -274,7 +274,7 @@ export default function Imprint() {
           { label: t.privacyLabel, paragraphs: t.privacy },
           { label: t.termsLabel, paragraphs: t.terms },
         ].map((b, i) => (
-          <R key={b.label} delay={0.04 * i}>
+          <R key={b.label} delay={0.05 * i}>
             <div
               style={{
                 display: "grid",
@@ -307,7 +307,7 @@ export default function Imprint() {
         ))}
       </section>
 
-      <section style={{ padding: "clamp(48px,7vw,80px) clamp(24px,7vw,96px) clamp(80px,10vw,140px)", maxWidth: 1120, margin: "0 auto", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+      <section style={{ padding: "clamp(48px,7vw,80px) clamp(24px,7vw,96px) clamp(80px,10vw,140px)", maxWidth: 1120, margin: "0 auto" }}>
         <p style={{ fontSize: 10, letterSpacing: "0.28em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>
           {t.updated} — {updated}
         </p>
