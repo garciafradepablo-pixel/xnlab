@@ -26,7 +26,10 @@ import { ts, tsS, serif, R, Label, Dust } from "./atoms";
 // global AmbientBackdrop flows through — no scroll seam.
 
 type Bi = { en: string; es: string };
-type Model = { sector: Bi; before: Bi; gap: Bi; rebuild: Bi; effect: Bi };
+// `tint` is an "r,g,b" triplet — each model gets a distinct sector mood
+// drawn from the world/orb palette, so the four cards read as four
+// atmospheres rather than four identical boxes. Pure CSS, no assets.
+type Model = { sector: Bi; before: Bi; gap: Bi; rebuild: Bi; effect: Bi; tint: string };
 
 const copy: {
   en: { eyebrow: string; h1a: string; h1b: string; framing: string; tag: string; lBefore: string; lGap: string; lRebuild: string; lEffect: string; ctaH: string; cta: string };
@@ -65,6 +68,7 @@ const copy_es = {
 const MODELS: Model[] = [
   {
     sector: { en: "Immersive dining · Hospitality", es: "Cocina inmersiva · Hostelería" },
+    tint: "207,138,58",
     before: {
       en: "The experience is electric in the room. Online it reads like any other restaurant.",
       es: "La experiencia es eléctrica en la sala. Online se lee como un restaurante más.",
@@ -84,6 +88,7 @@ const MODELS: Model[] = [
   },
   {
     sector: { en: "Rooftop · Nightlife", es: "Rooftop · Ocio nocturno" },
+    tint: "140,126,214",
     before: {
       en: "The energy, the views, the night are real. Online it looks interchangeable.",
       es: "La energía, las vistas, la noche son reales. Online se ve intercambiable.",
@@ -103,6 +108,7 @@ const MODELS: Model[] = [
   },
   {
     sector: { en: "Boutique hotel · Luxury stay", es: "Hotel boutique · Estancia de lujo" },
+    tint: "212,176,118",
     before: {
       en: "The property is beautiful in person. Online it shows rooms, not the feeling of staying.",
       es: "La propiedad es preciosa en persona. Online enseña habitaciones, no la sensación de quedarse.",
@@ -122,6 +128,7 @@ const MODELS: Model[] = [
   },
   {
     sector: { en: "Clinic · Wellness · Aesthetic", es: "Clínica · Wellness · Estética" },
+    tint: "122,176,168",
     before: {
       en: "The work is excellent. The brand feels cold, generic, over-clinical.",
       es: "El trabajo es excelente. La marca se siente fría, genérica, demasiado clínica.",
@@ -210,21 +217,21 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
                   height: "100%",
                   padding: "clamp(24px,2.6vw,38px)",
                   borderRadius: 18,
-                  border: "1px solid rgba(232,183,131,0.14)",
-                  background: "linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)",
+                  border: `1px solid rgba(${m.tint},0.18)`,
+                  background: `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${m.tint},0.08) 0%, transparent 58%), linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)`,
                   transition: "transform 0.55s cubic-bezier(0.22,1,0.36,1), border-color 0.55s, box-shadow 0.55s, background 0.55s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.borderColor = "rgba(232,183,131,0.4)";
-                  e.currentTarget.style.boxShadow = "0 24px 60px -28px rgba(0,0,0,0.8), 0 0 60px -30px rgba(232,183,131,0.4)";
-                  e.currentTarget.style.background = "linear-gradient(180deg, rgba(30,24,20,0.6) 0%, rgba(12,9,10,0.55) 100%)";
+                  e.currentTarget.style.borderColor = `rgba(${m.tint},0.5)`;
+                  e.currentTarget.style.boxShadow = `0 24px 60px -28px rgba(0,0,0,0.8), 0 0 66px -28px rgba(${m.tint},0.5)`;
+                  e.currentTarget.style.background = `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${m.tint},0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(30,24,20,0.6) 0%, rgba(12,9,10,0.55) 100%)`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.borderColor = "rgba(232,183,131,0.14)";
+                  e.currentTarget.style.borderColor = `rgba(${m.tint},0.18)`;
                   e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.background = "linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)";
+                  e.currentTarget.style.background = `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${m.tint},0.08) 0%, transparent 58%), linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)`;
                 }}
               >
                 {/* Honesty tag — every card says it is a model. */}
