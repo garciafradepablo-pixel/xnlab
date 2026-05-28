@@ -4,147 +4,133 @@ import { ts, tsS, serif, R, Label, Dust } from "./atoms";
 
 // "What we transform" / "Lo que convertimos" — the honest proof
 // interlude that closes the credibility gap BEFORE real public case
-// studies exist.
+// studies exist, structured as an ORBIT SYSTEM.
+//
+// TAXONOMY (the fix): each main sector is its own orbit. Hospitality is
+// a vertical of its own, with several sub-worlds inside it (immersive
+// dining, rooftops, nightlife, boutique hotels, restaurants) — those are
+// NOT shown as peers of Clinics or Real Estate; they live under
+// Hospitality, clearly labelled "Hospitality sub-worlds".
 //
 // INTEGRITY CONTRACT (do not weaken):
-//   • These are NOT case studies and never claim to be. The eyebrow
-//     ("Transformation models · Illustrative") and the framing line
-//     state it outright, and every card carries an "Illustrative
-//     model" tag.
-//   • No named clients, no logos, no metrics, no "we increased X%".
-//     The commercial effect is stated as a DIRECTION (more desire,
-//     more trust, less friction) — never a fabricated number.
-//   • Language: "model", "illustrative", "transformation logic" —
-//     never "portfolio", "client", "result".
+//   • NOT case studies. Eyebrow + framing + a per-card "Illustrative
+//     model" tag say so outright.
+//   • No named clients, no logos, no metrics. The commercial effect is
+//     a DIRECTION (more desire, more trust, fewer discounts) — never a
+//     fabricated number.
+//   • Voice: human, sensory, sharp — not generic agency language.
 //
-// It shows the SHAPE of the perception transformation XNLAB designs,
-// per sector: Before → the gap → what we rebuild → the commercial
-// effect. Honest, premium, and convincing without a single fake.
-//
-// Performance: pure CSS/text, zero images, hover is opacity/transform
-// only on its own GPU layer. Section background is transparent so the
-// global AmbientBackdrop flows through — no scroll seam.
+// Performance: pure CSS/text, zero images. Hover is transform/opacity on
+// a GPU layer. Section background transparent so the global
+// AmbientBackdrop flows through — no scroll seam.
 
 type Bi = { en: string; es: string };
-// `tint` is an "r,g,b" triplet — each model gets a distinct sector mood
-// drawn from the world/orb palette, so the four cards read as four
-// atmospheres rather than four identical boxes. Pure CSS, no assets.
-type Model = { sector: Bi; before: Bi; gap: Bi; rebuild: Bi; effect: Bi; tint: string };
-
-const copy: {
-  en: { eyebrow: string; h1a: string; h1b: string; framing: string; tag: string; lBefore: string; lGap: string; lRebuild: string; lEffect: string; ctaH: string; cta: string };
-  es: typeof copy_en;
-} & { models: Model[] } = {} as never;
+// `tint` is an "r,g,b" triplet — each orbit gets a distinct sector mood
+// from the world palette, so the cards read as distinct atmospheres.
+type Orbit = { sector: Bi; before: Bi; gap: Bi; rebuild: Bi; effect: Bi; tint: string; subWorlds?: Bi[] };
 
 const copy_en = {
   eyebrow: "Transformation models · Illustrative",
   h1a: "What we",
   h1b: "transform.",
   framing:
-    "Not case studies — not yet. These are transformation models: illustrative systems showing how we diagnose a perception gap and rebuild it into desire, trust and commercial value. XNLAB does not sell content; it changes how a brand is perceived before the customer decides to book, visit or trust.",
+    "Not case studies — not yet. These are transformation models: how we diagnose a perception gap and rebuild it into desire, trust and commercial value. Each sector is its own orbit. Hospitality is a vertical of its own, with several worlds inside it.",
   tag: "Illustrative model",
   lBefore: "Before",
   lGap: "The gap",
   lRebuild: "We rebuild",
   lEffect: "Effect",
+  subLabel: "Hospitality sub-worlds",
   ctaH: "Want us to diagnose your perception gap?",
   cta: "Request a perception audit",
 };
-const copy_es = {
+const copy_es: typeof copy_en = {
   eyebrow: "Modelos de transformación · Ilustrativo",
   h1a: "Lo que",
   h1b: "convertimos.",
   framing:
-    "No son casos falsos. Son modelos de transformación: ejemplos claros de cómo detectamos una brecha de percepción y la convertimos en deseo, confianza y valor comercial. XNLAB no vende contenido; cambia cómo se percibe una marca antes de que el cliente decida reservar, visitar o confiar.",
+    "No son casos falsos. Son modelos de transformación: cómo detectamos una brecha de percepción y la reconstruimos en deseo, confianza y valor comercial. Cada sector es su propia órbita. La hostelería es un vertical en sí mismo, con varios mundos dentro.",
   tag: "Modelo ilustrativo",
   lBefore: "Antes",
   lGap: "La brecha",
   lRebuild: "Reconstruimos",
   lEffect: "Efecto",
+  subLabel: "Sub-mundos de hostelería",
   ctaH: "¿Quieres que detectemos tu brecha de percepción?",
   cta: "Solicitar auditoría de percepción",
 };
 
-const MODELS: Model[] = [
+const ORBITS: Orbit[] = [
   {
-    sector: { en: "Immersive dining · Hospitality", es: "Cocina inmersiva · Hostelería" },
+    sector: { en: "Hospitality", es: "Hostelería" },
     tint: "207,138,58",
-    before: {
-      en: "The experience is electric in the room. Online it reads like any other restaurant.",
-      es: "La experiencia es eléctrica en la sala. Online se lee como un restaurante más.",
-    },
-    gap: {
-      en: "The digital presence never carries the theatre, the senses, the emotional weight of being there.",
-      es: "La presencia digital no traslada el teatro, los sentidos, el peso emocional de estar allí.",
-    },
-    rebuild: {
-      en: "A cinematic atmosphere system — hero world, motion language, booking-led storytelling, a premium visual hierarchy and social fragments that build anticipation before arrival.",
-      es: "Un sistema de atmósfera cinematográfica — mundo de portada, lenguaje de movimiento, narrativa orientada a la reserva, jerarquía visual premium y fragmentos sociales que crean anticipación antes de llegar.",
-    },
-    effect: {
-      en: "Higher perceived value, a stronger desire to book, a venue people remember.",
-      es: "Más valor percibido, más deseo de reservar, un local que se recuerda.",
-    },
+    before: { en: "The room is alive. The website is a reservation form with photos.", es: "La sala está viva. La web es un formulario de reserva con fotos." },
+    gap: { en: "Everything that makes the place worth the trip dies on the screen.", es: "Todo lo que hace que el sitio valga el viaje se muere en la pantalla." },
+    rebuild: { en: "A cinematic atmosphere system — the threshold, the light, the sound — carried into a site that books and a feed that makes people want to be there.", es: "Un sistema de atmósfera cinematográfica — el umbral, la luz, el sonido — llevado a una web que reserva y a un feed que da ganas de estar ahí." },
+    effect: { en: "More bookings made on feeling, a venue that travels by word of mouth.", es: "Más reservas hechas por sensación, un local que viaja de boca en boca." },
+    subWorlds: [
+      { en: "Immersive dining", es: "Cocina inmersiva" },
+      { en: "Rooftops", es: "Rooftops" },
+      { en: "Nightlife venues", es: "Locales de noche" },
+      { en: "Boutique hotels", es: "Hoteles boutique" },
+      { en: "Restaurants & bars", es: "Restaurantes y bares" },
+    ],
   },
   {
-    sector: { en: "Rooftop · Nightlife", es: "Rooftop · Ocio nocturno" },
-    tint: "140,126,214",
-    before: {
-      en: "The energy, the views, the night are real. Online it looks interchangeable.",
-      es: "La energía, las vistas, la noche son reales. Online se ve intercambiable.",
-    },
-    gap: {
-      en: "The brand reads as 'another place to go out' instead of a destination.",
-      es: "La marca se lee como 'otro sitio para salir' en vez de un destino.",
-    },
-    rebuild: {
-      en: "A nocturnal identity system — mood, light, movement, signature visuals, an event world and a social rhythm built for reels.",
-      es: "Un sistema de identidad nocturna — mood, luz, movimiento, visuales con firma, un mundo de evento y un ritmo social pensado para reels.",
-    },
-    effect: {
-      en: "More desirability, a sharper identity, more shareable, better event positioning.",
-      es: "Más deseabilidad, identidad más nítida, más compartible, mejor posicionamiento de evento.",
-    },
-  },
-  {
-    sector: { en: "Boutique hotel · Luxury stay", es: "Hotel boutique · Estancia de lujo" },
-    tint: "212,176,118",
-    before: {
-      en: "The property is beautiful in person. Online it shows rooms, not the feeling of staying.",
-      es: "La propiedad es preciosa en persona. Online enseña habitaciones, no la sensación de quedarse.",
-    },
-    gap: {
-      en: "Intimacy, status and escape never make it to the screen.",
-      es: "La intimidad, el estatus y la evasión no llegan a la pantalla.",
-    },
-    rebuild: {
-      en: "An atmosphere-led stay narrative — arrival, texture, silence, ritual, sensory pacing, an image system and booking psychology.",
-      es: "Una narrativa de estancia guiada por la atmósfera — llegada, textura, silencio, ritual, ritmo sensorial, un sistema de imagen y psicología de reserva.",
-    },
-    effect: {
-      en: "Higher perceived premium, deeper emotional trust, a stronger pull toward direct booking.",
-      es: "Más premium percibido, más confianza emocional, más fuerza hacia la reserva directa.",
-    },
-  },
-  {
-    sector: { en: "Clinic · Wellness · Aesthetic", es: "Clínica · Wellness · Estética" },
+    sector: { en: "Clinics · Aesthetic Medicine", es: "Clínicas · Medicina estética" },
     tint: "122,176,168",
-    before: {
-      en: "The work is excellent. The brand feels cold, generic, over-clinical.",
-      es: "El trabajo es excelente. La marca se siente fría, genérica, demasiado clínica.",
-    },
-    gap: {
-      en: "Patients trust the service — the digital experience earns none of it.",
-      es: "El paciente confía en el servicio — la experiencia digital no se gana nada de esa confianza.",
-    },
-    rebuild: {
-      en: "A calm-authority system — visual softness, confident language, a trust hierarchy, a clear patient journey and reassurance built into the flow.",
-      es: "Un sistema de autoridad serena — suavidad visual, lenguaje seguro, jerarquía de confianza, un recorrido de paciente claro y tranquilidad integrada en el flujo.",
-    },
-    effect: {
-      en: "More trust, less friction, a higher intent to enquire.",
-      es: "Más confianza, menos fricción, más intención de consulta.",
-    },
+    before: { en: "The hands are expert. The brand feels like a waiting room.", es: "Las manos son expertas. La marca se siente como una sala de espera." },
+    gap: { en: "Patients trust the result, not the first impression online.", es: "El paciente confía en el resultado, no en la primera impresión online." },
+    rebuild: { en: "A calm-authority system — softness, certainty, a journey that reassures before the first call.", es: "Un sistema de autoridad serena — suavidad, certeza, un recorrido que tranquiliza antes de la primera llamada." },
+    effect: { en: "More enquiries from people who already trust you.", es: "Más consultas de gente que ya confía en ti." },
+  },
+  {
+    sector: { en: "Real Estate", es: "Inmobiliaria" },
+    tint: "198,168,120",
+    before: { en: "The asset is worth millions. The listing looks like a portal.", es: "El activo vale millones. El anuncio parece un portal." },
+    gap: { en: "Nothing online signals the bracket the property actually sits in.", es: "Nada online señala el rango en el que está de verdad la propiedad." },
+    rebuild: { en: "A presence that reads the price before the viewing — staging, narrative, the calm of a serious house.", es: "Una presencia que se lee el precio antes de la visita — puesta en escena, narrativa, la calma de una casa seria." },
+    effect: { en: "Sellers choose you; buyers arrive already convinced of the level.", es: "Los vendedores te eligen; los compradores llegan ya convencidos del nivel." },
+  },
+  {
+    sector: { en: "Culture · Music · Events", es: "Cultura · Música · Eventos" },
+    tint: "140,126,214",
+    before: { en: "The work moves people in the room. Online it scrolls past.", es: "El trabajo emociona en directo. Online pasa de largo." },
+    gap: { en: "The cultural weight never makes it into the feed.", es: "El peso cultural no llega al feed." },
+    rebuild: { en: "A world, not a poster — identity, motion, an editorial rhythm that builds a following between events.", es: "Un mundo, no un cartel — identidad, movimiento, un ritmo editorial que construye seguimiento entre eventos." },
+    effect: { en: "A name people follow, not just a date they attend.", es: "Un nombre que la gente sigue, no solo una fecha a la que va." },
+  },
+  {
+    sector: { en: "Retail · Luxury Commerce", es: "Retail · Comercio de lujo" },
+    tint: "184,116,72",
+    before: { en: "The product is beautiful. The store online is a grid of thumbnails.", es: "El producto es precioso. La tienda online es una cuadrícula de miniaturas." },
+    gap: { en: "The object loses its aura the moment it becomes a catalogue.", es: "El objeto pierde su aura en cuanto se vuelve catálogo." },
+    rebuild: { en: "An atmosphere around the object — light, material, restraint — so the screen carries the same desire as the shelf.", es: "Una atmósfera alrededor del objeto — luz, material, contención — para que la pantalla cargue el mismo deseo que el estante." },
+    effect: { en: "Higher perceived value, fewer discounts to make the sale.", es: "Más valor percibido, menos descuentos para cerrar la venta." },
+  },
+  {
+    sector: { en: "Wellness", es: "Wellness" },
+    tint: "130,172,150",
+    before: { en: "The space is a refuge. The site is loud and busy.", es: "El espacio es un refugio. La web es ruidosa y recargada." },
+    gap: { en: "The calm you sell is nowhere on the page.", es: "La calma que vendes no está en ninguna parte de la página." },
+    rebuild: { en: "A quiet system — space, breath, slowness — that lets the visitor feel the relief before they book.", es: "Un sistema en silencio — espacio, respiración, lentitud — que deja sentir el alivio antes de reservar." },
+    effect: { en: "Bookings from people who already exhaled.", es: "Reservas de gente que ya ha soltado el aire." },
+  },
+  {
+    sector: { en: "Gaming · Interactive Worlds", es: "Gaming · Mundos interactivos" },
+    tint: "96,168,214",
+    before: { en: "The world is rich. The site explains it like a brochure.", es: "El mundo es rico. La web lo explica como un folleto." },
+    gap: { en: "The experience is interactive; the presence is flat.", es: "La experiencia es interactiva; la presencia es plana." },
+    rebuild: { en: "A presence built like the product — motion, depth, a threshold that behaves like an entrance, not a page.", es: "Una presencia construida como el producto — movimiento, profundidad, un umbral que se comporta como una entrada, no como una página." },
+    effect: { en: "Players arrive already inside the world.", es: "Los jugadores llegan ya dentro del mundo." },
+  },
+  {
+    sector: { en: "Social · Creator Brands", es: "Social · Marcas de creador" },
+    tint: "196,120,150",
+    before: { en: "The audience is real. The brand around it is improvised.", es: "La audiencia es real. La marca a su alrededor está improvisada." },
+    gap: { en: "Reach without a world — attention that never compounds into equity.", es: "Alcance sin mundo — atención que nunca se convierte en valor." },
+    rebuild: { en: "A coherent brand world across every surface a creator owns — so the audience becomes a name, not a number.", es: "Un mundo de marca coherente en cada superficie que un creador controla — para que la audiencia se vuelva un nombre, no un número." },
+    effect: { en: "Followers that turn into a brand with its own gravity.", es: "Seguidores que se convierten en una marca con gravedad propia." },
   },
 ];
 
@@ -152,14 +138,12 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
   const t = lang === "en" ? copy_en : copy_es;
   return (
     <section style={{ padding: "clamp(56px,6vw,96px) clamp(20px,5vw,64px)", position: "relative", overflow: "hidden" }}>
-      {/* Local warm pool, transparent edges — continuous with the
-          global backdrop, no seam. */}
       <div
         aria-hidden
         style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(ellipse 78% 56% at 50% 8%, rgba(216,147,42,0.045) 0%, rgba(180,110,40,0.012) 38%, transparent 68%)",
+          background: "radial-gradient(ellipse 78% 56% at 50% 6%, rgba(216,147,42,0.045) 0%, rgba(180,110,40,0.012) 38%, transparent 68%)",
           pointerEvents: "none",
         }}
       />
@@ -206,35 +190,34 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 360px), 1fr))",
-            gap: "clamp(16px,2vw,28px)",
+            gap: "clamp(16px,2vw,26px)",
           }}
         >
-          {MODELS.map((m, i) => (
-            <R key={m.sector.en} delay={0.06 * i}>
+          {ORBITS.map((o, i) => (
+            <R key={o.sector.en} delay={0.05 * i}>
               <div
                 style={{
                   position: "relative",
                   height: "100%",
-                  padding: "clamp(24px,2.6vw,38px)",
+                  padding: "clamp(24px,2.6vw,36px)",
                   borderRadius: 18,
-                  border: `1px solid rgba(${m.tint},0.18)`,
-                  background: `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${m.tint},0.08) 0%, transparent 58%), linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)`,
+                  border: `1px solid rgba(${o.tint},0.18)`,
+                  background: `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${o.tint},0.08) 0%, transparent 58%), linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)`,
                   transition: "transform 0.55s cubic-bezier(0.22,1,0.36,1), border-color 0.55s, box-shadow 0.55s, background 0.55s",
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = "translateY(-3px)";
-                  e.currentTarget.style.borderColor = `rgba(${m.tint},0.5)`;
-                  e.currentTarget.style.boxShadow = `0 24px 60px -28px rgba(0,0,0,0.8), 0 0 66px -28px rgba(${m.tint},0.5)`;
-                  e.currentTarget.style.background = `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${m.tint},0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(30,24,20,0.6) 0%, rgba(12,9,10,0.55) 100%)`;
+                  e.currentTarget.style.borderColor = `rgba(${o.tint},0.5)`;
+                  e.currentTarget.style.boxShadow = `0 24px 60px -28px rgba(0,0,0,0.8), 0 0 66px -28px rgba(${o.tint},0.5)`;
+                  e.currentTarget.style.background = `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${o.tint},0.15) 0%, transparent 60%), linear-gradient(180deg, rgba(30,24,20,0.6) 0%, rgba(12,9,10,0.55) 100%)`;
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = "translateY(0)";
-                  e.currentTarget.style.borderColor = `rgba(${m.tint},0.18)`;
+                  e.currentTarget.style.borderColor = `rgba(${o.tint},0.18)`;
                   e.currentTarget.style.boxShadow = "none";
-                  e.currentTarget.style.background = `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${m.tint},0.08) 0%, transparent 58%), linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)`;
+                  e.currentTarget.style.background = `radial-gradient(ellipse 100% 56% at 50% 0%, rgba(${o.tint},0.08) 0%, transparent 58%), linear-gradient(180deg, rgba(22,18,16,0.55) 0%, rgba(10,8,9,0.5) 100%)`;
                 }}
               >
-                {/* Honesty tag — every card says it is a model. */}
                 <span
                   style={{
                     position: "absolute",
@@ -259,18 +242,61 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
                     color: "white",
                   }}
                 >
-                  {m.sector[lang]}
+                  {o.sector[lang]}
                 </h3>
-                <Field label={t.lBefore} muted>{m.before[lang]}</Field>
-                <Field label={t.lGap}>{m.gap[lang]}</Field>
-                <Field label={t.lRebuild} strong>{m.rebuild[lang]}</Field>
-                <Field label={t.lEffect} amber>{m.effect[lang]}</Field>
+                <Field label={t.lBefore} muted>{o.before[lang]}</Field>
+                <Field label={t.lGap}>{o.gap[lang]}</Field>
+                <Field label={t.lRebuild} strong>{o.rebuild[lang]}</Field>
+                <Field label={t.lEffect} amber tint={o.tint}>{o.effect[lang]}</Field>
+
+                {o.subWorlds && (
+                  <div
+                    style={{
+                      marginTop: "clamp(16px,2vw,22px)",
+                      paddingTop: "clamp(14px,1.6vw,18px)",
+                      borderTop: `1px solid rgba(${o.tint},0.16)`,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.3em",
+                        textTransform: "uppercase",
+                        color: `rgba(${o.tint},0.7)`,
+                        marginBottom: 10,
+                      }}
+                    >
+                      {t.subLabel}
+                    </span>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: "7px 8px" }}>
+                      {o.subWorlds.map((s) => (
+                        <span
+                          key={s.en}
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            padding: "5px 11px",
+                            borderRadius: 999,
+                            border: `1px solid rgba(${o.tint},0.22)`,
+                            fontSize: "clamp(10px,0.85vw,11px)",
+                            letterSpacing: "0.04em",
+                            color: "rgba(255,255,255,0.62)",
+                            fontWeight: 300,
+                          }}
+                        >
+                          {s[lang]}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </R>
           ))}
         </div>
 
-        {/* CTA — one dominant verb: request. */}
         <R delay={0.3}>
           <div style={{ marginTop: "clamp(40px,5vw,68px)", textAlign: "center" }}>
             <p
@@ -348,15 +374,17 @@ function Field({
   muted,
   strong,
   amber,
+  tint,
 }: {
   label: string;
   children: React.ReactNode;
   muted?: boolean;
   strong?: boolean;
   amber?: boolean;
+  tint?: string;
 }) {
   return (
-    <div style={{ marginBottom: "clamp(12px,1.4vw,16px)" }}>
+    <div style={{ marginBottom: "clamp(11px,1.3vw,15px)" }}>
       <span
         style={{
           display: "block",
@@ -364,7 +392,7 @@ function Field({
           fontWeight: 500,
           letterSpacing: "0.3em",
           textTransform: "uppercase",
-          color: amber ? "rgba(232,183,131,0.7)" : "rgba(255,255,255,0.32)",
+          color: amber ? `rgba(${tint ?? "232,183,131"},0.78)` : "rgba(255,255,255,0.32)",
           marginBottom: 5,
         }}
       >
@@ -378,7 +406,7 @@ function Field({
           fontWeight: 300,
           letterSpacing: "-0.003em",
           color: amber
-            ? "rgba(232,183,131,0.92)"
+            ? `rgba(${tint ?? "232,183,131"},0.95)`
             : muted
             ? "rgba(255,255,255,0.48)"
             : strong
