@@ -42,3 +42,7 @@ next-env.d.ts
 
 # local-only originals kept before image normalization
 .image-backups/
+
+# claude code — local-only settings (shared .claude/settings.json, if
+# ever added, stays tracked; the personal overrides do not)
+.claude/settings.local.json
