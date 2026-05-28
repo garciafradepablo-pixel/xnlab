@@ -69,6 +69,7 @@ export function Invitation() {
   const [email, setEmail] = useState("");
   const [err, setErr] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
   const t = COPY[lang];
 
   // Routes where the visitor is already converting — never interrupt.
@@ -123,15 +124,39 @@ export function Invitation() {
     };
   }, [mounted, suppressed, trigger]);
 
-  // Esc to close + focus the field on open.
+  // Open behaviour: lock background scroll, trap focus, Esc to close,
+  // focus the field — production-grade modal manners.
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") dismiss(); };
+    // Scroll-lock — the page must not scroll behind the modal.
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { dismiss(); return; }
+      // Focus trap — Tab cycles within the card, never escapes to the
+      // dimmed page behind.
+      if (e.key === "Tab" && cardRef.current) {
+        const f = cardRef.current.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (f.length === 0) return;
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
     document.addEventListener("keydown", onKey);
     const id = window.setTimeout(() => inputRef.current?.focus(), 360);
     return () => {
       document.removeEventListener("keydown", onKey);
       window.clearTimeout(id);
+      document.body.style.overflow = prevOverflow;
     };
   }, [open, dismiss]);
 
@@ -186,6 +211,7 @@ export function Invitation() {
           }}
         >
           <motion.div
+            ref={cardRef}
             initial={reduced ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.97 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={reduced ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.98 }}
