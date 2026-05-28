@@ -20,16 +20,22 @@ type OrbProps = {
 // the Core's colour. If no image is provided, falls back to a CSS radial-gradient
 // sphere so the layout never breaks.
 //
-// Where to drop the PNGs:
-//   public/images/worlds/central.png            ← the dark crimson Central Core
-//   public/images/worlds/product.png            ← amber gold sphere
-//   public/images/worlds/retail-physical.png    ← electric violet sphere
-//   public/images/worlds/customer-ops.png       ← ivory pearl sphere
-//   public/images/worlds/communication.png      ← mineral stone sphere
-//   public/images/worlds/owned-digital.png      ← midnight indigo sphere
-//   public/images/worlds/community.png          ← iridescent cyan sphere
-// (Asset filenames are kept under the previous naming; the `image` field
-//  on each World in _lib/worlds.ts still points at those files.)
+// Where to drop the PNGs — filenames now match each world's slug, so a
+// new render simply overwrites the file and the site updates with zero
+// code change. Colours per AGENTS.md §8 / worlds.ts:
+//   public/images/worlds/central.png             ← Central Core (dark crimson)
+//   public/images/worlds/product.png             ← Sustained Warmth · amber gold  #cf8a3a
+//   public/images/worlds/owned-digital.png       ← Patient Return · periwinkle    #9aa6c8
+//   public/images/worlds/retail-physical.png     ← Body Weight · terracotta       #a0633e
+//   public/images/worlds/customer-operations.png ← Quiet Continuity · ivory       #e8e2d2
+//   public/images/worlds/communication.png       ← Earned Authority · stone       #bcb8ad
+//   public/images/worlds/community-culture.png   ← Refractive Edge · teal         #7ab0a8
+// NOTE: the spheres in place ARE the live orbs — chrome X-spheres
+// assigned to each slug by colour fit: gold→product, violet→owned-
+// digital, dark→retail-physical, champagne→customer-operations,
+// silver→communication, blue-teal→community-culture. To restyle any
+// surface, overwrite its slug-named file — the site updates with zero
+// code change.
 // PNG with transparent background. 1000x1000 minimum is enough. The orb image
 // can sit naturally on the dark site; mix-blend is not required but works if you
 // want extra atmospheric integration.

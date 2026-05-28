@@ -8,6 +8,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { getNonce } from "./_lib/csp";
 import { AmbientBackdrop } from "./_lib/ambient-backdrop";
 import { LoadingSplash } from "./_lib/loading-splash";
+import { PageVeil } from "./_lib/page-veil";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -384,6 +385,30 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${inter.variable} ${cormorant.variable}`} style={{background:"#060606"}} suppressHydrationWarning>
       <body style={{margin:0,padding:0,background:"#060606",overflowX:"hidden"}} suppressHydrationWarning>
+        {/* Disable the browser's automatic scroll restoration before
+            ANY other client code runs. The script is the first child
+            of <body>, so the parser executes it synchronously during
+            initial HTML parse — before React hydrates, before the
+            browser would normally restore the prior scroll position
+            on reload. Paired with PageVeil's scrollTo(0,0), this
+            guarantees every reload lands at the top of the page
+            without the visitor seeing the previous scroll position
+            flash before the snap. CSP nonce forwarded so a strict
+            policy can drop 'unsafe-inline'. */}
+        <script
+          nonce={nonce}
+          dangerouslySetInnerHTML={{
+            __html: "if('scrollRestoration' in history)history.scrollRestoration='manual';",
+          }}
+        />
+        {/* PageVeil — global dark mask covering the first paint of
+            every fresh page load. Mounted before the rest of the body
+            so its SSR'd opacity:1 surface is the first thing the
+            browser paints, hiding font swaps, hydration flickers and
+            scroll snaps under one composed reveal. Internal Link
+            navigation does NOT remount the layout, so the veil stays
+            invisible after the first reveal. */}
+        <PageVeil />
         {/* JSON-LD blocks carry a per-request CSP nonce. The browser
             strips the nonce attribute value off <script> tags once
             CSP has validated them — by the time React hydrates, the

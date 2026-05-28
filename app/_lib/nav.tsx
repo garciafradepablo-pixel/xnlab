@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { WordmarkLink } from "./wordmark";
 import { worlds, type World } from "./worlds";
+import { verticals, type Vertical } from "./verticals";
 import { Orb } from "./orb";
 
 const serif = "var(--font-serif,'Cormorant Garamond',Georgia,serif)";
@@ -19,7 +20,7 @@ type NavCopy = {
   na: string;
 };
 
-type MenuKey = "worlds";
+type MenuKey = "worlds" | "sectors";
 
 export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void; t: NavCopy }) {
   const pathname = usePathname();
@@ -43,8 +44,17 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
     };
   }, [mobileOpen]);
 
+  // "Sectors" label lives inside the Nav (not in NavCopy) so every page
+  // that renders <Nav> gets the verticals entry for free without
+  // threading a new prop through each caller. The dropdown is built
+  // from the verticals data directly, same as Worlds is built from
+  // worlds — one source of truth, auto-grows as verticals are added.
+  const sectorsLabel = lang === "en" ? "Sectors" : "Sectores";
   const items: Array<{ key: MenuKey | "apply" | "systems"; label: string; href: string; menu: boolean }> = [
     { key: "worlds", label: t.nw, href: "/worlds", menu: true },
+    // Sectors → the applied verticals hub. The most commercial entry in
+    // the nav: it answers "do you work with a business like mine?"
+    { key: "sectors", label: sectorsLabel, href: "/for", menu: true },
     // Systems → anchor to the home-page services section. On any page
     // it routes to /#services and the browser scrolls to the section.
     { key: "systems", label: t.nse, href: "/#services", menu: false },
@@ -341,6 +351,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               }}
             >
               {open === "worlds" && <WorldsMenu lang={lang} onSelect={() => setOpen(null)} />}
+              {open === "sectors" && <SectorsMenu lang={lang} onSelect={() => setOpen(null)} />}
             </div>
           </motion.div>
         )}
@@ -378,6 +389,9 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
             <div style={{ padding: "clamp(32px,10vw,56px) clamp(22px,5.5vw,40px) 96px" }}>
               <MobileSection title={t.nw} href="/worlds" onClose={() => setMobileOpen(false)}>
                 <WorldsMenu lang={lang} onSelect={() => setMobileOpen(false)} compact />
+              </MobileSection>
+              <MobileSection title={sectorsLabel} href="/for" onClose={() => setMobileOpen(false)}>
+                <SectorsMenu lang={lang} onSelect={() => setMobileOpen(false)} compact />
               </MobileSection>
               <Link
                 href="/contact"
@@ -811,6 +825,173 @@ function WorldsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () 
           href="/worlds"
           cta={lang === "en" ? "Enter the universe" : "Entrar al universo"}
           note={lang === "en" ? "Selected projects only." : "Solo proyectos seleccionados."}
+          onSelect={onSelect}
+        />
+      )}
+    </div>
+  );
+}
+
+// Sectors dropdown — the applied verticals. Built from the verticals
+// data, same one-source-of-truth pattern as WorldsMenu. No orbs: the
+// six orbs belong to the universal spine; a sector is an industry, so
+// the row carries a number, the industry name, and its sub-types line.
+function SectorRow({
+  vertical: v,
+  lang,
+  onSelect,
+  compact,
+  index = 0,
+}: {
+  vertical: Vertical;
+  lang: NavLang;
+  onSelect?: () => void;
+  compact?: boolean;
+  index?: number;
+}) {
+  const amber = "#e8b783";
+  const tint = `${amber}14`;
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 8, filter: "blur(4px)" }}
+      animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1], delay: 0.08 + index * 0.05 }}
+      style={{ willChange: "transform, filter, opacity" }}
+    >
+      <Link
+        href={`/for/${v.slug}`}
+        onClick={onSelect}
+        style={{
+          display: "flex",
+          alignItems: compact ? "center" : "baseline",
+          gap: compact ? 18 : 16,
+          padding: compact ? "20px 18px" : "16px 14px",
+          textDecoration: "none",
+          color: "inherit",
+          position: "relative",
+          borderTop: compact ? "none" : "1px solid rgba(255,255,255,0.05)",
+          borderRadius: compact ? 16 : 10,
+          marginBottom: compact ? 4 : 0,
+          transition: "background 0.45s ease",
+        }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.background = tint;
+          const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+          if (arrow) { arrow.style.opacity = "1"; arrow.style.transform = "translateX(0)"; }
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.background = "transparent";
+          const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+          if (arrow) { arrow.style.opacity = "0"; arrow.style.transform = "translateX(-6px)"; }
+        }}
+        onFocus={(e) => {
+          e.currentTarget.style.background = tint;
+          const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+          if (arrow) { arrow.style.opacity = "1"; arrow.style.transform = "translateX(0)"; }
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.background = "transparent";
+          const arrow = e.currentTarget.querySelector("[data-arrow]") as HTMLElement | null;
+          if (arrow) { arrow.style.opacity = "0"; arrow.style.transform = "translateX(-6px)"; }
+        }}
+      >
+        <span
+          style={{
+            fontSize: compact ? 12 : 9,
+            fontWeight: 500,
+            letterSpacing: "0.32em",
+            color: amber,
+            opacity: 0.92,
+            flexShrink: 0,
+            minWidth: compact ? 26 : 20,
+            paddingTop: compact ? 0 : 3,
+          }}
+        >
+          {String(index + 1).padStart(2, "0")}
+        </span>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <span
+            style={{
+              display: "block",
+              fontSize: compact ? 22 : 15,
+              color: "white",
+              letterSpacing: "-0.012em",
+              fontWeight: 400,
+              lineHeight: 1.2,
+              marginBottom: compact ? 8 : 4,
+            }}
+          >
+            {v.name[lang]}
+          </span>
+          <p
+            style={{
+              margin: 0,
+              fontSize: compact ? 14 : 11.5,
+              lineHeight: 1.5,
+              color: "rgba(255,255,255,0.58)",
+              fontWeight: 300,
+              letterSpacing: "0.005em",
+            }}
+          >
+            {v.tagline[lang]}
+          </p>
+        </div>
+        {!compact && (
+          <span
+            data-arrow
+            aria-hidden
+            style={{
+              color: amber,
+              fontSize: 14,
+              lineHeight: 1,
+              opacity: 0,
+              transform: "translateX(-6px)",
+              transition: "opacity 0.4s, transform 0.4s",
+              flexShrink: 0,
+              alignSelf: "center",
+              paddingLeft: 6,
+            }}
+          >
+            →
+          </span>
+        )}
+      </Link>
+    </motion.div>
+  );
+}
+
+function SectorsMenu({ lang, onSelect, compact }: { lang: NavLang; onSelect?: () => void; compact?: boolean }) {
+  return (
+    <div>
+      {!compact && (
+        <div
+          style={{
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+            gap: 16,
+            padding: "0 14px 14px",
+            borderBottom: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <p style={{ fontSize: 9, fontWeight: 500, letterSpacing: "0.4em", textTransform: "uppercase", color: "rgba(255,255,255,0.42)", margin: 0 }}>
+            {lang === "en" ? "Applied verticals" : "Verticales aplicadas"}
+          </p>
+          <p style={{ fontFamily: serif, fontStyle: "italic", fontSize: 12.5, color: "rgba(232,183,131,0.82)", margin: 0, letterSpacing: "-0.005em" }}>
+            {lang === "en" ? "Six surfaces, your industry." : "Seis superficies, tu sector."}
+          </p>
+        </div>
+      )}
+      <div style={{ display: "grid", gap: 0, gridTemplateColumns: compact ? "1fr" : "repeat(2, 1fr)", columnGap: compact ? 0 : 28 }}>
+        {verticals.map((v, i) => (
+          <SectorRow key={v.slug} vertical={v} lang={lang} onSelect={onSelect} compact={compact} index={i} />
+        ))}
+      </div>
+      {!compact && (
+        <MenuFooter
+          href="/for"
+          cta={lang === "en" ? "All sectors" : "Todos los sectores"}
+          note={lang === "en" ? "More industries each cycle." : "Más sectores cada ciclo."}
           onSelect={onSelect}
         />
       )}

@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { projects } from "./studies/data";
 import { worlds } from "./_lib/worlds";
 import { records } from "./_lib/lab-records";
+import { verticals } from "./_lib/verticals";
 
 const SITE = "https://xnlab.io";
 
@@ -40,15 +41,24 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.85,
   };
-  // /hospitality — applied vertical for premium hospitality founders.
-  // High priority because it's the dedicated entry point for the
-  // hospitality target. Home stays brand × customer × channel.
-  const hospitality: MetadataRoute.Sitemap[number] = {
-    url: `${SITE}/hospitality`,
+  // /for/[vertical] — the applied verticals system. Each industry page
+  // is a dedicated, high-intent entry point (a hospitality founder, a
+  // clinic owner, an estate agency all land on their own surface). High
+  // priority because these are the most commercial pages on the site.
+  // /hospitality 301s to /for/hospitality (next.config.ts) and is not
+  // listed here so the sitemap only carries canonical URLs.
+  const verticalsIndex: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/for`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.9,
+  };
+  const verticalsList: MetadataRoute.Sitemap = verticals.map((v) => ({
+    url: `${SITE}/for/${v.slug}`,
     lastModified: now,
     changeFrequency: "monthly",
     priority: 0.92,
-  };
+  }));
   const workIndex: MetadataRoute.Sitemap[number] = {
     url: `${SITE}/studies`,
     lastModified: now,
@@ -86,5 +96,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.7,
   }));
-  return [home, worldsIndex, ...worldsList, hospitality, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
+  return [home, worldsIndex, ...worldsList, verticalsIndex, ...verticalsList, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
 }

@@ -85,6 +85,11 @@ const nextConfig: NextConfig = {
       // Index + every slug redirect so the previous URL surface stays linkable.
       { source: "/work", destination: "/studies", permanent: true },
       { source: "/work/:slug*", destination: "/studies/:slug*", permanent: true },
+      // Verticals system — /hospitality was a bespoke page; it is now the
+      // first instance of the /for/[vertical] applied system. The old URL
+      // 301s to its place in the system so inbound links and crawler
+      // memory survive. New verticals live at /for/<slug>.
+      { source: "/hospitality", destination: "/for/hospitality", permanent: true },
     ];
   },
 };

@@ -19,6 +19,10 @@ const ui = {
     credits: "Credits",
     contact: "Write to the studio",
     next: "Next study",
+    shiftLabel: "The shift",
+    shiftEyebrow: "Perception · before and after",
+    before: "Before",
+    after: "After",
   },
   es: {
     back: "← Todos los estudios",
@@ -31,6 +35,10 @@ const ui = {
     credits: "Créditos",
     contact: "Escribir al estudio",
     next: "Siguiente estudio",
+    shiftLabel: "El giro",
+    shiftEyebrow: "Percepción · antes y después",
+    before: "Antes",
+    after: "Después",
   },
 };
 
@@ -316,6 +324,131 @@ export default function WorkDetail({ project }: { project: Project }) {
         ))}
       </section>
 
+      {project.beforeAfter && project.beforeAfter.length > 0 && (
+        <section
+          style={{
+            padding: "clamp(56px,8vw,112px) clamp(24px,7vw,96px)",
+            maxWidth: 1180,
+            margin: "0 auto",
+            borderTop: "1px solid rgba(255,255,255,0.06)",
+          }}
+        >
+          <R>
+            <div style={{ textAlign: "center", marginBottom: "clamp(36px,5vw,64px)" }}>
+              <p
+                style={{
+                  fontSize: 10,
+                  fontWeight: 500,
+                  letterSpacing: "0.42em",
+                  textTransform: "uppercase",
+                  color: "rgba(232,183,131,0.6)",
+                  margin: "0 0 clamp(12px,1.6vw,18px)",
+                }}
+              >
+                {t.shiftEyebrow}
+              </p>
+              <h2
+                style={{
+                  fontSize: "clamp(1.7rem,3.4vw,3rem)",
+                  fontWeight: 400,
+                  lineHeight: 1.0,
+                  letterSpacing: "-0.04em",
+                  margin: 0,
+                  textShadow: tsS,
+                }}
+              >
+                <W text={t.shiftLabel} delay={0} />
+              </h2>
+            </div>
+          </R>
+          <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+            {project.beforeAfter.map((pair, i) => (
+              <R key={i} delay={i * 0.07}>
+                <div
+                  className="grid-cols-1 md:grid-cols-[1fr_auto_1fr]"
+                  style={{
+                    display: "grid",
+                    alignItems: "center",
+                    gap: "clamp(14px,2.4vw,40px)",
+                    padding: "clamp(22px,3vw,34px) 0",
+                    borderTop: i === 0 ? "1px solid rgba(255,255,255,0.06)" : "none",
+                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  {/* BEFORE — the gap state. Muted, struck back. */}
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(0.98rem,1.3vw,1.18rem)",
+                      lineHeight: 1.5,
+                      color: "rgba(255,255,255,0.42)",
+                      fontWeight: 300,
+                      letterSpacing: "-0.005em",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.34em",
+                        textTransform: "uppercase",
+                        color: "rgba(255,255,255,0.3)",
+                        marginBottom: "clamp(8px,1vw,12px)",
+                      }}
+                    >
+                      {t.before}
+                    </span>
+                    {pair.before[lang]}
+                  </p>
+                  {/* Transition mark — points from gap to designed state. */}
+                  <span
+                    aria-hidden
+                    className="hidden md:block"
+                    style={{
+                      fontFamily: serif,
+                      fontStyle: "italic",
+                      fontSize: "clamp(1.4rem,2vw,2rem)",
+                      color: "rgba(232,183,131,0.6)",
+                      lineHeight: 1,
+                      padding: "0 clamp(4px,1vw,16px)",
+                    }}
+                  >
+                    →
+                  </span>
+                  {/* AFTER — the designed state. Lit, full weight. */}
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: "clamp(1.05rem,1.4vw,1.3rem)",
+                      lineHeight: 1.5,
+                      color: "rgba(255,255,255,0.92)",
+                      fontWeight: 300,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: 9,
+                        fontWeight: 500,
+                        letterSpacing: "0.34em",
+                        textTransform: "uppercase",
+                        color: "rgba(232,183,131,0.7)",
+                        marginBottom: "clamp(8px,1vw,12px)",
+                      }}
+                    >
+                      {t.after}
+                    </span>
+                    {pair.after[lang]}
+                  </p>
+                </div>
+              </R>
+            ))}
+          </div>
+        </section>
+      )}
+
       {pull && (
         <section
           style={{
@@ -453,7 +586,7 @@ export default function WorkDetail({ project }: { project: Project }) {
                 </dt>
                 <dd style={{ margin: 0 }}>
                   <Link
-                    href="/hospitality"
+                    href="/for/hospitality"
                     style={{
                       fontSize: "clamp(0.95rem,1.18vw,1.1rem)",
                       color: "rgba(232,183,131,0.9)",

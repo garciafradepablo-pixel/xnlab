@@ -47,13 +47,55 @@ const ORB_SIZE = "clamp(28px,5vw,88px)";
 //   dy: outer drop softened so the dome is a gentle smile, not an
 //       alveolus pocket — keeps the spatial arrangement, removes
 //       the hierarchy.
+// ─────────────────────────────────────────────────────────────────
+// MASTER ENTRY ORCHESTRATION
+//
+// One curve across the entire piece: [0.22, 1, 0.36, 1] (expo-out,
+// the luxury deceleration). One signature effect — the wordmark's
+// subtle blur-in — and everything else fades in via opacity only.
+//
+// The temptation in motion design is to give every element its own
+// flourish: blur here, scale there, a stagger, a sequence. The cost
+// of that maximalism is the "Pinterest tutorial" feel — six effects
+// reading as one cheap event. Premium reads as restraint. Here:
+//
+//   0.0 → 0.6s    Veil clears (black intro)
+//   0.4 → 1.6s    Atmospherics ignite (warm aureole, copper halo)
+//                 subtle scale 0.92→1, opacity 0→target — these two
+//                 are the stage lights coming up together
+//   0.6 → 1.8s    Background composition appears
+//                 chrome X (sculpture), back orbits (trace) —
+//                 pure opacity, no blur, no scale, no rotate
+//   0.7 → 1.9s    Dome appears
+//                 Central Core + six world orbs — pure opacity,
+//                 same delay across all seven so the dome reads as
+//                 ONE composed shape, not seven popcorn arrivals
+//   0.8 → 2.4s    Wordmark — single signature blur(14px→0) + opacity
+//   1.6 → 2.6s    Eyebrow + strapline + scarcity — opacity
+//   0.9 → 2.9s    Haze — long quiet fade underneath everything
+//
+// After ~2.9s the page is at rest. Idle life continues from a small
+// set of intentional sources: chrome X breath (11s), Central Core
+// y-float (8.5s), each world orb y-float (5.5–8.2s, idx-staggered),
+// back-orbits 180s rotation, and the AmbientBackdrop heartbeat (11s,
+// delegated to the layout layer). Nothing else moves — restraint.
+// ─────────────────────────────────────────────────────────────────
+
+// All six world orbs share the same entry delay as the Central Core
+// (0.7). The seven elements of the dome appear together as a single
+// composed shape — no centre-out stagger, no theatrical sequencing.
+// Premium reads as "the dome was already there, the light came on";
+// staggered popcorn reads as "look at me animating each thing."
+// The depth modulation (op, sc, dy) still produces the alveolus arc
+// at rest — that's a spatial property of the constellation, not a
+// timing one. Six rooms, equal citizens, equal entrance.
 const PLAN = [
-  { idx: 0, mult: -3, dy: 2.8, delay: 0.85, op: 0.94, sc: 0.94 },
-  { idx: 1, mult: -2, dy: 1.6, delay: 0.8,  op: 0.97, sc: 0.97 },
-  { idx: 2, mult: -1, dy: 0.4, delay: 0.75, op: 1,    sc: 1    },
-  { idx: 3, mult: 1,  dy: 0.4, delay: 0.75, op: 1,    sc: 1    },
-  { idx: 4, mult: 2,  dy: 1.6, delay: 0.8,  op: 0.97, sc: 0.97 },
-  { idx: 5, mult: 3,  dy: 2.8, delay: 0.85, op: 0.94, sc: 0.94 },
+  { idx: 0, mult: -3, dy: 2.8, delay: 0.7, op: 0.94, sc: 0.94 },
+  { idx: 1, mult: -2, dy: 1.6, delay: 0.7, op: 0.97, sc: 0.97 },
+  { idx: 2, mult: -1, dy: 0.4, delay: 0.7, op: 1,    sc: 1    },
+  { idx: 3, mult: 1,  dy: 0.4, delay: 0.7, op: 1,    sc: 1    },
+  { idx: 4, mult: 2,  dy: 1.6, delay: 0.7, op: 0.97, sc: 0.97 },
+  { idx: 5, mult: 3,  dy: 2.8, delay: 0.7, op: 0.94, sc: 0.94 },
 ];
 const UNIT = "clamp(40px,7vw,130px)";
 const CENTRAL_SIZE = "clamp(34px,6vw,108px)";
@@ -139,6 +181,17 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         minHeight: 560,
         overflow: "hidden",
         background: "#060402",
+        // CRITICAL: isolate the hero's stacking context so the
+        // mix-blend-mode: screen layers inside (chrome X, back orbits,
+        // haze) only compose against the hero's own contents — never
+        // against the AmbientBackdrop's fixed-position layers below.
+        //
+        // Without this, scrolling produces visible "calado" (bleed):
+        // the hero translates while the fixed AmbientBackdrop layers
+        // don't, so the screen-blend math hits a different pixel
+        // every frame and the symbols appear to seep through their
+        // background. Isolation pins each blend to a stable partner.
+        isolation: "isolate",
       }}
     >
       {/* LAYER 1 — backdrop.
@@ -202,9 +255,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0 }}
       />
 
-      {/* Warm aureole unifying the dome — enters with a soft expansion
-          and then breathes continuously on a 9s loop, so the warm
-          atmosphere behind the wordmark is alive instead of frozen. */}
+      {/* Warm aureole unifying the dome — Movement II of the master
+          timeline. Enters with a single graceful expansion to a stable
+          atmospheric backdrop. The independent breath loop that lived
+          here previously fought the AmbientBackdrop's own heartbeat
+          and the chrome X's breath, producing the "spit out in cells"
+          effect. The stage is now still; the protagonists breathe. */}
       <motion.div
         style={{
           position: "absolute",
@@ -217,14 +273,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           background:
             "radial-gradient(ellipse at center, rgba(228,180,128,0.13) 0%, rgba(190,140,90,0.05) 35%, rgba(60,40,30,0.012) 58%, transparent 75%)",
-          willChange: "transform, opacity",
         }}
-        initial={{ opacity: 0, scale: 0.85 }}
-        animate={inView ? { opacity: [0.85, 1, 0.85], scale: [1, 1.04, 1] } : { opacity: 0.9, scale: 1 }}
-        transition={{
-          opacity: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
-          scale: { duration: 9, ease: "easeInOut", repeat: Infinity, delay: 0.6 },
-        }}
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 0.95, scale: 1 }}
+        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
       />
 
       {/* LAYER 2A — back orbits. Static outer wrapper does the
@@ -247,9 +299,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       >
         <motion.div
           style={{ position: "relative", x: orbX, y: orbY, width: "100%", height: "100%" }}
-          initial={{ opacity: 0, scale: 3.8, filter: "blur(32px)", rotate: -12 }}
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px)", rotate: 0 }}
-          transition={{ duration: 2.6, ease: [0.16, 1, 0.3, 1], delay: 0.2 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          // Pure opacity. The previous scale 3.8 → 1 + blur 32 → 0 +
+          // rotate -12 → 0 entry was three theatrical effects stacked
+          // on a 9%-opacity backdrop trace — the most expensive
+          // possible entrance for the least visible element. Now: a
+          // quiet fade. The 180s rotation that runs after entry is
+          // the trace's actual life; the entrance just unmutes it.
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
         >
           {/* Continuous slow rotation on the orbital trace — 180s per
               revolution. Imperceptible per-frame, but over a 5-second
@@ -281,11 +339,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           the anchor + centring transform; the motion child carries the
           parallax. Mixing `x` motion values with `translate(-50%, -50%)`
           on the same element caused Framer to drop the centering, which
-          shoved the orb to the right. Splitting them fixes that. */}
+          shoved the orb to the right. Splitting them fixes that.
+          zIndex 11: above the chrome X (6) so the dome is always read
+          in front of the sculpture, never behind or pierced by it. */}
       <div
         style={{
           position: "absolute",
-          zIndex: 8,
+          zIndex: 11,
           left: "50%",
           top: DOME_TOP,
           width: CENTRAL_SIZE,
@@ -296,9 +356,14 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       >
         <motion.div
           style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
-          initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
-          animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }}
-          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.5 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          // Pure opacity. Central Core + the six world orbs share the
+          // SAME delay (0.7) so the dome reads as one composed shape,
+          // not seven sequential pops. The previous scale 0.82 + blur
+          // 14 entry made each orb assert itself — exactly the
+          // "popcorn" effect the user objected to.
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.7 }}
         >
           <Link
             href="/worlds"
@@ -419,7 +484,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         // hover. Creates the alveolus arc instead of a flat constellation.
         // When dock-boosted, lift the z-index so neighbours surface above
         // the dimmed background of the central or unrelated areas.
-        const depthZ = 9 - Math.abs(mult) + (dockBoost > 0 ? 6 : 0);
+        // depthZ floor bumped to 11 so even the outermost orbs (mult ±3,
+        // depthZ = 11 - 3 = 8) sit ABOVE the chrome X (zIndex 6). The
+        // previous floor of 9 left mult ±3 at zIndex 6 and mult ±2 at
+        // zIndex 7, both below or equal to the chrome X — which is why
+        // "la estrella pasa por delante de las esferas." Outer-to-inner
+        // depth ranking preserved: 11→10→9→8 for ±0→±3.
+        const depthZ = 11 - Math.abs(mult) + (dockBoost > 0 ? 6 : 0);
         return (
           <div
             key={w.slug}
@@ -436,9 +507,14 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           >
             <motion.div
               style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
-              initial={{ opacity: 0, scale: 0.82, filter: "blur(14px)" }}
-              animate={{ opacity: op, scale: sc, filter: "blur(0px)" }}
-              transition={{ duration: 2.4, ease: [0.22, 1, 0.36, 1], delay }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: op }}
+              // Pure opacity. All six orbs share the Central Core's
+              // delay (0.7) — the dome appears as ONE shape, not as
+              // a sequence of six entries. The depth properties (op,
+              // sc, dy) shape the constellation spatially at rest;
+              // they no longer animate from a smaller/blurrier start.
+              transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay }}
             >
               <Link
                 href={`/worlds/${w.slug}`}
@@ -547,7 +623,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         style={{
           position: "absolute",
           inset: 0,
-          zIndex: 10,
+          // zIndex 12 — above the entire dome stack (orbs go to 11)
+          // so the wordmark always reads as the dominant element. The
+          // dome and the wordmark don't visually overlap (dome lives
+          // up top, wordmark at the optical centre), but if they ever
+          // did the wordmark would win — which is the correct
+          // hierarchy for the brand mark.
+          zIndex: 12,
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -583,7 +665,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.4, delay: 0.8 }}
+          // Eyebrow lands a beat after the wordmark begins resolving
+          // out of its blur. Pure opacity — same restraint as the
+          // rest of the composition.
+          transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: 1.4 }}
         >
           {copy.eyebrow}
         </motion.p>
@@ -597,9 +682,18 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             textAlign: "center",
             textShadow: "0 2px 60px rgba(0,0,0,0.85)",
           }}
-          initial={{ opacity: 0, filter: "blur(22px)", scale: 1.04 }}
+          initial={{ opacity: 0, filter: "blur(14px)", scale: 1.02 }}
           animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
-          transition={{ duration: 1.4, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
+          // The ONE signature effect in the entire entry. Blur 22→0
+          // and scale 1.04→1 was dramatic; 14→0 and 1.02→1 reads as
+          // "the wordmark resolves into focus" — present but
+          // restrained, the way the brand should sound.
+          //
+          // Delay 0.8 places the wordmark right as the dome (0.7→1.9)
+          // and the chrome X (0.6→1.8) are settling. Everything in
+          // the scene arrives within a 400ms window so the visitor
+          // reads ONE composition coming into focus, not a sequence.
+          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.8 }}
         >
           XNLAB
           {/* SEO-only descriptive heading — invisible to sighted users
@@ -624,18 +718,22 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           values with `translateX: "-50%"` on the same element causes
           Framer Motion to drop the centering and shoves the symbol off
           to one side — the same bug the Central Core split fixes. */}
-      {/* Copper halo behind the chrome X — a warm centred radial that
-          acts as the rim-light from which the chrome sculpture catches
-          its reflections. Sits at zIndex 6 (BELOW the X at 7, ABOVE
+      {/* Copper halo behind the chrome X — Movement II of the master
+          timeline. Rim-light gradient from which the chrome X catches
+          its reflections. Sits at zIndex 6 (below the X at 7, above
           the back orbits at 3) so the X reads as if rising out of it.
-          Breathes on a 13s loop, slower than the wordmark aureole so
-          the two atmospherics phase against each other instead of
-          pulsing in unison. */}
+          The 13s breath loop that lived here previously phased against
+          three other independent breaths (warm aureole, ambient
+          backdrop, chrome X) and was the heart of the entry chaos.
+          Now: a single graceful entry to a stable rim-light. */}
       <motion.div
         aria-hidden
         style={{
           position: "absolute",
-          zIndex: 6,
+          // zIndex 5 — behind the chrome X (6) so it acts as the
+          // rim-light the X catches reflections from, not as a glow
+          // sitting on top of the sculpture.
+          zIndex: 5,
           left: "50%",
           top: "50%",
           width: "clamp(360px, 64vw, 980px)",
@@ -646,14 +744,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           background:
             "radial-gradient(circle at center, rgba(232,150,90,0.18) 0%, rgba(212,140,80,0.07) 28%, rgba(140,80,40,0.02) 52%, transparent 72%)",
           filter: "blur(28px)",
-          willChange: "transform, opacity",
         }}
-        initial={{ opacity: 0, scale: 0.8 }}
-        animate={inView ? { opacity: [0.7, 1, 0.7], scale: [1, 1.06, 1] } : { opacity: 0.85, scale: 1 }}
-        transition={{
-          opacity: { duration: 13, ease: "easeInOut", repeat: Infinity, delay: 0.9 },
-          scale: { duration: 13, ease: "easeInOut", repeat: Infinity, delay: 0.9 },
-        }}
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 0.9, scale: 1 }}
+        // Same delay as the warm aureole — they ignite together as
+        // the atmospheric stage. Identical timing (no 150ms offset)
+        // reads as one event; offsets read as choreography.
+        transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
       />
 
       {/* LAYER 2C — chrome X as the centerpiece of the background.
@@ -669,7 +766,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       <div
         style={{
           position: "absolute",
-          zIndex: 7,
+          // zIndex 6 — sits ABOVE the copper halo (5) so the X catches
+          // its rim-light, and BELOW every orb in the dome (8–11) so
+          // the sculpture is always read behind the spheres, never
+          // piercing through them. This is the fix for "la estrella
+          // pasa por delante de las esferas."
+          zIndex: 6,
           left: "50%",
           top: "50%",
           width: "clamp(200px, 42vw, 600px)",
@@ -680,9 +782,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
       >
         <motion.div
           style={{ position: "relative", x: symX, y: symY, width: "100%", height: "100%" }}
-          initial={{ opacity: 0, filter: "blur(18px)", scale: 0.94 }}
-          animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
-          transition={{ duration: 1.6, ease: [0.22, 1, 0.36, 1], delay: 0.4 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          // Pure opacity entrance. The previous blur(18px) → 0 was
+          // a tutorial-style effect that competed with the wordmark's
+          // signature blur. One blur-in per page (the wordmark)
+          // reads as a deliberate signature; two reads as a tic.
+          transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay: 0.6 }}
         >
           <motion.div
             style={{ position: "relative", width: "100%", height: "100%" }}
@@ -723,7 +829,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         style={{ position: "absolute", inset: 0, zIndex: 25, pointerEvents: "none" }}
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ duration: 3.5, delay: 0.7 }}
+        // Slow quiet fade underneath everything. The haze is the air
+        // the composition breathes through — it can't have a
+        // perceptible arrival or it stops being air.
+        transition={{ duration: 2.0, ease: [0.22, 1, 0.36, 1], delay: 0.9 }}
       >
         <Image
           src="/images/hero/02_haze_overlay.png"
@@ -776,7 +885,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           }}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 1.0, delay: 0.9 }}
+          // Last to arrive, after the scene is composed and the
+          // wordmark is in focus. The visitor's eye finishes reading
+          // the visual statement; then the words appear exactly when
+          // wanted. Pure opacity, single curve across the piece.
+          transition={{ duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: 1.6 }}
         >
           <p
             style={{

@@ -69,7 +69,7 @@ export const worlds: World[] = [
   {
     slug: "product",
     number: "01",
-    image: "/images/worlds/hospitality-experience.png",
+    image: "/images/worlds/product.png",
     color: {
       name: "Sustained Warmth",
       hex: "#cf8a3a",
@@ -151,7 +151,7 @@ export const worlds: World[] = [
   {
     slug: "owned-digital",
     number: "02",
-    image: "/images/worlds/music-cultural-artists.png",
+    image: "/images/worlds/owned-digital.png",
     color: {
       name: "Patient Return",
       hex: "#9aa6c8",
@@ -233,7 +233,7 @@ export const worlds: World[] = [
   {
     slug: "retail-physical",
     number: "03",
-    image: "/images/worlds/nightlife-cultural-events.png",
+    image: "/images/worlds/retail-physical.png",
     color: {
       name: "Body Weight",
       hex: "#a0633e",
@@ -315,7 +315,7 @@ export const worlds: World[] = [
   {
     slug: "customer-operations",
     number: "04",
-    image: "/images/worlds/luxury-lifestyle-brands.png",
+    image: "/images/worlds/customer-operations.png",
     color: {
       name: "Quiet Continuity",
       hex: "#e8e2d2",
@@ -397,14 +397,14 @@ export const worlds: World[] = [
   {
     slug: "communication",
     number: "05",
-    image: "/images/worlds/architecture-spatial-design.png",
+    image: "/images/worlds/communication.png",
     color: {
       name: "Earned Authority",
       hex: "#bcb8ad",
-      core: "rgba(195,188,172,0.86)",
-      mid: "rgba(110,108,100,0.55)",
+      core: "rgba(195,188,172,0.94)",
+      mid: "rgba(110,108,100,0.62)",
       deep: "rgba(28,28,26,1)",
-      glow: "rgba(168,160,145,0.28)",
+      glow: "rgba(168,160,145,0.38)",
     },
     motion: { breatheScale: [1, 1.012], breatheDuration: 14, drift: 1, pulse: "still" },
     title: { en: "Communication", es: "Comunicación" },
@@ -479,7 +479,7 @@ export const worlds: World[] = [
   {
     slug: "community-culture",
     number: "06",
-    image: "/images/worlds/cultural-digital-worlds.png",
+    image: "/images/worlds/community-culture.png",
     color: {
       name: "Refractive Edge",
       hex: "#7ab0a8",

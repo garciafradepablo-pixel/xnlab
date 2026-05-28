@@ -41,6 +41,12 @@ export type Project = {
   surfaces: { en: string[]; es: string[] };
   result: { en: string; es: string };
   pullQuote?: { en: string; es: string };
+  // Optional proof-of-execution band. The perception shift the system is
+  // built to produce, shown as paired before→after contrasts. Honest by
+  // construction: these describe the designed change in how the brand is
+  // perceived — never fabricated client metrics (studies stay internal
+  // until client work matures).
+  beforeAfter?: { before: { en: string; es: string }; after: { en: string; es: string } }[];
   credits: { role: string; value: string }[];
 };
 
@@ -97,6 +103,24 @@ export const projects: Project[] = [
       en: "Atmospheres designed to be remembered, not described.",
       es: "Atmósferas diseñadas para ser recordadas, no descritas.",
     },
+    beforeAfter: [
+      {
+        before: { en: "Recognised as one more premium room.", es: "Reconocida como una habitación premium más." },
+        after: { en: "Remembered as a specific feeling.", es: "Recordada como una sensación concreta." },
+      },
+      {
+        before: { en: "The website is a brochure of the place.", es: "La web es un folleto del lugar." },
+        after: { en: "The website is the first room the guest enters.", es: "La web es la primera habitación en la que entra el huésped." },
+      },
+      {
+        before: { en: "Booking is a transaction to complete.", es: "Reservar es una transacción que completar." },
+        after: { en: "Booking is the opening of the sequence.", es: "Reservar es la apertura de la secuencia." },
+      },
+      {
+        before: { en: "Photographed in the register of its competitors.", es: "Fotografiada en el registro de sus competidores." },
+        after: { en: "Photographed like nothing else in its tier.", es: "Fotografiada como nada más en su categoría." },
+      },
+    ],
     credits: [
       { role: "Direction", value: "Xnlab Studio" },
       { role: "Status", value: "Internal study — 2023" },
