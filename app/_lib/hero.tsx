@@ -293,7 +293,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           top: "50%",
           width: "clamp(240px,38vw,460px)",
           height: "clamp(240px,38vw,460px)",
-          transform: "translate(-50%, -50%)",
+          // Concentric with the chrome X and the copper halo — same Y
+          // offset — so the orbital trace actually orbits the X's
+          // optical centre instead of the viewport centre. Without this
+          // the X sat ~70px below the centre of its own orbital ring,
+          // reading as "off-centre" even though every element shares
+          // the same horizontal centre.
+          transform: "translate(-50%, calc(-50% + clamp(40px, 8svh, 90px)))",
           pointerEvents: "none",
         }}
       >
