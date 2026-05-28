@@ -154,13 +154,14 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
                 position: "absolute",
                 zIndex: 2,
                 // World orbs use baked-in PNG renders with their own
-                // colour. Without a harmoniser, the constellation
-                // reads as a rainbow of saturated unrelated jewels.
-                // A light desaturate + contrast bump pulls them onto
-                // a single chrome chord — distinguishable but
-                // coherent. Central Core is left untouched (its
-                // chrome already sits in the brand's amber family).
-                filter: isCentral ? undefined : "saturate(0.7) contrast(1.04) brightness(0.98)",
+                // colour. A light contrast lift keeps the constellation
+                // coherent, but the previous saturate(0.7) muted the
+                // colour so hard the orbs read flat and grey — the
+                // "desaturated" feeling. Lifted to 0.95 (richer, vivid
+                // but not neon) with a touch more contrast and full
+                // brightness so each surface's colour actually lands.
+                // Central Core untouched (its chrome is already amber).
+                filter: isCentral ? undefined : "saturate(0.95) contrast(1.07) brightness(1.02)",
               }}
               priority={isCentral}
             />

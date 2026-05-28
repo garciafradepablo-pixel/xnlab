@@ -57,7 +57,7 @@ const LEDGER: LedgerEntry[] = [
   },
   {
     label: { en: "Currencies served", es: "Divisas" },
-    value: { en: "EUR · USD · GBP", es: "EUR · USD · GBP" },
+    value: { en: "EUR · USD · GBP · AUD · THB", es: "EUR · USD · GBP · AUD · THB" },
   },
   {
     label: { en: "Languages of operation", es: "Idiomas de trabajo" },
