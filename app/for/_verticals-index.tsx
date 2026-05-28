@@ -120,8 +120,6 @@ export default function VerticalsIndex() {
             display: "grid",
             gap: 0,
             gridTemplateColumns: "repeat(auto-fit,minmax(300px,1fr))",
-            borderTop: "1px solid rgba(255,255,255,0.06)",
-            borderLeft: "1px solid rgba(255,255,255,0.06)",
           }}
         >
           {verticals.map((v, i) => (
@@ -136,8 +134,6 @@ export default function VerticalsIndex() {
                   color: "inherit",
                   position: "relative",
                   padding: "clamp(28px,3vw,44px) clamp(22px,2.4vw,34px)",
-                  borderRight: "1px solid rgba(255,255,255,0.06)",
-                  borderBottom: "1px solid rgba(255,255,255,0.06)",
                   minHeight: 220,
                   transition: "background 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.55s cubic-bezier(0.22,1,0.36,1)",
                 }}
@@ -208,18 +204,6 @@ export default function VerticalsIndex() {
 
       {/* CTA — one dominant verb: begin. */}
       <section style={{ padding: "clamp(56px,6vw,96px) clamp(20px,5vw,64px)", textAlign: "center", position: "relative", overflow: "hidden" }}>
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "15%",
-            right: "15%",
-            height: 1,
-            background: "linear-gradient(to right, transparent, rgba(232,183,131,0.18), transparent)",
-            pointerEvents: "none",
-          }}
-        />
         <div
           aria-hidden
           style={{

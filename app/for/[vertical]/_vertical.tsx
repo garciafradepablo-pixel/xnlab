@@ -156,8 +156,6 @@ export default function VerticalPage({ vertical: v }: { vertical: Vertical }) {
                   style={{
                     position: "relative",
                     padding: "clamp(14px,1.8vw,22px) clamp(16px,2vw,24px) clamp(14px,1.8vw,22px) clamp(36px,3.4vw,48px)",
-                    borderTop: i < 2 ? "1px solid rgba(255,255,255,0.04)" : "none",
-                    borderBottom: "1px solid rgba(255,255,255,0.04)",
                     fontSize: "clamp(0.95rem,1.1vw,1.08rem)",
                     lineHeight: 1.55,
                     color: "rgba(255,255,255,0.78)",
@@ -214,18 +212,6 @@ export default function VerticalPage({ vertical: v }: { vertical: Vertical }) {
           aria-hidden
           style={{
             position: "absolute",
-            top: 0,
-            left: "15%",
-            right: "15%",
-            height: 1,
-            background: "linear-gradient(to right, transparent, rgba(232,183,131,0.18), transparent)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
             inset: 0,
             background: "radial-gradient(ellipse 75% 55% at 50% 18%, rgba(70,45,20,0.16) 0%, rgba(22,14,8,0.07) 38%, transparent 72%)",
             pointerEvents: "none",
@@ -277,8 +263,6 @@ export default function VerticalPage({ vertical: v }: { vertical: Vertical }) {
               gap: 0,
               gridTemplateColumns: "repeat(auto-fit,minmax(280px,1fr))",
               marginTop: "clamp(40px,5vw,72px)",
-              borderTop: "1px solid rgba(255,255,255,0.05)",
-              borderLeft: "1px solid rgba(255,255,255,0.05)",
             }}
           >
             {SURFACES.map((s, i) => (
@@ -292,8 +276,6 @@ export default function VerticalPage({ vertical: v }: { vertical: Vertical }) {
                     color: "inherit",
                     position: "relative",
                     padding: "clamp(22px,2.4vw,32px) clamp(18px,2vw,28px)",
-                    borderRight: "1px solid rgba(255,255,255,0.05)",
-                    borderBottom: "1px solid rgba(255,255,255,0.05)",
                     minHeight: 168,
                     transition: "background 0.55s cubic-bezier(0.22,1,0.36,1), box-shadow 0.55s cubic-bezier(0.22,1,0.36,1)",
                   }}
@@ -338,18 +320,6 @@ export default function VerticalPage({ vertical: v }: { vertical: Vertical }) {
             position: "absolute",
             inset: 0,
             background: "radial-gradient(ellipse 90% 70% at 50% 40%, rgba(216,147,42,0.04) 0%, rgba(180,110,40,0.011) 38%, transparent 68%)",
-            pointerEvents: "none",
-          }}
-        />
-        <div
-          aria-hidden
-          style={{
-            position: "absolute",
-            top: 0,
-            left: "15%",
-            right: "15%",
-            height: 1,
-            background: "linear-gradient(to right, transparent, rgba(232,183,131,0.18), transparent)",
             pointerEvents: "none",
           }}
         />
