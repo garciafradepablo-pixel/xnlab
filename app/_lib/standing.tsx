@@ -213,7 +213,7 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
                     marginBottom: 14,
                   }}
                 >
-                  {lang === "en" ? "Currently" : "Actualmente"}
+                  {lang === "en" ? "The founding cycle" : "El ciclo fundador"}
                 </p>
                 <p
                   style={{
@@ -228,8 +228,8 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
                   }}
                 >
                   {lang === "en"
-                    ? "The first cycle of MMXXVI is in motion. The studio has not yet published its engagements."
-                    : "El primer ciclo de MMXXVI está en marcha. El estudio aún no ha publicado sus encargos."}
+                    ? "MMXXVI is the studio's founding cycle — the first partners are being selected now."
+                    : "MMXXVI es el ciclo fundador del estudio — los primeros socios se seleccionan ahora."}
                 </p>
                 <p
                   style={{
@@ -241,8 +241,8 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
                   }}
                 >
                   {lang === "en"
-                    ? "When a brand under direction grants its permission, its name will appear here."
-                    : "Cuando una marca bajo dirección dé su permiso, su nombre aparecerá aquí."}
+                    ? "There is no roster to parade — and that is the opening. Brands that enter now are founding partners, chosen before the studio has a queue. Their names will appear here, with their permission."
+                    : "No hay roster que exhibir — y ahí está la oportunidad. Las marcas que entran ahora son socias fundadoras, elegidas antes de que el estudio tenga cola. Sus nombres aparecerán aquí, con su permiso."}
                 </p>
               </div>
             ) : (
