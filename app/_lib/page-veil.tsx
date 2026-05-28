@@ -39,10 +39,18 @@ export function PageVeil() {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    // Single source of truth for "always start at the top on reload."
-    // The inline head script disables the browser's automatic
-    // restoration; this is where the scroll position actually gets
-    // pinned to zero. Anchor links opt out — those land on the hash.
+    // Opt out of the browser's automatic scroll restoration. This used
+    // to live in a nonce'd inline <script> in the layout for sync
+    // execution, but that produced a CSP-nonce hydration mismatch
+    // (server renders nonce="abc", the browser blanks it post-CSP).
+    // Setting it here removes that script class entirely. The PageVeil
+    // masks the first paint, so even if the browser restores the prior
+    // scroll for a frame before this runs, the visitor never sees it —
+    // and scrollTo(0,0) immediately pins them to the top underneath.
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+    // Anchor links opt out — those land on the hash.
     if (!window.location.hash) {
       window.scrollTo(0, 0);
     }

@@ -12,6 +12,12 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 31,
     deviceSizes: [360, 640, 750, 828, 1080, 1200, 1440, 1920, 2560, 3840],
+    // Next 16 requires every per-image `quality` value to be declared
+    // here, otherwise it silently falls back to 75 — defeating the
+    // payload savings on the hero assets. These are the qualities the
+    // hero layers actually request: haze 40, backdrop 45, orbits 50,
+    // plus the framework default 75 for everything else.
+    qualities: [40, 45, 50, 75],
   },
   // Security headers — applied to every response from the Next server.
   // - Strict-Transport-Security: force HTTPS for 2y including subdomains.
