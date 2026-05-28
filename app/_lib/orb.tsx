@@ -138,33 +138,63 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
         )}
         {orbImage ? (
           usesOwnImage ? (
-            <Image
-              src={orbImage}
-              alt={
-                isCentral
-                  ? "XNLAB Central Core — Creative Direction Studio"
-                  : world
-                  ? `${world.title.en} Core — XNLAB`
-                  : "XNLAB World Core"
-              }
-              fill
-              sizes={`${size}px`}
-              style={{
-                objectFit: "contain",
-                position: "absolute",
-                zIndex: 2,
-                // World orbs use baked-in PNG renders with their own
-                // colour. A light contrast lift keeps the constellation
-                // coherent, but the previous saturate(0.7) muted the
-                // colour so hard the orbs read flat and grey — the
-                // "desaturated" feeling. Lifted to 0.95 (richer, vivid
-                // but not neon) with a touch more contrast and full
-                // brightness so each surface's colour actually lands.
-                // Central Core untouched (its chrome is already amber).
-                filter: isCentral ? undefined : "saturate(0.95) contrast(1.07) brightness(1.02)",
-              }}
-              priority={isCentral}
-            />
+            <>
+              <Image
+                src={orbImage}
+                alt={
+                  isCentral
+                    ? "XNLAB Central Core — Creative Direction Studio"
+                    : world
+                    ? `${world.title.en} Core — XNLAB`
+                    : "XNLAB World Core"
+                }
+                fill
+                sizes={`${size}px`}
+                style={{
+                  objectFit: "contain",
+                  position: "absolute",
+                  zIndex: 2,
+                  // World orbs use baked-in PNG renders with their own
+                  // colour. A light contrast lift keeps the constellation
+                  // coherent, but the previous saturate(0.7) muted the
+                  // colour so hard the orbs read flat and grey — the
+                  // "desaturated" feeling. Lifted to 0.95 (richer, vivid
+                  // but not neon) with a touch more contrast and full
+                  // brightness so each surface's colour actually lands.
+                  // Central Core untouched (its chrome is already amber).
+                  filter: isCentral ? undefined : "saturate(0.95) contrast(1.07) brightness(1.02)",
+                }}
+                priority={isCentral}
+              />
+              {/* Specular sheen — an off-centre white highlight masked to
+                  the sphere that slowly orbits the centre, so the chrome
+                  reads as a polished material catching moving light
+                  instead of a flat sticker. Screen blend only brightens;
+                  the circular mask keeps it on the orb, never in the
+                  transparent corners. Pure rotate loop on a GPU layer —
+                  no bundle cost, no scroll dependency. This is the
+                  light-weight answer to "more material / more alive"
+                  (true volumetric depth would need WebGL, deliberately
+                  avoided to keep the hero's 7 orbs technically light). */}
+              <motion.div
+                aria-hidden
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 3,
+                  pointerEvents: "none",
+                  mixBlendMode: "screen",
+                  background:
+                    "radial-gradient(circle at 33% 27%, rgba(255,255,255,0.42) 0%, rgba(255,255,255,0.1) 13%, transparent 30%)",
+                  maskImage: "radial-gradient(circle at 50% 50%, #000 46%, transparent 55%)",
+                  WebkitMaskImage: "radial-gradient(circle at 50% 50%, #000 46%, transparent 55%)",
+                  willChange: "transform",
+                }}
+                initial={{ rotate: 0 }}
+                animate={{ rotate: 360 }}
+                transition={{ duration: isCentral ? 24 : 20, ease: "linear", repeat: Infinity }}
+              />
+            </>
           ) : (
             // Chrome fallback — circular clip, colour tint and highlight
             // pass turn the shared chrome sphere into each Core's energy.
