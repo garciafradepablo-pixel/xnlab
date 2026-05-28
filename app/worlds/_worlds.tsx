@@ -1,10 +1,12 @@
 "use client";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, useScroll, useTransform } from "framer-motion";
+import { useRef } from "react";
 import { ts, tsS, serif, W, R, Dust, useLang } from "../_lib/atoms";
 import { Magnetic } from "../_lib/chrome";
 import { WordmarkLink } from "../_lib/wordmark";
 import { Orb } from "../_lib/orb";
+import { AtelierStar } from "../_lib/ornaments";
 import { worlds, mythology } from "../_lib/worlds";
 import { SiteFooter } from "../_lib/site-footer";
 
@@ -80,6 +82,19 @@ export default function WorldsIndex() {
   const [lang, setLang] = useLang();
   const t = lang === "en" ? en : es;
   const cc = mythology.centralCore[lang];
+
+  // Scroll-tied breath for the Atelier sigil watermark that signs the
+  // /worlds hero. As the visitor reads down through the first viewport,
+  // the sigil compresses ~5% and dims — same language as the home hero's
+  // sigil, so the brand mark is consistent across entrance points.
+  const heroRef = useRef<HTMLElement | null>(null);
+  const { scrollYProgress: heroScroll } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
+  });
+  const sigilScale = useTransform(heroScroll, [0, 1], [1, 0.95]);
+  const sigilOpacity = useTransform(heroScroll, [0, 0.85], [0.5, 0.14]);
+
   return (
     <main
       style={{
@@ -129,8 +144,14 @@ export default function WorldsIndex() {
         </nav>
       </header>
 
-      {/* Hero — the entrance */}
+      {/* Hero — the entrance to the universe.
+          Atmospheric stack mirrors the home hero's grammar (sigil
+          watermark + focused warm vignette + dust) so the visitor
+          does not feel a quality drop when crossing from / to /worlds.
+          The composition is quieter than the home hero — this is the
+          interior of the universe, not the doorway to the studio. */}
       <section
+        ref={heroRef}
         style={{
           position: "relative",
           minHeight: "100svh",
@@ -140,9 +161,46 @@ export default function WorldsIndex() {
           justifyContent: "center",
           padding: "clamp(120px,16vh,180px) clamp(24px,5vw,72px) clamp(60px,8vw,120px)",
           textAlign: "center",
+          overflow: "hidden",
         }}
       >
-        <Dust count={14} opacity={0.07} />
+        {/* Focused warm vignette behind the heading — pulls the eye to
+            the centre even when the global backdrop is wide. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(ellipse 60% 50% at 50% 42%, rgba(216,147,42,0.10) 0%, rgba(180,110,40,0.03) 38%, transparent 70%)",
+            pointerEvents: "none",
+            filter: "blur(28px)",
+          }}
+        />
+        {/* Atelier sigil watermark — same mark that sits inside the home
+            wordmark, here scaled up and pinned behind the heading. Reads
+            as "every world is signed by the studio" without saying it. */}
+        <motion.div
+          aria-hidden
+          style={{
+            position: "absolute",
+            top: "38%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            zIndex: 1,
+            pointerEvents: "none",
+            scale: sigilScale,
+            opacity: sigilOpacity,
+            willChange: "transform, opacity",
+          }}
+        >
+          <AtelierStar
+            size={320}
+            color="rgba(232,183,131,0.95)"
+            shadow="rgba(232,183,131,0.6)"
+          />
+        </motion.div>
+        <Dust count={18} opacity={0.08} />
         <p style={{ ...labelStyle, marginBottom: 32, position: "relative", zIndex: 5 }}>{t.eyebrow}</p>
         <h1
           style={{
@@ -242,15 +300,16 @@ export default function WorldsIndex() {
         </div>
 
         <div
+          className="grid-cols-1 sm:grid-cols-2 lg:grid-cols-3"
           style={{
-            maxWidth: 1440,
+            maxWidth: 1240,
             margin: "0 auto",
             display: "grid",
-            // 7 worlds (Universe + 6 cores) — fit in one row on wide
-            // screens for a premium constellation read. Falls back to
-            // 4 / 3 / 2 / 1 column layouts on narrower viewports.
-            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-            gap: "clamp(16px,2vw,28px)",
+            // 3 × 2 on desktop, 2 × 3 on tablet, 1 × 6 on mobile —
+            // each surface card gets real breathing room. The single-row
+            // layout collapsed the orbs into a tight strip; a 3-column
+            // matrix reads as constellation, not catalogue.
+            gap: "clamp(24px,3vw,56px)",
           }}
         >
           {worlds.map((w, i) => (
