@@ -9,6 +9,7 @@ import { getNonce } from "./_lib/csp";
 import { AmbientBackdrop } from "./_lib/ambient-backdrop";
 import { LoadingSplash } from "./_lib/loading-splash";
 import { PageVeil } from "./_lib/page-veil";
+import { Invitation } from "./_lib/invitation";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -432,6 +433,12 @@ export default async function RootLayout({
             session and never on internal navigation. Returns null on
             prefers-reduced-motion. */}
         <LoadingSplash />
+        {/* Invitation — premium lead capture. Earns its appearance:
+            once per session, only after deep engagement (exit-intent
+            on desktop, deep scroll on mobile), dismissible, suppressed
+            on /contact and /dossier. Reuses the contact server action,
+            so a popup lead is a real, acknowledged lead. */}
+        <Invitation />
         <Analytics />
       </body>
     </html>
