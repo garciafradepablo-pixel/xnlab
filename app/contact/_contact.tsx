@@ -456,9 +456,14 @@ export default function Contact() {
                 >
                   {t.admission.cycleWindow}
                 </p>
-                {/* Capacity meter — 5/6 filled, mirrors Standing */}
+                {/* Cap motif — six equal marks for the six places a cycle
+                    holds. NOT a progress/scarcity meter: the studio's
+                    honest state is "first cycle, open" (the roster is
+                    real and unfilled), so an X/6-"taken" bar would be
+                    fabricated scarcity. Six equal marks read as "six
+                    brands per cycle" — the selectivity principle, true. */}
                 <div
-                  aria-label={lang === "en" ? "Five of six places taken" : "Cinco de seis plazas ocupadas"}
+                  aria-label={lang === "en" ? "Six brands per cycle" : "Seis marcas por ciclo"}
                   role="img"
                   style={{ display: "flex", gap: 6, marginBottom: 16 }}
                 >
@@ -469,12 +474,8 @@ export default function Contact() {
                       style={{
                         flex: 1,
                         height: 4,
-                        background:
-                          i < 5
-                            ? "rgba(232,183,131,0.7)"
-                            : "rgba(255,255,255,0.08)",
-                        boxShadow:
-                          i < 5 ? "0 0 8px rgba(232,183,131,0.45)" : "none",
+                        background: "rgba(232,183,131,0.34)",
+                        boxShadow: "0 0 6px rgba(232,183,131,0.22)",
                       }}
                     />
                   ))}
