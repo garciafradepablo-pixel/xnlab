@@ -841,8 +841,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           // (no more eyebrow/dome collision); on desktop both terms resolve
           // to the original raise. Pure inline calc — never touched by the
           // CSS pipeline.
-          paddingTop: "max(0px, calc((640px - 100vw) * 0.34))",
-          paddingBottom: "clamp(0px, calc((100vw - 480px) * 0.18), 80px)",
+          paddingTop: "max(0px, calc((640px - 100vw) * 0.12))",
+          paddingBottom: "clamp(0px, calc((100vw - 560px) * 0.05), 20px)",
           y: wordY,
           opacity: wordOpacity,
           willChange: "transform, opacity",
