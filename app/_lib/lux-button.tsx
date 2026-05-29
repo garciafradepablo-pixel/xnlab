@@ -157,9 +157,20 @@ export function LuxButton({
         border: base.border,
         borderRadius: 100,
         overflow: "hidden",
-        transition: "color 0.45s cubic-bezier(0.22,1,0.36,1), border-color 0.45s",
+        // Premium hover: a slow lift + a soft amber bloom under the pill,
+        // so the CTA feels like it rises to meet the cursor. Transform +
+        // shadow only — composited, never re-layouts.
+        transform: hover ? "translateY(-1.5px) scale(1.014)" : "translateY(0) scale(1)",
+        boxShadow: hover
+          ? isSolid
+            ? "0 16px 44px -16px rgba(232,183,131,0.6), 0 0 0 1px rgba(232,183,131,0.2) inset"
+            : "0 14px 40px -18px rgba(232,183,131,0.5), 0 0 0 1px rgba(232,183,131,0.18) inset"
+          : "0 0 0 0 rgba(232,183,131,0)",
+        transition:
+          "color 0.45s cubic-bezier(0.22,1,0.36,1), border-color 0.45s, transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.55s cubic-bezier(0.22,1,0.36,1)",
         cursor: "pointer",
         outline: "none",
+        willChange: "transform",
       }}
     >
       {/* Warm sweep that fills from the left on hover. */}
@@ -173,6 +184,24 @@ export function LuxButton({
           inset: 0,
           background: base.sweep,
           pointerEvents: "none",
+        }}
+      />
+
+      {/* Glass sheen — a faint highlight across the top third so the pill
+          reads as a polished surface catching light, not a flat shape. */}
+      <span
+        aria-hidden
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          height: "52%",
+          background: isSolid
+            ? "linear-gradient(to bottom, rgba(255,255,255,0.5) 0%, transparent 100%)"
+            : "linear-gradient(to bottom, rgba(255,255,255,0.1) 0%, transparent 100%)",
+          pointerEvents: "none",
+          zIndex: 1,
         }}
       />
 
