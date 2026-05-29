@@ -29,26 +29,26 @@ function csvCell(v) {
 export function toCSV(opps, tracking = {}) {
   const headers = [
     "Ranking",
-    "Company",
+    "Empresa",
     "Sector",
     "Subsector",
-    "City",
-    "Classification",
-    "Confidence",
-    "EvidenceStrength",
-    "Conversation",
-    "Meeting",
-    "Closing",
-    "EconomicPotential",
-    "Recommendation",
-    "CallPriority",
-    "DecisionMaker",
-    "Role",
-    "Phone",
+    "Ciudad",
+    "Clasificación",
+    "Confianza",
+    "FuerzaEvidencia",
+    "Conversación",
+    "Reunión",
+    "Cierre",
+    "PotencialEconómico",
+    "Recomendación",
+    "PrioridadLlamada",
+    "Decisor",
+    "Cargo",
+    "Teléfono",
     "Email",
-    "Website",
-    "SuggestedOffer",
-    "Status",
+    "Web",
+    "OfertaSugerida",
+    "Estado",
   ];
   const rows = opps.map((o) => {
     const s = o.scores;
@@ -103,8 +103,8 @@ export function toJSON(opps, tracking = {}) {
 
 export function toCallSheet(opps) {
   const lines = [];
-  lines.push("01 AGENCY / XN LAB — CALL SHEET");
-  lines.push(`Generated ${new Date().toLocaleString("es-ES")}`);
+  lines.push("01 AGENCY / XN LAB — HOJA DE LLAMADAS");
+  lines.push(`Generada ${new Date().toLocaleString("es-ES")}`);
   lines.push("=".repeat(60));
   opps.forEach((o) => {
     const s = o.scores;
@@ -113,15 +113,15 @@ export function toCallSheet(opps) {
       `#${o.ranking ?? "-"}  ${o.company}  [${CLASSIFICATIONS[s.classification]}]`
     );
     lines.push(
-      `   ${o.subsector} · ${o.city}  ·  Confidence ${s.confidence} / Closing ${s.closing}`
+      `   ${o.subsector} · ${o.city}  ·  Confianza ${s.confidence} / Cierre ${s.closing}`
     );
     lines.push(
-      `   DM: ${o.decisionMaker?.name || "—"} (${o.decisionMaker?.role || "—"})  ·  ${o.phone || "no phone"}  ·  ${o.email || "no email"}`
+      `   Decisor: ${o.decisionMaker?.name || "—"} (${o.decisionMaker?.role || "—"})  ·  ${o.phone || "sin teléfono"}  ·  ${o.email || "sin email"}`
     );
-    lines.push(`   Offer: ${offerLabel(o.suggestedOfferKey)}`);
-    lines.push(`   Open: "${o.callOpening}"`);
-    lines.push(`   Likely objection: ${o.objection}`);
-    lines.push(`   → Response: ${o.objectionResponse}`);
+    lines.push(`   Oferta: ${offerLabel(o.suggestedOfferKey)}`);
+    lines.push(`   Apertura: "${o.callOpening}"`);
+    lines.push(`   Objeción probable: ${o.objection}`);
+    lines.push(`   → Respuesta: ${o.objectionResponse}`);
   });
   return lines.join("\n");
 }
@@ -168,17 +168,17 @@ export function exportPDF(opps) {
       <section class="card">
         <h2>#${o.ranking ?? "-"} · ${o.company}</h2>
         <p class="meta">${o.subsector} · ${o.city} · <strong>${CLASSIFICATIONS[s.classification]}</strong></p>
-        <p class="scores">Confidence ${s.confidence} · Evidence ${s.evidence} · Conversation ${s.conversation} · Meeting ${s.meeting} · Closing ${s.closing} · Economic: ${s.economicPotential}</p>
-        <p><strong>Thesis:</strong> ${o.thesis}</p>
-        <p><strong>Why now:</strong> ${o.whyNow}</p>
-        <p><strong>First lever:</strong> ${o.firstLever} — <em>${offerLabel(o.suggestedOfferKey)}</em></p>
-        <p><strong>DM:</strong> ${o.decisionMaker?.name || "—"} (${o.decisionMaker?.role || "—"}) · ${o.phone || ""} · ${o.email || ""}</p>
-        <p><strong>Open:</strong> “${o.callOpening}”</p>
+        <p class="scores">Confianza ${s.confidence} · Evidencia ${s.evidence} · Conversación ${s.conversation} · Reunión ${s.meeting} · Cierre ${s.closing} · Económico: ${s.economicPotential}</p>
+        <p><strong>Tesis:</strong> ${o.thesis}</p>
+        <p><strong>Por qué ahora:</strong> ${o.whyNow}</p>
+        <p><strong>Primera palanca:</strong> ${o.firstLever} — <em>${offerLabel(o.suggestedOfferKey)}</em></p>
+        <p><strong>Decisor:</strong> ${o.decisionMaker?.name || "—"} (${o.decisionMaker?.role || "—"}) · ${o.phone || ""} · ${o.email || ""}</p>
+        <p><strong>Apertura:</strong> “${o.callOpening}”</p>
       </section>`;
     })
     .join("");
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8">
-    <title>01 / XN LAB — Top ${opps.length} Opportunities</title>
+  w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8">
+    <title>01 / XN LAB — Top ${opps.length} oportunidades</title>
     <style>
       body{font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:32px;}
       h1{font-size:20px;border-bottom:2px solid #111;padding-bottom:8px;}
@@ -188,8 +188,8 @@ export function exportPDF(opps) {
       .scores{font-size:12px;color:#333;background:#f4f4f4;padding:6px 8px;border-radius:4px;}
       p{margin:6px 0;}
     </style></head><body>
-    <h1>01 Agency / XN LAB — Top ${opps.length} Opportunities</h1>
-    <p>Generated ${new Date().toLocaleString("es-ES")}</p>
+    <h1>01 Agency / XN LAB — Top ${opps.length} oportunidades</h1>
+    <p>Generada ${new Date().toLocaleString("es-ES")}</p>
     ${rows}
     <script>window.onload=()=>window.print();</script>
   </body></html>`);

@@ -50,13 +50,31 @@ Any static server works (`npx serve`, etc.). Opening `index.html` directly via
 `file://` will **not** work because browsers block ES‑module imports over
 `file://` — use a local server.
 
+### Generate the list headless (automation)
+
+For the "wake up with 20 companies to call" workflow, run the pipeline without
+the UI and write the exports to disk (cron-friendly):
+
+```bash
+node bin/run.mjs                         # Top 20 from the seed → ./out
+node bin/run.mjs --final 10 --out /tmp/leads
+node bin/run.mjs --enrich                # also run live adapters (needs network)
+```
+
+Flags: `--final N`, `--conservatism 0..1`, `--min-score N`, `--out DIR`,
+`--enrich` (use live adapters), `--quiet`.
+
 ### Run the engine tests
 
 ```bash
-node test/scoring.test.mjs       # or: npm test
+npm test                                 # scoring + enrichment suites
+# or individually:
+node test/scoring.test.mjs
+node test/enrichment.test.mjs
 ```
 
-These exercise the scoring engine and the full pipeline with no install.
+These exercise the scoring engine, the pipeline, and the website parsers with
+no install.
 
 ---
 
@@ -65,12 +83,14 @@ These exercise the scoring engine and the full pipeline with no install.
 ```
 opportunity-intel/
 ├── index.html                 # app shell (module entry)
+├── bin/run.mjs                # headless runner → CSV/JSON/call-sheet (cron-friendly)
 ├── src/
 │   ├── models.js              # data schema, the 10 filters, enums, weights, explainers
 │   ├── scoring.js             # the scoring engine (pure, testable, the brain)
-│   ├── enrichment.js          # source adapters / connectors (the live-data seam)
+│   ├── enrichment.js          # source adapters + a real WebsiteAdapter (the live-data seam)
 │   ├── pipeline.js            # discover → enrich → filter → score → shortlist → final
-│   ├── store.js               # localStorage persistence + the learning loop
+│   ├── store.js               # persistence + portable export/import of the call log
+│   ├── calibration.js         # turns call outcomes into bounded scoring nudges
 │   ├── export.js              # CSV / JSON / PDF / call sheet
 │   ├── seed.js                # demonstration dataset (synthetic, see below)
 │   └── ui/
@@ -78,7 +98,9 @@ opportunity-intel/
 │       ├── card.js            # full opportunity card renderer
 │       ├── dom.js             # tiny DOM helpers
 │       └── styles.css         # styling (function over decoration)
-└── test/scoring.test.mjs      # zero-install engine + pipeline tests
+└── test/
+    ├── scoring.test.mjs       # engine + pipeline tests
+    └── enrichment.test.mjs    # website-parser + adapter tests
 ```
 
 **The logic is not hardcoded in the UI.** `models.js`, `scoring.js` and
@@ -99,15 +121,78 @@ demonstrate the engine on archetypes here, and attach *real, cited* evidence
 through the connector layer once live (below). The UI marks the data as
 `DEMO DATA` for exactly this reason.
 
+### Two datasets, switchable in the UI
+
+The config panel has a **Dataset** selector:
+
+- **Demo — synthetic** — the archetypes in `src/seed.js` (default).
+- **Researched — Spain** — real, press-verified leads in `src/data/researched.js`.
+
+The researched dataset holds a **pilot of 6 real Spanish opportunities**
+(researched 2026-05-29 via web search): a boutique luxury hotel, a funded
+foodtech brand, two premium restaurant groups, and two luxury developers. Each
+carries a press-verified *moment* (opening / funding / expansion), a **verified
+decision maker + contact channel**, and a real website — all with cited URLs:
+
+| Lead | City | Moment | Decision maker |
+|---|---|---|---|
+| La Casa del Limonero | Sevilla | 15th-c palace hotel opened Mar 2025 | Martina Cam (owner/director) |
+| FoodieFame | Madrid | €800k seed, Jul 2025 | Jesús Muñoz (founder/CEO) |
+| Grupo Arzábal | Madrid | 100-seat Bernabéu flagship | Morales & Castellanos (founders) |
+| Grupo GastroPortal · Manero | Alicante | Expansion incl. Lisbon | Carlos Bosch (founder/CEO) |
+| Promora · Impulsa | Madrid | New expansion model | Carlos Morón Fernández (director) |
+| Sierra Blanca Estates | Marbella | €500M luxury pipeline | Rodríguez family (direction) |
+
+Honest limits, encoded in the scores: the **on-site tension, active pain and
+exact budget priority are still grey** — they need an on-site/reviews check, not
+a press article. So the conservative engine scores these **62–70** (vs the 90s
+the synthetic all-green archetypes hit) and every one reads *"prepare a
+mini-audit first"*. Each card's **Verification block** shows the verified
+share and the exact "confirm before calling" checklist. A real, half-verified
+moment is a *hypothesis*, not a closed case — and a lead is only ever added with
+≥3 cited evidence points, never fabricated.
+
+**Closing the gaps (manual verification → higher score).** Each gap chip in the
+Verification block is clickable: the analyst checks the site/reviews (30s),
+picks a verdict (green/yellow/red), and leaves a note + the URL they looked at.
+That note becomes a **cited evidence point**, flips the signal, and the lead
+**re-scores immediately** (e.g. Arzábal 71.3 → 84 after confirming two gaps).
+Nothing is fabricated — the verification is real, attributed and dated
+(`store.addVerification` / `applyVerifications`, unit-tested). This is the path
+to raise scores when automatic enrichment can't reach a site (most sites here
+return HTTP 403 to a plain server-side `fetch`, so a human or a headless-browser
+adapter closes the gap).
+
+A note on `--enrich` against these sites: several (e.g. the hotel) are
+client-rendered SPAs that return a near-empty HTML shell to a plain `fetch`. The
+`WebsiteAdapter` correctly emits **zero** evidence from a shell rather than
+guessing — verifying the on-site gaps for JS-heavy sites needs a headless-browser
+variant of the adapter (documented as the next connector step).
+
 ---
 
 ## Connecting real data sources
 
 All external research happens through **adapters** in `src/enrichment.js`. Each
 is a class with a single `async enrich(candidate)` method that returns
-`{ evidence[], signalHints{}, fields{} }`. The demo adapters are no-ops; to go
-live you implement them (server-side, with API keys) and **nothing else in the
-pipeline changes**.
+`{ evidence[], signalHints{}, fields{} }`.
+
+The **`WebsiteAdapter` is already a working implementation**: given a reachable
+URL it fetches the page and emits cited evidence — stale copyright year, missing
+mobile viewport, absent booking/quote CTA, template builders (Wix/Squarespace/…).
+Its analysis (`analyzeWebsiteHtml`) is pure and unit-tested. The remaining
+API-backed adapters are documented stubs you implement; `liveAdapters()`
+enables the website adapter by default and lets you toggle the rest:
+
+```js
+import { runPipeline } from "./src/pipeline.js";
+import { liveAdapters } from "./src/enrichment.js";
+const adapters = liveAdapters({ website: true, press: true }); // toggle sources
+const result = await runPipeline(candidates, config, adapters);
+```
+
+(The demo uses `defaultAdapters()`, which are all **disabled** so the UI never
+touches the network — the seeded URLs are placeholders.)
 
 | Adapter | Live implementation should return | Feeds filters |
 |---|---|---|
@@ -130,6 +215,32 @@ stubs from Google Maps / directories and passing the array to
 A natural production backend for status/notes/learning is the included Supabase
 MCP project (swap the `store.js` localStorage calls for table reads/writes —
 the record shapes are unchanged).
+
+---
+
+## The learning loop closes (calibration)
+
+Call outcomes are not just reported — they **recalibrate scoring**, conservatively.
+
+- Log an outcome on any card (result, objection, what worked/failed, was the
+  hypothesis right, next action). The lead's signal snapshot is stored with it.
+- `calibration.js` asks, per filter: *does a green signal here actually predict a
+  good call?* A green that converts above the base rate earns that filter a small
+  weight bump; one that converts below gets trimmed.
+- **Guardrails** (in `CALIBRATION`): nothing happens below 6 decisive calls
+  (interested/meeting vs rejected/wrong-fit); a filter needs ≥3 green
+  observations to move; and every nudge is hard-capped at **±15%**. Weights are
+  renormalised, so calibration changes the *balance* between filters, never the
+  overall scale. A noisy first week cannot distort the model.
+- The **Learning loop** tab shows whether calibration is ACTIVE, the base
+  success rate, and exactly which filters moved and by how much.
+
+**Sharing across people (Pablo + Javi).** State lives in `localStorage`
+(per-browser), so the Learning tab has **Export / Import call log**: Pablo
+exports a JSON file after his calls, Javi imports it, and the scoring they both
+see reflects every call. Import is non-destructive (outcomes are de-duplicated;
+status records merge with newest-wins). `store.exportState()` /
+`store.importState()` are unit-tested.
 
 ---
 

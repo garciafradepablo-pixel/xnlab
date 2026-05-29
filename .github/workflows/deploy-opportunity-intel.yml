@@ -1,0 +1,84 @@
+name: Deploy Opportunity Intel
+
+# Actualización automática de la app interna (carpeta opportunity-intel/).
+# En cada push: corre los tests (puerta), construye la app de un solo archivo,
+# el snapshot y los exports de leads, y publica todo en GitHub Pages.
+# Si los tests fallan, NO se publica nada → la URL del móvil nunca recibe una
+# versión rota.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/opportunity-intelligence-app-vxWfo
+    paths:
+      - "opportunity-intel/**"
+      - ".github/workflows/deploy-opportunity-intel.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un solo despliegue a la vez; el último gana.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opportunity-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 1) Puerta de calidad: si los tests fallan, el workflow para aquí.
+      - name: Tests
+        run: npm test
+
+      # 2) Resolver la URL base de Pages ANTES de construir, para que el
+      #    lanzador apunte al app.html publicado.
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      # 3) Construir artefactos de la app (sin dependencias, todo Node nativo).
+      - name: Build single-file app + snapshot + leads
+        run: |
+          mkdir -p _site
+          # App modular (servida por Pages): copiamos índice, fuentes y assets.
+          cp index.html _site/index.html
+          cp -r src _site/src
+          [ -f manifest.webmanifest ] && cp manifest.webmanifest _site/ || true
+          # App de un solo archivo (descargable / offline).
+          node bin/bundle.mjs --out _site/app.html
+          # Lanzador auto-actualizable: descárgalo una vez; al abrirlo carga la
+          # última versión desde la URL pública (mejoras nuevas activas) y, sin
+          # red, usa su copia offline embebida.
+          PAGES_BASE="${{ steps.pages.outputs.base_url }}"
+          node bin/bundle.mjs --launcher --remote "$PAGES_BASE/app.html" --out _site/lanzador.html
+          # Snapshot estático (vista rápida sin JS).
+          node bin/snapshot.mjs --out _site/snapshot.html
+          # Exports de los 20 mejores leads (CSV/JSON/hoja de llamadas).
+          node bin/run.mjs --dataset researched --final 20 --out _site/leads --quiet
+          # Marca de versión para ver cuándo se actualizó.
+          node -e "console.log(new Date().toISOString())" > _site/VERSION.txt
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: opportunity-intel/_site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

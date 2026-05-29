@@ -10,10 +10,14 @@
 // of the records does not change.
 // =============================================================================
 
+import { deriveCalibration } from "./calibration.js";
+
 const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
 const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
+const VERIFY_KEY = `${NS}verify`;
+const USER_LEADS_KEY = `${NS}userLeads`;
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
 const mem = new Map();
@@ -101,6 +105,34 @@ export function addOutcome(outcome) {
   return log;
 }
 
+// Estados decisivos que enseñan al modelo (éxito o fallo claros).
+const DECISIVE = new Set(["interested", "meeting_booked", "rejected", "wrong_fit"]);
+
+/**
+ * Aprende del CRM: registra (o actualiza) UN resultado automático por lead a
+ * partir de su cambio de estado. Marcado `source:"crm"` y upsert por id para
+ * que cambiar el estado varias veces no infle el log con duplicados.
+ *
+ * Estados no decisivos (sin llamar, llamado, no contesta, seguimiento) retiran
+ * el resultado automático previo: aún no hay veredicto que aprender.
+ */
+export function recordStatusOutcome(id, status, meta = {}) {
+  const log = getLearning().filter((o) => !(o.source === "crm" && o.id === id));
+  if (DECISIVE.has(status)) {
+    log.push({
+      id,
+      source: "crm",
+      outcome: status,
+      classification: meta.classification || null,
+      signals: meta.signals || null,
+      hypothesisCorrect: status === "interested" || status === "meeting_booked",
+      createdAt: new Date().toISOString(),
+    });
+  }
+  write(LEARN_KEY, log);
+  return log;
+}
+
 /**
  * Derive simple calibration hints from the outcome log. This is intentionally
  * conservative: it reports observed conversion by classification and by
@@ -167,6 +199,143 @@ export function applyLearning(log = getLearning()) {
   };
 }
 
+// ---- Calibration (the loop that actually changes scoring) -------------------
+
+/**
+ * Per-filter weight multipliers derived from the call log, ready to drop into a
+ * scoring config as `weightMultipliers`. Returns the full calibration object so
+ * the UI can also show what changed and why.
+ */
+export function getCalibration() {
+  return deriveCalibration(getLearning());
+}
+
+// ---- Portability: export / import the operational state ---------------------
+//
+// The whole point of closing the loop across people: Pablo calls five leads,
+// exports the log, Javi imports it, and the scoring they both see reflects all
+// the calls. localStorage is per-browser; this makes the state a shareable file.
+
+const PORTABLE_VERSION = 1;
+
+/** Serialise tracking + outcomes (+ config) to a shareable JSON string. */
+export function exportState() {
+  return JSON.stringify(
+    {
+      _format: "opportunity-intel/state",
+      _version: PORTABLE_VERSION,
+      exportedAt: new Date().toISOString(),
+      tracking: getTracking(),
+      learning: getLearning(),
+      verifications: getVerifications(),
+      userLeads: getUserLeads(),
+      config: read(CONFIG_KEY, null),
+    },
+    null,
+    2
+  );
+}
+
+/**
+ * Merge an exported state back in. Non-destructive by default:
+ *   - outcomes are appended and de-duplicated (by id+createdAt+outcome)
+ *   - tracking records are merged, newest `updatedAt` winning per lead
+ * Pass { replace: true } to overwrite instead of merge.
+ *
+ * @returns {{ ok:boolean, error?:string, addedOutcomes:number, mergedTracking:number }}
+ */
+export function importState(json, { replace = false } = {}) {
+  let data;
+  try {
+    data = typeof json === "string" ? JSON.parse(json) : json;
+  } catch {
+    return { ok: false, error: "Not valid JSON.", addedOutcomes: 0, mergedTracking: 0 };
+  }
+  if (!data || data._format !== "opportunity-intel/state") {
+    return {
+      ok: false,
+      error: "Unrecognised file — not an Opportunity Intelligence state export.",
+      addedOutcomes: 0,
+      mergedTracking: 0,
+    };
+  }
+
+  // --- outcomes ---
+  const incomingLog = Array.isArray(data.learning) ? data.learning : [];
+  let addedOutcomes = 0;
+  if (replace) {
+    write(LEARN_KEY, incomingLog);
+    addedOutcomes = incomingLog.length;
+  } else {
+    const existing = getLearning();
+    const seen = new Set(existing.map(outcomeKey));
+    for (const o of incomingLog) {
+      if (seen.has(outcomeKey(o))) continue;
+      seen.add(outcomeKey(o));
+      existing.push(o);
+      addedOutcomes++;
+    }
+    write(LEARN_KEY, existing);
+  }
+
+  // --- tracking ---
+  const incomingTracking = data.tracking && typeof data.tracking === "object" ? data.tracking : {};
+  let mergedTracking = 0;
+  if (replace) {
+    write(TRACK_KEY, incomingTracking);
+    mergedTracking = Object.keys(incomingTracking).length;
+  } else {
+    const cur = getTracking();
+    for (const [id, rec] of Object.entries(incomingTracking)) {
+      const existing = cur[id];
+      // newest update wins
+      if (!existing || (rec.updatedAt || "") > (existing.updatedAt || "")) {
+        cur[id] = rec;
+        mergedTracking++;
+      }
+    }
+    write(TRACK_KEY, cur);
+  }
+
+  // --- verifications (merge por lead+filtro, lo más reciente gana) ---
+  const incomingVerif = data.verifications && typeof data.verifications === "object" ? data.verifications : {};
+  if (replace) {
+    write(VERIFY_KEY, incomingVerif);
+  } else {
+    const cur = getVerifications();
+    for (const [id, list] of Object.entries(incomingVerif)) {
+      const byFilter = new Map((cur[id] || []).map((v) => [v.filter, v]));
+      for (const v of list) {
+        const ex = byFilter.get(v.filter);
+        if (!ex || (v.at || "") > (ex.at || "")) byFilter.set(v.filter, v);
+      }
+      cur[id] = [...byFilter.values()];
+    }
+    write(VERIFY_KEY, cur);
+  }
+
+  // --- userLeads (merge por id) ---
+  const incomingLeads = Array.isArray(data.userLeads) ? data.userLeads : [];
+  let addedLeads = 0;
+  if (replace) {
+    write(USER_LEADS_KEY, incomingLeads);
+    addedLeads = incomingLeads.length;
+  } else {
+    const byId = new Map(getUserLeads().map((l) => [l.id, l]));
+    for (const l of incomingLeads) {
+      if (!byId.has(l.id)) addedLeads++;
+      byId.set(l.id, l);
+    }
+    write(USER_LEADS_KEY, [...byId.values()]);
+  }
+
+  return { ok: true, addedOutcomes, mergedTracking, addedLeads };
+}
+
+function outcomeKey(o) {
+  return `${o.id}|${o.createdAt || ""}|${o.outcome || ""}`;
+}
+
 // ---- Config persistence -----------------------------------------------------
 
 export function getSavedConfig(fallback) {
@@ -176,7 +345,101 @@ export function saveConfig(config) {
   write(CONFIG_KEY, config);
 }
 
+// ---- Verificaciones manuales (cierra huecos grises con evidencia citada) ----
+//
+// El analista revisa la web/reseñas de un lead y confirma un hueco: marca el
+// filtro como verde/amarillo y añade una nota que CUENTA como evidencia citada
+// (fuente = el analista, url = lo que miró). Así sube la puntuación SIN inventar
+// nada — la verificación es real y queda registrada con autor y fecha.
+
+/** @returns {Object<string, Array>} verificaciones por id de lead. */
+export function getVerifications() {
+  return read(VERIFY_KEY, {});
+}
+
+/** Verificaciones de un lead concreto. */
+export function getLeadVerifications(id) {
+  return getVerifications()[id] || [];
+}
+
+/**
+ * Registra una verificación manual de un filtro.
+ * @param {string} id      id del lead
+ * @param {string} filter  clave del filtro (models.FILTER_KEYS)
+ * @param {"green"|"yellow"|"red"} level  veredicto tras revisar
+ * @param {string} note    qué se observó
+ * @param {string} [url]   qué se miró (web/reseñas) — sirve de cita
+ */
+export function addVerification(id, filter, level, note, url) {
+  const all = getVerifications();
+  const list = (all[id] || []).filter((v) => v.filter !== filter); // upsert por filtro
+  list.push({
+    filter, level, note: note || "",
+    url: url || null,
+    by: "analista",
+    at: new Date().toISOString(),
+  });
+  all[id] = list;
+  write(VERIFY_KEY, all);
+  return list;
+}
+
+export function removeVerification(id, filter) {
+  const all = getVerifications();
+  if (!all[id]) return;
+  all[id] = all[id].filter((v) => v.filter !== filter);
+  if (!all[id].length) delete all[id];
+  write(VERIFY_KEY, all);
+}
+
+/**
+ * Aplica las verificaciones manuales sobre un lead: sobrescribe las señales
+ * confirmadas y añade su nota como evidencia citada. Devuelve un lead NUEVO
+ * (no muta) listo para puntuar. Es el puente entre "recoger datos" y "subir
+ * puntuación con evidencia".
+ */
+export function applyVerifications(opp, verifications = getLeadVerifications(opp.id)) {
+  if (!verifications.length) return opp;
+  const signals = { ...(opp.signals || {}) };
+  const evidence = [...(opp.evidence || [])];
+  for (const v of verifications) {
+    signals[v.filter] = { level: v.level, note: v.note };
+    evidence.push({
+      filter: v.filter,
+      type: "verificación",
+      source: "Verificado por analista",
+      note: v.note || "Confirmado manualmente.",
+      tier: 2,
+      url: v.url || "verificación-manual",
+    });
+  }
+  return { ...opp, signals, evidence, _verified: verifications.length };
+}
+
+// ---- Leads añadidos desde dentro de la app ----------------------------------
+//
+// Pablo/Javi pueden añadir leads desde la propia app (sección "Buscar leads").
+// Se guardan aquí, se mezclan con el dataset investigado y se puntúan igual que
+// el resto. Exportables/importables junto al estado para compartir entre ambos.
+
+/** @returns {Array} leads de usuario (ya con forma de oportunidad). */
+export function getUserLeads() {
+  return read(USER_LEADS_KEY, []);
+}
+
+/** Añade o actualiza (por id) un lead de usuario. */
+export function saveUserLead(lead) {
+  const all = getUserLeads().filter((l) => l.id !== lead.id);
+  all.push(lead);
+  write(USER_LEADS_KEY, all);
+  return all;
+}
+
+export function removeUserLead(id) {
+  write(USER_LEADS_KEY, getUserLeads().filter((l) => l.id !== id));
+}
+
 /** Hard reset (used by the UI "reset demo" control). */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY].forEach((k) => storage.removeItem(k));
 }

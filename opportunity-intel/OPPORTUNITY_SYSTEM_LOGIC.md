@@ -242,9 +242,35 @@ reports:
 - **calibration notes** (e.g. "hypothesis accuracy below 50% — tighten evidence
   requirements before shortlisting").
 
-It is intentionally **advisory**: it surfaces directional nudges for a human to
-apply to the filter weights. It does not silently rewrite the engine — the
-conservative posture extends to the system's view of itself.
+### Calibration (the loop feeds back into scoring)
+
+The loop is no longer only advisory — it **adjusts the filter weights**, under
+strict guardrails (`calibration.js`):
+
+- For each filter, it measures whether a **green** signal there predicts a good
+  call (reached *interested*/*meeting*) versus the base success rate. Green that
+  beats the base rate bumps that filter's weight; green that underperforms trims
+  it. Neutral outcomes (*no answer*, *called*, *follow-up*) carry no verdict and
+  are ignored.
+- **Guardrails:** inactive below **6** decisive outcomes; a filter needs **≥3**
+  green observations to move; each nudge is hard-capped at **±15%**; the effect
+  is scaled by how much data backs it. Weights are then **renormalised** to sum
+  to 1.0, so calibration shifts the *balance* between filters, never the overall
+  scale — scores stay comparable, and a noisy first week can't distort the model.
+- Each logged outcome stores the lead's **signal snapshot at call time**, so the
+  calibration is reproducible even if the dataset later changes.
+
+The conservative posture extends to the system's view of itself: it learns in
+small, bounded, explainable steps, and the Learning tab shows exactly which
+filters moved and why.
+
+### Portability
+
+State (status, notes, outcomes) lives in `localStorage`, so it is per-browser.
+`store.exportState()` / `importState()` make it a shareable JSON file: one caller
+exports after a session, another imports, and the merged log recalibrates the
+scoring both of them see. Import is non-destructive — outcomes de-duplicate and
+tracking records merge newest-wins.
 
 ---
 
