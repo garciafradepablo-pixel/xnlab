@@ -16,6 +16,7 @@ const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
 const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
+const VERIFY_KEY = `${NS}verify`;
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
 const mem = new Map();
@@ -309,7 +310,78 @@ export function saveConfig(config) {
   write(CONFIG_KEY, config);
 }
 
+// ---- Verificaciones manuales (cierra huecos grises con evidencia citada) ----
+//
+// El analista revisa la web/reseñas de un lead y confirma un hueco: marca el
+// filtro como verde/amarillo y añade una nota que CUENTA como evidencia citada
+// (fuente = el analista, url = lo que miró). Así sube la puntuación SIN inventar
+// nada — la verificación es real y queda registrada con autor y fecha.
+
+/** @returns {Object<string, Array>} verificaciones por id de lead. */
+export function getVerifications() {
+  return read(VERIFY_KEY, {});
+}
+
+/** Verificaciones de un lead concreto. */
+export function getLeadVerifications(id) {
+  return getVerifications()[id] || [];
+}
+
+/**
+ * Registra una verificación manual de un filtro.
+ * @param {string} id      id del lead
+ * @param {string} filter  clave del filtro (models.FILTER_KEYS)
+ * @param {"green"|"yellow"|"red"} level  veredicto tras revisar
+ * @param {string} note    qué se observó
+ * @param {string} [url]   qué se miró (web/reseñas) — sirve de cita
+ */
+export function addVerification(id, filter, level, note, url) {
+  const all = getVerifications();
+  const list = (all[id] || []).filter((v) => v.filter !== filter); // upsert por filtro
+  list.push({
+    filter, level, note: note || "",
+    url: url || null,
+    by: "analista",
+    at: new Date().toISOString(),
+  });
+  all[id] = list;
+  write(VERIFY_KEY, all);
+  return list;
+}
+
+export function removeVerification(id, filter) {
+  const all = getVerifications();
+  if (!all[id]) return;
+  all[id] = all[id].filter((v) => v.filter !== filter);
+  if (!all[id].length) delete all[id];
+  write(VERIFY_KEY, all);
+}
+
+/**
+ * Aplica las verificaciones manuales sobre un lead: sobrescribe las señales
+ * confirmadas y añade su nota como evidencia citada. Devuelve un lead NUEVO
+ * (no muta) listo para puntuar. Es el puente entre "recoger datos" y "subir
+ * puntuación con evidencia".
+ */
+export function applyVerifications(opp, verifications = getLeadVerifications(opp.id)) {
+  if (!verifications.length) return opp;
+  const signals = { ...(opp.signals || {}) };
+  const evidence = [...(opp.evidence || [])];
+  for (const v of verifications) {
+    signals[v.filter] = { level: v.level, note: v.note };
+    evidence.push({
+      filter: v.filter,
+      type: "verificación",
+      source: "Verificado por analista",
+      note: v.note || "Confirmado manualmente.",
+      tier: 2,
+      url: v.url || "verificación-manual",
+    });
+  }
+  return { ...opp, signals, evidence, _verified: verifications.length };
+}
+
 /** Hard reset (used by the UI "reset demo" control). */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY].forEach((k) => storage.removeItem(k));
 }

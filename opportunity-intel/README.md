@@ -147,10 +147,21 @@ Honest limits, encoded in the scores: the **on-site tension, active pain and
 exact budget priority are still grey** — they need an on-site/reviews check, not
 a press article. So the conservative engine scores these **62–70** (vs the 90s
 the synthetic all-green archetypes hit) and every one reads *"prepare a
-mini-audit first"*. Each card's **Verification block** shows the ~40% verified
+mini-audit first"*. Each card's **Verification block** shows the verified
 share and the exact "confirm before calling" checklist. A real, half-verified
 moment is a *hypothesis*, not a closed case — and a lead is only ever added with
 ≥3 cited evidence points, never fabricated.
+
+**Closing the gaps (manual verification → higher score).** Each gap chip in the
+Verification block is clickable: the analyst checks the site/reviews (30s),
+picks a verdict (green/yellow/red), and leaves a note + the URL they looked at.
+That note becomes a **cited evidence point**, flips the signal, and the lead
+**re-scores immediately** (e.g. Arzábal 71.3 → 84 after confirming two gaps).
+Nothing is fabricated — the verification is real, attributed and dated
+(`store.addVerification` / `applyVerifications`, unit-tested). This is the path
+to raise scores when automatic enrichment can't reach a site (most sites here
+return HTTP 403 to a plain server-side `fetch`, so a human or a headless-browser
+adapter closes the gap).
 
 A note on `--enrich` against these sites: several (e.g. the hotel) are
 client-rendered SPAs that return a near-empty HTML shell to a plain `fetch`. The

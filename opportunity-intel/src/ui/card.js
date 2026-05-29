@@ -171,7 +171,7 @@ function evidenceList(opp) {
   }));
 }
 
-function verificationBlock(opp) {
+function verificationBlock(opp, handlers = {}) {
   const v = verificationProfile(opp);
   const isReal = opp.researched === true;
   if (!isReal && v.gapFilters.length === 0) return null;
@@ -183,12 +183,49 @@ function verificationBlock(opp) {
     el("p", { class: "verif-line", text: `Verificado (citado): ${v.verifiedFilters.length}/10 filtros · ${v.sourceCount} fuente${v.sourceCount === 1 ? "" : "s"}` }),
   ];
   if (v.gapFilters.length) {
-    children.push(el("p", { class: "verif-gaps-h", text: "Confirmar antes de llamar:" }));
-    children.push(el("div", { class: "verif-gaps" }, v.gapFilters.map((k) => el("span", { class: "verif-gap", text: FILTER_BY_KEY[k]?.label || k }))));
+    children.push(el("p", { class: "verif-gaps-h", text: "Confirmar antes de llamar (pulsa para verificar y subir puntuación):" }));
+    const form = el("div", { class: "verify-form" });
+    children.push(
+      el("div", { class: "verif-gaps" }, v.gapFilters.map((k) =>
+        el("button", {
+          class: "verif-gap verif-gap-btn",
+          title: "Verificar este hueco",
+          text: `+ ${FILTER_BY_KEY[k]?.label || k}`,
+          onClick: () => openVerifyForm(form, opp, k, handlers),
+        })
+      ))
+    );
+    children.push(form);
   } else {
     children.push(el("p", { class: "verif-line ok", text: "Todos los filtros con evidencia citada." }));
   }
   return el("div", { class: `verif ${isReal ? "verif-real" : ""}` }, [el("h4", { text: "Verificación" }), ...children]);
+}
+
+// Formulario inline para verificar un hueco: el analista mira la web/reseñas,
+// elige el veredicto y deja una nota; eso se convierte en evidencia y recalcula.
+function openVerifyForm(container, opp, filterKey, handlers) {
+  const label = FILTER_BY_KEY[filterKey]?.label || filterKey;
+  const level = el("select", { class: "learn-f" }, [
+    el("option", { value: "green", text: "✓ Confirmado fuerte (verde)" }),
+    el("option", { value: "yellow", text: "~ Parcial (amarillo)" }),
+    el("option", { value: "red", text: "✗ Negativo (rojo)" }),
+  ]);
+  const note = el("input", { class: "learn-f", placeholder: `Qué observaste sobre "${label}"` });
+  const url = el("input", { class: "learn-f", placeholder: "URL revisada (web, reseñas…) — opcional" });
+  const save = el("button", {
+    class: "btn-save",
+    text: "Guardar verificación",
+    onClick: () => {
+      handlers.onVerify?.(opp.id, filterKey, level.value, note.value, url.value);
+    },
+  });
+  container.innerHTML = "";
+  container.appendChild(el("div", { class: "verify-form-inner" }, [
+    el("div", { class: "verify-form-h", text: `Verificar: ${label}` }),
+    el("div", { class: "learn-grid" }, [level, note, url]),
+    save,
+  ]));
 }
 
 function bullets(arr) {
@@ -341,7 +378,7 @@ export function renderCard(opp, record, handlers = {}) {
     sec("Respuesta recomendada", el("p", { class: "resp", html: `${esc(opp.objectionResponse)}` })),
     sec("Razones para NO llamar", bullets(opp.reasonsNotToCall)),
     sec("Qué invalidaría la tesis", bullets(opp.invalidators)),
-    verificationBlock(opp),
+    verificationBlock(opp, handlers),
     sec("Notas", notes),
     el("div", { class: "ops-detail" }, [
       el("button", { class: "btn-learn", text: "+ Registrar resultado de llamada", onClick: () => learnBox.classList.toggle("open") }),

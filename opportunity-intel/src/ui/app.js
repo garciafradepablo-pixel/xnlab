@@ -44,7 +44,14 @@ export async function mount(rootEl) {
 }
 
 function activeCandidates() {
-  return state.dataset === "researched" ? RESEARCHED : SEED;
+  const base = state.dataset === "researched" ? RESEARCHED : SEED;
+  // Aplica las verificaciones manuales del analista antes de puntuar: los
+  // huecos confirmados se vuelven evidencia citada y suben la puntuación.
+  const verifications = store.getVerifications();
+  if (!Object.keys(verifications).length) return base;
+  return base.map((o) =>
+    verifications[o.id] ? store.applyVerifications(o, verifications[o.id]) : o
+  );
 }
 
 async function recompute() {
@@ -445,6 +452,11 @@ function buildCards() {
       // the dataset later changes. Then recompute — outcomes recalibrate scores.
       const lead = (state.results?.all || []).find((o) => o.id === id);
       store.addOutcome({ ...outcome, signals: lead?.signals || null });
+      recompute().then(render);
+    },
+    onVerify: (id, filter, level, note, url) => {
+      // El analista confirma un hueco → se vuelve evidencia citada y recalcula.
+      store.addVerification(id, filter, level, note, url);
       recompute().then(render);
     },
   };
