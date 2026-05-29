@@ -829,7 +829,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
-          paddingBottom: "clamp(0px, 8svh, 80px)",
+          // Responsive vertical placement WITHOUT a media query (Tailwind
+          // v4 / Lightning CSS was dropping the @media class rule). The
+          // `(640px - 100vw)` term is positive only below a 640px viewport,
+          // so on phones the mark block drops clear of the lowered orb dome
+          // (no more eyebrow/dome collision); on desktop both terms resolve
+          // to the original raise. Pure inline calc — never touched by the
+          // CSS pipeline.
+          paddingTop: "max(0px, calc((640px - 100vw) * 0.34))",
+          paddingBottom: "clamp(0px, calc((100vw - 480px) * 0.18), 80px)",
           y: wordY,
           opacity: wordOpacity,
           willChange: "transform, opacity",
@@ -1092,8 +1100,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          paddingBottom: "clamp(20px,3vh,36px)",
-          gap: "clamp(26px,3.6vh,44px)",
+          // Footer breathing room + safe-area inset so the scarcity line
+          // never tucks under the phone's home indicator / browser chrome.
+          // Extra bottom space below 640px via the same media-query-free
+          // calc trick.
+          paddingBottom:
+            "calc(env(safe-area-inset-bottom, 0px) + clamp(22px,3vh,36px) + max(0px, calc((640px - 100vw) * 0.045)))",
+          gap: "clamp(18px,2.6vh,44px)",
           pointerEvents: "none",
           opacity: bottomOpacity,
           willChange: "opacity",
