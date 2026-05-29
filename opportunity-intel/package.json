@@ -6,6 +6,7 @@
   "description": "01 Agency / XN LAB — Opportunity Intelligence System. Detects business moments, not companies.",
   "scripts": {
     "dev": "python3 -m http.server 4010",
-    "test": "node test/scoring.test.mjs"
+    "run:leads": "node bin/run.mjs",
+    "test": "node test/scoring.test.mjs && node test/enrichment.test.mjs"
   }
 }

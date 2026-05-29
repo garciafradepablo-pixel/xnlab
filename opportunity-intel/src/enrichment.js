@@ -6,10 +6,10 @@
 // press, directories, job boards, funding feeds, websites, social, SEO/web
 // analysis — is represented here as an adapter with a stable interface.
 //
-// In the demo build the adapters return null / pass-through. To go live you
-// implement the `fetch*` methods (server-side, with API keys) and the rest of
-// the pipeline does not change. The contract is: an adapter takes a partial
-// candidate and returns *evidence points* and/or *signal hints*.
+// The WebsiteAdapter is a *real* implementation: given a reachable URL it
+// fetches the page and turns observable facts into cited evidence. The other
+// adapters are documented stubs you implement (server-side, with API keys) to
+// go fully live; the rest of the pipeline does not change.
 //
 // IMPORTANT (house ethics): adapters must only attach evidence they can cite.
 // An adapter that cannot find a source returns nothing. The system never
@@ -65,16 +65,38 @@ export class GoogleMapsAdapter extends SourceAdapter {
   }
 }
 
+// ---- Website adapter: a REAL implementation ---------------------------------
+
 export class WebsiteAdapter extends SourceAdapter {
   constructor(opts = {}) {
     super({ name: "website", ...opts });
+    // Copyright years older than this (relative to now) read as staleness.
+    this.staleAfterYears = opts.staleAfterYears ?? 2;
+    this.timeoutMs = opts.timeoutMs ?? 8000;
   }
-  // LIVE: fetch the site → detect last-modified / copyright year, mobile
-  // responsiveness, page weight, presence of a booking funnel, broken links,
-  // Lighthouse/PSI score, schema markup. Feeds visibleTension, activePain,
-  // actionableLever.
-  async enrich() {
-    return empty();
+
+  // Fetches the candidate's site and turns observable facts into cited
+  // evidence. The analysis is pure (analyzeWebsiteHtml) so it is testable
+  // without a network; this method only handles fetch + plumbing.
+  async enrich(candidate) {
+    const url = candidate?.website;
+    if (!url || typeof fetch === "undefined") return empty();
+    let html;
+    try {
+      const ctrl =
+        typeof AbortController !== "undefined" ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), this.timeoutMs) : null;
+      const res = await fetch(url, { signal: ctrl?.signal, redirect: "follow" });
+      if (timer) clearTimeout(timer);
+      if (!res.ok) return empty();
+      html = await res.text();
+    } catch {
+      return empty();
+    }
+    const findings = analyzeWebsiteHtml(html, {
+      staleAfterYears: this.staleAfterYears,
+    });
+    return findingsToResult(findings, url);
   }
 }
 
@@ -131,16 +153,152 @@ export class FundingAdapter extends SourceAdapter {
   }
 }
 
-/** Default adapter set, all disabled-for-network in the demo. */
+// ---- Pure website analysis (no network — unit-testable) ---------------------
+
+const CURRENT_YEAR = new Date().getFullYear();
+
+// Booking / conversion intent keywords (EN + ES). Absence on a service
+// business is a lever signal.
+const BOOKING_KEYWORDS = [
+  "reservar", "reserva", "pedir cita", "cita previa", "agendar", "agenda",
+  "book now", "book a", "booking", "schedule", "appointment", "request a quote",
+  "solicita", "presupuesto",
+];
+
+// Template / DIY builders. Not damning alone, but a perception signal for a
+// premium business.
+const GENERATOR_HINTS = [
+  ["wix", "Wix"],
+  ["squarespace", "Squarespace"],
+  ["wordpress", "WordPress"],
+  ["godaddy", "GoDaddy builder"],
+  ["weebly", "Weebly"],
+  ["jimdo", "Jimdo"],
+];
+
+/**
+ * Analyse raw HTML for tension/lever/pain signals. Pure and synchronous.
+ *
+ * @param {string} html
+ * @param {{staleAfterYears?:number}} [opts]
+ * @returns {{ copyrightYear:number|null, stale:boolean, hasViewport:boolean,
+ *   hasBooking:boolean, generator:string|null, title:string|null }}
+ */
+export function analyzeWebsiteHtml(html, opts = {}) {
+  const staleAfterYears = opts.staleAfterYears ?? 2;
+  const text = String(html || "");
+  const lower = text.toLowerCase();
+
+  // Copyright year: the latest 4-digit year near a © / "copyright".
+  let copyrightYear = null;
+  const copyRe = /(?:©|&copy;|copyright)\D{0,40}(\d{4})|(\d{4})\D{0,12}(?:©|&copy;|todos los derechos|all rights)/gi;
+  let m;
+  while ((m = copyRe.exec(text))) {
+    const y = parseInt(m[1] || m[2], 10);
+    if (y >= 2000 && y <= CURRENT_YEAR && (copyrightYear === null || y > copyrightYear))
+      copyrightYear = y;
+  }
+  const stale =
+    copyrightYear !== null && CURRENT_YEAR - copyrightYear >= staleAfterYears;
+
+  const hasViewport = /<meta[^>]+name=["']?viewport["']?/i.test(text);
+  const hasBooking = BOOKING_KEYWORDS.some((k) => lower.includes(k));
+
+  let generator = null;
+  for (const [needle, label] of GENERATOR_HINTS) {
+    if (lower.includes(needle)) {
+      generator = label;
+      break;
+    }
+  }
+
+  const titleMatch = text.match(/<title[^>]*>([^<]*)<\/title>/i);
+  const title = titleMatch ? titleMatch[1].trim() : null;
+
+  return { copyrightYear, stale, hasViewport, hasBooking, generator, title };
+}
+
+/** Convert website findings into evidence points + signal hints. */
+export function findingsToResult(findings, url) {
+  const out = empty();
+  if (findings.stale) {
+    out.evidence.push({
+      filter: "visibleTension",
+      type: "web",
+      source: "Website audit",
+      url,
+      note: `Site copyright stops at ${findings.copyrightYear} — likely not updated in ${CURRENT_YEAR - findings.copyrightYear}+ years.`,
+      tier: 2,
+    });
+  }
+  if (!findings.hasViewport) {
+    out.evidence.push({
+      filter: "activePainSignal",
+      type: "web",
+      source: "Website audit",
+      url,
+      note: "No mobile viewport meta tag — the site is likely not mobile-responsive.",
+      tier: 2,
+    });
+    out.signalHints.activePainSignal = { level: "yellow" };
+  }
+  if (!findings.hasBooking) {
+    out.evidence.push({
+      filter: "actionableLever",
+      type: "web",
+      source: "Website audit",
+      url,
+      note: "No booking / quote / appointment call-to-action detected — clear conversion lever.",
+      tier: 2,
+    });
+    out.signalHints.actionableLever = { level: "green" };
+  }
+  if (findings.generator) {
+    out.evidence.push({
+      filter: "visibleTension",
+      type: "web",
+      source: "Website audit",
+      url,
+      note: `Built on ${findings.generator} — template-grade presentation.`,
+      tier: 1,
+    });
+  }
+  return out;
+}
+
+// ---- Adapter factories ------------------------------------------------------
+
+/**
+ * Demo adapter set. DISABLED by default so the demo never touches the network
+ * (the seeded URLs are placeholders). Use liveAdapters() in production.
+ */
 export function defaultAdapters() {
   return [
-    new GoogleMapsAdapter(),
-    new WebsiteAdapter(),
-    new LinkedInAdapter(),
-    new InstagramAdapter(),
-    new PressAdapter(),
-    new JobsAdapter(),
-    new FundingAdapter(),
+    new GoogleMapsAdapter({ enabled: false }),
+    new WebsiteAdapter({ enabled: false }),
+    new LinkedInAdapter({ enabled: false }),
+    new InstagramAdapter({ enabled: false }),
+    new PressAdapter({ enabled: false }),
+    new JobsAdapter({ enabled: false }),
+    new FundingAdapter({ enabled: false }),
+  ];
+}
+
+/**
+ * Live adapter set — the WebsiteAdapter is enabled (it only needs a reachable
+ * URL); the API-backed adapters stay disabled until you implement them.
+ * Pass `{ website:true, ... }` overrides to toggle individual sources.
+ */
+export function liveAdapters(overrides = {}) {
+  const on = (name, def) => overrides[name] ?? def;
+  return [
+    new GoogleMapsAdapter({ enabled: on("googleMaps", false) }),
+    new WebsiteAdapter({ enabled: on("website", true) }),
+    new LinkedInAdapter({ enabled: on("linkedin", false) }),
+    new InstagramAdapter({ enabled: on("instagram", false) }),
+    new PressAdapter({ enabled: on("press", false) }),
+    new JobsAdapter({ enabled: on("jobs", false) }),
+    new FundingAdapter({ enabled: on("funding", false) }),
   ];
 }
 

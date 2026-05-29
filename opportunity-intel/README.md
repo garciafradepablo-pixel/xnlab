@@ -50,13 +50,31 @@ Any static server works (`npx serve`, etc.). Opening `index.html` directly via
 `file://` will **not** work because browsers block ES‑module imports over
 `file://` — use a local server.
 
+### Generate the list headless (automation)
+
+For the "wake up with 20 companies to call" workflow, run the pipeline without
+the UI and write the exports to disk (cron-friendly):
+
+```bash
+node bin/run.mjs                         # Top 20 from the seed → ./out
+node bin/run.mjs --final 10 --out /tmp/leads
+node bin/run.mjs --enrich                # also run live adapters (needs network)
+```
+
+Flags: `--final N`, `--conservatism 0..1`, `--min-score N`, `--out DIR`,
+`--enrich` (use live adapters), `--quiet`.
+
 ### Run the engine tests
 
 ```bash
-node test/scoring.test.mjs       # or: npm test
+npm test                                 # scoring + enrichment suites
+# or individually:
+node test/scoring.test.mjs
+node test/enrichment.test.mjs
 ```
 
-These exercise the scoring engine and the full pipeline with no install.
+These exercise the scoring engine, the pipeline, and the website parsers with
+no install.
 
 ---
 
@@ -65,10 +83,11 @@ These exercise the scoring engine and the full pipeline with no install.
 ```
 opportunity-intel/
 ├── index.html                 # app shell (module entry)
+├── bin/run.mjs                # headless runner → CSV/JSON/call-sheet (cron-friendly)
 ├── src/
 │   ├── models.js              # data schema, the 10 filters, enums, weights, explainers
 │   ├── scoring.js             # the scoring engine (pure, testable, the brain)
-│   ├── enrichment.js          # source adapters / connectors (the live-data seam)
+│   ├── enrichment.js          # source adapters + a real WebsiteAdapter (the live-data seam)
 │   ├── pipeline.js            # discover → enrich → filter → score → shortlist → final
 │   ├── store.js               # localStorage persistence + the learning loop
 │   ├── export.js              # CSV / JSON / PDF / call sheet
@@ -78,7 +97,9 @@ opportunity-intel/
 │       ├── card.js            # full opportunity card renderer
 │       ├── dom.js             # tiny DOM helpers
 │       └── styles.css         # styling (function over decoration)
-└── test/scoring.test.mjs      # zero-install engine + pipeline tests
+└── test/
+    ├── scoring.test.mjs       # engine + pipeline tests
+    └── enrichment.test.mjs    # website-parser + adapter tests
 ```
 
 **The logic is not hardcoded in the UI.** `models.js`, `scoring.js` and
@@ -105,9 +126,24 @@ through the connector layer once live (below). The UI marks the data as
 
 All external research happens through **adapters** in `src/enrichment.js`. Each
 is a class with a single `async enrich(candidate)` method that returns
-`{ evidence[], signalHints{}, fields{} }`. The demo adapters are no-ops; to go
-live you implement them (server-side, with API keys) and **nothing else in the
-pipeline changes**.
+`{ evidence[], signalHints{}, fields{} }`.
+
+The **`WebsiteAdapter` is already a working implementation**: given a reachable
+URL it fetches the page and emits cited evidence — stale copyright year, missing
+mobile viewport, absent booking/quote CTA, template builders (Wix/Squarespace/…).
+Its analysis (`analyzeWebsiteHtml`) is pure and unit-tested. The remaining
+API-backed adapters are documented stubs you implement; `liveAdapters()`
+enables the website adapter by default and lets you toggle the rest:
+
+```js
+import { runPipeline } from "./src/pipeline.js";
+import { liveAdapters } from "./src/enrichment.js";
+const adapters = liveAdapters({ website: true, press: true }); // toggle sources
+const result = await runPipeline(candidates, config, adapters);
+```
+
+(The demo uses `defaultAdapters()`, which are all **disabled** so the UI never
+touches the network — the seeded URLs are placeholders.)
 
 | Adapter | Live implementation should return | Feeds filters |
 |---|---|---|

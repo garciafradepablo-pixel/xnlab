@@ -24,7 +24,7 @@ const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
   view: "pipeline", // pipeline | table | cards | learning
-  filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, search: "" },
+  filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" },
 };
 
 let root;
@@ -54,6 +54,8 @@ function visibleOpps() {
     if (f.classification !== "all" && s.classification !== f.classification) return false;
     if (f.priority !== "all" && s.callPriority !== f.priority) return false;
     if (s.evidenceCount < f.minEvidence) return false;
+    if (s.confidence < f.minConfidence) return false;
+    if (s.evidence < f.minEvStrength) return false;
     if (f.search) {
       const hay = `${o.company} ${o.subsector} ${o.city} ${o.decisionMaker?.name || ""}`.toLowerCase();
       if (!hay.includes(f.search.toLowerCase())) return false;
@@ -233,6 +235,14 @@ function filterBar() {
     el("label", { class: "minev" }, [
       el("span", { text: "Min evidence" }),
       el("input", { type: "number", min: "0", max: "10", value: String(f.minEvidence), onChange: (e) => { f.minEvidence = +e.target.value; render(); } }),
+    ]),
+    el("label", { class: "minev" }, [
+      el("span", { text: "Min score" }),
+      el("input", { type: "number", min: "0", max: "100", value: String(f.minConfidence), onChange: (e) => { f.minConfidence = +e.target.value; render(); } }),
+    ]),
+    el("label", { class: "minev" }, [
+      el("span", { text: "Min evid. strength" }),
+      el("input", { type: "number", min: "0", max: "100", value: String(f.minEvStrength), onChange: (e) => { f.minEvStrength = +e.target.value; render(); } }),
     ]),
   ]);
 }
