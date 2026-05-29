@@ -148,7 +148,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v4 · Connect" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v5 · radar" }),
     ]),
   ]);
 }
@@ -425,7 +425,7 @@ function buildTable() {
         el("td", { class: "td-company", text: o.company }),
         el("td", { text: SECTOR_BY_KEY[o.sector]?.label || o.sector }),
         el("td", { text: o.city }),
-        el("td", {}, el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : s.classification === "01" ? "01" : "—" })),
+        el("td", {}, el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : s.classification === "01" ? "01" : s.classification === "unqualified" ? "?" : "—" })),
         el("td", { class: "num strong", text: String(s.confidence) }),
         el("td", { class: "num", text: String(s.evidence) }),
         el("td", { class: "num", text: String(s.conversation) }),
@@ -569,7 +569,17 @@ function buildCards() {
       recompute().then(render);
     },
   };
-  if (!rows.length) return el("p", { class: "empty", text: "Ningún candidato coincide con los filtros actuales." });
+  if (!rows.length) {
+    const f = state.filters;
+    const filtering = f.search || f.sector !== "all" || f.city !== "all" || f.classification !== "all" || f.priority !== "all" || f.minEvidence || f.minConfidence || f.minEvStrength;
+    return el("div", { class: "empty-state" }, [
+      el("p", { class: "empty", text: filtering ? "Ningún candidato coincide con los filtros actuales (puede que un filtro esté ocultando leads)." : "Aún no hay oportunidades. Pulsa ⚡ Nueva tanda de leads para captar." }),
+      filtering ? el("button", { class: "btn", text: "✕ Limpiar filtros", onClick: () => {
+        state.filters = { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" };
+        render();
+      } }) : null,
+    ]);
+  }
   return el("div", { class: "cards" }, rows.map((o) => renderCard(o, tracking[o.id], handlers)));
 }
 

@@ -224,6 +224,7 @@ export const SECTOR_BY_KEY = Object.fromEntries(SECTORS.map((s) => [s.key, s]));
 export const CLASSIFICATIONS = {
   "01": "01 Agency",
   xn: "XN LAB",
+  unqualified: "Por evaluar",
   discard: "No merece llamada",
 };
 
@@ -241,6 +242,7 @@ export const RECOMMENDATIONS = {
   call_immediately: "Llamar de inmediato",
   prepare_audit: "Preparar mini-auditoría primero",
   secondary: "Mantener como secundario",
+  enrich: "Enriquecer antes de llamar",
   discard: "Descartar",
 };
 

@@ -97,9 +97,12 @@ export async function runBatch({
       });
       const scores = scoreOpportunity(lead, config);
       evaluated++;
-      // Solo entran clientes EVALUADOS que no sean descarte y superen el corte.
-      if (scores.classification === "discard") continue;
-      if (scores.confidence < minScore) continue;
+      // Una empresa recién descubierta es real y del sector/ciudad correctos:
+      // es un cliente potencial VÁLIDO aunque puntúe bajo (aún no sabemos su
+      // "momento"). Solo la rechazamos si es un DESCARTE DURO (4+ banderas rojas
+      // o encaje estratégico negativo). El resto entra para enriquecer.
+      if (scores.redCount >= 4) continue;
+      if (scores.confidence < minScore) continue; // minScore por defecto 0 = deja entrar
       seenNames.add(nameKey);
       onSave(lead);
       added++;

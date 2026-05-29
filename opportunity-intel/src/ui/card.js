@@ -119,6 +119,66 @@ function signalDots(opp) {
   );
 }
 
+// ---- Radar de percepción: las 10 señales como abanico de visión -------------
+// Muestra de un vistazo QUÉ VE Connect en la empresa: cada eje es un filtro;
+// cuanto más lejos del centro, más fuerte la señal. Verde fuerte / rojo débil.
+const LEVEL_RADIUS = { green: 1, yellow: 0.6, grey: 0.32, red: 0.12 };
+const LEVEL_COLOR = { green: "#3fb950", yellow: "#d4a72c", grey: "#6b7280", red: "#f04747" };
+
+function perceptionRadar(opp) {
+  const n = FILTERS.length;
+  const cx = 90, cy = 90, R = 72;
+  const pt = (i, r) => {
+    const a = (Math.PI * 2 * i) / n - Math.PI / 2;
+    return [cx + Math.cos(a) * R * r, cy + Math.sin(a) * R * r];
+  };
+  // Anillos de referencia.
+  const rings = [0.25, 0.5, 0.75, 1].map((r) =>
+    `<circle cx="${cx}" cy="${cy}" r="${(R * r).toFixed(1)}" fill="none" stroke="#2a2e37" stroke-width="1"/>`
+  ).join("");
+  // Ejes.
+  const axes = FILTERS.map((_, i) => {
+    const [x, y] = pt(i, 1);
+    return `<line x1="${cx}" y1="${cy}" x2="${x.toFixed(1)}" y2="${y.toFixed(1)}" stroke="#2a2e37" stroke-width="1"/>`;
+  }).join("");
+  // Polígono de percepción + puntos de color por nivel.
+  const coords = FILTERS.map((f, i) => {
+    const lvl = opp.signals?.[f.key]?.level || "grey";
+    return pt(i, LEVEL_RADIUS[lvl] ?? 0.32);
+  });
+  const poly = coords.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
+  const dots = FILTERS.map((f, i) => {
+    const lvl = opp.signals?.[f.key]?.level || "grey";
+    const [x, y] = coords[i];
+    return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="3" fill="${LEVEL_COLOR[lvl]}"/>`;
+  }).join("");
+  // Etiquetas cortas en cada eje.
+  const labels = FILTERS.map((f, i) => {
+    const [x, y] = pt(i, 1.18);
+    const short = (f.label || "").split(" ")[0];
+    return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" fill="#9aa3b0" font-size="7.5" text-anchor="middle" dominant-baseline="middle">${esc(short)}</text>`;
+  }).join("");
+  return el("div", { class: "radar", html:
+    `<svg viewBox="0 0 180 180" width="100%" height="auto" aria-label="Radar de percepción">
+      ${rings}${axes}
+      <polygon points="${poly}" fill="rgba(201,162,39,.18)" stroke="#c9a227" stroke-width="1.5"/>
+      ${dots}${labels}
+    </svg>` });
+}
+
+// ---- Lo que Connect "piensa": razonamiento sintetizado y legible -----------
+function reasoningLine(opp) {
+  const s = opp.scores;
+  const greens = FILTERS.filter((f) => (opp.signals?.[f.key]?.level) === "green").map((f) => f.label.toLowerCase());
+  const grises = FILTERS.filter((f) => (opp.signals?.[f.key]?.level || "grey") === "grey").map((f) => f.label.toLowerCase());
+  const cls = s.classification;
+  const casa = cls === "xn" ? "una transformación XN LAB" : cls === "01" ? "un proyecto 01 Agency" : cls === "unqualified" ? "un prospecto a enriquecer" : "un descarte";
+  const fuerte = greens.length ? `Veo fuerza en ${greens.slice(0, 3).join(", ")}.` : "Aún no veo señales fuertes confirmadas.";
+  const falta = grises.length ? ` Me falta confirmar ${grises.slice(0, 3).join(", ")}.` : "";
+  const verdict = ` Lo leo como ${casa} (confianza ${s.confidence}).`;
+  return `${fuerte}${falta}${verdict}`;
+}
+
 // ---- Copy-to-clipboard button ----------------------------------------------
 function copyBtn(text, label = "Copiar") {
   const b = el("button", {
@@ -385,8 +445,18 @@ export function renderCard(opp, record, handlers = {}) {
     el("ul", { class: "bullets" }, fr2.checks.map((c) => el("li", { text: c }))),
   ]);
 
+  // Radar de percepción + lo que Connect "piensa".
+  const radarBlock = el("div", { class: "sec radar-sec" }, [
+    el("h4", { text: "Radar de percepción — qué ve Connect" }),
+    el("div", { class: "radar-wrap" }, [
+      perceptionRadar(opp),
+      el("p", { class: "reasoning", html: `<span class="reason-ic">🧠</span> ${esc(reasoningLine(opp))}` }),
+    ]),
+  ]);
+
   const detail = el("details", { class: "c-detail" }, [
     el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
+    radarBlock,
     lifeBlock,
     viabilityBlock,
     pathBlock,

@@ -42,7 +42,7 @@ const cand = dental[0];
 const lead = buildLead({ company: cand.company, sector: cand.sector, subsector: cand.subsector, city: cand.city, website: cand.website });
 const s = scoreOpportunity(lead, DEFAULT_CONFIG);
 ok(typeof s.confidence === "number" && s.confidence >= 0, "el candidato añadido se puntúa");
-ok(s.classification === "discard" || s.classification === "01" || s.classification === "xn", "recibe una clasificación válida");
+ok(["discard", "unqualified", "01", "xn"].includes(s.classification), "recibe una clasificación válida");
 // Conservador: un candidato crudo (sin momento ni evidencia) NO debe salir alto.
 ok(s.confidence < 60, "un candidato crudo puntúa bajo hasta enriquecerlo (conservador)");
 

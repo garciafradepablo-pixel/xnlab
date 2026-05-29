@@ -215,11 +215,14 @@ function economicPotential(opp, conservatism, closing) {
 }
 
 function classify(opp, { confidence, econPotential, redCount }, config) {
+  // DESCARTE DURO: pruebas negativas reales (no "falta de datos").
   if (redCount >= 4) return "discard";
   if (levelOf(opp, "strategicFit") === "red") return "discard";
-  if (confidence < config.minScore) return "discard";
-  // 3 reds: keep only if the prize is genuinely large.
   if (redCount === 3 && econPotential !== "very high") return "discard";
+  // POR EVALUAR: empresa válida pero aún sin "momento"/evidencia suficiente
+  // para cualificar. No es un rechazo — es un prospecto a enriquecer. Esto
+  // separa "no sabemos todavía" de "no nos sirve".
+  if (confidence < config.minScore) return "unqualified";
   // The 01-vs-XN split is about engagement *scope*, not just whether the
   // client can pay €5k. XN LAB is the higher-ticket transformation lab: an
   // opportunity only reaches it if the scoped first move is itself XN-tier
@@ -240,7 +243,8 @@ function recommend(
   config
 ) {
   if (classification === "discard") return "discard";
-  if (confidence < (config.minScore ?? 45)) return "discard";
+  // "Por evaluar": prospecto válido sin momento confirmado → enriquecer.
+  if (classification === "unqualified") return "enrich";
   if (confidence >= 76 && evidence >= 55 && conversation >= 55 && redCount <= 1)
     return "call_immediately";
   if (confidence >= 60) return "prepare_audit";
