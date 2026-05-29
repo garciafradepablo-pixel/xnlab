@@ -28,6 +28,7 @@ import { failureReason } from "../diagnosis.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { buildLead } from "../newlead.js";
 import { discover } from "../discovery.js";
+import { runBatch } from "../agent.js";
 import * as xport from "../export.js";
 
 const state = {
@@ -140,14 +141,14 @@ function goView(view) {
 function header() {
   return el("header", { class: "app-head" }, [
     el("div", { class: "brand" }, [
-      el("span", { class: "logo", text: "01 · XN LAB" }),
-      el("span", { class: "tagline", text: "Inteligencia de Oportunidades — momentos, no empresas" }),
+      el("span", { class: "logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+      el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
     ]),
     el("div", { class: "head-actions" }, [
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v3 · real" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v4 · Connect" }),
     ]),
   ]);
 }
@@ -443,11 +444,60 @@ function buildTable() {
 
 function cardsView() {
   return el("div", {}, [
-    el("h2", { text: "Oportunidades" }),
+    el("div", { class: "view-head" }, [
+      el("h2", { text: "Oportunidades" }),
+      agentButton(),
+    ]),
+    el("div", { class: "agent-report", id: "agent-report" }),
     topPicks(),
     filterBar(),
     el("div", { class: "results-region" }, [buildCards()]),
   ]);
+}
+
+// Botón del agente: lanza una tanda, evalúa y mete los nuevos en el ranking.
+function agentButton() {
+  const btn = el("button", { class: "btn-agent", html: "⚡ Nueva tanda de leads" });
+  btn.addEventListener("click", async () => {
+    btn.disabled = true;
+    btn.innerHTML = "🧠 Buscando y evaluando…";
+    const report = $("#agent-report", root);
+    if (report) report.innerHTML = "";
+    // Nombres ya presentes (dataset activo + leads de usuario) para no duplicar.
+    const existing = new Set((state.results?.all || []).map((o) => o.company));
+    let added = 0;
+    const res = await runBatch({
+      config: state.config,
+      existingNames: existing,
+      perBatch: 4,
+      minScore: 0,
+      onSave: (lead) => { store.saveUserLead(lead); added++; },
+    });
+    await recompute();
+    render();
+    // Tras el render, pinta el informe del agente.
+    const rep = $("#agent-report", root);
+    if (rep) {
+      rep.appendChild(agentReport(res));
+    }
+  });
+  return btn;
+}
+
+function agentReport(res) {
+  const box = el("div", { class: `agent-card ${res.added ? "ok" : "empty"}` });
+  if (res.added) {
+    box.appendChild(el("p", { class: "agent-headline", html: `🐋 <b>${res.added} nuevos clientes potenciales</b> evaluados y añadidos al ranking · mejor puntuación <b>${res.best}</b>` }));
+  } else {
+    box.appendChild(el("p", { class: "agent-headline", text: `Revisé ${res.seen} empresas pero ninguna nueva pasó el corte esta vez. Pulsa otra vez para barrer más ciudades/sectores.` }));
+  }
+  box.appendChild(el("p", { class: "agent-sub", text: `Exploradas ${res.seen} · evaluadas ${res.evaluated} · búsquedas: ${res.queries.join(" · ")}` }));
+  if (res.sample.length) {
+    box.appendChild(el("div", { class: "agent-sample" }, res.sample.map((s) =>
+      el("span", { class: "agent-chip", text: `${s.confidence} · ${s.company}` })
+    )));
+  }
+  return box;
 }
 
 // Franja "para llamar ya": los mejores leads, lo primero que se ve. Llevan a la

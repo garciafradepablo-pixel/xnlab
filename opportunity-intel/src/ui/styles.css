@@ -41,9 +41,22 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 /* ---- Header ---- */
 .app-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 22px; border-bottom: 1px solid var(--line); background: var(--panel);
+  padding: 14px 22px; border-bottom: 1px solid var(--line);
+  position: relative; overflow: hidden;
+  /* Capa "neuronal": nodos tenues que laten con desplazamiento del fondo. */
+  background:
+    radial-gradient(circle at 12% 30%, rgba(201,162,39,.10) 0 2px, transparent 3px),
+    radial-gradient(circle at 28% 70%, rgba(74,158,255,.10) 0 2px, transparent 3px),
+    radial-gradient(circle at 47% 25%, rgba(139,123,216,.10) 0 2px, transparent 3px),
+    radial-gradient(circle at 66% 60%, rgba(201,162,39,.08) 0 2px, transparent 3px),
+    radial-gradient(circle at 82% 35%, rgba(74,158,255,.08) 0 2px, transparent 3px),
+    radial-gradient(circle at 92% 72%, rgba(139,123,216,.10) 0 2px, transparent 3px),
+    var(--panel);
+  background-size: 220% 100%; animation: neural 16s ease-in-out infinite alternate;
 }
-.brand { display: flex; flex-direction: column; }
+@keyframes neural { from { background-position: 0% 0; } to { background-position: 60% 0; } }
+.brand { display: flex; flex-direction: column; position: relative; z-index: 1; }
+.head-actions { position: relative; z-index: 1; }
 .logo { font-weight: 700; letter-spacing: 2px; }
 .tagline { font-size: 12px; color: var(--ink-dim); }
 .head-actions { display: flex; gap: 12px; align-items: center; }
@@ -98,6 +111,34 @@ html, body { height: 100%; }
 .check { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink); }
 output { font-size: 12px; color: var(--accent); }
 .btn-primary { width: 100%; background: var(--accent); color: #1a1400; border: 0; border-radius: 7px; padding: 10px; font-weight: 600; margin-top: 6px; }
+
+/* ---- Marca Connect + agente ---- */
+.logo-sub { font-weight: 500; color: var(--accent); letter-spacing: 1px; font-size: 12px; }
+.view-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+/* Botón del agente: vivo, con pulso "neuronal". */
+.btn-agent {
+  background: linear-gradient(110deg, #1c1f26, #2a2433);
+  color: var(--ink); border: 1px solid var(--accent); border-radius: 999px;
+  padding: 10px 18px; font-weight: 700; font-size: 13px; cursor: pointer;
+  box-shadow: 0 0 0 0 rgba(201,162,39,.5); animation: pulse 2.6s infinite;
+  position: relative; overflow: hidden;
+}
+.btn-agent:hover { filter: brightness(1.12); }
+.btn-agent:disabled { opacity: .8; cursor: wait; animation: none; }
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(201,162,39,.45); }
+  70% { box-shadow: 0 0 0 12px rgba(201,162,39,0); }
+  100% { box-shadow: 0 0 0 0 rgba(201,162,39,0); }
+}
+.agent-report { margin: 12px 0 0; }
+.agent-card { border-radius: 12px; padding: 12px 14px; margin-bottom: 6px; border: 1px solid var(--line); animation: fadein .4s ease; }
+.agent-card.ok { background: linear-gradient(180deg, rgba(63,185,80,.10), rgba(63,185,80,.02)); border-color: rgba(63,185,80,.4); }
+.agent-card.empty { background: var(--panel); }
+.agent-headline { margin: 0 0 4px; font-size: 14px; }
+.agent-sub { margin: 0; font-size: 11.5px; color: var(--ink-dim); }
+.agent-sample { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.agent-chip { font-size: 11px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; font-variant-numeric: tabular-nums; }
+@keyframes fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
 .btn-primary:hover { filter: brightness(1.08); }
 .config-note { font-size: 11px; color: var(--ink-dim); margin-top: 12px; }
 
