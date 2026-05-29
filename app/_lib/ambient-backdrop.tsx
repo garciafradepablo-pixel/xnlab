@@ -70,8 +70,10 @@ export function AmbientBackdrop() {
           inset: 0,
           zIndex: 0,
           pointerEvents: "none",
-          background:
-            "radial-gradient(ellipse 58% 50% at 80% 28%, rgba(154,92,184,0.07) 0%, rgba(120,72,160,0.022) 42%, transparent 70%)",
+          background: [
+            "radial-gradient(ellipse 56% 48% at 82% 26%, rgba(178,86,196,0.13) 0%, rgba(132,76,176,0.035) 42%, transparent 70%)",
+            "radial-gradient(ellipse 54% 50% at 10% 70%, rgba(58,168,196,0.1) 0%, rgba(46,128,168,0.028) 44%, transparent 70%)",
+          ].join(", "),
           willChange: "opacity",
         }}
         initial={{ opacity: 0.7 }}

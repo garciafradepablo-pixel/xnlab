@@ -1,6 +1,6 @@
 "use client";
 import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useInView, useScroll } from "framer-motion";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
@@ -138,6 +138,40 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   // cost meaningfully. The state is preserved on return via
   // framer-motion's animate={false} freeze pattern.
   const inView = useInView(ref, { amount: 0.15 });
+
+  // Star / cosmic-dust field. A single 1px node carries the whole field
+  // as one box-shadow list (N stars, zero extra DOM, painted once), so it
+  // fills the negative space with depth for free. Positions/tints come
+  // from a seeded PRNG so SSR and client render the identical string —
+  // no hydration mismatch, no Math.random-at-render. A few stars take a
+  // jewel tint (gold / cyan / violet / rose) to echo the world palette
+  // rather than a flat white speckle.
+  const starShadow = useMemo(() => {
+    let s = 0x9e3779b1;
+    const rnd = () => {
+      s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff;
+      return s / 0x7fffffff;
+    };
+    const tints = [
+      "255,247,232", // warm white
+      "255,247,232",
+      "255,247,232",
+      "255,206,138", // gold
+      "150,214,224", // cyan
+      "196,160,236", // violet
+      "244,168,176", // rose
+    ];
+    const out: string[] = [];
+    for (let i = 0; i < 78; i++) {
+      const x = (rnd() * 100).toFixed(2);
+      const y = (rnd() * 100).toFixed(2);
+      const b = (0.18 + rnd() * 0.62).toFixed(2);
+      const spread = rnd() > 0.82 ? "0.6px" : rnd() > 0.5 ? "0.3px" : "0";
+      const tint = tints[Math.floor(rnd() * tints.length)];
+      out.push(`${x}vw ${y}vh 0 ${spread} rgba(${tint},${b})`);
+    }
+    return out.join(", ");
+  }, []);
 
   // Scroll-linked parallax. framer batches reads to rAF and writes pure
   // GPU transforms/opacity (no layout, no paint of large surfaces), so the
@@ -306,18 +340,26 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           mixBlendMode: "screen",
           background: [
-            "radial-gradient(ellipse 52% 42% at 30% 28%, rgba(255,170,86,0.26) 0%, transparent 60%)",
-            "radial-gradient(ellipse 46% 44% at 74% 24%, rgba(150,98,212,0.18) 0%, transparent 62%)",
-            "radial-gradient(ellipse 56% 48% at 66% 72%, rgba(72,154,184,0.16) 0%, transparent 64%)",
-            "radial-gradient(ellipse 42% 40% at 22% 74%, rgba(234,118,96,0.16) 0%, transparent 62%)",
+            // ASYMMETRIC BALANCE — one dominant warm bloom off the
+            // upper-left axis, answered by smaller cooler masses on the
+            // opposite diagonal. The classic painter's triangle: a big
+            // warm protagonist, a medium cool counterweight, a small
+            // accent — never a mirror. Opacities are pushed hard so the
+            // dark reads as a SATURATED nebula, not a tea stain.
+            "radial-gradient(ellipse 60% 52% at 24% 20%, rgba(255,176,82,0.46) 0%, rgba(255,142,64,0.14) 32%, transparent 60%)",
+            "radial-gradient(ellipse 50% 50% at 82% 26%, rgba(220,84,156,0.34) 0%, transparent 58%)",
+            "radial-gradient(ellipse 46% 52% at 92% 58%, rgba(140,86,226,0.30) 0%, transparent 60%)",
+            "radial-gradient(ellipse 56% 52% at 12% 76%, rgba(54,176,200,0.30) 0%, transparent 60%)",
+            "radial-gradient(ellipse 50% 46% at 66% 90%, rgba(70,112,228,0.24) 0%, transparent 58%)",
+            "radial-gradient(ellipse 40% 38% at 46% 60%, rgba(240,122,94,0.20) 0%, transparent 58%)",
           ].join(", "),
           willChange: "transform, opacity",
         }}
         initial={{ opacity: 0, scale: 1 }}
         animate={
           reduced || !inView
-            ? { opacity: 0.85, scale: 1 }
-            : { opacity: [0.55, 0.95, 0.55], scale: [1, 1.07, 1], x: [0, 16, -12, 0], y: [0, -14, 10, 0] }
+            ? { opacity: 0.95, scale: 1 }
+            : { opacity: [0.78, 1, 0.78], scale: [1, 1.08, 1], x: [0, 22, -14, 0], y: [0, -16, 12, 0] }
         }
         transition={
           reduced
@@ -325,6 +367,20 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             : { duration: 28, ease: "easeInOut", repeat: Infinity, repeatType: "loop", delay: 0.5 }
         }
       />
+      </motion.div>
+
+      {/* STAR / COSMIC-DUST FIELD — fills the negative space with depth.
+          One node, one box-shadow list; drifts and twinkles on a long
+          loop, screen-blended, paused off-screen. The jewel-tinted stars
+          tie the empty dark into the same palette as the orbs. */}
+      <motion.div
+        aria-hidden
+        style={{ position: "absolute", inset: 0, zIndex: 4, pointerEvents: "none", mixBlendMode: "screen", willChange: "transform, opacity" }}
+        initial={{ opacity: 0 }}
+        animate={inView && !reduced ? { opacity: [0.72, 1, 0.72], x: [0, -16, 0], y: [0, 12, 0] } : { opacity: 0.85 }}
+        transition={reduced ? { duration: 1.6, delay: 0.9 } : { duration: 38, ease: "easeInOut", repeat: Infinity, repeatType: "loop", delay: 0.9 }}
+      >
+        <div style={{ position: "absolute", top: 0, left: 0, width: 1, height: 1, borderRadius: "50%", backgroundColor: "transparent", boxShadow: starShadow }} />
       </motion.div>
 
       {/* LIGHT SHAFTS — volumetric god-rays projected from the optical
@@ -628,12 +684,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               aria-hidden
               style={{
                 position: "absolute",
-                inset: "-66%",
+                inset: "-78%",
                 borderRadius: "50%",
-                background: `radial-gradient(circle at 50% 42%, ${w.color.glow} 0%, transparent 60%)`,
+                background: `radial-gradient(circle at 50% 42%, ${w.color.hex} 0%, ${w.color.glow} 30%, transparent 62%)`,
                 mixBlendMode: "screen",
-                filter: "blur(16px)",
-                opacity: op * (0.45 + 0.55 * (1 - dist / 3)),
+                filter: "blur(15px)",
+                opacity: op * (0.7 + 0.6 * (1 - dist / 3)),
                 pointerEvents: "none",
               }}
             />
