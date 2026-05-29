@@ -42,7 +42,17 @@ function activeCandidates() {
 }
 
 async function recompute() {
-  state.results = await runPipeline(activeCandidates(), state.config);
+  // Close the loop: call outcomes derive per-filter weight multipliers that
+  // feed straight back into scoring. When calibration is inactive (too few
+  // calls) the multipliers are all 1.0 and scoring is unchanged.
+  state.calibration = store.getCalibration();
+  const cfg = {
+    ...state.config,
+    weightMultipliers: state.calibration.active
+      ? state.calibration.weightMultipliers
+      : null,
+  };
+  state.results = await runPipeline(activeCandidates(), cfg);
   store.saveConfig(state.config);
 }
 
@@ -337,9 +347,15 @@ function buildCards() {
   const rows = visibleOpps();
   const tracking = store.getTracking();
   const handlers = {
-    onStatus: (id, st) => { store.setStatus(id, st); },
+    onStatus: (id, st) => { store.setStatus(id, st); recompute().then(render); },
     onNotes: (id, notes) => { store.setNotes(id, notes); },
-    onOutcome: (id, outcome) => { store.addOutcome(outcome); },
+    onOutcome: (id, outcome) => {
+      // Stamp the lead's signal snapshot so calibration is reproducible even if
+      // the dataset later changes. Then recompute — outcomes recalibrate scores.
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      store.addOutcome({ ...outcome, signals: lead?.signals || null });
+      recompute().then(render);
+    },
   };
   if (!rows.length) return el("p", { class: "empty", text: "No candidates match the current filters." });
   return el("div", { class: "cards" }, rows.map((o) => renderCard(o, tracking[o.id], handlers)));
@@ -352,8 +368,19 @@ function learningView() {
   const log = store.getLearning();
   const blocks = [];
 
+  const cal = state.calibration || store.getCalibration();
+
   blocks.push(el("h2", { text: "Learning loop" }));
-  blocks.push(el("p", { class: "hint", text: "Outcomes logged on each card feed this view. It reports observed performance and suggests directional calibration — it never silently rewrites the engine." }));
+  blocks.push(el("p", { class: "hint", text: "Outcomes logged on each card feed this view AND recalibrate scoring — bounded by guardrails so a noisy first week can't distort the model. Share the state file so everyone's calls count." }));
+
+  // Share controls — make the call log portable across people/devices.
+  blocks.push(el("div", { class: "share-bar" }, [
+    el("button", { class: "btn", text: "Export call log", onClick: () => {
+      xport.download(`opportunity-state-${new Date().toISOString().slice(0,10)}.json`, store.exportState(), "application/json");
+    } }),
+    el("button", { class: "btn", text: "Import call log", onClick: () => importPicker.click() }),
+    importPickerEl(),
+  ]));
 
   blocks.push(el("div", { class: "learn-stats" }, [
     stat("Outcomes logged", summary.sampleSize),
@@ -361,6 +388,27 @@ function learningView() {
     stat("Meeting rate (01)", rate(summary.meetingRateByClass["01"])),
     stat("Meeting rate (XN)", rate(summary.meetingRateByClass["xn"])),
   ]));
+
+  // Calibration panel — the part that actually changes scoring.
+  const calChildren = [
+    el("div", { class: "verif-head" }, [
+      el("span", { class: `verif-pct ${cal.active ? "" : "muted"}`, text: cal.active ? "ACTIVE" : "OFF" }),
+      el("span", { class: "verif-label", text: cal.active
+        ? `recalibrating from ${cal.evaluated} evaluable calls (base success ${Math.round((cal.baseRate||0)*100)}%)`
+        : `needs ${6 - cal.evaluated} more decisive calls (interested/meeting vs rejected/wrong-fit)` }),
+    ]),
+  ];
+  if (cal.active && cal.notes.length) {
+    calChildren.push(el("ul", { class: "bullets" }, cal.notes.map((n) => el("li", { text: n }))));
+    // Show the actual weight multipliers that moved.
+    const moved = Object.entries(cal.weightMultipliers).filter(([, m]) => Math.abs(m - 1) >= 0.01);
+    if (moved.length) {
+      calChildren.push(el("div", { class: "verif-gaps" }, moved.map(([k, m]) =>
+        el("span", { class: `verif-gap ${m > 1 ? "up" : "down"}`, text: `${k} ${m > 1 ? "+" : ""}${Math.round((m-1)*100)}%` })
+      )));
+    }
+  }
+  blocks.push(el("div", { class: "verif verif-real" }, [el("h4", { text: "Scoring calibration" }), ...calChildren]));
 
   if (summary.topObjections.length) {
     blocks.push(el("div", { class: "sec" }, [
@@ -386,6 +434,32 @@ function learningView() {
   }
 
   return el("div", {}, blocks);
+}
+
+// Hidden file input for importing a shared call-log state file. Created once,
+// reused across renders.
+let importPicker = null;
+function importPickerEl() {
+  if (importPicker) return importPicker;
+  importPicker = el("input", {
+    type: "file",
+    accept: "application/json,.json",
+    style: "display:none",
+    onChange: (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const res = store.importState(reader.result);
+        if (!res.ok) { alert(`Import failed: ${res.error}`); return; }
+        alert(`Imported ${res.addedOutcomes} new outcome(s) and merged ${res.mergedTracking} status record(s).`);
+        recompute().then(render);
+      };
+      reader.readAsText(file);
+      e.target.value = ""; // allow re-importing the same file
+    },
+  });
+  return importPicker;
 }
 
 function stat(label, value) {

@@ -89,7 +89,8 @@ opportunity-intel/
 │   ├── scoring.js             # the scoring engine (pure, testable, the brain)
 │   ├── enrichment.js          # source adapters + a real WebsiteAdapter (the live-data seam)
 │   ├── pipeline.js            # discover → enrich → filter → score → shortlist → final
-│   ├── store.js               # localStorage persistence + the learning loop
+│   ├── store.js               # persistence + portable export/import of the call log
+│   ├── calibration.js         # turns call outcomes into bounded scoring nudges
 │   ├── export.js              # CSV / JSON / PDF / call sheet
 │   ├── seed.js                # demonstration dataset (synthetic, see below)
 │   └── ui/
@@ -203,6 +204,32 @@ stubs from Google Maps / directories and passing the array to
 A natural production backend for status/notes/learning is the included Supabase
 MCP project (swap the `store.js` localStorage calls for table reads/writes —
 the record shapes are unchanged).
+
+---
+
+## The learning loop closes (calibration)
+
+Call outcomes are not just reported — they **recalibrate scoring**, conservatively.
+
+- Log an outcome on any card (result, objection, what worked/failed, was the
+  hypothesis right, next action). The lead's signal snapshot is stored with it.
+- `calibration.js` asks, per filter: *does a green signal here actually predict a
+  good call?* A green that converts above the base rate earns that filter a small
+  weight bump; one that converts below gets trimmed.
+- **Guardrails** (in `CALIBRATION`): nothing happens below 6 decisive calls
+  (interested/meeting vs rejected/wrong-fit); a filter needs ≥3 green
+  observations to move; and every nudge is hard-capped at **±15%**. Weights are
+  renormalised, so calibration changes the *balance* between filters, never the
+  overall scale. A noisy first week cannot distort the model.
+- The **Learning loop** tab shows whether calibration is ACTIVE, the base
+  success rate, and exactly which filters moved and by how much.
+
+**Sharing across people (Pablo + Javi).** State lives in `localStorage`
+(per-browser), so the Learning tab has **Export / Import call log**: Pablo
+exports a JSON file after his calls, Javi imports it, and the scoring they both
+see reflects every call. Import is non-destructive (outcomes are de-duplicated;
+status records merge with newest-wins). `store.exportState()` /
+`store.importState()` are unit-tested.
 
 ---
 

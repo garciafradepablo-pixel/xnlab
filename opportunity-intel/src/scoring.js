@@ -114,11 +114,23 @@ export function verificationProfile(opp) {
 
 // --- Individual score computations ------------------------------------------
 
-function confidenceScore(opp, conservatism) {
+function confidenceScore(opp, conservatism, weightMultipliers) {
+  // Optional per-filter weight multipliers come from the learning loop's
+  // calibration (calibration.js). They are renormalised so the weights still
+  // sum to 1.0 — calibration changes the *balance* between filters, never the
+  // overall scale, keeping scores comparable across calibration states.
+  const mult = weightMultipliers || null;
+  let totalWeight = 0;
+  const effective = FILTERS.map((f) => {
+    const w = f.weight * (mult ? mult[f.key] ?? 1 : 1);
+    totalWeight += w;
+    return w;
+  });
   let raw = 0;
-  for (const f of FILTERS) {
-    raw += f.weight * levelValue(levelOf(opp, f.key), conservatism);
-  }
+  FILTERS.forEach((f, i) => {
+    const w = totalWeight > 0 ? effective[i] / totalWeight : f.weight;
+    raw += w * levelValue(levelOf(opp, f.key), conservatism);
+  });
   return clamp(raw * 100);
 }
 
@@ -236,7 +248,9 @@ export function scoreOpportunity(opp, config = {}) {
   const redCount = flags.red;
   const greenCount = flags.green;
 
-  const confidence = round(confidenceScore(opp, conservatism));
+  const confidence = round(
+    confidenceScore(opp, conservatism, config.weightMultipliers)
+  );
   const evidence = evidenceStrength(opp);
   const conversation = conversationProbability(opp, conservatism, confidence);
   const meeting = meetingProbability(opp, conservatism, conversation);

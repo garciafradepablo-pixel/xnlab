@@ -10,6 +10,8 @@
 // of the records does not change.
 // =============================================================================
 
+import { deriveCalibration } from "./calibration.js";
+
 const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
 const LEARN_KEY = `${NS}learning`;
@@ -165,6 +167,109 @@ export function applyLearning(log = getLearning()) {
     topObjections,
     notes,
   };
+}
+
+// ---- Calibration (the loop that actually changes scoring) -------------------
+
+/**
+ * Per-filter weight multipliers derived from the call log, ready to drop into a
+ * scoring config as `weightMultipliers`. Returns the full calibration object so
+ * the UI can also show what changed and why.
+ */
+export function getCalibration() {
+  return deriveCalibration(getLearning());
+}
+
+// ---- Portability: export / import the operational state ---------------------
+//
+// The whole point of closing the loop across people: Pablo calls five leads,
+// exports the log, Javi imports it, and the scoring they both see reflects all
+// the calls. localStorage is per-browser; this makes the state a shareable file.
+
+const PORTABLE_VERSION = 1;
+
+/** Serialise tracking + outcomes (+ config) to a shareable JSON string. */
+export function exportState() {
+  return JSON.stringify(
+    {
+      _format: "opportunity-intel/state",
+      _version: PORTABLE_VERSION,
+      exportedAt: new Date().toISOString(),
+      tracking: getTracking(),
+      learning: getLearning(),
+      config: read(CONFIG_KEY, null),
+    },
+    null,
+    2
+  );
+}
+
+/**
+ * Merge an exported state back in. Non-destructive by default:
+ *   - outcomes are appended and de-duplicated (by id+createdAt+outcome)
+ *   - tracking records are merged, newest `updatedAt` winning per lead
+ * Pass { replace: true } to overwrite instead of merge.
+ *
+ * @returns {{ ok:boolean, error?:string, addedOutcomes:number, mergedTracking:number }}
+ */
+export function importState(json, { replace = false } = {}) {
+  let data;
+  try {
+    data = typeof json === "string" ? JSON.parse(json) : json;
+  } catch {
+    return { ok: false, error: "Not valid JSON.", addedOutcomes: 0, mergedTracking: 0 };
+  }
+  if (!data || data._format !== "opportunity-intel/state") {
+    return {
+      ok: false,
+      error: "Unrecognised file — not an Opportunity Intelligence state export.",
+      addedOutcomes: 0,
+      mergedTracking: 0,
+    };
+  }
+
+  // --- outcomes ---
+  const incomingLog = Array.isArray(data.learning) ? data.learning : [];
+  let addedOutcomes = 0;
+  if (replace) {
+    write(LEARN_KEY, incomingLog);
+    addedOutcomes = incomingLog.length;
+  } else {
+    const existing = getLearning();
+    const seen = new Set(existing.map(outcomeKey));
+    for (const o of incomingLog) {
+      if (seen.has(outcomeKey(o))) continue;
+      seen.add(outcomeKey(o));
+      existing.push(o);
+      addedOutcomes++;
+    }
+    write(LEARN_KEY, existing);
+  }
+
+  // --- tracking ---
+  const incomingTracking = data.tracking && typeof data.tracking === "object" ? data.tracking : {};
+  let mergedTracking = 0;
+  if (replace) {
+    write(TRACK_KEY, incomingTracking);
+    mergedTracking = Object.keys(incomingTracking).length;
+  } else {
+    const cur = getTracking();
+    for (const [id, rec] of Object.entries(incomingTracking)) {
+      const existing = cur[id];
+      // newest update wins
+      if (!existing || (rec.updatedAt || "") > (existing.updatedAt || "")) {
+        cur[id] = rec;
+        mergedTracking++;
+      }
+    }
+    write(TRACK_KEY, cur);
+  }
+
+  return { ok: true, addedOutcomes, mergedTracking };
+}
+
+function outcomeKey(o) {
+  return `${o.id}|${o.createdAt || ""}|${o.outcome || ""}`;
 }
 
 // ---- Config persistence -----------------------------------------------------
