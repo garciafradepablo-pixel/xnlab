@@ -1,0 +1,11 @@
+{
+  "name": "opportunity-intel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "01 Agency / XN LAB — Opportunity Intelligence System. Detects business moments, not companies.",
+  "scripts": {
+    "dev": "python3 -m http.server 4010",
+    "test": "node test/scoring.test.mjs"
+  }
+}
