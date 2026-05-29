@@ -216,30 +216,6 @@ export function AmbientBackdrop() {
         <div style={{ position: "absolute", top: 0, left: 0, width: 1, height: 1, borderRadius: "50%", backgroundColor: "transparent", boxShadow: stars }} />
       </motion.div>
 
-      {/* Layer G — global film grain. Fractal-noise texture (no asset),
-          soft-light blended very low and drifting in stepped jumps. Sits
-          behind content (zIndex 0) and unifies the whole background into a
-          single graded film frame. Transform-only loop, NO blur → contract
-          safe. Frozen by the reduced-motion block. */}
-      <div
-        aria-hidden
-        style={{ position: "fixed", inset: 0, zIndex: 0, pointerEvents: "none", overflow: "hidden", opacity: 0.22 }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: "-50%",
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-            backgroundSize: "200px 200px",
-            mixBlendMode: "soft-light",
-            opacity: 0.6,
-            animation: "xn-grain 0.8s steps(5) infinite",
-            willChange: "transform",
-          }}
-        />
-      </div>
-
       {/* Layer R — readability scrim. The aurora masses live at the edges,
           but content columns live down the centre; this keeps a soft dark
           spine through the middle so body copy and the faint editorial

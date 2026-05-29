@@ -143,7 +143,7 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
         style={{
           position: "absolute",
           inset: 0,
-          background: "radial-gradient(ellipse 78% 56% at 50% 6%, rgba(216,147,42,0.045) 0%, rgba(180,110,40,0.012) 38%, transparent 68%)",
+          background: "radial-gradient(ellipse 60% 58% at 16% 10%, rgba(238,170,108,0.05) 0%, transparent 60%), radial-gradient(ellipse 56% 58% at 86% 14%, rgba(120,150,230,0.038) 0%, transparent 60%)",
           pointerEvents: "none",
         }}
       />
