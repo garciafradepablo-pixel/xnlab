@@ -40,12 +40,17 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background: [
-            // warm amber wash, top-centre (richer than before)
-            "radial-gradient(ellipse 95% 62% at 50% -2%, rgba(224,152,48,0.22) 0%, rgba(198,132,56,0.085) 24%, rgba(150,92,38,0.025) 48%, transparent 64%)",
+            // Champagne wash, top-centre. A single luminous gold light
+            // source instead of the old muddy mid-tone-orange tail: the
+            // brown intermediate stops (rgba(198,132,56) / rgba(150,92,38))
+            // were what turned the whole field turbid. Now it steps from a
+            // clean champagne straight to transparent — warm, not muddy.
+            "radial-gradient(ellipse 94% 60% at 50% -2%, rgba(242,194,126,0.18) 0%, rgba(228,176,116,0.05) 26%, transparent 58%)",
             // cool counter-light, bottom-left
             "radial-gradient(ellipse 80% 60% at 6% 98%, rgba(120,142,230,0.13) 0%, rgba(82,112,222,0.045) 34%, transparent 66%)",
-            // warm floor glow, bottom-centre — gives the lower page depth
-            "radial-gradient(ellipse 120% 52% at 50% 110%, rgba(122,72,32,0.10) 0%, rgba(80,46,22,0.03) 38%, transparent 60%)",
+            // warm floor glow, bottom-centre — a faint champagne ember now,
+            // not the brown sludge (rgba(122,72,32)) it used to be.
+            "radial-gradient(ellipse 120% 52% at 50% 110%, rgba(198,148,94,0.05) 0%, rgba(150,110,70,0.016) 40%, transparent 60%)",
             // blue-black charcoal grade descending from the top
             "radial-gradient(ellipse 150% 120% at 50% -10%, rgba(24,22,36,0.72) 0%, rgba(15,14,22,0.42) 40%, transparent 74%)",
             // full-field tonal lift so the base is graded charcoal, not #000
@@ -103,7 +108,7 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse 72% 56% at 50% 48%, rgba(234,186,134,0.10) 0%, rgba(194,144,94,0.035) 38%, transparent 70%)",
+            "radial-gradient(ellipse 72% 56% at 50% 48%, rgba(238,190,134,0.10) 0%, rgba(208,160,108,0.03) 38%, transparent 70%)",
           transformOrigin: "50% 50%",
           willChange: "transform, opacity",
         }}

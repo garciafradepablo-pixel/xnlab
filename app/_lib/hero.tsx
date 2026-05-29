@@ -180,7 +180,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         height: "min(100svh, 1100px)",
         minHeight: 560,
         overflow: "hidden",
-        background: "#060402",
+        // Warm-neutral near-black instead of the old brown-black (#060402).
+        // Keeps a breath of warmth without the muddy cast that read as
+        // "mediocre brown" once the washes stacked on top of it.
+        background: "#070605",
         // CRITICAL: isolate the hero's stacking context so the
         // mix-blend-mode: screen layers inside (chrome X, back orbits,
         // haze) only compose against the hero's own contents — never
@@ -203,7 +206,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           (the original chrome aura around the wordmark area survives
           softly) without distinct light artifacts behind the orbs. */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.46 }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.38 }}>
           <Image
             src="/images/hero/01_background_mobile.png"
             alt=""
@@ -219,7 +222,10 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{
               objectFit: "cover",
               objectPosition: "center",
-              filter: "blur(28px) saturate(0.9)",
+              // Pull the saturation down further: the baked-in bokeh of this
+              // PNG is what carried most of the muddy brown. Desaturating it
+              // lets the clean champagne washes above set the hue instead.
+              filter: "blur(28px) saturate(0.62)",
             }}
           />
         </div>
@@ -272,7 +278,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           height: "clamp(360px, 38vh, 600px)",
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at center, rgba(228,180,128,0.13) 0%, rgba(190,140,90,0.05) 35%, rgba(60,40,30,0.012) 58%, transparent 75%)",
+            "radial-gradient(ellipse at center, rgba(240,194,136,0.14) 0%, rgba(226,178,124,0.045) 38%, transparent 70%)",
         }}
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 0.95, scale: 1 }}
@@ -748,7 +754,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle at center, rgba(232,150,90,0.18) 0%, rgba(212,140,80,0.07) 28%, rgba(140,80,40,0.02) 52%, transparent 72%)",
+            "radial-gradient(circle at center, rgba(248,182,120,0.17) 0%, rgba(234,166,108,0.06) 30%, transparent 66%)",
           filter: "blur(28px)",
         }}
         initial={{ opacity: 0, scale: 0.92 }}
@@ -823,7 +829,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   // Stacked drop-shadows blow up paint cost — Chromium
                   // re-rasterises the full layer per shadow. One wider
                   // shadow reads as the same atmospheric copper rim.
-                  filter: "drop-shadow(0 0 36px rgba(222,144,84,0.5))",
+                  filter: "drop-shadow(0 0 36px rgba(246,184,122,0.5))",
                 }}
               />
           </motion.div>
