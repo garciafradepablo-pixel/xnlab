@@ -1,9 +1,15 @@
 // =============================================================================
-// card.js — Renders one full opportunity card, matching the brief's output
-// format: identity, classification, scores (each with an explainer), executive
-// summary, hypothesis, evidence, tensions, why-now, blind spot, lever, offer,
-// call opening, objection handling, devil's advocate, invalidators, and the
-// operational layer (status, notes, learning loop).
+// card.js — High-impact, scannable opportunity card.
+//
+// Design goal: a salesperson grasps the lead in ~10 seconds and can act.
+//   1. Confidence RING + classification + priority — the verdict, at a glance.
+//   2. "Why now" HOOK — the one timing reason to call, front and centre.
+//   3. Metric BARS — conversation / meeting / closing, visual not numeric-only.
+//   4. Signal DOTS — the ten filters as colour, tooltips for detail.
+//   5. ACTION STRIP — the offer + price, a copyable opening line, and one-tap
+//      status buttons (the conversion action).
+//   6. DETAIL — everything analytical (thesis, evidence, objections,
+//      verification, devil's advocate, notes, learning) folded away.
 // =============================================================================
 
 import { el, esc } from "./dom.js";
@@ -16,9 +22,9 @@ import {
   RECOMMENDATIONS,
   OFFER_LADDER,
   TENSION_TYPES,
-  SCORE_EXPLAINERS,
   CALL_STATUSES,
   STATUS_LABELS,
+  ECONOMIC_LABELS,
   evidenceVerdict,
 } from "../models.js";
 import { explainScore, verificationProfile } from "../scoring.js";
@@ -28,45 +34,131 @@ const offerText = (key) => {
   return o ? `${o.label} · €${o.price.toLocaleString("es-ES")}` : "—";
 };
 
-/** A score chip with an explainer tooltip (title attr) so no score is naked. */
-function scoreChip(name, value, suffix = "") {
-  const exp = SCORE_EXPLAINERS[name];
-  const title = exp
-    ? `${exp.label}\n▲ ${exp.up}\n▼ ${exp.down}`
-    : name;
-  return el("div", { class: "chip", title }, [
-    el("span", { class: "chip-val", text: `${value}${suffix}` }),
-    el("span", { class: "chip-label", text: exp ? exp.label : name }),
+const classLabel = (c) => (c === "xn" ? "XN LAB" : c === "01" ? "01 Agency" : "Descartar");
+
+// Score → colour band (drives the ring + accents).
+function band(score) {
+  if (score >= 75) return "hot";
+  if (score >= 58) return "warm";
+  return "cool";
+}
+
+// ---- Confidence ring (inline SVG, no deps) ----------------------------------
+function confidenceRing(score) {
+  const r = 26;
+  const circ = 2 * Math.PI * r;
+  const offset = circ * (1 - Math.max(0, Math.min(100, score)) / 100);
+  return el("div", {
+    class: `ring ring-${band(score)}`,
+    title: `Opportunity Confidence ${score}/100`,
+    html: `
+      <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
+        <circle class="ring-bg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"/>
+        <circle class="ring-fg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"
+          stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
+          stroke-linecap="round" transform="rotate(-90 32 32)"/>
+      </svg>
+      <div class="ring-num">${score}</div>`,
+  });
+}
+
+// ---- Metric bar -------------------------------------------------------------
+function bar(label, value, suffix = "%") {
+  return el("div", { class: "mbar", title: `${label}: ${value}${suffix}` }, [
+    el("span", { class: "mbar-l", text: label }),
+    el("div", { class: "mbar-track" }, [
+      el("div", { class: `mbar-fill fill-${band(value)}`, style: `width:${value}%` }),
+    ]),
+    el("span", { class: "mbar-v", text: `${value}${suffix}` }),
   ]);
 }
 
-function signalRow(opp) {
+// ---- Signal dots ------------------------------------------------------------
+function signalDots(opp) {
   return el(
     "div",
-    { class: "signals" },
+    { class: "dots" },
     FILTERS.map((f) => {
       const lvl = opp.signals?.[f.key]?.level || "grey";
       const reason = LEVELS[lvl].rank >= 2 ? f.increases : f.decreases;
-      return el("div", {
-        class: `sig sig-${lvl}`,
+      return el("span", {
+        class: `dot dot-${lvl}`,
         title: `${f.label} — ${LEVELS[lvl].label}\n${f.question}\n${reason}`,
-        text: f.label,
       });
     })
   );
 }
 
+// ---- Copy-to-clipboard button ----------------------------------------------
+function copyBtn(text, label = "Copiar") {
+  const b = el("button", {
+    class: "copy-btn",
+    title: "Copiar al portapapeles",
+    text: label,
+    onClick: (e) => {
+      e.stopPropagation();
+      const done = () => { b.textContent = "✓ Copiado"; b.classList.add("copied"); setTimeout(() => { b.textContent = label; b.classList.remove("copied"); }, 1400); };
+      try {
+        if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done, done);
+        else done();
+      } catch { done(); }
+    },
+  });
+  return b;
+}
+
+// ---- Quick one-tap status buttons (the conversion action) -------------------
+const QUICK_STATUS = [
+  ["called", "Llamado"],
+  ["interested", "Interesado"],
+  ["meeting_booked", "Reunión"],
+  ["rejected", "Rechazado"],
+];
+function quickStatus(opp, current, handlers) {
+  return el(
+    "div",
+    { class: "quick" },
+    QUICK_STATUS.map(([key, label]) =>
+      el("button", {
+        class: `q q-${key} ${current === key ? "active" : ""}`,
+        text: label,
+        onClick: () => handlers.onStatus?.(opp.id, key),
+      })
+    )
+  );
+}
+
+// ---- Evidence + verification (inside detail) --------------------------------
 function evidenceList(opp) {
-  const items = (opp.evidence || []).map((e) => {
+  return el("ul", { class: "evidence" }, (opp.evidence || []).map((e) => {
     const f = FILTER_BY_KEY[e.filter];
     const src = e.url
       ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source)}</a>`
       : esc(e.source);
     return el("li", {
-      html: `<span class="ev-tier ev-tier-${e.tier}" title="Evidence weight">T${e.tier}</span> <strong>${esc(f?.label || e.filter)}:</strong> ${esc(e.note)} <span class="ev-src">— ${src}</span>`,
+      html: `<span class="ev-tier ev-tier-${e.tier}" title="Peso de la evidencia">T${e.tier}</span> <strong>${esc(f?.label || e.filter)}:</strong> ${esc(e.note)} <span class="ev-src">— ${src}</span>`,
     });
-  });
-  return el("ul", { class: "evidence" }, items);
+  }));
+}
+
+function verificationBlock(opp) {
+  const v = verificationProfile(opp);
+  const isReal = opp.researched === true;
+  if (!isReal && v.gapFilters.length === 0) return null;
+  const children = [
+    el("div", { class: "verif-head" }, [
+      el("span", { class: "verif-pct", text: `${v.verifiedShare}%` }),
+      el("span", { class: "verif-label", text: isReal ? "evidencia verificada" : "afirmado (demo)" }),
+    ]),
+    el("p", { class: "verif-line", text: `Verificado (citado): ${v.verifiedFilters.length}/10 filtros · ${v.sourceCount} fuente${v.sourceCount === 1 ? "" : "s"}` }),
+  ];
+  if (v.gapFilters.length) {
+    children.push(el("p", { class: "verif-gaps-h", text: "Confirmar antes de llamar:" }));
+    children.push(el("div", { class: "verif-gaps" }, v.gapFilters.map((k) => el("span", { class: "verif-gap", text: FILTER_BY_KEY[k]?.label || k }))));
+  } else {
+    children.push(el("p", { class: "verif-line ok", text: "Todos los filtros con evidencia citada." }));
+  }
+  return el("div", { class: `verif ${isReal ? "verif-real" : ""}` }, [el("h4", { text: "Verificación" }), ...children]);
 }
 
 function bullets(arr) {
@@ -74,190 +166,121 @@ function bullets(arr) {
 }
 
 /**
- * Provenance block. For researched (real) leads it shows how much of the lead
- * is backed by cited evidence and, crucially, the checklist of unverified gaps
- * an analyst must confirm before calling. Returns null when there is nothing
- * worth showing (a fully-verified synthetic lead with no gaps).
- */
-function verificationBlock(opp) {
-  const v = verificationProfile(opp);
-  const isReal = opp.researched === true;
-  // Synthetic, fully-asserted leads have nothing useful to surface here.
-  if (!isReal && v.gapFilters.length === 0) return null;
-
-  const sourcesLine = el("p", { class: "verif-line", text:
-    `Verified (cited): ${v.verifiedFilters.length}/10 filters · ${v.sourceCount} source${v.sourceCount === 1 ? "" : "s"} · ${v.citedCount} cited evidence point${v.citedCount === 1 ? "" : "s"}` });
-
-  const children = [
-    el("div", { class: "verif-head" }, [
-      el("span", { class: "verif-pct", text: `${v.verifiedShare}%` }),
-      el("span", { class: "verif-label", text: isReal ? "evidence-verified" : "asserted (demo)" }),
-    ]),
-    sourcesLine,
-  ];
-
-  if (v.gapFilters.length) {
-    children.push(el("p", { class: "verif-gaps-h", text: "Confirm before calling:" }));
-    children.push(
-      el("div", { class: "verif-gaps" },
-        v.gapFilters.map((k) => el("span", { class: "verif-gap", text: FILTER_BY_KEY[k]?.label || k }))
-      )
-    );
-  } else {
-    children.push(el("p", { class: "verif-line ok", text: "All filters backed by cited evidence." }));
-  }
-
-  return el("div", { class: `verif ${isReal ? "verif-real" : ""}` }, [
-    el("h4", { text: "Verification" }),
-    ...children,
-  ]);
-}
-
-/**
  * @param {object} opp        Scored opportunity (with .scores and .ranking)
  * @param {object} record     Tracking record { status, notes }
- * @param {object} handlers   { onStatus(id,status), onNotes(id,text), onOutcome(id,outcome) }
+ * @param {object} handlers   { onStatus, onNotes, onOutcome }
  */
 export function renderCard(opp, record, handlers = {}) {
   const s = opp.scores;
   const sector = SECTOR_BY_KEY[opp.sector]?.label || opp.sector;
-
-  const header = el("div", { class: "card-head" }, [
-    el("div", { class: "rank", text: `#${opp.ranking ?? "—"}` }),
-    el("div", { class: "ident" }, [
-      el("h3", { text: opp.company }),
-      el("p", { class: "sub", text: `${opp.subsector} · ${opp.city}` }),
-    ]),
-    el("div", { class: `klass klass-${s.classification}` }, [
-      el("span", { text: CLASSIFICATIONS[s.classification] }),
-      el("small", { text: RECOMMENDATIONS[s.recommendation] }),
-    ]),
-  ]);
-
-  const scores = el("div", { class: "scores-row" }, [
-    scoreChip("confidence", s.confidence),
-    scoreChip("evidence", s.evidence),
-    scoreChip("conversation", s.conversation, "%"),
-    scoreChip("meeting", s.meeting, "%"),
-    scoreChip("closing", s.closing, "%"),
-    el("div", { class: "chip chip-econ", title: "Economic potential" }, [
-      el("span", { class: "chip-val", text: s.economicPotential }),
-      el("span", { class: "chip-label", text: "Economic" }),
-    ]),
-  ]);
-
-  // Contact block
+  const status = record?.status || "not_called";
   const dm = opp.decisionMaker || {};
-  const contact = el("div", { class: "contact", html: `
-    <span><b>DM:</b> ${esc(dm.name || "—")} ${dm.role ? `· ${esc(dm.role)}` : ""}</span>
-    ${dm.linkedin ? `<span><b>in:</b> ${esc(dm.linkedin)}</span>` : ""}
-    ${opp.phone ? `<span><b>Tel:</b> ${esc(opp.phone)}</span>` : ""}
-    ${opp.email ? `<span><b>Email:</b> ${esc(opp.email)}</span>` : ""}
-    ${opp.website ? `<span><b>Web:</b> <a href="${esc(opp.website)}" target="_blank" rel="noopener">${esc(opp.website)}</a></span>` : ""}
-    ${opp.instagram ? `<span><b>IG:</b> ${esc(opp.instagram)}</span>` : ""}
-  ` });
 
-  const section = (title, node) =>
-    el("div", { class: "sec" }, [el("h4", { text: title }), node]);
-
-  const tensions = el(
-    "div",
-    { class: "tensions" },
-    (opp.tensions || []).map((t) => el("span", { class: "tension", text: TENSION_TYPES[t] || t }))
-  );
-
-  const body = el("div", { class: "card-body" }, [
-    section("Executive summary", el("p", { text: opp.summary })),
-    section("Main hypothesis", el("p", { class: "thesis", text: opp.thesis })),
-    section(
-      `Evidence — ${opp.evidence?.length || 0} points (${evidenceVerdict(opp.evidence?.length || 0)})`,
-      evidenceList(opp)
-    ),
-    section("Detected tensions", tensions),
-    section("Why now", el("p", { text: opp.whyNow })),
-    section("Why this company before others", el("p", { text: opp.whyBeforeOthers })),
-    section("What they're probably not seeing", el("p", { text: opp.blindSpot })),
-    section("First lever", el("p", { html: `${esc(opp.firstLever)} <span class="offer">→ ${esc(offerText(opp.suggestedOfferKey))}</span>` })),
-    section("Call opening", el("blockquote", { text: opp.callOpening })),
-    section("Most likely objection", el("p", { text: opp.objection })),
-    section("Recommended response", el("p", { text: opp.objectionResponse })),
-    section("Reasons NOT to call (devil's advocate)", bullets(opp.reasonsNotToCall)),
-    section("What would invalidate our thesis", bullets(opp.invalidators)),
-  ]);
-
-  // Diagnostics line
-  const diag = el("p", { class: "diag", text: explainScore(s) });
-
-  // ---- Operational layer: status, notes, learning loop ----
-  const statusSel = el(
-    "select",
-    {
-      class: "status-sel",
-      onChange: (e) => handlers.onStatus?.(opp.id, e.target.value),
-    },
-    CALL_STATUSES.map((st) =>
-      el("option", { value: st, selected: (record?.status || "not_called") === st, text: STATUS_LABELS[st] })
-    )
-  );
-
-  const notes = el("textarea", {
-    class: "notes",
-    placeholder: "Notes after the call…",
-    onChange: (e) => handlers.onNotes?.(opp.id, e.target.value),
-  });
-  notes.value = record?.notes || "";
-
-  const ops = el("div", { class: "ops" }, [
-    el("div", { class: "ops-row" }, [
-      el("label", { text: "Status" }),
-      statusSel,
-      el("button", {
-        class: "btn-learn",
-        text: "+ Log call outcome",
-        onClick: () => toggleLearning(learnBox),
-      }),
+  // ---- TOP: rank · identity · class pill · confidence ring ----
+  const top = el("div", { class: "c-top" }, [
+    el("div", { class: "c-rank", text: `#${opp.ranking ?? "—"}` }),
+    el("div", { class: "c-ident" }, [
+      el("h3", { text: opp.company }),
+      el("p", { class: "c-sub", text: `${opp.subsector} · ${opp.city}` }),
+      el("div", { class: "c-tags" }, [
+        el("span", { class: `pillc pillc-${s.classification}`, text: classLabel(s.classification) }),
+        el("span", { class: `reco reco-${band(s.confidence)}`, text: RECOMMENDATIONS[s.recommendation] }),
+        el("span", { class: "econ-tag", title: "Potencial económico", text: `€ ${ECONOMIC_LABELS[s.economicPotential] || s.economicPotential}` }),
+      ]),
     ]),
-    notes,
+    confidenceRing(s.confidence),
   ]);
 
-  // Learning loop form (collapsed by default)
+  // ---- HOOK: the single reason to call now ----
+  const hook = el("div", { class: "c-hook" }, [
+    el("span", { class: "hook-ic", text: "⚡" }),
+    el("p", { text: opp.whyNow }),
+  ]);
+
+  // ---- METRICS: visual bars + signal dots ----
+  const metrics = el("div", { class: "c-metrics" }, [
+    bar("Conversación", s.conversation),
+    bar("Reunión", s.meeting),
+    bar("Cierre", s.closing),
+    signalDots(opp),
+  ]);
+
+  // ---- ACTION STRIP: offer + copyable opening + quick status ----
+  const action = el("div", { class: "c-action" }, [
+    el("div", { class: "offer-line" }, [
+      el("span", { class: "offer-ic", text: "→" }),
+      el("span", { class: "offer-txt", text: offerText(opp.suggestedOfferKey) }),
+    ]),
+    el("div", { class: "open-line" }, [
+      el("blockquote", { text: opp.callOpening }),
+      copyBtn(opp.callOpening),
+    ]),
+    el("div", { class: "contact-line" }, [
+      el("span", { class: "ct", html: `<b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}` }),
+      opp.phone ? el("a", { class: "ct-link", href: `tel:${esc(opp.phone)}`, text: opp.phone }) : null,
+      opp.email ? el("a", { class: "ct-link", href: `mailto:${esc(opp.email)}`, text: "email" }) : null,
+      opp.website ? el("a", { class: "ct-link", href: esc(opp.website), target: "_blank", rel: "noopener", text: "web" }) : null,
+    ]),
+    quickStatus(opp, status, handlers),
+  ]);
+
+  // ---- DETAIL: everything analytical, folded ----
+  const sec = (title, node) => el("div", { class: "sec" }, [el("h4", { text: title }), node]);
+  const tensions = el("div", { class: "tensions" }, (opp.tensions || []).map((t) => el("span", { class: "tension", text: TENSION_TYPES[t] || t })));
+
+  // operational: notes + learning form
+  const notes = el("textarea", { class: "notes", placeholder: "Notas tras la llamada…", onChange: (e) => handlers.onNotes?.(opp.id, e.target.value) });
+  notes.value = record?.notes || "";
   const learnBox = buildLearningForm(opp, handlers);
 
-  return el("article", { class: `card prio-${s.callPriority}`, dataset: { id: opp.id } }, [
-    header,
-    scores,
-    diag,
-    contact,
-    body,
-    el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · demo data" : ""}` }),
+  const detail = el("details", { class: "c-detail" }, [
+    el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
+    sec("Tesis", el("p", { class: "thesis", text: opp.thesis })),
+    sec("Resumen", el("p", { text: opp.summary })),
+    sec(`Evidencia — ${opp.evidence?.length || 0} (${evidenceVerdict(opp.evidence?.length || 0)})`, evidenceList(opp)),
+    sec("Tensiones", tensions),
+    sec("Por qué esta antes que otras", el("p", { text: opp.whyBeforeOthers })),
+    sec("Lo que probablemente no ven", el("p", { text: opp.blindSpot })),
+    sec("Primera palanca", el("p", { text: opp.firstLever })),
+    sec("Objeción probable", el("p", { text: opp.objection })),
+    sec("Respuesta recomendada", el("p", { class: "resp", html: `${esc(opp.objectionResponse)}` })),
+    sec("Razones para NO llamar", bullets(opp.reasonsNotToCall)),
+    sec("Qué invalidaría la tesis", bullets(opp.invalidators)),
     verificationBlock(opp),
-    ops,
-    learnBox,
+    sec("Notas", notes),
+    el("div", { class: "ops-detail" }, [
+      el("button", { class: "btn-learn", text: "+ Registrar resultado de llamada", onClick: () => learnBox.classList.toggle("open") }),
+      learnBox,
+    ]),
+    el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · datos demo" : opp.researched ? " · investigado" : ""}` }),
   ]);
-}
 
-function toggleLearning(box) {
-  box.classList.toggle("open");
+  return el("article", { class: `card prio-${s.callPriority} st-${status}`, dataset: { id: opp.id } }, [
+    top,
+    hook,
+    metrics,
+    action,
+    detail,
+  ]);
 }
 
 function buildLearningForm(opp, handlers) {
-  const f = (name, ph, type = "input") =>
-    el(type, { name, placeholder: ph, class: "learn-f" });
+  const f = (name, ph) => el("input", { name, placeholder: ph, class: "learn-f" });
   const outcome = el("select", { name: "outcome", class: "learn-f" },
     CALL_STATUSES.map((st) => el("option", { value: st, text: STATUS_LABELS[st] })));
   const hyp = el("select", { name: "hyp", class: "learn-f" }, [
-    el("option", { value: "", text: "Hypothesis correct?" }),
-    el("option", { value: "yes", text: "Yes — thesis held" }),
-    el("option", { value: "no", text: "No — thesis wrong" }),
+    el("option", { value: "", text: "¿Tesis acertada?" }),
+    el("option", { value: "yes", text: "Sí — se confirmó" }),
+    el("option", { value: "no", text: "No — fallida" }),
   ]);
-  const objection = f("objection", "Objection actually raised");
-  const worked = f("worked", "What worked");
-  const failed = f("failed", "What failed");
-  const next = f("next", "Next action");
+  const objection = f("objection", "Objeción real");
+  const worked = f("worked", "Qué funcionó");
+  const failed = f("failed", "Qué falló");
+  const next = f("next", "Siguiente acción");
 
   const save = el("button", {
     class: "btn-save",
-    text: "Save outcome",
+    text: "Guardar resultado",
     onClick: () => {
       handlers.onOutcome?.(opp.id, {
         id: opp.id,
@@ -270,8 +293,8 @@ function buildLearningForm(opp, handlers) {
         nextAction: next.value,
       });
       [objection, worked, failed, next].forEach((n) => (n.value = ""));
-      save.textContent = "Saved ✓";
-      setTimeout(() => (save.textContent = "Save outcome"), 1500);
+      save.textContent = "✓ Guardado";
+      setTimeout(() => (save.textContent = "Guardar resultado"), 1500);
     },
   });
 

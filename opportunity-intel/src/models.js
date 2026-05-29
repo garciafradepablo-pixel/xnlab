@@ -49,18 +49,18 @@ export const CONSERVATIVE_BIAS = 0.8;
 // We encode each *piece* of evidence with a tier (how load-bearing it is) so
 // that one strong press article counts for more than three vague hunches.
 export const EVIDENCE_TIERS = {
-  1: "Weak / circumstantial",
-  2: "Solid / corroborating",
-  3: "Strong / load-bearing",
+  1: "Débil / circunstancial",
+  2: "Sólida / corroborante",
+  3: "Fuerte / de peso",
 };
 
-// Maps a *count* of evidence points to the brief's confidence vocabulary.
+// Mapea un *número* de evidencias al vocabulario de confianza.
 export function evidenceVerdict(count) {
-  if (count >= 5) return "strong opportunity";
-  if (count >= 3) return "hypothesis";
-  if (count >= 2) return "possibility";
-  if (count >= 1) return "intuition";
-  return "no evidence";
+  if (count >= 5) return "oportunidad fuerte";
+  if (count >= 3) return "hipótesis";
+  if (count >= 2) return "posibilidad";
+  if (count >= 1) return "intuición";
+  return "sin evidencia";
 }
 
 // Minimum concrete evidence points required before an opportunity may enter
@@ -78,101 +78,101 @@ export const MIN_EVIDENCE_FOR_SHORTLIST = 3;
 export const FILTERS = [
   {
     key: "transitionSignal",
-    label: "Transition signal",
+    label: "Señal de transición",
     weight: 0.14,
-    question: "Is the company entering a new stage?",
+    question: "¿Está la empresa entrando en una nueva etapa?",
     increases:
-      "New office/clinic/restaurant, new city, new investment, new business line, recent rebrand, recent hiring, expansion announcement.",
+      "Nueva oficina/clínica/restaurante, nueva ciudad, nueva inversión, nueva línea de negocio, rebrand reciente, contratación reciente, anuncio de expansión.",
     decreases:
-      "Static company, no movement in 24 months, no announcements, no growth footprint.",
+      "Empresa estática, sin movimiento en 24 meses, sin anuncios, sin huella de crecimiento.",
   },
   {
     key: "economicCapacity",
-    label: "Economic capacity",
+    label: "Capacidad económica",
     weight: 0.13,
-    question: "Can they pay €1,500–€5,000 without suffering?",
+    question: "¿Pueden pagar 1.500–5.000 € sin sufrir?",
     increases:
-      "Premium services, high-ticket offer, multiple locations, visible team, strong facilities, investment/revenue indicators.",
+      "Servicios premium, oferta de ticket alto, varias ubicaciones, equipo visible, instalaciones potentes, indicadores de inversión/facturación.",
     decreases:
-      "Low-margin, survival-mode, single tiny location, discount positioning.",
+      "Bajo margen, modo supervivencia, una sola ubicación pequeña, posicionamiento de descuento.",
   },
   {
     key: "visibleTension",
-    label: "Visible tension",
+    label: "Tensión visible",
     weight: 0.13,
-    question: "Mismatch between where they're going and what they communicate?",
+    question: "¿Desajuste entre hacia dónde van y lo que comunican?",
     increases:
-      "Growth but outdated site, premium product but weak brand, many locations but amateur digital, strong reviews but weak positioning.",
+      "Crecen pero web obsoleta, producto premium pero marca débil, muchas ubicaciones pero digital amateur, buenas reseñas pero posicionamiento débil.",
     decreases:
-      "Brand already matches ambition; nothing visibly broken or misaligned.",
+      "La marca ya está a la altura de la ambición; nada visiblemente roto o desalineado.",
   },
   {
     key: "actionableLever",
-    label: "Actionable lever",
+    label: "Palanca accionable",
     weight: 0.1,
-    question: "Can 01/XN name one clear first move?",
+    question: "¿Puede 01/XN señalar un primer movimiento claro?",
     increases:
-      "Obvious repositioning, landing page, web architecture, lead funnel, SEO repair, brand system, intake automation, commercial narrative.",
+      "Reposicionamiento evidente, landing, arquitectura web, embudo de captación, reparación SEO, sistema de marca, automatización de intake, narrativa comercial.",
     decreases:
-      "No clear first move; problem is diffuse or outside our service surface.",
+      "Sin primer movimiento claro; el problema es difuso o fuera de nuestros servicios.",
   },
   {
     key: "activePainSignal",
-    label: "Active pain signal",
+    label: "Dolor activo",
     weight: 0.11,
-    question: "Is the problem active *now*?",
+    question: "¿Está el problema activo *ahora*?",
     increases:
-      "Reviews about booking/waiting/clarity, recent marketing/sales hire, weak launch campaign, expansion without infrastructure, broken site, abandoned channels during growth.",
+      "Reseñas sobre reservas/esperas/claridad, contratación reciente de marketing/ventas, campaña de lanzamiento floja, expansión sin infraestructura, web rota, canales abandonados durante el crecimiento.",
     decreases:
-      "No symptoms surfacing; pain is hypothetical or dormant.",
+      "No afloran síntomas; el dolor es hipotético o latente.",
   },
   {
     key: "whyNow",
-    label: "Why now",
+    label: "Por qué ahora",
     weight: 0.1,
-    question: "Why call this week specifically?",
+    question: "¿Por qué llamar precisamente esta semana?",
     increases:
-      "Launch, opening, recent expansion, recent campaign, hiring, new HQ, recent article, new product/service, public growth moment.",
+      "Lanzamiento, apertura, expansión reciente, campaña reciente, contratación, nueva sede, artículo reciente, nuevo producto/servicio, momento público de crecimiento.",
     decreases:
-      "No timing trigger; the call could happen any time = it happens never.",
+      "Sin gatillo de oportunidad; la llamada podría ser en cualquier momento = nunca ocurre.",
   },
   {
     key: "reachableDecisionMaker",
-    label: "Reachable decision maker",
+    label: "Decisor alcanzable",
     weight: 0.09,
-    question: "Can we reach someone who can say yes?",
+    question: "¿Podemos llegar a alguien que pueda decir que sí?",
     increases:
-      "Named founder/CEO/owner/gerente, direct email, LinkedIn profile, direct phone, active Instagram DM.",
+      "Fundador/CEO/dueño/gerente con nombre, email directo, perfil de LinkedIn, teléfono directo, DM de Instagram activo.",
     decreases:
-      "Only a generic contact form or info@ address; no named human.",
+      "Solo un formulario genérico o un info@; ninguna persona con nombre.",
   },
   {
     key: "budgetPriority",
-    label: "Budget priority",
+    label: "Prioridad de presupuesto",
     weight: 0.08,
-    question: "Important enough to move budget soon?",
+    question: "¿Suficientemente importante para mover presupuesto pronto?",
     increases:
-      "Revenue / patient / client acquisition / trust / premium perception / hiring / expansion directly affected.",
+      "Facturación / captación de pacientes / clientes / confianza / percepción premium / contratación / expansión directamente afectadas.",
     decreases:
-      "Improvement is merely aesthetic; nothing painful enough to fund.",
+      "La mejora es meramente estética; nada lo bastante doloroso como para financiarlo.",
   },
   {
     key: "strategicFit",
-    label: "Strategic fit",
+    label: "Encaje estratégico",
     weight: 0.07,
-    question: "The kind of company 01/XN should work with?",
+    question: "¿El tipo de empresa con la que 01/XN debería trabajar?",
     increases:
-      "Premium or growing sector, attractive case study, clean brand universe, serious and ethical business, scalable.",
+      "Sector premium o en crecimiento, caso de éxito atractivo, universo de marca limpio, negocio serio y ético, escalable.",
     decreases:
-      "Would damage positioning, ethically off, no case-study upside — even if they can pay.",
+      "Dañaría el posicionamiento, ético dudoso, sin recorrido de caso — aunque puedan pagar.",
   },
   {
     key: "brutalFinalFilter",
-    label: "Brutal final filter",
+    label: "Filtro final brutal",
     weight: 0.05,
-    question: "If we could only call 3 companies tomorrow — still in?",
-    increases: "Survives the cut against everything else on the list.",
-    decreases: "Would be dropped the moment a stronger lead appears.",
+    question: "Si solo pudiéramos llamar a 3 empresas mañana, ¿sigue dentro?",
+    increases: "Sobrevive al corte frente a todo lo demás de la lista.",
+    decreases: "Se caería en cuanto aparezca un lead más fuerte.",
   },
 ];
 
@@ -184,29 +184,29 @@ export const FILTER_BY_KEY = Object.fromEntries(FILTERS.map((f) => [f.key, f]));
 // -----------------------------------------------------------------------------
 export const SCORE_EXPLAINERS = {
   confidence: {
-    label: "Opportunity Confidence",
-    up: "More green filters, especially high-weight ones (transition, economic capacity, tension).",
-    down: "Red or grey filters; any red flag caps the ceiling. Grey is treated as 'probably not'.",
+    label: "Confianza de oportunidad",
+    up: "Más filtros verdes, sobre todo los de más peso (transición, capacidad económica, tensión).",
+    down: "Filtros rojos o grises; cualquier bandera roja limita el techo. El gris se trata como 'probablemente no'.",
   },
   evidence: {
-    label: "Evidence Strength",
-    up: "More concrete, load-bearing (tier-3) evidence spread across multiple filters.",
-    down: "Few evidence points, weak sources, or evidence clustered on one filter only.",
+    label: "Fuerza de evidencia",
+    up: "Más evidencia concreta y de peso (nivel 3) repartida entre varios filtros.",
+    down: "Pocas evidencias, fuentes débiles, o evidencia concentrada en un solo filtro.",
   },
   conversation: {
-    label: "Conversation Probability",
-    up: "A reachable named decision maker + active pain + a real timing trigger.",
-    down: "Only a generic form, no live pain, no reason this week. Damped by overall confidence.",
+    label: "Prob. de conversación",
+    up: "Un decisor con nombre y alcanzable + dolor activo + un gatillo real de oportunidad.",
+    down: "Solo formulario genérico, sin dolor real, sin motivo esta semana. Amortiguada por la confianza global.",
   },
   meeting: {
-    label: "Meeting Probability",
-    up: "Visible tension + budget priority + a clear first lever to anchor the meeting.",
-    down: "Always ≤ conversation. Falls when tension is weak or budget priority is low.",
+    label: "Prob. de reunión",
+    up: "Tensión visible + prioridad de presupuesto + una primera palanca clara para anclar la reunión.",
+    down: "Siempre ≤ conversación. Baja si la tensión es débil o la prioridad de presupuesto es baja.",
   },
   closing: {
-    label: "Closing Potential",
-    up: "Economic capacity + budget priority + strategic fit + tension all aligned.",
-    down: "Thin capacity, aesthetic-only pain, or weak fit. Red flags pull it down hard.",
+    label: "Potencial de cierre",
+    up: "Capacidad económica + prioridad de presupuesto + encaje estratégico + tensión, todo alineado.",
+    down: "Capacidad floja, dolor solo estético o encaje débil. Las banderas rojas lo hunden.",
   },
 };
 
@@ -214,26 +214,34 @@ export const SCORE_EXPLAINERS = {
 // Sectors (initial target pool) and statuses
 // -----------------------------------------------------------------------------
 export const SECTORS = [
-  { key: "health", label: "Health & Clinics" },
-  { key: "realestate", label: "Real Estate & Construction" },
-  { key: "growth", label: "Growth / Funded / Expanding" },
-  { key: "hospitality", label: "Premium Hospitality" },
+  { key: "health", label: "Salud y Clínicas" },
+  { key: "realestate", label: "Inmobiliario y Construcción" },
+  { key: "growth", label: "Crecimiento / Financiadas / Expansión" },
+  { key: "hospitality", label: "Hostelería Premium" },
 ];
 export const SECTOR_BY_KEY = Object.fromEntries(SECTORS.map((s) => [s.key, s]));
 
 export const CLASSIFICATIONS = {
   "01": "01 Agency",
   xn: "XN LAB",
-  discard: "Not worth calling",
+  discard: "No merece llamada",
 };
 
 export const ECONOMIC_POTENTIAL = ["low", "medium", "high", "very high"];
 
+// Etiquetas mostradas para el potencial económico.
+export const ECONOMIC_LABELS = {
+  low: "bajo",
+  medium: "medio",
+  high: "alto",
+  "very high": "muy alto",
+};
+
 export const RECOMMENDATIONS = {
-  call_immediately: "Call immediately",
-  prepare_audit: "Prepare custom mini-audit first",
-  secondary: "Keep as secondary",
-  discard: "Discard",
+  call_immediately: "Llamar de inmediato",
+  prepare_audit: "Preparar mini-auditoría primero",
+  secondary: "Mantener como secundario",
+  discard: "Descartar",
 };
 
 export const CALL_STATUSES = [
@@ -248,24 +256,24 @@ export const CALL_STATUSES = [
 ];
 
 export const STATUS_LABELS = {
-  not_called: "Not called",
-  called: "Called",
-  no_answer: "No answer",
-  interested: "Interested",
-  meeting_booked: "Meeting booked",
-  rejected: "Rejected",
-  follow_up: "Follow-up needed",
-  wrong_fit: "Wrong fit",
+  not_called: "Sin llamar",
+  called: "Llamado",
+  no_answer: "No contesta",
+  interested: "Interesado",
+  meeting_booked: "Reunión agendada",
+  rejected: "Rechazado",
+  follow_up: "Requiere seguimiento",
+  wrong_fit: "Mal encaje",
 };
 
-// Canonical tension types the brief enumerates.
+// Tipos de tensión canónicos.
 export const TENSION_TYPES = {
-  growth_structure: "Growth vs structure",
-  quality_perception: "Product/service quality vs perception",
-  expansion_systems: "Expansion vs systems",
-  price_communication: "Premium price vs communication",
-  visibility_conversion: "Visibility vs conversion",
-  ambition_maturity: "Founder ambition vs brand maturity",
+  growth_structure: "Crecimiento vs estructura",
+  quality_perception: "Calidad vs percepción",
+  expansion_systems: "Expansión vs sistemas",
+  price_communication: "Precio premium vs comunicación",
+  visibility_conversion: "Visibilidad vs conversión",
+  ambition_maturity: "Ambición vs madurez de marca",
 };
 
 // Suggested offer ladder. NOTE: this is an INTERNAL sales tool — prices are
@@ -280,12 +288,12 @@ export const OFFER_LADDER = {
 
 // Pipeline stages, in order.
 export const PIPELINE_STAGES = [
-  { key: "discovered", label: "Discovered" },
-  { key: "enriched", label: "Enriched" },
-  { key: "filtered", label: "Filtered" },
-  { key: "scored", label: "Scored" },
-  { key: "shortlisted", label: "Shortlisted" },
-  { key: "final", label: "Final Top 20" },
+  { key: "discovered", label: "Descubierto" },
+  { key: "enriched", label: "Enriquecido" },
+  { key: "filtered", label: "Filtrado" },
+  { key: "scored", label: "Puntuado" },
+  { key: "shortlisted", label: "Preseleccionado" },
+  { key: "final", label: "Top final" },
 ];
 
 // Default search configuration.

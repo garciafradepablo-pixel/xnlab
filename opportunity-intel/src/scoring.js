@@ -262,10 +262,10 @@ export function scoreOpportunity(opp, config = {}) {
   let discardReason = null;
   if (redCount >= 4) {
     cappedConfidence = Math.min(cappedConfidence, 25);
-    discardReason = "4+ red flags";
+    discardReason = "4+ banderas rojas";
   } else if (redCount === 3 && econPotential !== "very high") {
     cappedConfidence = Math.min(cappedConfidence, 44);
-    discardReason = "3 red flags without very-high economic upside";
+    discardReason = "3 banderas rojas sin potencial económico muy alto";
   }
 
   const classification = classify(
@@ -317,8 +317,8 @@ export function scoreOpportunity(opp, config = {}) {
  */
 export function explainScore(scored) {
   const parts = [];
-  parts.push(`${scored.greenCount} green / ${scored.redCount} red across 10 filters`);
-  parts.push(`${scored.evidenceCount} evidence points`);
-  if (scored.discardReason) parts.push(`capped: ${scored.discardReason}`);
+  parts.push(`${scored.greenCount} verde / ${scored.redCount} rojo de 10 filtros`);
+  parts.push(`${scored.evidenceCount} evidencias`);
+  if (scored.discardReason) parts.push(`limitado: ${scored.discardReason}`);
   return parts.join(" · ");
 }

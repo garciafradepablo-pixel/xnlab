@@ -48,7 +48,7 @@ const fourRed = scoreOpportunity(build("RRRRGGGGGG", 5), DEFAULT_CONFIG);
 ok(fourRed.redCount >= 4, "four-red counts >=4 reds");
 ok(fourRed.classification === "discard", "four reds => discard");
 ok(fourRed.confidence <= 25, "four reds => confidence capped <=25");
-ok(fourRed.discardReason === "4+ red flags", "four reds => correct discard reason");
+ok(fourRed.discardReason === "4+ banderas rojas", "four reds => correct discard reason");
 
 // 4. Three reds without very-high economic upside => discard + capped.
 const threeRed = scoreOpportunity(build("RRRYYGGGGG", 5), DEFAULT_CONFIG);

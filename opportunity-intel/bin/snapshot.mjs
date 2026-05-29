@@ -50,34 +50,42 @@ function pipelineRow(counts) {
   }).join("")}</div>`;
 }
 
-function chip(val, label, suffix = "") {
-  return `<div class="chip"><span class="chip-val">${val}${suffix}</span><span class="chip-label">${esc(label)}</span></div>`;
-}
+const ECON = { low: "bajo", medium: "medio", high: "alto", "very high": "muy alto" };
+const classLabel = (c) => (c === "xn" ? "XN LAB" : c === "01" ? "01 Agency" : "Descartar");
+const band = (n) => (n >= 75 ? "hot" : n >= 58 ? "warm" : "cool");
 
-function signals(opp) {
-  return `<div class="signals">${FILTERS.map((f) => {
+function ring(score) {
+  const r = 26, circ = 2 * Math.PI * r, off = circ * (1 - Math.max(0, Math.min(100, score)) / 100);
+  return `<div class="ring ring-${band(score)}" title="Confianza ${score}/100">
+    <svg viewBox="0 0 64 64" width="64" height="64"><circle class="ring-bg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"/>
+    <circle class="ring-fg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6" stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${off.toFixed(1)}" stroke-linecap="round" transform="rotate(-90 32 32)"/></svg>
+    <div class="ring-num">${score}</div></div>`;
+}
+function bar(label, v) {
+  return `<div class="mbar"><span class="mbar-l">${esc(label)}</span><div class="mbar-track"><div class="mbar-fill fill-${band(v)}" style="width:${v}%"></div></div><span class="mbar-v">${v}%</span></div>`;
+}
+function dots(opp) {
+  return `<div class="dots">${FILTERS.map((f) => {
     const lvl = opp.signals?.[f.key]?.level || "grey";
-    return `<div class="sig sig-${lvl}" title="${esc(f.label)} — ${esc(LEVELS[lvl].label)}">${esc(f.label)}</div>`;
+    return `<span class="dot dot-${lvl}" title="${esc(f.label)} — ${esc(LEVELS[lvl].label)}"></span>`;
   }).join("")}</div>`;
 }
-
 function evidence(opp) {
   return `<ul class="evidence">${(opp.evidence || []).map((e) => {
     const src = e.url ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source)}</a>` : esc(e.source);
     return `<li><span class="ev-tier ev-tier-${e.tier}">T${e.tier}</span> ${esc(e.note)} <span class="ev-src">— ${src}</span></li>`;
   }).join("")}</ul>`;
 }
-
 function verifBlock(opp) {
   const v = verificationProfile(opp);
   const isReal = opp.researched === true;
   if (!isReal && v.gapFilters.length === 0) return "";
   const gaps = v.gapFilters.length
-    ? `<p class="verif-gaps-h">Confirm before calling:</p><div class="verif-gaps">${v.gapFilters.map((k) => `<span class="verif-gap">${esc((FILTERS.find((f) => f.key === k) || {}).label || k)}</span>`).join("")}</div>`
-    : `<p class="verif-line ok">All filters backed by cited evidence.</p>`;
-  return `<div class="verif ${isReal ? "verif-real" : ""}"><h4>Verification</h4>
-    <div class="verif-head"><span class="verif-pct">${v.verifiedShare}%</span><span class="verif-label">${isReal ? "evidence-verified" : "asserted (demo)"}</span></div>
-    <p class="verif-line">Verified (cited): ${v.verifiedFilters.length}/10 filters · ${v.sourceCount} source${v.sourceCount === 1 ? "" : "s"} · ${v.citedCount} cited evidence point${v.citedCount === 1 ? "" : "s"}</p>
+    ? `<p class="verif-gaps-h">Confirmar antes de llamar:</p><div class="verif-gaps">${v.gapFilters.map((k) => `<span class="verif-gap">${esc((FILTERS.find((f) => f.key === k) || {}).label || k)}</span>`).join("")}</div>`
+    : `<p class="verif-line ok">Todos los filtros con evidencia citada.</p>`;
+  return `<div class="verif ${isReal ? "verif-real" : ""}"><h4>Verificación</h4>
+    <div class="verif-head"><span class="verif-pct">${v.verifiedShare}%</span><span class="verif-label">${isReal ? "evidencia verificada" : "afirmado (demo)"}</span></div>
+    <p class="verif-line">Verificado (citado): ${v.verifiedFilters.length}/10 filtros · ${v.sourceCount} fuente${v.sourceCount === 1 ? "" : "s"}</p>
     ${gaps}</div>`;
 }
 
@@ -87,41 +95,54 @@ function card(opp) {
   const sector = SECTOR_BY_KEY[opp.sector]?.label || opp.sector;
   const sec = (t, body) => `<div class="sec"><h4>${esc(t)}</h4>${body}</div>`;
   return `<article class="card prio-${s.callPriority}">
-    <div class="card-head">
-      <div class="rank">#${opp.ranking ?? "—"}</div>
-      <div class="ident"><h3>${esc(opp.company)}</h3><p class="sub">${esc(opp.subsector)} · ${esc(opp.city)}</p></div>
-      <div class="klass klass-${s.classification}"><span>${esc(CLASSIFICATIONS[s.classification])}</span><small>${esc(RECOMMENDATIONS[s.recommendation])}</small></div>
+    <div class="c-top">
+      <div class="c-rank">#${opp.ranking ?? "—"}</div>
+      <div class="c-ident">
+        <h3>${esc(opp.company)}</h3>
+        <p class="c-sub">${esc(opp.subsector)} · ${esc(opp.city)}</p>
+        <div class="c-tags">
+          <span class="pillc pillc-${s.classification}">${esc(classLabel(s.classification))}</span>
+          <span class="reco reco-${band(s.confidence)}">${esc(RECOMMENDATIONS[s.recommendation])}</span>
+          <span class="econ-tag">€ ${esc(ECON[s.economicPotential] || s.economicPotential)}</span>
+        </div>
+      </div>
+      ${ring(s.confidence)}
     </div>
-    <div class="scores-row">
-      ${chip(s.confidence, "Confidence")}${chip(s.evidence, "Evidence")}${chip(s.conversation, "Conversation", "%")}
-      ${chip(s.meeting, "Meeting", "%")}${chip(s.closing, "Closing", "%")}
-      <div class="chip chip-econ"><span class="chip-val">${esc(s.economicPotential)}</span><span class="chip-label">Economic</span></div>
+    <div class="c-hook"><span class="hook-ic">⚡</span><p>${esc(opp.whyNow)}</p></div>
+    <div class="c-metrics">
+      ${bar("Conversación", s.conversation)}${bar("Reunión", s.meeting)}${bar("Cierre", s.closing)}
+      ${dots(opp)}
     </div>
-    ${signals(opp)}
-    <div class="contact">
-      <span><b>DM:</b> ${esc(dm.name || "—")}${dm.role ? ` · ${esc(dm.role)}` : ""}</span>
-      ${opp.phone ? `<span><b>Tel:</b> ${esc(opp.phone)}</span>` : ""}
-      ${opp.email ? `<span><b>Email:</b> ${esc(opp.email)}</span>` : ""}
-      ${opp.website ? `<span><b>Web:</b> <a href="${esc(opp.website)}" target="_blank" rel="noopener">${esc(opp.website)}</a></span>` : ""}
+    <div class="c-action">
+      <div class="offer-line"><span class="offer-ic">→</span><span class="offer-txt">${esc(offer(opp.suggestedOfferKey))}</span></div>
+      <div class="open-line"><blockquote>${esc(opp.callOpening)}</blockquote></div>
+      <div class="contact-line">
+        <span class="ct"><b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}</span>
+        ${opp.phone ? `<a class="ct-link" href="tel:${esc(opp.phone)}">${esc(opp.phone)}</a>` : ""}
+        ${opp.email ? `<a class="ct-link" href="mailto:${esc(opp.email)}">email</a>` : ""}
+        ${opp.website ? `<a class="ct-link" href="${esc(opp.website)}" target="_blank" rel="noopener">web</a>` : ""}
+      </div>
+      <div class="quick">
+        <button class="q q-called">Llamado</button><button class="q q-interested">Interesado</button>
+        <button class="q q-meeting_booked">Reunión</button><button class="q q-rejected">Rechazado</button>
+      </div>
     </div>
-    <div class="card-body">
-      ${sec("Executive summary", `<p>${esc(opp.summary)}</p>`)}
-      ${sec("Main hypothesis", `<p class="thesis">${esc(opp.thesis)}</p>`)}
-      ${sec(`Evidence — ${opp.evidence?.length || 0} points`, evidence(opp))}
-      ${sec("Detected tensions", `<div class="tensions">${(opp.tensions || []).map((t) => `<span class="tension">${esc(TENSION_TYPES[t] || t)}</span>`).join("")}</div>`)}
-      ${sec("Why now", `<p>${esc(opp.whyNow)}</p>`)}
-      ${sec("First lever", `<p>${esc(opp.firstLever)} <span class="offer">→ ${esc(offer(opp.suggestedOfferKey))}</span></p>`)}
-      ${sec("Call opening", `<blockquote>${esc(opp.callOpening)}</blockquote>`)}
-      ${sec("Most likely objection", `<p>${esc(opp.objection)}</p>`)}
-      ${sec("Recommended response", `<p>${esc(opp.objectionResponse)}</p>`)}
-    </div>
-    <div class="sec-meta">Sector: ${esc(sector)}${opp.synthetic ? " · demo data" : " · researched"}</div>
-    ${verifBlock(opp)}
+    <details class="c-detail">
+      <summary><span>Ver análisis completo</span></summary>
+      ${sec("Tesis", `<p class="thesis">${esc(opp.thesis)}</p>`)}
+      ${sec("Resumen", `<p>${esc(opp.summary)}</p>`)}
+      ${sec(`Evidencia — ${opp.evidence?.length || 0}`, evidence(opp))}
+      ${sec("Tensiones", `<div class="tensions">${(opp.tensions || []).map((t) => `<span class="tension">${esc(TENSION_TYPES[t] || t)}</span>`).join("")}</div>`)}
+      ${sec("Objeción probable", `<p>${esc(opp.objection)}</p>`)}
+      ${sec("Respuesta recomendada", `<p class="resp">${esc(opp.objectionResponse)}</p>`)}
+      ${verifBlock(opp)}
+      <div class="sec-meta">Sector: ${esc(sector)}${opp.synthetic ? " · datos demo" : " · investigado"}</div>
+    </details>
   </article>`;
 }
 
 function table(list) {
-  const head = ["#", "Company", "Sector", "City", "Class", "Conf", "Evid", "Close", "Reco"];
+  const head = ["#", "Empresa", "Sector", "Ciudad", "Clase", "Conf", "Evid", "Cierre", "Recom"];
   return `<table class="rank-table"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${
     list.map((o) => {
       const s = o.scores;
@@ -131,43 +152,43 @@ function table(list) {
   }</tbody></table>`;
 }
 
-const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
+const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>01 · XN LAB — Opportunity Intelligence (snapshot)</title>
+<title>01 · XN LAB — Inteligencia de Oportunidades (snapshot)</title>
 <style>${css}
-/* snapshot-only spacing */
+/* solo para el snapshot */
 .snap-section{padding:22px 26px;}
 .snap-note{font-size:12px;color:var(--ink-dim);background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin:0 26px 16px;}
 h2{margin-top:6px;}
 </style></head><body><div class="app">
   <header class="app-head">
-    <div class="brand"><span class="logo">01 · XN LAB</span><span class="tagline">Opportunity Intelligence — moments, not companies</span></div>
-    <div class="head-actions"><span class="demo-badge researched-badge">STATIC SNAPSHOT · ${new Date().toLocaleString("es-ES")}</span></div>
+    <div class="brand"><span class="logo">01 · XN LAB</span><span class="tagline">Inteligencia de Oportunidades — momentos, no empresas</span></div>
+    <div class="head-actions"><span class="demo-badge researched-badge">SNAPSHOT ESTÁTICO · ${new Date().toLocaleString("es-ES")}</span></div>
   </header>
-  <nav class="tabs"><button class="tab active">Pipeline</button><button class="tab">Ranking table</button><button class="tab">Opportunity cards</button><button class="tab">Learning loop</button></nav>
+  <nav class="tabs"><button class="tab active">Embudo</button><button class="tab">Ranking</button><button class="tab">Oportunidades</button><button class="tab">Aprendizaje</button></nav>
 
-  <p class="snap-note">This is a static, self-contained snapshot of the dashboard — open it in any browser, no server needed. For the interactive tool (filters, call status, notes, exports, the learning loop), run <code>npm run dev</code> inside <code>opportunity-intel/</code>.</p>
+  <p class="snap-note">Esto es un snapshot estático y autocontenido del panel — ábrelo en cualquier navegador, sin servidor. Para la herramienta interactiva (filtros, estado de llamada, notas, exportaciones, aprendizaje), ejecuta <code>npm run dev</code> dentro de <code>opportunity-intel/</code>.</p>
 
   <section class="snap-section">
-    <h2>Candidate pipeline — Researched (real Spanish leads)</h2>
+    <h2>Embudo de candidatos — Investigado (leads reales en España)</h2>
     ${pipelineRow(real.counts)}
-    <div class="pipe-summary"><p>Real, press-verified leads with verified decision makers. Conservative on purpose: on-site tension / pain still grey, so scores sit below the synthetic archetypes and read “prepare a mini-audit first”.</p></div>
+    <div class="pipe-summary"><p>Leads reales verificados en prensa, con decisores verificados. Conservador a propósito: la tensión interna / dolor siguen en gris, así que las puntuaciones quedan por debajo de los arquetipos sintéticos y marcan “preparar mini-auditoría primero”.</p></div>
   </section>
 
   <section class="snap-section">
-    <h2>Opportunity cards — Real leads</h2>
+    <h2>Oportunidades — Leads reales</h2>
     <div class="cards">${real.final.map(card).join("")}</div>
   </section>
 
   <section class="snap-section">
-    <h2>Demo dataset (synthetic archetypes) — pipeline & ranking</h2>
+    <h2>Dataset demo (arquetipos sintéticos) — embudo y ranking</h2>
     ${pipelineRow(demo.counts)}
     <div style="height:14px"></div>
     ${table(demo.final)}
   </section>
 
   <section class="snap-section">
-    <h2>Demo dataset — top opportunity cards</h2>
+    <h2>Dataset demo — mejores oportunidades</h2>
     <div class="cards">${demo.final.slice(0, 4).map(card).join("")}</div>
   </section>
 
