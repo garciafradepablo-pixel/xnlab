@@ -171,7 +171,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v7 · éxito" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v8 · foco" }),
     ]),
   ]);
 }

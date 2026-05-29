@@ -315,15 +315,15 @@ export function renderCard(opp, record, handlers = {}) {
     el("div", { class: "c-ident" }, [
       el("h3", { text: opp.company }),
       el("p", { class: "c-sub", text: `${opp.subsector} · ${opp.city}` }),
+      // Foco radical: en reposo, solo lo que decide si llamar — éxito, casa y
+      // facilidad de contacto. (Recomendación y € viven en el análisis.)
       el("div", { class: "c-tags" }, [
-        s.successIndex != null ? el("span", { class: `success-tag success-${band(s.successIndex)}`, title: "Índice de éxito: probabilidad amplificada de cerrar (conversar→reunir→cerrar × confianza)", text: `🎯 Éxito ${s.successIndex}` }) : null,
+        s.successIndex != null ? el("span", { class: `success-tag success-${band(s.successIndex)}`, title: `Índice de éxito ${s.successIndex} · ${RECOMMENDATIONS[s.recommendation]} · € ${ECONOMIC_LABELS[s.economicPotential] || s.economicPotential}`, text: `🎯 ${s.successIndex}` }) : null,
         el("span", { class: `pillc pillc-${s.classification}`, text: classLabel(s.classification) }),
-        el("span", { class: `reco reco-${band(s.confidence)}`, text: RECOMMENDATIONS[s.recommendation] }),
-        el("span", { class: "econ-tag", title: "Potencial económico", text: `€ ${ECONOMIC_LABELS[s.economicPotential] || s.economicPotential}` }),
         (() => { const cd = connectionDifficulty(opp); return el("span", {
           class: `conn conn-${cd.level}`,
           title: `${cd.label} — ${cd.advice}${cd.channels.length ? "\nCanales: " + cd.channels.join(", ") : ""}`,
-          text: `${cd.icon} ${cd.label}`,
+          text: cd.icon,
         }); })(),
       ]),
     ]),
@@ -457,6 +457,10 @@ export function renderCard(opp, record, handlers = {}) {
 
   const detail = el("details", { class: "c-detail" }, [
     el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
+    // Foco radical: lo secundario vive aquí dentro, no en reposo.
+    freshBadge,
+    metrics,
+    serviceBlock,
     radarBlock,
     lifeBlock,
     viabilityBlock,
@@ -483,12 +487,11 @@ export function renderCard(opp, record, handlers = {}) {
 
   // Destacado de élite: leads de máxima puntuación / "llamar de inmediato".
   const elite = s.confidence >= 90 ? "card-elite" : s.recommendation === "call_immediately" ? "card-priority" : "";
+  // Foco radical: en reposo solo lo esencial (identidad + éxito + gancho +
+  // acción). El resto se revela al abrir "Ver análisis completo".
   return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
     hook,
-    freshBadge,
-    metrics,
-    serviceBlock,
     action,
     failurePanel,
     detail,
