@@ -34,25 +34,42 @@ const SECTOR_QUERIES = {
 
 let seedCursor = 0; // avanza entre tandas
 
+const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
 /**
  * Construye la lista de consultas para una tanda.
- * @param {string[]} sectors  sectores a barrer (por defecto, todos)
+ * - Si el usuario escribe un prompt → se usa tal cual (una o varias ciudades).
+ * - Si NO escribe nada → barrido ALEATORIO entre sectores y ciudades.
+ * @param {string} userQuery  prompt libre (puede venir vacío)
+ * @param {string[]} sectors  sectores a barrer
  * @param {number} perBatch   nº de consultas por tanda
  */
-function buildQueries(sectors, perBatch) {
-  const out = [];
+function buildQueries(userQuery, sectors, perBatch) {
   const secs = sectors && sectors.length ? sectors : SECTORS.map((s) => s.key);
-  let i = seedCursor;
-  while (out.length < perBatch) {
-    const sec = secs[i % secs.length];
-    const qs = SECTOR_QUERIES[sec] || [];
-    const q = qs[Math.floor(i / secs.length) % qs.length];
-    const city = CITIES[i % CITIES.length];
-    if (q) out.push({ sector: sec, query: `${q} ${city}` });
-    i++;
-    if (i - seedCursor > perBatch * 6) break; // salvaguarda
+  const q = (userQuery || "").trim();
+
+  // Prompt libre: si ya menciona una ciudad la respetamos; si no, lo lanzamos
+  // tal cual y además en un par de ciudades grandes para ampliar la pesca.
+  if (q) {
+    const mentionsCity = CITIES.some((c) => q.toLowerCase().includes(c.toLowerCase()));
+    if (mentionsCity) return [{ sector: "all", query: q }];
+    const cities = [pick(CITIES), pick(CITIES)].filter((v, i, a) => a.indexOf(v) === i);
+    return cities.map((city) => ({ sector: "all", query: `${q} ${city}` }));
   }
-  seedCursor = i; // la próxima tanda continúa donde lo dejó
+
+  // Sin prompt: barrido aleatorio (sector + sub-consulta + ciudad), sin repetir.
+  const out = [];
+  const seen = new Set();
+  let guard = 0;
+  while (out.length < perBatch && guard++ < perBatch * 8) {
+    const sec = pick(secs);
+    const qs = SECTOR_QUERIES[sec] || [];
+    if (!qs.length) continue;
+    const query = `${pick(qs)} ${pick(CITIES)}`;
+    if (seen.has(query)) continue;
+    seen.add(query);
+    out.push({ sector: sec, query });
+  }
   return out;
 }
 
@@ -61,48 +78,50 @@ function buildQueries(sectors, perBatch) {
  *
  * @param {object} opts
  *   config       configuración de scoring (state.config)
- *   sectors      sectores a barrer
- *   existingIds  Set de ids/empresas ya presentes (para no duplicar)
- *   perBatch     consultas por tanda (def. 4)
- *   minScore     corte de confianza para entrar al ranking (def. 0 = todos los
- *                que no sean "discard")
+ *   query        prompt libre del usuario (vacío = barrido aleatorio)
+ *   sectors      sectores a barrer (cuando no hay prompt)
+ *   existingNames Set de empresas ya presentes (para no duplicar)
+ *   perBatch     consultas por tanda (def. 5)
+ *   minScore     LISTÓN de excelencia: solo entran al ranking leads ≥ esto
  *   onSave       (lead) => void   se llama por cada lead aceptado
- * @returns {Promise<{seen,evaluated,added,best,queries,sample}>}
+ * @returns {Promise<{seen,evaluated,added,best,queries,sample,belowSample}>}
  */
 export async function runBatch({
   config = {},
+  query = "",
   sectors = null,
   existingNames = new Set(),
-  perBatch = 4,
+  perBatch = 5,
   minScore = 0,
   onSave = () => {},
 } = {}) {
-  const queries = buildQueries(sectors, perBatch);
+  const queries = buildQueries(query, sectors, perBatch);
   const seenNames = new Set([...existingNames].map((n) => String(n).toLowerCase()));
   let seen = 0, evaluated = 0, added = 0, best = 0;
   const sample = [];
+  const below = []; // mejores que NO llegaron al listón (para sugerir enriquecer)
 
-  for (const { sector, query } of queries) {
+  for (const { sector, query: q } of queries) {
     let candidates = [];
-    try { candidates = await discover({ sector, query }); } catch { candidates = []; }
+    try { candidates = await discover({ sector, query: q }); } catch { candidates = []; }
     for (const c of candidates) {
       seen++;
       const nameKey = String(c.company || "").toLowerCase();
       if (!nameKey || seenNames.has(nameKey)) continue; // dedup global
-      // Convertir a lead y evaluar.
       const lead = buildLead({
-        company: c.company, sector: c.sector || sector, subsector: c.subsector || "",
-        city: c.city || "", website: c.website || null,
+        company: c.company, sector: c.sector || (sector === "all" ? null : sector) || "growth",
+        subsector: c.subsector || "", city: c.city || "", website: c.website || null,
         phone: c.phone || null, googleMaps: c.googleMaps || null,
       });
       const scores = scoreOpportunity(lead, config);
       evaluated++;
-      // Una empresa recién descubierta es real y del sector/ciudad correctos:
-      // es un cliente potencial VÁLIDO aunque puntúe bajo (aún no sabemos su
-      // "momento"). Solo la rechazamos si es un DESCARTE DURO (4+ banderas rojas
-      // o encaje estratégico negativo). El resto entra para enriquecer.
-      if (scores.redCount >= 4) continue;
-      if (scores.confidence < minScore) continue; // minScore por defecto 0 = deja entrar
+      if (scores.redCount >= 4) continue; // descarte duro, ni para enriquecer
+      // Por debajo del listón: NO entra al ranking, pero lo recordamos como
+      // "candidato a enriquecer" para informar al usuario (honestidad).
+      if (scores.confidence < minScore) {
+        below.push({ company: lead.company, city: lead.city, confidence: scores.confidence });
+        continue;
+      }
       seenNames.add(nameKey);
       onSave(lead);
       added++;
@@ -111,9 +130,15 @@ export async function runBatch({
     }
   }
 
-  // Ordena la muestra por puntuación (lo mejor primero).
+  // Ordena por puntuación (lo mejor primero).
   sample.sort((a, b) => b.confidence - a.confidence);
-  return { seen, evaluated, added, best, queries: queries.map((q) => q.query), sample };
+  below.sort((a, b) => b.confidence - a.confidence);
+  return {
+    seen, evaluated, added, best,
+    queries: queries.map((x) => x.query),
+    sample,
+    belowSample: below.slice(0, 3),
+  };
 }
 
 /** Reinicia el cursor de semillas (para tests o "empezar de cero"). */

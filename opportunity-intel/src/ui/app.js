@@ -7,6 +7,7 @@
 import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
 import { runPipeline } from "../pipeline.js";
+import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
 import RESEARCHED from "../data/researched.js";
 import {
@@ -45,8 +46,21 @@ let root;
 
 export async function mount(rootEl) {
   root = rootEl;
+  purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
   render();
+}
+
+// Quita de "tus leads" los que no llegan al listón de calidad (p.ej. los 31.7
+// que el agente antiguo metía). Así el ranking no se llena de cifras bajas.
+function purgeWeakUserLeads() {
+  try {
+    const leads = store.getUserLeads();
+    for (const l of leads) {
+      const s = scoreOpportunity(l, state.config);
+      if (s.confidence < 80) store.removeUserLead(l.id);
+    }
+  } catch { /* no bloquear el arranque */ }
 }
 
 function activeCandidates() {
@@ -148,7 +162,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v5 · radar" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v6 · ≥80" }),
     ]),
   ]);
 }
@@ -455,41 +469,52 @@ function cardsView() {
   ]);
 }
 
-// Botón del agente: lanza una tanda, evalúa y mete los nuevos en el ranking.
+// Umbral de excelencia: solo entran al ranking oportunidades por encima de
+// esto. El usuario quiere SOLO leads de calidad, nunca cifras bajas.
+const AGENT_MIN_SCORE = 80;
+
+// Control del agente: un prompt (qué buscar) + botón. Vacío → barrido aleatorio
+// entre sectores. Solo añade al ranking lo que supere AGENT_MIN_SCORE.
 function agentButton() {
-  const btn = el("button", { class: "btn-agent", html: "⚡ Nueva tanda de leads" });
-  btn.addEventListener("click", async () => {
+  const prompt = el("input", {
+    class: "agent-prompt",
+    type: "search",
+    placeholder: "Qué buscar (ej. clínicas dentales Madrid) — vacío = aleatorio entre sectores",
+  });
+  const btn = el("button", { class: "btn-agent", html: "⚡ Conseguir más leads" });
+  const run = async () => {
     btn.disabled = true;
+    const label = btn.innerHTML;
     btn.innerHTML = "🧠 Buscando y evaluando…";
-    const report = $("#agent-report", root);
-    if (report) report.innerHTML = "";
-    // Nombres ya presentes (dataset activo + leads de usuario) para no duplicar.
     const existing = new Set((state.results?.all || []).map((o) => o.company));
-    let added = 0;
     const res = await runBatch({
       config: state.config,
+      query: prompt.value.trim(),     // prompt libre; vacío = aleatorio
       existingNames: existing,
-      perBatch: 4,
-      minScore: 0,
-      onSave: (lead) => { store.saveUserLead(lead); added++; },
+      perBatch: 5,
+      minScore: AGENT_MIN_SCORE,       // SOLO ≥80 entra al ranking
+      onSave: (lead) => store.saveUserLead(lead),
     });
     await recompute();
     render();
-    // Tras el render, pinta el informe del agente.
     const rep = $("#agent-report", root);
-    if (rep) {
-      rep.appendChild(agentReport(res));
-    }
-  });
-  return btn;
+    if (rep) rep.appendChild(agentReport(res));
+  };
+  btn.addEventListener("click", run);
+  prompt.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+  return el("div", { class: "agent-bar" }, [prompt, btn]);
 }
 
 function agentReport(res) {
   const box = el("div", { class: `agent-card ${res.added ? "ok" : "empty"}` });
   if (res.added) {
-    box.appendChild(el("p", { class: "agent-headline", html: `🐋 <b>${res.added} nuevos clientes potenciales</b> evaluados y añadidos al ranking · mejor puntuación <b>${res.best}</b>` }));
+    box.appendChild(el("p", { class: "agent-headline", html: `🐋 <b>${res.added} oportunidad${res.added === 1 ? "" : "es"} por encima de ${AGENT_MIN_SCORE}</b> añadida${res.added === 1 ? "" : "s"} al ranking · mejor <b>${res.best}</b>` }));
   } else {
-    box.appendChild(el("p", { class: "agent-headline", text: `Revisé ${res.seen} empresas pero ninguna nueva pasó el corte esta vez. Pulsa otra vez para barrer más ciudades/sectores.` }));
+    // Honesto: exploró muchas, pero ninguna llega al listón de excelencia.
+    const near = res.belowSample?.length
+      ? ` Las más prometedoras (a enriquecer): ${res.belowSample.map((s) => `${s.company} (${s.confidence})`).join(", ")}.`
+      : "";
+    box.appendChild(el("p", { class: "agent-headline", html: `Exploré ${res.seen} empresas; ninguna llega aún a <b>${AGENT_MIN_SCORE}</b>. Una empresa solo supera 80 con momento citado + decisor + tensión verificada (eso se enriquece, no viene del mapa).${near}` }));
   }
   box.appendChild(el("p", { class: "agent-sub", text: `Exploradas ${res.seen} · evaluadas ${res.evaluated} · búsquedas: ${res.queries.join(" · ")}` }));
   if (res.sample.length) {
