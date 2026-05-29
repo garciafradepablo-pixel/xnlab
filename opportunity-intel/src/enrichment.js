@@ -165,6 +165,17 @@ const BOOKING_KEYWORDS = [
   "solicita", "presupuesto",
 ];
 
+// Word-boundary matcher so "reserva" does NOT match the ubiquitous footer
+// phrase "todos los derechos reservados". Naive substring matching here would
+// produce false positives (thinking a site has a booking CTA when it only has a
+// copyright notice), which would silently hide a real conversion lever.
+const BOOKING_RE = new RegExp(
+  "\\b(" +
+    BOOKING_KEYWORDS.map((k) => k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|") +
+    ")\\b",
+  "i"
+);
+
 // Template / DIY builders. Not damning alone, but a perception signal for a
 // premium business.
 const GENERATOR_HINTS = [
@@ -202,7 +213,7 @@ export function analyzeWebsiteHtml(html, opts = {}) {
     copyrightYear !== null && CURRENT_YEAR - copyrightYear >= staleAfterYears;
 
   const hasViewport = /<meta[^>]+name=["']?viewport["']?/i.test(text);
-  const hasBooking = BOOKING_KEYWORDS.some((k) => lower.includes(k));
+  const hasBooking = BOOKING_RE.test(lower);
 
   let generator = null;
   for (const [needle, label] of GENERATOR_HINTS) {

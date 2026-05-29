@@ -27,7 +27,8 @@ ok(stale.generator === "Wix", "detects Wix as generator");
 ok(stale.hasViewport === false, "detects missing viewport");
 ok(stale.hasBooking === false, "detects missing booking CTA");
 const staleRes = findingsToResult(stale, "https://x.es");
-ok(staleRes.evidence.length === 3, "stale site yields 3 evidence points");
+// stale copyright + no viewport + no booking CTA + Wix template = 4 findings.
+ok(staleRes.evidence.length === 4, "stale/template/no-viewport/no-booking site yields 4 evidence points");
 ok(staleRes.signalHints.actionableLever?.level === "green", "missing booking => green lever hint");
 
 // Modern, responsive, booking-ready site → no negative evidence.
