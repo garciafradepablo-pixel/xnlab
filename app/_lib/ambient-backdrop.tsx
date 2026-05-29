@@ -45,7 +45,7 @@ export function AmbientBackdrop() {
             // brown intermediate stops (rgba(198,132,56) / rgba(150,92,38))
             // were what turned the whole field turbid. Now it steps from a
             // clean champagne straight to transparent — warm, not muddy.
-            "radial-gradient(ellipse 94% 60% at 50% -2%, rgba(242,194,126,0.18) 0%, rgba(228,176,116,0.05) 26%, transparent 58%)",
+            "radial-gradient(ellipse 96% 62% at 50% -4%, rgba(255,198,124,0.24) 0%, rgba(238,170,108,0.07) 26%, transparent 56%)",
             // cool counter-light, bottom-left
             "radial-gradient(ellipse 80% 60% at 6% 98%, rgba(120,142,230,0.13) 0%, rgba(82,112,222,0.045) 34%, transparent 66%)",
             // warm floor glow, bottom-centre — a faint champagne ember now,
@@ -108,7 +108,7 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse 72% 56% at 50% 48%, rgba(238,190,134,0.10) 0%, rgba(208,160,108,0.03) 38%, transparent 70%)",
+            "radial-gradient(ellipse 72% 56% at 50% 48%, rgba(250,192,128,0.14) 0%, rgba(214,162,108,0.04) 38%, transparent 70%)",
           transformOrigin: "50% 50%",
           willChange: "transform, opacity",
         }}
@@ -129,7 +129,7 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse 125% 108% at 50% 47%, transparent 0%, transparent 44%, rgba(7,6,10,0.32) 74%, rgba(4,3,6,0.7) 100%)",
+            "radial-gradient(ellipse 122% 106% at 50% 46%, transparent 0%, transparent 42%, rgba(7,6,10,0.42) 72%, rgba(3,2,5,0.82) 100%)",
         }}
       />
     </>

@@ -162,7 +162,7 @@ export function Orb({ world, central = false, image, size = 220, className }: Or
                   // but not neon) with a touch more contrast and full
                   // brightness so each surface's colour actually lands.
                   // Central Core untouched (its chrome is already amber).
-                  filter: isCentral ? undefined : "saturate(0.95) contrast(1.07) brightness(1.02)",
+                  filter: isCentral ? undefined : "saturate(1.22) contrast(1.1) brightness(1.05)",
                 }}
                 priority={isCentral}
               />
