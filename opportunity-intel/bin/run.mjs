@@ -14,6 +14,7 @@
 //   node bin/run.mjs                       # Top 20 from the seed, exports to ./out
 //   node bin/run.mjs --final 10 --out /tmp/leads
 //   node bin/run.mjs --enrich              # also run live adapters (needs network)
+//   node bin/run.mjs --dataset researched  # use the real, cited Spanish leads
 // =============================================================================
 
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -23,6 +24,7 @@ import { defaultAdapters, liveAdapters } from "../src/enrichment.js";
 import { toCSV, toJSON, toCallSheet } from "../src/export.js";
 import { DEFAULT_CONFIG, CLASSIFICATIONS, RECOMMENDATIONS } from "../src/models.js";
 import SEED from "../src/seed.js";
+import RESEARCHED from "../src/data/researched.js";
 
 // --- tiny arg parser ---------------------------------------------------------
 function parseArgs(argv) {
@@ -50,7 +52,11 @@ const outDir = resolve(args.out && args.out !== true ? args.out : "out");
 const adapters = args.enrich ? liveAdapters() : defaultAdapters();
 const quiet = !!args.quiet;
 
-const res = await runPipeline(SEED, config, adapters);
+// --dataset researched|demo (default demo). Researched = real, cited Spanish leads.
+const datasetName = args.dataset === "researched" ? "researched" : "demo";
+const candidates = datasetName === "researched" ? RESEARCHED : SEED;
+
+const res = await runPipeline(candidates, config, adapters);
 const tracking = {}; // headless: no stored tracking
 
 mkdirSync(outDir, { recursive: true });
@@ -68,7 +74,7 @@ if (!quiet) {
   const c = res.counts;
   console.log(`\n01 · XN LAB — Opportunity Intelligence (headless run)`);
   console.log(`pool ${config.candidateVolume} · scored ${c.scored} · filtered ${c.filtered} · shortlisted ${c.shortlisted} · final ${c.final}`);
-  console.log(`conservatism ${Math.round(config.conservatism * 100)}% · min score ${config.minScore} · adapters ${args.enrich ? "LIVE" : "demo(offline)"}\n`);
+  console.log(`dataset ${datasetName} · conservatism ${Math.round(config.conservatism * 100)}% · min score ${config.minScore} · adapters ${args.enrich ? "LIVE" : "demo(offline)"}\n`);
   console.log("RNK  CLS  CONF  EVID  CLOSE  RECOMMENDATION      COMPANY");
   console.log("-".repeat(76));
   for (const o of res.final) {
