@@ -11,6 +11,7 @@
 // =============================================================================
 
 import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
+import { currentUser } from "./auth.js";
 
 const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
@@ -18,6 +19,7 @@ const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
+const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
 const mem = new Map();
@@ -60,21 +62,34 @@ export function getTracking() {
  * @property {string} updatedAt ISO timestamp
  */
 
+// ---- Quién trabaja (atribución de actividad) --------------------------------
+// La autoría sale del usuario en sesión (auth.js). Si no hay sesión, cae al
+// nombre suelto guardado (compatibilidad) o vacío.
+export function getWho() {
+  const u = currentUser();
+  if (u) return u.name;
+  return read(USER_KEY, "") || "";
+}
+export function setWho(name) {
+  write(USER_KEY, String(name || "").trim());
+  return getWho();
+}
+
 export function getRecord(id) {
   const all = getTracking();
-  return all[id] || { status: "not_called", notes: "", updatedAt: null };
+  return all[id] || { status: "not_called", notes: "", updatedAt: null, by: null };
 }
 
 export function setStatus(id, status) {
   const all = getTracking();
-  all[id] = { ...getRecord(id), status, updatedAt: new Date().toISOString() };
+  all[id] = { ...getRecord(id), status, updatedAt: new Date().toISOString(), by: getWho() || null };
   write(TRACK_KEY, all);
   return all[id];
 }
 
 export function setNotes(id, notes) {
   const all = getTracking();
-  all[id] = { ...getRecord(id), notes, updatedAt: new Date().toISOString() };
+  all[id] = { ...getRecord(id), notes, updatedAt: new Date().toISOString(), by: getWho() || null };
   write(TRACK_KEY, all);
   return all[id];
 }
@@ -129,6 +144,7 @@ export function recordStatusOutcome(id, status, meta = {}) {
       // Índice de Éxito contra la realidad (lo que de verdad cierra).
       successIndexAtCall: typeof meta.successIndex === "number" ? meta.successIndex : null,
       hypothesisCorrect: status === "interested" || status === "meeting_booked",
+      by: getWho() || null,
       createdAt: new Date().toISOString(),
     });
   }
@@ -384,7 +400,7 @@ export function addVerification(id, filter, level, note, url) {
   list.push({
     filter, level, note: note || "",
     url: url || null,
-    by: "analista",
+    by: getWho() || "analista",
     at: new Date().toISOString(),
   });
   all[id] = list;

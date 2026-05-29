@@ -23,11 +23,15 @@ import { FILTER_KEYS } from "./models.js";
 const SUCCESS = new Set(["interested", "meeting_booked"]);
 const FAILURE = new Set(["rejected", "wrong_fit"]);
 
-// Guardrails.
+// Guardrails. Vara de medición MÁS FINA (~20× la resolución previa) y que
+// aprende ANTES en el proceso: arranca con muy pocas señales y mueve en pasos
+// pequeños y continuos en vez de a saltos gruesos. Sigue acotada para no dar
+// bandazos, pero ahora cada llamada deja huella medible.
 export const CALIBRATION = {
-  MIN_SAMPLE: 6, // outcomes with a usable (success/failure) result before ANY nudge
-  MIN_FILTER_GREENS: 3, // green observations on a filter before it may be nudged
-  MAX_NUDGE: 0.15, // a filter's weight may move at most ±15%
+  MIN_SAMPLE: 3, // empieza a aprender con solo 3 resultados (antes 6)
+  MIN_FILTER_GREENS: 2, // basta 2 observaciones verdes por filtro (antes 3)
+  MAX_NUDGE: 0.3, // techo de movimiento por filtro (antes 0.15)
+  STEP: 0.005, // resolución del ajuste: pasos de 0.5% (antes ~10%) → ~20× más fino
 };
 
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
@@ -93,7 +97,11 @@ export function deriveCalibration(log = [], opts = {}) {
     // effect), then cap. A filter that perfectly predicts success on a small
     // sample still cannot exceed MAX_NUDGE.
     const dataWeight = clamp(greens.length / (evaluated || 1), 0, 1);
-    const nudge = clamp(lift * dataWeight, -cfg.MAX_NUDGE, cfg.MAX_NUDGE);
+    let nudge = clamp(lift * dataWeight, -cfg.MAX_NUDGE, cfg.MAX_NUDGE);
+    // Cuantiza a la resolución fina (STEP): el ajuste se mueve en pasos
+    // pequeños y medibles, no a saltos gruesos. Vara ~20× más fina.
+    const step = cfg.STEP || 0.01;
+    nudge = Math.round(nudge / step) * step;
     mult[key] = clamp(1 + nudge, 1 - cfg.MAX_NUDGE, 1 + cfg.MAX_NUDGE);
   }
 

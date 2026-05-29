@@ -30,6 +30,7 @@ import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { buildLead } from "../newlead.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
+import * as auth from "../auth.js";
 import * as xport from "../export.js";
 
 const state = {
@@ -46,9 +47,58 @@ let root;
 
 export async function mount(rootEl) {
   root = rootEl;
+  // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
+  // su color fijo y firma su actividad.
+  if (!auth.currentUser()) { renderAuth(); return; }
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
   render();
+}
+
+// ---- Puerta de acceso (login / crear usuario) ------------------------------
+function renderAuth() {
+  clear(root);
+  const tab = state._authTab || "login";
+  const msg = el("p", { class: "auth-msg" });
+
+  const nameI = el("input", { class: "auth-f", placeholder: "Usuario", autocomplete: "username" });
+  const passI = el("input", { class: "auth-f", type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
+
+  // Selector de color (solo al crear).
+  let chosenColor = auth.nextFreeColor();
+  const swatches = el("div", { class: "swatches" }, auth.SIGNATURE_COLORS.map((c) => {
+    const sw = el("button", { class: `swatch ${c === chosenColor ? "sel" : ""}`, style: `background:${c}`, title: c });
+    sw.addEventListener("click", () => { chosenColor = c; [...swatches.children].forEach((x) => x.classList?.remove?.("sel")); sw.classList.add("sel"); });
+    return sw;
+  }));
+
+  const doLogin = () => {
+    const r = auth.login(nameI.value, passI.value);
+    if (!r.ok) { msg.textContent = r.error; return; }
+    mount(root); // re-entra ya con sesión
+  };
+  const doCreate = () => {
+    const r = auth.createUser(nameI.value, passI.value, chosenColor);
+    if (!r.ok) { msg.textContent = r.error; return; }
+    auth.login(nameI.value, passI.value);
+    mount(root);
+  };
+
+  const primary = el("button", { class: "btn-primary auth-go", text: tab === "login" ? "Entrar" : "Crear usuario y entrar" });
+  primary.addEventListener("click", tab === "login" ? doLogin : doCreate);
+  passI.addEventListener("keydown", (e) => { if (e.key === "Enter") primary.click(); });
+
+  const switcher = el("button", { class: "auth-switch", text: tab === "login" ? "¿No tienes usuario? Crear uno" : "Ya tengo usuario — entrar" });
+  switcher.addEventListener("click", () => { state._authTab = tab === "login" ? "create" : "login"; renderAuth(); });
+
+  const card = el("div", { class: "auth-card" }, [
+    el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+    el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
+    nameI, passI,
+    tab === "create" ? el("div", {}, [el("p", { class: "auth-color-label", text: "Tu color (firma tu trabajo):" }), swatches]) : null,
+    primary, msg, switcher,
+  ]);
+  root.appendChild(el("div", { class: "auth-screen" }, [card]));
 }
 
 // Quita de "tus leads" los que no llegan al listón de calidad (p.ej. los 31.7
@@ -58,7 +108,7 @@ function purgeWeakUserLeads() {
     const leads = store.getUserLeads();
     for (const l of leads) {
       const s = scoreOpportunity(l, state.config);
-      if (s.confidence < 80) store.removeUserLead(l.id);
+      if (s.confidence < 70) store.removeUserLead(l.id);
     }
   } catch { /* no bloquear el arranque */ }
 }
@@ -171,9 +221,24 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v9 · lentes" }),
+      userChip(),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v10 · usuarios" }),
     ]),
   ]);
+}
+
+// Chip del usuario en sesión: inicial sobre su color de firma + cerrar sesión.
+function userChip() {
+  const u = auth.currentUser();
+  if (!u) return el("span");
+  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.name[0].toUpperCase() });
+  const chip = el("button", { class: "user-chip", title: `${u.name} — pulsa para cerrar sesión` }, [
+    dot, el("span", { class: "user-name", text: u.name }),
+  ]);
+  chip.addEventListener("click", () => {
+    if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); mount(root); }
+  });
+  return chip;
 }
 
 function tabs() {
@@ -480,7 +545,7 @@ function cardsView() {
 
 // Umbral de excelencia: solo entran al ranking oportunidades por encima de
 // esto. El usuario quiere SOLO leads de calidad, nunca cifras bajas.
-const AGENT_MIN_SCORE = 80;
+const AGENT_MIN_SCORE = 70;
 
 // Control del agente: un prompt (qué buscar) + botón. Vacío → barrido aleatorio
 // entre sectores. Solo añade al ranking lo que supere AGENT_MIN_SCORE.
@@ -491,23 +556,47 @@ function agentButton() {
     placeholder: "Qué buscar (ej. clínicas dentales Madrid) — vacío = aleatorio entre sectores",
   });
   const btn = el("button", { class: "btn-agent", html: "⚡ Conseguir más leads" });
+  // El agente NO PARA hasta entregar al menos una oportunidad ≥ listón. Reintenta
+  // barriendo más sectores/ciudades, con un tope de rondas para no colgarse.
   const run = async () => {
     btn.disabled = true;
-    const label = btn.innerHTML;
-    btn.innerHTML = "🧠 Buscando y evaluando…";
+    const MAX_ROUNDS = 12;
     const existing = new Set((state.results?.all || []).map((o) => o.company));
-    const res = await runBatch({
-      config: state.config,
-      query: prompt.value.trim(),     // prompt libre; vacío = aleatorio
-      existingNames: existing,
-      perBatch: 5,
-      minScore: AGENT_MIN_SCORE,       // SOLO ≥80 entra al ranking
-      onSave: (lead) => store.saveUserLead(lead),
-    });
+    let totalSeen = 0, totalEval = 0, addedTotal = 0, best = 0;
+    let lastQueries = [], belowSample = [];
+    for (let round = 1; round <= MAX_ROUNDS; round++) {
+      btn.innerHTML = `🧠 Buscando… (ronda ${round})`;
+      // cede el hilo para que el navegador pinte el progreso
+      await new Promise((r) => setTimeout(r, 0));
+      const res = await runBatch({
+        config: state.config,
+        query: prompt.value.trim(),
+        existingNames: existing,
+        perBatch: 5,
+        minScore: AGENT_MIN_SCORE,
+        onSave: (lead) => { store.saveUserLead(lead); existing.add(lead.company); },
+      });
+      totalSeen += res.seen; totalEval += res.evaluated; addedTotal += res.added;
+      best = Math.max(best, res.best); lastQueries = res.queries;
+      // Acumula los mejores "casi" por si hay que entregar el mejor disponible.
+      belowSample = [...belowSample, ...(res.belowSample || [])]
+        .sort((a, b) => b.confidence - a.confidence).slice(0, 5);
+      if (res.added > 0) break;                 // ¡entregada! paramos
+      if (prompt.value.trim() && res.seen === 0) break; // prompt sin resultados de mapa
+    }
+    // No para con las manos vacías: si nada llegó al listón, entrega el MEJOR
+    // candidato encontrado, marcado para enriquecer (honesto, pero siempre da
+    // algo accionable). Se guarda como lead de usuario.
+    let deliveredBest = null;
+    if (addedTotal === 0 && belowSample.length) {
+      deliveredBest = belowSample[0];
+      const lead = buildLead({ company: deliveredBest.company, sector: "growth", city: deliveredBest.city || "" });
+      store.saveUserLead(lead);
+    }
     await recompute();
     render();
     const rep = $("#agent-report", root);
-    if (rep) rep.appendChild(agentReport(res));
+    if (rep) rep.appendChild(agentReport({ seen: totalSeen, evaluated: totalEval, added: addedTotal, best, queries: lastQueries.slice(0, 4), sample: [], belowSample, deliveredBest }));
   };
   btn.addEventListener("click", run);
   prompt.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
@@ -518,12 +607,17 @@ function agentReport(res) {
   const box = el("div", { class: `agent-card ${res.added ? "ok" : "empty"}` });
   if (res.added) {
     box.appendChild(el("p", { class: "agent-headline", html: `🐋 <b>${res.added} oportunidad${res.added === 1 ? "" : "es"} por encima de ${AGENT_MIN_SCORE}</b> añadida${res.added === 1 ? "" : "s"} al ranking · mejor <b>${res.best}</b>` }));
+  } else if (res.deliveredBest) {
+    // No se fue con las manos vacías: entrega el mejor candidato hallado, para
+    // enriquecer hasta superar el listón.
+    const d = res.deliveredBest;
+    box.appendChild(el("p", { class: "agent-headline", html: `Exploré ${res.seen} empresas. Ninguna llega aún a <b>${AGENT_MIN_SCORE}</b>, pero te entrego la más prometedora: <b>${esc(d.company)}</b> (${d.confidence}). Enriquécela (web, decisor, momento) para subirla. Está en el filtro "Por evaluar".` }));
   } else {
     // Honesto: exploró muchas, pero ninguna llega al listón de excelencia.
     const near = res.belowSample?.length
       ? ` Las más prometedoras (a enriquecer): ${res.belowSample.map((s) => `${s.company} (${s.confidence})`).join(", ")}.`
       : "";
-    box.appendChild(el("p", { class: "agent-headline", html: `Exploré ${res.seen} empresas; ninguna llega aún a <b>${AGENT_MIN_SCORE}</b>. Una empresa solo supera 80 con momento citado + decisor + tensión verificada (eso se enriquece, no viene del mapa).${near}` }));
+    box.appendChild(el("p", { class: "agent-headline", html: `Exploré ${res.seen} empresas; ninguna llega aún a <b>${AGENT_MIN_SCORE}</b>. Una empresa solo supera el listón con momento citado + decisor + tensión verificada (eso se enriquece, no viene del mapa).${near}` }));
   }
   box.appendChild(el("p", { class: "agent-sub", text: `Exploradas ${res.seen} · evaluadas ${res.evaluated} · búsquedas: ${res.queries.join(" · ")}` }));
   if (res.sample.length) {
@@ -691,12 +785,16 @@ function crmKpi(label, n, sub, tone) {
 
 function crmCard(o, isFail) {
   const s = o.scores;
+  // Firma de color: quién movió este lead a su estado actual.
+  const by = store.getTracking()[o.id]?.by;
+  const byColor = by ? auth.colorOf(by) : null;
   const children = [
     el("div", { class: "crm-card-top" }, [
+      byColor ? el("span", { class: "by-dot", style: `background:${byColor}`, title: `Movido por ${by}` }) : null,
       el("span", { class: "crm-card-name", text: o.company }),
       el("span", { class: `crm-card-conf conf-${s.confidence >= 75 ? "hot" : s.confidence >= 58 ? "warm" : "cool"}`, text: String(s.confidence) }),
     ]),
-    el("p", { class: "crm-card-sub", text: `${o.city} · ${o.decisionMaker?.name || "decisor por identificar"}` }),
+    el("p", { class: "crm-card-sub", text: `${o.city} · ${o.decisionMaker?.name || "decisor por identificar"}${by ? " · " + by : ""}` }),
   ];
   // En columnas de fallo, mostrar el motivo probable (lectura de señales).
   if (isFail) {

@@ -82,6 +82,29 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
    permite reiniciarlo al cambiar de pantalla. */
 html, body { height: 100%; }
 .app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+
+/* ---- Puerta de acceso (login / crear usuario) ---- */
+.auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; padding: 24px;
+  background: radial-gradient(circle at 30% 20%, rgba(201,162,39,.08), transparent 60%), var(--bg); }
+.auth-card { width: 100%; max-width: 360px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px 22px; display: flex; flex-direction: column; gap: 12px; }
+.auth-logo { font-weight: 800; letter-spacing: 2px; font-size: 20px; text-align: center; }
+.auth-tagline { text-align: center; color: var(--ink-dim); font-size: 13px; margin: 0 0 6px; }
+.auth-f { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 9px; padding: 12px 13px; font-size: 16px; }
+.auth-f:focus { outline: none; border-color: var(--accent); }
+.auth-color-label { font-size: 12px; color: var(--ink-dim); margin: 4px 0 6px; }
+.swatches { display: flex; gap: 8px; flex-wrap: wrap; }
+.swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
+.swatch.sel { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px currentColor; }
+.auth-go { margin-top: 4px; }
+.auth-msg { color: var(--red); font-size: 12px; min-height: 14px; margin: 0; text-align: center; }
+.auth-switch { background: transparent; border: 0; color: var(--o1); font-size: 12px; cursor: pointer; }
+
+/* ---- Chip de usuario en cabecera + firma de color ---- */
+.user-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 3px; cursor: pointer; }
+.user-chip:hover { border-color: var(--ink-dim); }
+.user-dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; color: #0e0f12; }
+.user-name { font-size: 12px; color: var(--ink); }
+.by-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 .app-head { flex: 0 0 auto; }
 .tabs { flex: 0 0 auto; }
 .scroll {
