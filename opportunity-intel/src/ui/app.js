@@ -99,6 +99,12 @@ function visibleOpps() {
   // candidates below the Top N too.
   return state.results.all.filter((o) => {
     const s = o.scores;
+    // Prioridad absoluta: claridad. Por defecto SOLO oportunidades reales
+    // (01/XN). Lo "por evaluar" y los descartes no ensucian la vista — solo
+    // aparecen si el usuario los pide expresamente con el filtro de clase.
+    if (f.classification === "all") {
+      if (s.classification !== "01" && s.classification !== "xn") return false;
+    }
     if (f.sector !== "all" && o.sector !== f.sector) return false;
     if (f.city !== "all" && o.city !== f.city) return false;
     if (f.classification !== "all" && s.classification !== f.classification) return false;
@@ -162,7 +168,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v6 · ≥80" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v7 · éxito" }),
     ]),
   ]);
 }
@@ -390,7 +396,7 @@ function filterBar() {
     el("input", { type: "search", placeholder: "Buscar empresa / ciudad / decisor…", value: f.search, onInput: (e) => { f.search = e.target.value; rerenderResults(); } }),
     sel("sector", [opt("all", "Todos los sectores", f.sector === "all"), ...SECTORS.map((s) => opt(s.key, s.label, f.sector === s.key))]),
     sel("city", [opt("all", "Todas las ciudades", f.city === "all"), ...cities.map((c) => opt(c, c, f.city === c))]),
-    sel("classification", [opt("all", "01 + XN + descartar", f.classification === "all"), ...Object.entries(CLASSIFICATIONS).map(([k, v]) => opt(k, v, f.classification === k))]),
+    sel("classification", [opt("all", "Solo oportunidades (01 + XN)", f.classification === "all"), ...Object.entries(CLASSIFICATIONS).map(([k, v]) => opt(k, v, f.classification === k))]),
     sel("priority", [opt("all", "Cualquier prioridad", f.priority === "all"), opt("high", "Prioridad alta", f.priority === "high"), opt("medium", "Media", f.priority === "medium"), opt("low", "Baja", f.priority === "low")]),
     el("label", { class: "minev" }, [
       el("span", { text: "Mín. evidencias" }),

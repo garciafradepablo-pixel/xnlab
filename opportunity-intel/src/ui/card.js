@@ -316,6 +316,7 @@ export function renderCard(opp, record, handlers = {}) {
       el("h3", { text: opp.company }),
       el("p", { class: "c-sub", text: `${opp.subsector} · ${opp.city}` }),
       el("div", { class: "c-tags" }, [
+        s.successIndex != null ? el("span", { class: `success-tag success-${band(s.successIndex)}`, title: "Índice de éxito: probabilidad amplificada de cerrar (conversar→reunir→cerrar × confianza)", text: `🎯 Éxito ${s.successIndex}` }) : null,
         el("span", { class: `pillc pillc-${s.classification}`, text: classLabel(s.classification) }),
         el("span", { class: `reco reco-${band(s.confidence)}`, text: RECOMMENDATIONS[s.recommendation] }),
         el("span", { class: "econ-tag", title: "Potencial económico", text: `€ ${ECONOMIC_LABELS[s.economicPotential] || s.economicPotential}` }),

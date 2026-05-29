@@ -310,9 +310,19 @@ export function scoreOpportunity(opp, config = {}) {
 
   const { count: evidenceCount } = evidenceProfile(opp);
 
+  // Índice de ÉXITO: probabilidad amplificada de que la llamada acabe en
+  // negocio. No es la confianza sola — encadena el embudo real (conversar →
+  // reunir → cerrar) ponderado por la confianza. Es la métrica de "posibilidad
+  // de éxito" que prioriza el usuario: claridad sobre qué tiene más recorrido.
+  const successIndex = round(
+    (conversation * 0.25 + meeting * 0.35 + closing * 0.40) *
+      (0.55 + 0.45 * (cappedConfidence / 100))
+  );
+
   return {
     confidence: cappedConfidence,
     rawConfidence: confidence,
+    successIndex,
     evidence,
     conversation,
     meeting,
