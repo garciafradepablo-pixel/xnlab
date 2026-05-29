@@ -23,7 +23,7 @@ import {
 } from "../src/models.js";
 import { verificationProfile } from "../src/scoring.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../src/services.js";
-import { viability } from "../src/diagnosis.js";
+import { viability, connectionDifficulty, freshness } from "../src/diagnosis.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = join(__dir, "..");
@@ -124,11 +124,13 @@ function card(opp) {
           <span class="pillc pillc-${s.classification}">${esc(classLabel(s.classification))}</span>
           <span class="reco reco-${band(s.confidence)}">${esc(RECOMMENDATIONS[s.recommendation])}</span>
           <span class="econ-tag">€ ${esc(ECON[s.economicPotential] || s.economicPotential)}</span>
+          ${(() => { const cd = connectionDifficulty(opp); return `<span class="conn conn-${cd.level}" title="${esc(cd.advice)}">${cd.icon} ${esc(cd.label)}</span>`; })()}
         </div>
       </div>
       ${ring(s.confidence)}
     </div>
     <div class="c-hook"><span class="hook-ic">⚡</span><p>${esc(opp.whyNow)}</p></div>
+    ${(() => { const fr = freshness(opp); return `<div class="fresh fresh-${fr.tone}"><span class="fresh-dot"></span><span class="fresh-txt">${esc(fr.verdict)}</span></div>`; })()}
     <div class="c-metrics">
       ${bar("Conversación", s.conversation)}${bar("Reunión", s.meeting)}${bar("Cierre", s.closing)}
       ${dots(opp)}

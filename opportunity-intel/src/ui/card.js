@@ -29,7 +29,7 @@ import {
 } from "../models.js";
 import { explainScore, verificationProfile } from "../scoring.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
-import { failureReason, viability, recommendedPath, FAILURE_STATUSES } from "../diagnosis.js";
+import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -256,6 +256,11 @@ export function renderCard(opp, record, handlers = {}) {
         el("span", { class: `pillc pillc-${s.classification}`, text: classLabel(s.classification) }),
         el("span", { class: `reco reco-${band(s.confidence)}`, text: RECOMMENDATIONS[s.recommendation] }),
         el("span", { class: "econ-tag", title: "Potencial económico", text: `€ ${ECONOMIC_LABELS[s.economicPotential] || s.economicPotential}` }),
+        (() => { const cd = connectionDifficulty(opp); return el("span", {
+          class: `conn conn-${cd.level}`,
+          title: `${cd.label} — ${cd.advice}${cd.channels.length ? "\nCanales: " + cd.channels.join(", ") : ""}`,
+          text: `${cd.icon} ${cd.label}`,
+        }); })(),
       ]),
     ]),
     confidenceRing(s.confidence),
@@ -265,6 +270,13 @@ export function renderCard(opp, record, handlers = {}) {
   const hook = el("div", { class: "c-hook" }, [
     el("span", { class: "hook-ic", text: "⚡" }),
     el("p", { text: opp.whyNow }),
+  ]);
+
+  // ---- FRESCURA: ¿sigue viva la empresa / caliente el momento? ----
+  const fr2 = freshness(opp);
+  const freshBadge = el("div", { class: `fresh fresh-${fr2.tone}`, title: "Antigüedad de la señal — pulsa 'Ver análisis' para los pasos de comprobación" }, [
+    el("span", { class: "fresh-dot" }),
+    el("span", { class: "fresh-txt", text: fr2.verdict }),
   ]);
 
   // ---- METRICS: visual bars + signal dots ----
@@ -363,8 +375,16 @@ export function renderCard(opp, record, handlers = {}) {
     el("ol", { class: "path" }, path.map((p) => el("li", { text: p })))
   );
 
+  // Comprobación de vida del negocio (anti-empresas-en-desuso).
+  const lifeBlock = el("div", { class: "sec" }, [
+    el("h4", { text: "¿Sigue activa? — comprobar antes de llamar" }),
+    el("p", { class: `viab-verdict fresh-line-${fr2.tone}`, text: fr2.verdict }),
+    el("ul", { class: "bullets" }, fr2.checks.map((c) => el("li", { text: c }))),
+  ]);
+
   const detail = el("details", { class: "c-detail" }, [
     el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
+    lifeBlock,
     viabilityBlock,
     pathBlock,
     sec("Tesis", el("p", { class: "thesis", text: opp.thesis })),
@@ -392,6 +412,7 @@ export function renderCard(opp, record, handlers = {}) {
   return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
     hook,
+    freshBadge,
     metrics,
     serviceBlock,
     action,

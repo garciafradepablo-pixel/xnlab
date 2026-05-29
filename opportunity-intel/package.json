@@ -8,6 +8,7 @@
     "dev": "python3 -m http.server 4010",
     "run:leads": "node bin/run.mjs",
     "snapshot": "node bin/snapshot.mjs",
-    "test": "node test/scoring.test.mjs && node test/enrichment.test.mjs && node test/calibration.test.mjs && node test/services.test.mjs && node test/verification.test.mjs"
+    "bundle": "node bin/bundle.mjs",
+    "test": "node test/scoring.test.mjs && node test/enrichment.test.mjs && node test/calibration.test.mjs && node test/services.test.mjs && node test/verification.test.mjs && node test/freshness.test.mjs"
   }
 }

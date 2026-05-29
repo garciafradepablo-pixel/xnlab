@@ -151,3 +151,107 @@ export function recommendedPath(opp) {
 
   return steps.slice(0, 5);
 }
+
+// -----------------------------------------------------------------------------
+// freshness(opp) — ¿está VIVO el lead, o es una empresa/momento en desuso?
+//
+// Riesgo real: dar por bueno un lead cuya señal es vieja o cuyo negocio puede
+// haber cerrado. Esta función lee la antigüedad de la evidencia (años citados +
+// fecha de investigación) y devuelve un veredicto de frescura + el paso de
+// comprobación de "sigue activa" que el analista debe hacer antes de llamar.
+//
+// Conservador: ante la duda, marca para comprobar. No afirma que esté viva —
+// dice cuánto de reciente es lo que sabemos y qué confirmar.
+// -----------------------------------------------------------------------------
+// -----------------------------------------------------------------------------
+// connectionDifficulty(opp) — ¿qué fácil/difícil es CONECTAR con quien decide?
+//
+// Un lead estupendo es inútil si no puedes llegar a quien firma. Esta función
+// puntúa la "alcanzabilidad" según los canales disponibles y la señal de
+// decisor, y devuelve un nivel con icono para pintar en cada ficha.
+// -----------------------------------------------------------------------------
+export function connectionDifficulty(opp) {
+  const dm = opp?.decisionMaker || {};
+  const named = !!dm.name;
+  const hasPhone = !!opp?.phone;
+  const hasEmail = !!opp?.email;
+  const hasDmLinkedin = !!dm.linkedin;
+  const hasCompanyLinkedin = !!opp?.linkedin;
+  const hasInstagram = !!opp?.instagram;
+  const dmLevel = levelOf(opp, "reachableDecisionMaker");
+
+  // Puntos de alcanzabilidad (canal directo pesa más que genérico).
+  let score = 0;
+  if (named) score += 2;
+  if (hasPhone) score += 3;           // teléfono directo = lo más rápido
+  if (hasDmLinkedin) score += 2;      // vía directa al decisor
+  if (hasEmail) score += 1.5;
+  if (hasCompanyLinkedin) score += 1;
+  if (hasInstagram) score += 0.5;
+  if (dmLevel === "green") score += 2;
+  else if (dmLevel === "yellow") score += 1;
+
+  const channels = [];
+  if (hasPhone) channels.push("teléfono");
+  if (hasDmLinkedin) channels.push("LinkedIn del decisor");
+  if (hasEmail) channels.push("email");
+  if (hasCompanyLinkedin) channels.push("LinkedIn empresa");
+  if (hasInstagram) channels.push("Instagram");
+
+  let level, icon, label, advice;
+  if (score >= 7) {
+    level = "easy"; icon = "🟢"; label = "Fácil de contactar";
+    advice = hasPhone ? "Llama directo — tienes teléfono y decisor." : "Decisor identificado y con vía directa.";
+  } else if (score >= 4) {
+    level = "medium"; icon = "🟡"; label = "Contacto medio";
+    advice = hasPhone ? "Tienes teléfono; confirma quién es el decisor." : "Falta una vía directa al decisor (teléfono o LinkedIn).";
+  } else {
+    level = "hard"; icon = "🔴"; label = "Difícil de contactar";
+    advice = named ? "Hay nombre pero sin vía directa — busca teléfono/LinkedIn antes de llamar." : "Sin decisor ni canal directo — investiga contacto antes de invertir tiempo.";
+  }
+
+  return { level, icon, label, advice, score: Math.round(score * 10) / 10, channels, hasPhone, named };
+}
+
+const NOW_YEAR = new Date().getFullYear();
+
+export function freshness(opp) {
+  const ev = Array.isArray(opp?.evidence) ? opp.evidence : [];
+  // Año más reciente mencionado en las notas/fuentes de evidencia.
+  let latestYear = null;
+  for (const e of ev) {
+    const text = `${e.note || ""}`;
+    const years = [...text.matchAll(/\b(20\d{2})\b/g)].map((m) => parseInt(m[1], 10));
+    for (const y of years) {
+      if (y >= 2015 && y <= NOW_YEAR && (latestYear === null || y > latestYear)) latestYear = y;
+    }
+  }
+  // Fecha de investigación (cuándo se recogió el lead).
+  const researchedYear = opp?.researchedAt ? parseInt(String(opp.researchedAt).slice(0, 4), 10) : null;
+
+  const ageYears = latestYear != null ? NOW_YEAR - latestYear : null;
+
+  let tone, verdict;
+  if (ageYears === null) {
+    tone = "warn";
+    verdict = "Sin fecha en la evidencia — confirma que la empresa sigue activa antes de llamar.";
+  } else if (ageYears <= 1) {
+    tone = "fresh";
+    verdict = `Señal reciente (${latestYear}). El momento sigue caliente.`;
+  } else if (ageYears <= 2) {
+    tone = "warn";
+    verdict = `Señal de hace ~${ageYears} año(s) (${latestYear}). El momento puede estar enfriándose — confirma estado actual.`;
+  } else {
+    tone = "stale";
+    verdict = `Señal antigua (${latestYear}, ~${ageYears} años). Riesgo de empresa/momento en desuso — verifica que sigue activa antes de invertir tiempo.`;
+  }
+
+  // Pasos de comprobación de vida del negocio (rápidos, gratis).
+  const checks = [
+    "Google Maps: ¿el negocio aparece como abierto y con reseñas recientes?",
+    "Web: ¿carga y tiene actividad reciente (no 'en construcción' ni dominio caído)?",
+    "Redes/LinkedIn: ¿última publicación en los últimos meses?",
+  ];
+
+  return { tone, verdict, latestYear, ageYears, researchedYear, checks };
+}
