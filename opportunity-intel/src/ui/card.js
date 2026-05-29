@@ -36,6 +36,34 @@ const offerText = (key) => {
   return o ? `${o.label} · €${o.price.toLocaleString("es-ES")}` : "—";
 };
 
+// ---- Normalización de enlaces -----------------------------------------------
+// Los datos guardan handles parciales (in/marta, @cuenta, company/x). Estos
+// helpers los convierten en URLs reales y clicables. Devuelven null si no hay.
+function linkedinUrl(v) {
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://www.linkedin.com/${v.replace(/^\/+/, "")}`;
+}
+function instagramUrl(v) {
+  if (!v) return null;
+  if (/^https?:\/\//i.test(v)) return v;
+  return `https://instagram.com/${v.replace(/^@/, "")}`;
+}
+function webUrl(v) {
+  if (!v) return null;
+  return /^https?:\/\//i.test(v) ? v : `https://${v}`;
+}
+function mapsUrl(opp) {
+  if (opp.googleMaps) return webUrl(opp.googleMaps);
+  // Fallback: búsqueda de Maps por nombre + ciudad.
+  const q = encodeURIComponent(`${opp.company} ${opp.city || ""}`.trim());
+  return `https://www.google.com/maps/search/?api=1&query=${q}`;
+}
+// Enlace de contacto compacto y clicable.
+function ctLink(label, href, title) {
+  return el("a", { class: "ct-link", href, target: "_blank", rel: "noopener", title: title || label, text: label });
+}
+
 const classLabel = (c) => (c === "xn" ? "XN LAB" : c === "01" ? "01 Agency" : "Descartar");
 
 // Score → colour band (drives the ring + accents).
@@ -239,10 +267,16 @@ export function renderCard(opp, record, handlers = {}) {
       copyBtn(opp.callOpening),
     ]),
     el("div", { class: "contact-line" }, [
-      el("span", { class: "ct", html: `<b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}` }),
-      opp.phone ? el("a", { class: "ct-link", href: `tel:${esc(opp.phone)}`, text: opp.phone }) : null,
-      opp.email ? el("a", { class: "ct-link", href: `mailto:${esc(opp.email)}`, text: "email" }) : null,
-      opp.website ? el("a", { class: "ct-link", href: esc(opp.website), target: "_blank", rel: "noopener", text: "web" }) : null,
+      // Decisor: si hay LinkedIn personal, el nombre es el enlace.
+      dm.linkedin
+        ? el("a", { class: "ct-dm", href: linkedinUrl(dm.linkedin), target: "_blank", rel: "noopener", title: "LinkedIn del decisor", html: `<b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}` })
+        : el("span", { class: "ct", html: `<b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}` }),
+      opp.phone ? el("a", { class: "ct-link ct-call", href: `tel:${esc(opp.phone.replace(/\s/g, ""))}`, title: "Llamar", text: `☎ ${opp.phone}` }) : null,
+      opp.email ? el("a", { class: "ct-link", href: `mailto:${esc(opp.email)}`, title: opp.email, text: "✉ email" }) : null,
+      opp.website ? ctLink("🌐 web", webUrl(opp.website), opp.website) : null,
+      ctLink("📍 Maps", mapsUrl(opp), "Buscar en Google Maps"),
+      opp.linkedin ? ctLink("in empresa", linkedinUrl(opp.linkedin), "LinkedIn de la empresa") : null,
+      opp.instagram ? ctLink(`◎ ${opp.instagram}`, instagramUrl(opp.instagram), "Instagram") : null,
     ]),
     quickStatus(opp, status, handlers),
   ]);

@@ -53,6 +53,13 @@ function pipelineRow(counts) {
 }
 
 const ECON = { low: "bajo", medium: "medio", high: "alto", "very high": "muy alto" };
+function linkUrl(v, kind) {
+  if (!v) return "";
+  if (/^https?:\/\//i.test(v)) return v;
+  if (kind === "li") return `https://www.linkedin.com/${v.replace(/^\/+/, "")}`;
+  if (kind === "ig") return `https://instagram.com/${v.replace(/^@/, "")}`;
+  return `https://${v}`;
+}
 const classLabel = (c) => (c === "xn" ? "XN LAB" : c === "01" ? "01 Agency" : "Descartar");
 const band = (n) => (n >= 75 ? "hot" : n >= 58 ? "warm" : "cool");
 
@@ -131,10 +138,13 @@ function card(opp) {
       <div class="offer-line"><span class="offer-ic">→</span><span class="offer-txt">${esc(offer(opp.suggestedOfferKey))}</span></div>
       <div class="open-line"><blockquote>${esc(opp.callOpening)}</blockquote></div>
       <div class="contact-line">
-        <span class="ct"><b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}</span>
-        ${opp.phone ? `<a class="ct-link" href="tel:${esc(opp.phone)}">${esc(opp.phone)}</a>` : ""}
-        ${opp.email ? `<a class="ct-link" href="mailto:${esc(opp.email)}">email</a>` : ""}
-        ${opp.website ? `<a class="ct-link" href="${esc(opp.website)}" target="_blank" rel="noopener">web</a>` : ""}
+        ${dm.linkedin ? `<a class="ct-dm" href="${esc(linkUrl(dm.linkedin, "li"))}" target="_blank" rel="noopener"><b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}</a>` : `<span class="ct"><b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}</span>`}
+        ${opp.phone ? `<a class="ct-link ct-call" href="tel:${esc(opp.phone.replace(/\s/g, ""))}">☎ ${esc(opp.phone)}</a>` : ""}
+        ${opp.email ? `<a class="ct-link" href="mailto:${esc(opp.email)}">✉ email</a>` : ""}
+        ${opp.website ? `<a class="ct-link" href="${esc(linkUrl(opp.website, "web"))}" target="_blank" rel="noopener">🌐 web</a>` : ""}
+        <a class="ct-link" href="https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((opp.company + " " + (opp.city||"")).trim())}" target="_blank" rel="noopener">📍 Maps</a>
+        ${opp.linkedin ? `<a class="ct-link" href="${esc(linkUrl(opp.linkedin, "li"))}" target="_blank" rel="noopener">in empresa</a>` : ""}
+        ${opp.instagram ? `<a class="ct-link" href="${esc(linkUrl(opp.instagram, "ig"))}" target="_blank" rel="noopener">◎ ${esc(opp.instagram)}</a>` : ""}
       </div>
       <div class="quick">
         <button class="q q-called">Llamado</button><button class="q q-interested">Interesado</button>

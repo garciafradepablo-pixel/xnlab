@@ -262,8 +262,13 @@ output { font-size: 12px; color: var(--accent); }
 .copy-btn.copied { color: var(--green); border-color: var(--green); }
 .contact-line { display: flex; flex-wrap: wrap; gap: 6px 12px; font-size: 12px; color: var(--ink-dim); align-items: center; }
 .contact-line .ct b { color: var(--ink); }
-.ct-link { font-size: 12px; background: var(--panel-2); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); }
+.ct-dm { color: var(--ink-dim); }
+.ct-dm b { color: var(--o1); }
+.ct-dm:hover { text-decoration: none; }
+.ct-dm:hover b { text-decoration: underline; }
+.ct-link { font-size: 12px; background: var(--panel-2); padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
 .ct-link:hover { border-color: var(--accent); text-decoration: none; }
+.ct-call { color: var(--green); border-color: rgba(63,185,80,.3); }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .q { font-size: 12px; font-weight: 600; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-dim); }
 .q:hover { color: var(--ink); border-color: var(--ink-dim); }
