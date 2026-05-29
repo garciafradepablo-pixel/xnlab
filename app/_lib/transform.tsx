@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { ts, tsS, serif, R, Label, Dust } from "./atoms";
+import { ts, tsS, serif, R, Label, Dust, Parallax } from "./atoms";
 
 // "What we transform" / "Lo que convertimos" — the honest proof
 // interlude that closes the credibility gap BEFORE real public case
@@ -34,7 +34,7 @@ const copy_en = {
   h1a: "What we",
   h1b: "transform.",
   framing:
-    "Not case studies — not yet. These are transformation models: how we diagnose a perception gap and rebuild it into desire, trust and commercial value. Each sector is its own orbit. Hospitality is a vertical of its own, with several worlds inside it.",
+    "Not case studies — yet. Transformation models: how we diagnose a perception gap and rebuild it into desire, trust and commercial value. Each sector is its own orbit; hospitality, a world of its own.",
   tag: "Illustrative model",
   lBefore: "Before",
   lGap: "The gap",
@@ -49,7 +49,7 @@ const copy_es: typeof copy_en = {
   h1a: "Lo que",
   h1b: "convertimos.",
   framing:
-    "No son casos falsos. Son modelos de transformación: cómo detectamos una brecha de percepción y la reconstruimos en deseo, confianza y valor comercial. Cada sector es su propia órbita. La hostelería es un vertical en sí mismo, con varios mundos dentro.",
+    "Aún no son casos reales. Modelos de transformación: cómo detectamos una brecha de percepción y la reconstruimos en deseo, confianza y valor comercial. Cada sector es su propia órbita; la hostelería, un mundo en sí mismo.",
   tag: "Modelo ilustrativo",
   lBefore: "Antes",
   lGap: "La brecha",
@@ -138,11 +138,12 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
   const t = lang === "en" ? copy_en : copy_es;
   return (
     <section style={{ padding: "clamp(56px,6vw,96px) clamp(20px,5vw,64px)", position: "relative", overflow: "hidden" }}>
-      <div
-        aria-hidden
+      <Parallax
+        from={-70}
+        to={70}
         style={{
           position: "absolute",
-          inset: 0,
+          inset: "-90px 0",
           background: "radial-gradient(ellipse 60% 58% at 16% 10%, rgba(238,170,108,0.05) 0%, transparent 60%), radial-gradient(ellipse 56% 58% at 86% 14%, rgba(120,150,230,0.038) 0%, transparent 60%)",
           pointerEvents: "none",
         }}

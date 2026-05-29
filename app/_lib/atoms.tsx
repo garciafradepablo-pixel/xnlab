@@ -1,6 +1,35 @@
 "use client";
-import { motion } from "framer-motion";
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
+
+// Scroll-linked parallax. Wraps any layer and drifts it on its own scroll
+// progress so foreground and background travel at different rates — the
+// cinematic depth of the hero, available to any section. Transform-only
+// (GPU), and flat for reduced-motion. `from`/`to` are the y in px at the
+// section's entry and exit.
+export function Parallax({
+  children,
+  from = 50,
+  to = -50,
+  className = "",
+  style = {},
+}: {
+  children?: React.ReactNode;
+  from?: number;
+  to?: number;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
+  const ref = useRef<HTMLDivElement | null>(null);
+  const reduced = useReducedMotion();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const y = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [from, to]);
+  return (
+    <motion.div ref={ref} className={className} style={{ ...style, y, willChange: "transform" }}>
+      {children}
+    </motion.div>
+  );
+}
 
 // Hydration gate. useSyncExternalStore returns the server snapshot
 // (`false`) during SSR + first render, then the client snapshot (`true`)
