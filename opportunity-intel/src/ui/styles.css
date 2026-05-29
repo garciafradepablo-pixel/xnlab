@@ -397,6 +397,10 @@ output { font-size: 12px; color: var(--accent); }
 .dc-name { font-weight: 600; font-size: 14px; }
 .dc-sub { font-size: 12px; color: var(--ink-dim); }
 .dc-noweb { font-size: 11px; color: var(--grey); font-style: italic; }
+.dc-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.dc-src { font-size: 10px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px; padding: 1px 7px; }
+.dc-src-places { color: var(--green); border-color: rgba(63,185,80,.4); }
+.dc-rating { font-size: 11px; color: var(--accent); }
 .btn-add-cand { flex: 0 0 auto; background: var(--accent); color: #1a1400; border: 0; border-radius: 8px; padding: 9px 14px; font-weight: 700; font-size: 13px; }
 .btn-add-cand[disabled] { background: var(--panel-2); color: var(--green); border: 1px solid rgba(63,185,80,.4); }
 

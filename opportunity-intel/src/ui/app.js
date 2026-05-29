@@ -676,18 +676,27 @@ function searchView() {
       });
       addBtn.addEventListener("click", async () => {
         const lead = buildLead({
-          company: c.company, sector: c.sector, subsector: c.subsector,
-          city: c.city, website: c.website || null,
+          company: c.company, sector: c.sector || secSel.value === "all" ? c.sector : secSel.value,
+          subsector: c.subsector, city: c.city, website: c.website || null,
+          phone: c.phone || null, googleMaps: c.googleMaps || null,
         });
         store.saveUserLead(lead);
         addBtn.textContent = "✓ Añadido"; addBtn.disabled = true;
         await recompute();
       });
+      const meta = [];
+      if (c.source === "places") meta.push(el("span", { class: "dc-src dc-src-places", text: "🗺️ mapa" }));
+      else meta.push(el("span", { class: "dc-src", text: "directorio" }));
+      if (c.rating) meta.push(el("span", { class: "dc-rating", text: `★ ${c.rating}${c.reviews ? ` (${c.reviews})` : ""}` }));
       return el("div", { class: "discover-card" }, [
         el("div", { class: "dc-main" }, [
           el("div", { class: "dc-name", text: c.company }),
-          el("div", { class: "dc-sub", text: `${c.subsector} · ${c.city}` }),
-          c.website ? el("a", { class: "ct-link", href: c.website, target: "_blank", rel: "noopener", text: "🌐 web" }) : el("span", { class: "dc-noweb", text: "sin web en directorio" }),
+          el("div", { class: "dc-sub", text: `${c.subsector ? c.subsector + " · " : ""}${c.city || "—"}` }),
+          el("div", { class: "dc-meta" }, [
+            ...meta,
+            c.website ? el("a", { class: "ct-link", href: c.website, target: "_blank", rel: "noopener", text: "🌐 web" }) : null,
+            c.phone ? el("a", { class: "ct-link", href: `tel:${c.phone.replace(/\s/g, "")}`, text: "☎" }) : null,
+          ]),
         ]),
         addBtn,
       ]);

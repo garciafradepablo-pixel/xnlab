@@ -76,30 +76,55 @@ export function searchCandidates({ sector = "all", query = "" } = {}) {
   }).map((c) => ({ ...c, source: "directorio" }));
 }
 
+// Backend de descubrimiento masivo: Edge Function de Supabase que llama a
+// Google Places. La API key de Google vive en el servidor (secreto), nunca
+// aquí. La URL y la clave publicable son seguras en el cliente.
+export const PLACES_ENDPOINT =
+  "https://fecfncfkkgzazuetcllx.supabase.co/functions/v1/discover";
+const SUPABASE_ANON_KEY = "sb_publishable_GtToYg33N8bT7T6O3OEmQw_Wu_hEvkS";
+
 /**
- * Conector Google Places — hueco para producción. En el demo devuelve [].
- * LIVE: llamar a Places Text Search (server-side, con API key) con
- * `${query} ${city}` y mapear cada resultado a { company, city, website,
- * phone, googleMaps, sector }. El resto del flujo (añadir + puntuar) no cambia.
+ * Conector Google Places (vía Edge Function). Devuelve candidatos reales del
+ * mapa para `query`. Si el backend no tiene la API key configurada, responde
+ * [] y la app sigue con su directorio interno (degradación elegante).
  */
-export async function placesAdapter(/* { query, city, apiKey } */) {
-  return [];
+export async function placesAdapter({ query, sector = null, max = 20 } = {}) {
+  if (typeof fetch === "undefined" || !query) return [];
+  try {
+    const res = await fetch(PLACES_ENDPOINT, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify({ query, sector, max }),
+      signal: typeof AbortSignal !== "undefined" ? AbortSignal.timeout(12000) : undefined,
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data.candidates) ? data.candidates : [];
+  } catch {
+    return [];
+  }
 }
 
 /**
  * Descubrimiento combinado: directorio + (si hay) Places. Async para que el
  * conictor live encaje sin cambiar la UI.
  */
-export async function discover({ sector = "all", query = "", live = false } = {}) {
+export async function discover({ sector = "all", query = "", live = true } = {}) {
   const local = searchCandidates({ sector, query });
-  if (!live) return local;
+  // Sin texto no tiene sentido llamar al mapa (Places necesita una consulta).
+  if (!live || !query.trim()) return local;
   let remote = [];
-  try { remote = await placesAdapter({ query }); } catch { remote = []; }
-  // Dedup por nombre+ciudad.
+  try { remote = await placesAdapter({ query, sector: sector === "all" ? null : sector }); }
+  catch { remote = []; }
+  // Dedup por nombre+ciudad: el directorio curado tiene prioridad.
   const seen = new Set(local.map((c) => norm(`${c.company}|${c.city}`)));
   for (const r of remote) {
     const k = norm(`${r.company}|${r.city}`);
-    if (!seen.has(k)) { seen.add(k); local.push({ ...r, source: "places" }); }
+    if (!seen.has(k)) { seen.add(k); local.push(r); }
   }
   return local;
 }
