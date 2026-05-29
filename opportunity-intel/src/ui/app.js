@@ -101,12 +101,37 @@ function visibleOpps() {
 
 function render() {
   clear(root);
+  // Shell fijo: cabecera + tabs pegados arriba, y UN área de scroll para el
+  // contenido. Así el scroll es propio del contenido y se reinicia al cambiar
+  // de pantalla (antes el scroll del body se quedaba a medias entre vistas).
   root.appendChild(header());
   root.appendChild(tabs());
+  const scroller = el("div", { class: "scroll" });
   const main = el("div", { class: "main" });
-  main.appendChild(configPanel());
+  // En escritorio el panel de configuración va fijo a la izquierda; en móvil se
+  // pliega (details) para no empujar las oportunidades hacia abajo.
+  const cfg = el("details", { class: "config-wrap" }, [
+    el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda" }),
+    configPanel(),
+  ]);
+  cfg.open = state._cfgOpen ?? false;
+  cfg.addEventListener("toggle", () => { state._cfgOpen = cfg.open; });
+  main.appendChild(cfg);
   main.appendChild(viewArea());
-  root.appendChild(main);
+  scroller.appendChild(main);
+  root.appendChild(scroller);
+  // Reinicia el scroll arriba en cada render de cambio de vista.
+  if (state._resetScroll) {
+    requestAnimationFrame(() => { scroller.scrollTop = 0; });
+    state._resetScroll = false;
+  }
+}
+
+// Cambia de pestaña y pide reinicio de scroll (navegación limpia).
+function goView(view) {
+  state.view = view;
+  state._resetScroll = true;
+  render();
 }
 
 function header() {
@@ -140,7 +165,7 @@ function tabs() {
       el("button", {
         class: `tab ${state.view === key ? "active" : ""}`,
         text: label,
-        onClick: () => { state.view = key; render(); },
+        onClick: () => goView(key),
       })
     )
   );
@@ -188,8 +213,19 @@ function configPanel() {
     ]
   );
 
+  // Botón con feedback visible: en el móvil, el panel queda arriba y los
+  // resultados abajo, así que sin confirmación parecía "que no hacía nada".
+  const runBtn = el("button", { class: "btn-primary", text: "Ejecutar embudo" });
+  runBtn.addEventListener("click", async () => {
+    runBtn.textContent = "Recalculando…";
+    runBtn.disabled = true;
+    await recompute();
+    runBtn.textContent = `✓ ${state.results.counts.final} oportunidades`;
+    // Lleva al usuario a los resultados (clave en móvil).
+    setTimeout(() => goView("cards"), 450);
+  });
+
   return el("aside", { class: "config" }, [
-    el("h2", { text: "Configuración de búsqueda" }),
     field("Dataset", datasetSel),
     field("País", country),
     field("Sectores", sectorChecks),
@@ -198,7 +234,7 @@ function configPanel() {
     field("Conservadurismo", el("div", {}, [conservSlider, conservOut])),
     field("Puntuación mínima", minScore),
     field("Umbral 01 → XN LAB (confianza)", xnThr),
-    el("button", { class: "btn-primary", text: "Ejecutar embudo", onClick: async () => { await recompute(); render(); } }),
+    runBtn,
     el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
   ]);
 }
@@ -366,7 +402,7 @@ function buildTable() {
     el("tbody", {}, rows.map((o) => {
       const s = o.scores;
       const t = tracking[o.id] || {};
-      return el("tr", { class: `row-${s.classification}`, onClick: () => { state.view = "cards"; state.filters.search = o.company; render(); } }, [
+      return el("tr", { class: `row-${s.classification}`, onClick: () => { state.filters.search = o.company; goView("cards"); } }, [
         el("td", { text: `#${o.ranking}` }),
         el("td", { class: "td-company", text: o.company }),
         el("td", { text: SECTOR_BY_KEY[o.sector]?.label || o.sector }),
@@ -557,7 +593,7 @@ function crmCard(o, isFail) {
       children.push(el("p", { class: "crm-card-fail", text: `⚠ ${fr.causes[0].cause}` }));
     }
   }
-  return el("div", { class: "crm-card", onClick: () => { state.view = "cards"; state.filters.search = o.company; render(); } }, children);
+  return el("div", { class: "crm-card", onClick: () => { state.filters.search = o.company; goView("cards"); } }, children);
 }
 
 // ---- Buscar / añadir leads --------------------------------------------------
@@ -689,11 +725,10 @@ function addLeadForm() {
         tensionNote: tensionNote.value, offer: offer.value,
       });
       store.saveUserLead(lead);
-      // Asegura que se vea: cambia a dataset que los incluye y abre Oportunidades.
+      // Asegura que se vea: recalcula y abre Oportunidades filtrando por el lead.
       await recompute();
-      state.view = "cards";
       state.filters.search = lead.company;
-      render();
+      goView("cards");
     },
   });
 

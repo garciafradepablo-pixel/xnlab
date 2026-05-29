@@ -62,9 +62,24 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
 .tab:hover { color: var(--ink); }
 
-/* ---- Layout ---- */
-.main { display: grid; grid-template-columns: 280px 1fr; gap: 0; align-items: start; }
-.config { padding: 20px; border-right: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; min-height: calc(100vh - 96px); }
+/* ---- Layout: shell fijo + un único contenedor de scroll ---- */
+/* La app ocupa el alto de la ventana (con soporte de dvh para móviles donde la
+   barra del navegador cambia de tamaño). Cabecera y tabs quedan fijas; SOLO
+   .scroll hace scroll. Esto da un desplazamiento dinámico y consistente y
+   permite reiniciarlo al cambiar de pantalla. */
+html, body { height: 100%; }
+.app { display: flex; flex-direction: column; height: 100vh; height: 100dvh; overflow: hidden; }
+.app-head { flex: 0 0 auto; }
+.tabs { flex: 0 0 auto; }
+.scroll {
+  flex: 1 1 auto; min-height: 0; overflow-y: auto; overflow-x: hidden;
+  -webkit-overflow-scrolling: touch; overscroll-behavior: contain; scroll-behavior: smooth;
+}
+.main { display: grid; grid-template-columns: 280px 1fr; gap: 0; align-items: start; min-height: 100%; }
+.config-wrap { border-right: 1px solid var(--line); background: var(--panel); }
+/* En escritorio el panel se muestra siempre (el summary se oculta). */
+.config-summary { display: none; }
+.config { padding: 20px; }
 .view { padding: 22px 26px; min-width: 0; }
 
 /* ---- Config panel ---- */
@@ -429,7 +444,11 @@ output { font-size: 12px; color: var(--accent); }
 
 @media (max-width: 880px) {
   .main { grid-template-columns: 1fr; }
-  .config { position: static; min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
+  .config-wrap { border-right: 0; border-bottom: 1px solid var(--line); }
+  /* En móvil el panel se pliega: el summary es la barra que lo abre/cierra. */
+  .config-summary { display: block; padding: 12px 16px; font-size: 13px; color: var(--accent); cursor: pointer; list-style: none; }
+  .config-summary::-webkit-details-marker { display: none; }
+  .config-wrap[open] .config-summary { border-bottom: 1px solid var(--line); }
   .cards { grid-template-columns: 1fr; }
 }
 
