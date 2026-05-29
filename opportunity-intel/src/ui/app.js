@@ -235,6 +235,24 @@ function pipelineView() {
     )),
   ]);
 
+  // Cobertura por sector (los 4 objetivos del brief) — lectura de balance.
+  const bySector = sectorCoverage();
+  const coverage = el("div", { class: "sector-cov" }, [
+    el("h3", { text: "Cobertura por sector" }),
+    el("div", { class: "sec-bars" }, SECTORS.map((sc) => {
+      const c = bySector[sc.key] || { n: 0, avg: 0 };
+      const pct = counts.final ? Math.round((c.n / counts.final) * 100) : 0;
+      return el("div", { class: "sec-bar-row", title: `${c.n} en el Top · puntuación media ${c.avg}` }, [
+        el("span", { class: "sec-bar-l", text: sc.label }),
+        el("div", { class: "sec-bar-track" }, [
+          el("div", { class: "sec-bar-fill", style: `width:${pct}%` }),
+        ]),
+        el("span", { class: "sec-bar-v", text: `${c.n} · ${c.avg || "—"}` }),
+      ]);
+    })),
+    el("p", { class: "hint", text: "Nº de leads en el corte final y su puntuación media por sector. Sirve para ver si falta cubrir algún objetivo del brief." }),
+  ]);
+
   const exports = el("div", { class: "exports" }, [
     el("h3", { text: "Exportar lista final" }),
     el("div", { class: "export-btns" }, [
@@ -249,9 +267,23 @@ function pipelineView() {
     el("h2", { text: "Embudo de candidatos" }),
     stages,
     summary,
+    coverage,
     exports,
     el("p", { class: "hint", text: "Fases: descubierto → enriquecido → filtrado → puntuado → preseleccionado → Top N final. La caída bajo cada fase muestra cuántos candidatos rechazó el embudo." }),
   ]);
+}
+
+// Cobertura por sector en el corte final: nº de leads y puntuación media.
+function sectorCoverage() {
+  const out = {};
+  for (const o of state.results.final) {
+    const k = o.sector;
+    out[k] = out[k] || { n: 0, sum: 0 };
+    out[k].n++;
+    out[k].sum += o.scores.confidence;
+  }
+  for (const k of Object.keys(out)) out[k].avg = Math.round((out[k].sum / out[k].n) * 10) / 10;
+  return out;
 }
 
 function classDistribution() {
