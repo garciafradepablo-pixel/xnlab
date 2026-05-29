@@ -45,20 +45,47 @@ export const CANDIDATES = [
   { company: "Medina 3D", sector: "health", subsector: "Implantología y ortodoncia invisible", city: "Madrid", website: "https://medina3d.es/" },
   { company: "MAG Dental Madrid", sector: "health", subsector: "Implantología avanzada 3D", city: "Madrid", website: "https://magdentalmadrid.com/" },
   { company: "Palma Medicodental", sector: "health", subsector: "Implantología y periodoncia", city: "Madrid", website: "https://palmamedicodental.com/" },
-  // ---- Salud · dental / estética (otras ciudades) ----
-  { company: "Clínica Dental Ferrer", sector: "health", subsector: "Odontología integral", city: "Valencia", website: null },
   { company: "Clínica Dental Pardiñas", sector: "health", subsector: "Odontología y estética dental", city: "Madrid", website: "https://www.clinicapardinas.com/" },
-  // ---- Hostelería ----
+  { company: "Social Dental Studio", sector: "health", subsector: "Implantología digital", city: "Madrid", website: null },
+  // ---- Salud · dental (otras ciudades) ----
+  { company: "Clínica Dental Ferrer", sector: "health", subsector: "Odontología integral", city: "Valencia", website: null },
+  { company: "Vélez & Lozano", sector: "health", subsector: "Clínica dental", city: "Murcia", website: null },
+  { company: "Clínica Dental Padrós", sector: "health", subsector: "Odontología integral", city: "Barcelona", website: null },
+  { company: "Clínica Dental Stoma", sector: "health", subsector: "Implantología y ortodoncia", city: "Sevilla", website: null },
+  // ---- Salud · medicina estética ----
+  { company: "Clínica Londres", sector: "health", subsector: "Medicina y cirugía estética (cadena)", city: "Madrid", website: "https://www.clinicalondres.es/" },
+  { company: "Clínica Planas", sector: "health", subsector: "Cirugía y medicina estética", city: "Barcelona", website: "https://www.clinicaplanas.com/" },
+  { company: "Clínicas Esquivel", sector: "health", subsector: "Medicina estética (en expansión)", city: "Madrid", website: "https://clinicasesquivel.com/" },
+  { company: "BENAES", sector: "health", subsector: "Clínica de estética", city: "Valencia", website: "https://www.benaes.com/" },
+  { company: "Clínicas Revitae", sector: "health", subsector: "Medicina y cirugía estética", city: "Valencia", website: "https://clinicasrevitae.com/" },
+  // ---- Salud · fisioterapia / deporte ----
+  { company: "FisioClinics", sector: "health", subsector: "Fisioterapia avanzada", city: "Bilbao", website: null },
+  { company: "Fisioterapia Aganzo", sector: "health", subsector: "Fisioterapia y readaptación deportiva", city: "Madrid", website: null },
+  // ---- Hostelería · restaurantes ----
   { company: "Grupo Saona", sector: "hospitality", subsector: "Restaurantes mediterráneos (cadena)", city: "Valencia", website: "https://grupociento.com/" },
   { company: "Grupo La Máquina", sector: "hospitality", subsector: "Restaurantes tradicionales premium", city: "Madrid", website: null },
+  { company: "Grupo Isabella's", sector: "hospitality", subsector: "Restaurantes lifestyle premium", city: "Madrid", website: null },
+  { company: "Grupo Cañas y Tapas", sector: "hospitality", subsector: "Restauración (cadena)", city: "Madrid", website: null },
+  { company: "Casa Carmen", sector: "hospitality", subsector: "Restaurante premium", city: "Valencia", website: null },
+  // ---- Hostelería · hoteles boutique ----
   { company: "Hotel Boutique Mihotel", sector: "hospitality", subsector: "Hoteles boutique", city: "Valencia", website: null },
   { company: "Único Hotels", sector: "hospitality", subsector: "Hoteles boutique de lujo", city: "Barcelona", website: "https://www.unicohotels.com/" },
+  { company: "Casa Fuster", sector: "hospitality", subsector: "Hotel boutique de lujo", city: "Barcelona", website: null },
+  { company: "Hotel Cort", sector: "hospitality", subsector: "Hotel boutique", city: "Palma", website: null },
   // ---- Inmobiliario / arquitectura ----
   { company: "Gonzalez & Jacobson Arquitectura", sector: "realestate", subsector: "Arquitectura de lujo (Costa del Sol)", city: "Marbella", website: null },
   { company: "Lucas Fox", sector: "realestate", subsector: "Inmobiliaria de lujo", city: "Barcelona", website: "https://www.lucasfox.es/" },
+  { company: "Engel & Völkers Madrid", sector: "realestate", subsector: "Inmobiliaria de lujo", city: "Madrid", website: null },
+  { company: "Barnes Marbella", sector: "realestate", subsector: "Inmobiliaria de lujo", city: "Marbella", website: null },
+  { company: "Drago Capital", sector: "realestate", subsector: "Promotora / inversión", city: "Madrid", website: null },
+  { company: "Estudio Lamela", sector: "realestate", subsector: "Estudio de arquitectura", city: "Madrid", website: null },
   // ---- Growth / marcas ----
   { company: "Singularu", sector: "growth", subsector: "Joyería DTC en expansión", city: "Valencia", website: "https://www.singularu.com/" },
   { company: "Laagam", sector: "growth", subsector: "Moda DTC tech", city: "Barcelona", website: null },
+  { company: "Hawkers", sector: "growth", subsector: "Marca DTC de gafas", city: "Alicante", website: null },
+  { company: "Pompeii", sector: "growth", subsector: "Calzado DTC", city: "Madrid", website: null },
+  { company: "Bimani", sector: "growth", subsector: "Moda DTC inclusiva", city: "Madrid", website: null },
+  { company: "Freshly Cosmetics", sector: "growth", subsector: "Cosmética natural DTC", city: "Reus", website: null },
 ];
 
 /**
