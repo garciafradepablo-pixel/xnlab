@@ -128,17 +128,34 @@ The config panel has a **Dataset** selector:
 - **Researched — Spain** — real, press-verified leads in `src/data/researched.js`.
 
 The researched dataset holds a **pilot of 6 real Spanish opportunities**
-(researched 2026-05-29 via web search): boutique hotels, a funded foodtech
-brand, premium restaurant groups, and luxury developers — each carrying a
-press-verified *moment* (opening / funding / expansion) with real citation URLs.
+(researched 2026-05-29 via web search): a boutique luxury hotel, a funded
+foodtech brand, two premium restaurant groups, and two luxury developers. Each
+carries a press-verified *moment* (opening / funding / expansion), a **verified
+decision maker + contact channel**, and a real website — all with cited URLs:
 
-Honest limits of that pass: page fetching was blocked, so **websites, contacts,
-reviews and on-site tension could not be verified** — those signals are kept
-**grey**, and the first lever for every real lead is literally "verify the site
-+ find the decision maker". Scores land in the 54–64 band and every lead reads
-"prepare a mini-audit first" — a real moment is a *hypothesis*, not a closed
-case. Run `node bin/run.mjs --enrich` (or the live connectors) to fill the grey
-gaps. A lead is only ever added with ≥3 cited evidence points — never fabricated.
+| Lead | City | Moment | Decision maker |
+|---|---|---|---|
+| La Casa del Limonero | Sevilla | 15th-c palace hotel opened Mar 2025 | Martina Cam (owner/director) |
+| FoodieFame | Madrid | €800k seed, Jul 2025 | Jesús Muñoz (founder/CEO) |
+| Grupo Arzábal | Madrid | 100-seat Bernabéu flagship | Morales & Castellanos (founders) |
+| Grupo GastroPortal · Manero | Alicante | Expansion incl. Lisbon | Carlos Bosch (founder/CEO) |
+| Promora · Impulsa | Madrid | New expansion model | Carlos Morón Fernández (director) |
+| Sierra Blanca Estates | Marbella | €500M luxury pipeline | Rodríguez family (direction) |
+
+Honest limits, encoded in the scores: the **on-site tension, active pain and
+exact budget priority are still grey** — they need an on-site/reviews check, not
+a press article. So the conservative engine scores these **62–70** (vs the 90s
+the synthetic all-green archetypes hit) and every one reads *"prepare a
+mini-audit first"*. Each card's **Verification block** shows the ~40% verified
+share and the exact "confirm before calling" checklist. A real, half-verified
+moment is a *hypothesis*, not a closed case — and a lead is only ever added with
+≥3 cited evidence points, never fabricated.
+
+A note on `--enrich` against these sites: several (e.g. the hotel) are
+client-rendered SPAs that return a near-empty HTML shell to a plain `fetch`. The
+`WebsiteAdapter` correctly emits **zero** evidence from a shell rather than
+guessing — verifying the on-site gaps for JS-heavy sites needs a headless-browser
+variant of the adapter (documented as the next connector step).
 
 ---
 
