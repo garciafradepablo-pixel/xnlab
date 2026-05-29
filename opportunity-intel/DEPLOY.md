@@ -28,10 +28,25 @@ Lo que queda publicado en la URL:
 | Ruta | Qué es |
 |---|---|
 | `/` (`index.html`) | La app completa interactiva (la del día a día). |
-| `/app.html` | La app en **un solo archivo** (descargable / offline). |
+| `/app.html` | La app en **un solo archivo**. |
+| `/lanzador.html` | **Lanzador auto-actualizable** (ver abajo). |
 | `/snapshot.html` | Vista estática rápida (sin JS). |
 | `/leads/` | Export de los 20 mejores leads (CSV, JSON, hoja de llamadas). |
 | `/VERSION.txt` | Fecha/hora de la última actualización. |
+
+### El "lanzador" — un archivo descargado que SÍ se actualiza solo
+
+Un HTML descargado normal es estático: una vez guardado, no recibe mejoras. El
+**lanzador** (`/lanzador.html`, o `npm run launcher`) resuelve eso:
+
+- Lo descargáis **una vez** (o lo guardáis en pantalla de inicio).
+- Cada vez que lo abrís, va a buscar la **última versión** a la URL pública
+  (`/app.html`) → veis siempre las mejoras nuevas, sin volver a descargar nada.
+- **Sin conexión**, arranca con la **copia offline** que lleva embebida dentro.
+
+Es lo que conviene compartir con Pablo y Javi: un único archivo que siempre está
+al día. (Requiere que GitHub Pages esté activo, porque ahí vive la versión que
+descarga.)
 
 Activación (una sola vez, en GitHub):
 

@@ -42,7 +42,12 @@ jobs:
       - name: Tests
         run: npm test
 
-      # 2) Construir artefactos de la app (sin dependencias, todo Node nativo).
+      # 2) Resolver la URL base de Pages ANTES de construir, para que el
+      #    lanzador apunte al app.html publicado.
+      - id: pages
+        uses: actions/configure-pages@v5
+
+      # 3) Construir artefactos de la app (sin dependencias, todo Node nativo).
       - name: Build single-file app + snapshot + leads
         run: |
           mkdir -p _site
@@ -52,6 +57,11 @@ jobs:
           [ -f manifest.webmanifest ] && cp manifest.webmanifest _site/ || true
           # App de un solo archivo (descargable / offline).
           node bin/bundle.mjs --out _site/app.html
+          # Lanzador auto-actualizable: descárgalo una vez; al abrirlo carga la
+          # última versión desde la URL pública (mejoras nuevas activas) y, sin
+          # red, usa su copia offline embebida.
+          PAGES_BASE="${{ steps.pages.outputs.base_url }}"
+          node bin/bundle.mjs --launcher --remote "$PAGES_BASE/app.html" --out _site/lanzador.html
           # Snapshot estático (vista rápida sin JS).
           node bin/snapshot.mjs --out _site/snapshot.html
           # Exports de los 20 mejores leads (CSV/JSON/hoja de llamadas).
@@ -59,7 +69,6 @@ jobs:
           # Marca de versión para ver cuándo se actualizó.
           node -e "console.log(new Date().toISOString())" > _site/VERSION.txt
 
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: opportunity-intel/_site
