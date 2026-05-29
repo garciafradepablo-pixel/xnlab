@@ -27,6 +27,7 @@ import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { buildLead } from "../newlead.js";
+import { discover } from "../discovery.js";
 import * as xport from "../export.js";
 
 const state = {
@@ -613,9 +614,8 @@ function crmCard(o, isFail) {
 
 // ---- Buscar / añadir leads --------------------------------------------------
 
-// Ideas de búsqueda por sector: consultas que abren Google/LinkedIn en otra
-// pestaña para encontrar el tipo de "momento" que el motor valora. Cada empresa
-// que encuentres, la añades abajo con el formulario.
+// Ideas de búsqueda por sector: rellenan el descubridor de un toque para
+// orientar qué tipo de "momento" buscar.
 const SEARCH_IDEAS = {
   health: [
     "clínica dental nueva apertura {ciudad} 2025",
@@ -645,48 +645,75 @@ const SEARCH_IDEAS = {
 
 function searchView() {
   const userLeads = store.getUserLeads();
-  const blocks = [el("h2", { text: "Buscar leads" })];
-  blocks.push(el("p", { class: "hint", text: "Busca el tipo de momento que el motor premia (aperturas, rondas, expansiones) en el sector que quieras, y añade abajo lo que encuentres. Tus leads se puntúan y rankean junto al resto, y se sincronizan al exportar/importar." }));
+  const blocks = [el("h2", { text: "Descubrir leads" })];
+  blocks.push(el("p", { class: "hint", text: "Elige sector y/o escribe (ej. 'clínicas dentales Madrid') y pulsa Descubrir: aparecen empresas reales aquí mismo. Añádelas de un toque — entran al ranking y las enriqueces luego. Abajo puedes añadir cualquier otra a mano." }));
 
-  // Selector de ciudad para personalizar las búsquedas.
-  const cityInput = el("input", { type: "text", placeholder: "Ciudad (opcional, ej. Madrid)", class: "search-city" });
+  // --- DESCUBRIDOR INTERNO ---
+  const secSel = el("select", { class: "lead-f" }, [
+    el("option", { value: "all", text: "Todos los sectores" }),
+    ...SECTORS.map((s) => el("option", { value: s.key, text: s.label })),
+  ]);
+  const qInput = el("input", { type: "search", class: "lead-f", placeholder: "Qué y dónde (ej. clínicas dentales Madrid)" });
+  const resultsBox = el("div", { class: "discover-results" });
 
-  // Enlaces de búsqueda como <a> REALES (los móviles bloquean window.open, pero
-  // nunca un <a target=_blank>). Guardamos sus plantillas y reescribimos el href
-  // en vivo cuando cambia la ciudad.
-  const searchLinks = [];
-  const gQuery = (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
-  function makeSearchLink(label, buildQuery) {
-    const a = el("a", { class: "q-link", target: "_blank", rel: "noopener", text: label });
-    a._build = buildQuery;
-    a.setAttribute("href", buildQuery(""));
-    searchLinks.push(a);
-    return a;
-  }
-  cityInput.addEventListener("input", () => {
-    const c = cityInput.value || "España";
-    for (const a of searchLinks) a.setAttribute("href", a._build(c === "" ? "España" : c));
-  });
+  const runDiscover = async () => {
+    resultsBox.innerHTML = "";
+    resultsBox.appendChild(el("p", { class: "hint", text: "Buscando…" }));
+    const found = await discover({ sector: secSel.value, query: qInput.value });
+    const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
+    clear(resultsBox);
+    if (!found.length) {
+      resultsBox.appendChild(el("p", { class: "empty", text: "Sin candidatos en el directorio para eso. Prueba otro sector/ciudad, o añádelo a mano abajo." }));
+      return;
+    }
+    resultsBox.appendChild(el("p", { class: "count", text: `${found.length} candidatos reales` }));
+    resultsBox.appendChild(el("div", { class: "discover-list" }, found.map((c) => {
+      const already = existing.has(c.company.toLowerCase());
+      const addBtn = el("button", {
+        class: "btn-add-cand",
+        text: already ? "✓ Añadido" : "+ Añadir",
+        disabled: already,
+      });
+      addBtn.addEventListener("click", async () => {
+        const lead = buildLead({
+          company: c.company, sector: c.sector, subsector: c.subsector,
+          city: c.city, website: c.website || null,
+        });
+        store.saveUserLead(lead);
+        addBtn.textContent = "✓ Añadido"; addBtn.disabled = true;
+        await recompute();
+      });
+      return el("div", { class: "discover-card" }, [
+        el("div", { class: "dc-main" }, [
+          el("div", { class: "dc-name", text: c.company }),
+          el("div", { class: "dc-sub", text: `${c.subsector} · ${c.city}` }),
+          c.website ? el("a", { class: "ct-link", href: c.website, target: "_blank", rel: "noopener", text: "🌐 web" }) : el("span", { class: "dc-noweb", text: "sin web en directorio" }),
+        ]),
+        addBtn,
+      ]);
+    })));
+  };
 
-  // Ideas por sector.
-  blocks.push(el("div", { class: "search-ideas" }, SECTORS.map((sc) =>
-    el("div", { class: "search-sector" }, [
-      el("h4", { text: sc.label }),
-      el("div", { class: "search-q" }, (SEARCH_IDEAS[sc.key] || []).map((q) =>
-        makeSearchLink(q.replace("{ciudad}", "…"), (city) =>
-          gQuery(q.replace("{ciudad}", city || "España"))
-        )
-      )),
-    ])
-  )));
+  const discoverBtn = el("button", { class: "btn-primary", text: "Descubrir", onClick: runDiscover });
+  qInput.addEventListener("keydown", (e) => { if (e.key === "Enter") runDiscover(); });
 
-  blocks.push(el("div", { class: "search-tools" }, [
-    el("span", { text: "Atajos: " }),
-    makeSearchLink("LinkedIn — contrataciones marketing", (city) =>
-      `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent("buscamos responsable marketing " + (city || ""))}`),
-    makeSearchLink("Prensa — rondas de inversión", () =>
-      gQuery("ronda financiación startup española 2025")),
+  blocks.push(el("div", { class: "discover-bar" }, [secSel, qInput, discoverBtn]));
+
+  // Ideas rápidas: rellenan el buscador y lanzan la búsqueda.
+  const ideaChips = [
+    ["health", "clínicas dentales Madrid"],
+    ["hospitality", "restaurante premium"],
+    ["realestate", "inmobiliaria lujo"],
+    ["growth", "marca DTC"],
+  ];
+  blocks.push(el("div", { class: "idea-chips" }, [
+    el("span", { class: "idea-lbl", text: "Ideas:" }),
+    ...ideaChips.map(([sec, q]) => el("button", { class: "idea-chip", text: q, onClick: () => { secSel.value = sec; qInput.value = q; runDiscover(); } })),
   ]));
+
+  blocks.push(resultsBox);
+  // Muestra candidatos de entrada al abrir la pestaña.
+  setTimeout(runDiscover, 0);
 
   // Formulario de alta.
   blocks.push(el("h3", { text: "Añadir lead", class: "add-h" }));
