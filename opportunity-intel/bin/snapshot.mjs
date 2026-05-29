@@ -22,6 +22,8 @@ import {
   SECTOR_BY_KEY, FILTERS, LEVELS, TENSION_TYPES, PIPELINE_STAGES,
 } from "../src/models.js";
 import { verificationProfile } from "../src/scoring.js";
+import { matchServices, ticketLabel, SERVICE_BY_ID } from "../src/services.js";
+import { viability } from "../src/diagnosis.js";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const root = join(__dir, "..");
@@ -89,6 +91,16 @@ function verifBlock(opp) {
     ${gaps}</div>`;
 }
 
+function servicesBlock(opp) {
+  const svcs = matchServices(opp, { max: 3 });
+  if (!svcs.length) return "";
+  return `<div class="svc-fit"><div class="svc-head"><span class="svc-ic">◆</span><span>Servicios que encajan</span></div>
+    <div class="svc-list">${svcs.map((sv) => `<div class="svc svc-${sv.house}" title="${esc(sv.solves)} → ${esc(sv.produces)}">
+      <span class="svc-house svc-house-${sv.house}">${sv.house === "xn" ? "XN" : "01"}</span>
+      <span class="svc-name">${esc(sv.name)}</span>
+      <span class="svc-ticket">${esc(ticketLabel(SERVICE_BY_ID[sv.id]))}</span></div>`).join("")}</div></div>`;
+}
+
 function card(opp) {
   const s = opp.scores;
   const dm = opp.decisionMaker || {};
@@ -113,6 +125,7 @@ function card(opp) {
       ${bar("Conversación", s.conversation)}${bar("Reunión", s.meeting)}${bar("Cierre", s.closing)}
       ${dots(opp)}
     </div>
+    ${servicesBlock(opp)}
     <div class="c-action">
       <div class="offer-line"><span class="offer-ic">→</span><span class="offer-txt">${esc(offer(opp.suggestedOfferKey))}</span></div>
       <div class="open-line"><blockquote>${esc(opp.callOpening)}</blockquote></div>

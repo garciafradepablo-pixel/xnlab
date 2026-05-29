@@ -28,6 +28,8 @@ import {
   evidenceVerdict,
 } from "../models.js";
 import { explainScore, verificationProfile } from "../scoring.js";
+import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
+import { failureReason, viability, recommendedPath, FAILURE_STATUSES } from "../diagnosis.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -205,6 +207,24 @@ export function renderCard(opp, record, handlers = {}) {
     signalDots(opp),
   ]);
 
+  // ---- SERVICIOS QUE ENCAJAN: qué ofrecer a esta empresa ----
+  const services = matchServices(opp, { max: 3 });
+  const serviceBlock = services.length
+    ? el("div", { class: "svc-fit" }, [
+        el("div", { class: "svc-head" }, [
+          el("span", { class: "svc-ic", text: "◆" }),
+          el("span", { text: "Servicios que encajan" }),
+        ]),
+        el("div", { class: "svc-list" }, services.map((sv) =>
+          el("div", { class: `svc svc-${sv.house}`, title: `${sv.solves}\n→ ${sv.produces}\nMotivo: ${sv.reasons.join(" · ")}` }, [
+            el("span", { class: `svc-house svc-house-${sv.house}`, text: sv.house === "xn" ? "XN" : "01" }),
+            el("span", { class: "svc-name", text: sv.name }),
+            el("span", { class: "svc-ticket", text: ticketLabel(SERVICE_BY_ID[sv.id]) }),
+          ])
+        )),
+      ])
+    : null;
+
   // ---- ACTION STRIP: offer + copyable opening + quick status ----
   const action = el("div", { class: "c-action" }, [
     el("div", { class: "offer-line" }, [
@@ -224,6 +244,24 @@ export function renderCard(opp, record, handlers = {}) {
     quickStatus(opp, status, handlers),
   ]);
 
+  // ---- PANEL DE FALLO: si el estado es negativo/inconcluso, por qué ----
+  let failurePanel = null;
+  if (FAILURE_STATUSES.has(status)) {
+    const fr = failureReason(opp);
+    failurePanel = el("div", { class: "fail-panel" }, [
+      el("p", { class: "fail-head", text: fr.headline }),
+      ...(fr.causes.length
+        ? [el("ul", { class: "fail-list" }, fr.causes.map((c) =>
+            el("li", {}, [
+              el("b", { text: `${c.label}: ` }),
+              el("span", { text: c.cause }),
+              el("span", { class: "fail-fix", text: ` → ${c.mitigate}` }),
+            ])
+          ))]
+        : []),
+    ]);
+  }
+
   // ---- DETAIL: everything analytical, folded ----
   const sec = (title, node) => el("div", { class: "sec" }, [el("h4", { text: title }), node]);
   const tensions = el("div", { class: "tensions" }, (opp.tensions || []).map((t) => el("span", { class: "tension", text: TENSION_TYPES[t] || t })));
@@ -233,8 +271,28 @@ export function renderCard(opp, record, handlers = {}) {
   notes.value = record?.notes || "";
   const learnBox = buildLearningForm(opp, handlers);
 
+  // Viabilidad y camino (lectura de señales / auto-análisis).
+  const vi = viability(opp);
+  const path = recommendedPath(opp);
+  const viabilityBlock = el("div", { class: "sec" }, [
+    el("h4", { text: "Viabilidad y cobertura" }),
+    el("div", { class: "viab" }, [
+      el("div", { class: `viab-cov viab-${vi.tone}` }, [
+        el("span", { class: "viab-n", text: `${vi.coverage}` }),
+        el("span", { class: "viab-l", text: "cobertura" }),
+      ]),
+      el("p", { class: "viab-verdict", text: vi.verdict }),
+    ]),
+    vi.gaps.length ? el("p", { class: "viab-gaps", text: `Confirmar: ${vi.gaps.join(", ")}` }) : null,
+  ]);
+  const pathBlock = sec("Camino para reducir negativas",
+    el("ol", { class: "path" }, path.map((p) => el("li", { text: p })))
+  );
+
   const detail = el("details", { class: "c-detail" }, [
     el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
+    viabilityBlock,
+    pathBlock,
     sec("Tesis", el("p", { class: "thesis", text: opp.thesis })),
     sec("Resumen", el("p", { text: opp.summary })),
     sec(`Evidencia — ${opp.evidence?.length || 0} (${evidenceVerdict(opp.evidence?.length || 0)})`, evidenceList(opp)),
@@ -259,7 +317,9 @@ export function renderCard(opp, record, handlers = {}) {
     top,
     hook,
     metrics,
+    serviceBlock,
     action,
+    failurePanel,
     detail,
   ]);
 }

@@ -103,6 +103,34 @@ export function addOutcome(outcome) {
   return log;
 }
 
+// Estados decisivos que enseñan al modelo (éxito o fallo claros).
+const DECISIVE = new Set(["interested", "meeting_booked", "rejected", "wrong_fit"]);
+
+/**
+ * Aprende del CRM: registra (o actualiza) UN resultado automático por lead a
+ * partir de su cambio de estado. Marcado `source:"crm"` y upsert por id para
+ * que cambiar el estado varias veces no infle el log con duplicados.
+ *
+ * Estados no decisivos (sin llamar, llamado, no contesta, seguimiento) retiran
+ * el resultado automático previo: aún no hay veredicto que aprender.
+ */
+export function recordStatusOutcome(id, status, meta = {}) {
+  const log = getLearning().filter((o) => !(o.source === "crm" && o.id === id));
+  if (DECISIVE.has(status)) {
+    log.push({
+      id,
+      source: "crm",
+      outcome: status,
+      classification: meta.classification || null,
+      signals: meta.signals || null,
+      hypothesisCorrect: status === "interested" || status === "meeting_booked",
+      createdAt: new Date().toISOString(),
+    });
+  }
+  write(LEARN_KEY, log);
+  return log;
+}
+
 /**
  * Derive simple calibration hints from the outcome log. This is intentionally
  * conservative: it reports observed conversion by classification and by

@@ -23,7 +23,11 @@ import {
 } from "./models.js";
 
 const clamp = (n, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
-const round = (n) => Math.round(n);
+// Una cifra decimal: las puntuaciones dejan de parecer "redondas" (71, 61) y
+// dos leads con señales casi iguales se diferencian de verdad.
+const round = (n) => Math.round(n * 10) / 10;
+// Entero (para conteos, no para puntuaciones).
+const roundInt = (n) => Math.round(n);
 
 /**
  * Blended numeric value for a signal colour, given the configured conservatism.
@@ -112,6 +116,13 @@ export function verificationProfile(opp) {
   };
 }
 
+/** Proporción de evidencias que llevan cita (url). 0..1. */
+function evidenceCitedShare(opp) {
+  const ev = Array.isArray(opp.evidence) ? opp.evidence : [];
+  if (!ev.length) return 0;
+  return ev.filter((e) => e.url).length / ev.length;
+}
+
 // --- Individual score computations ------------------------------------------
 
 function confidenceScore(opp, conservatism, weightMultipliers) {
@@ -131,7 +142,15 @@ function confidenceScore(opp, conservatism, weightMultipliers) {
     const w = totalWeight > 0 ? effective[i] / totalWeight : f.weight;
     raw += w * levelValue(levelOf(opp, f.key), conservatism);
   });
-  return clamp(raw * 100);
+  // Micro-ajuste por CALIDAD de evidencia (±~1.5 pts). No mueve el orden que
+  // marcan las señales, pero diferencia leads con señales idénticas según
+  // cuánta evidencia citada y de peso los respalda. Por eso las puntuaciones
+  // ya no salen "redondas" ni empatadas.
+  const { sumTier, distinctFilters } = evidenceProfile(opp);
+  const citedShare = evidenceCitedShare(opp);
+  const quality = (Math.min(sumTier, 12) / 12) * 0.6 + (distinctFilters / FILTER_KEYS.length) * 0.4;
+  const microAdj = (quality * citedShare - 0.4) * 3; // rango aprox. -1.2 .. +1.8
+  return clamp(raw * 100 + microAdj);
 }
 
 function evidenceStrength(opp) {

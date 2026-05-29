@@ -19,8 +19,10 @@ import {
   STATUS_LABELS,
   FILTER_BY_KEY,
   ECONOMIC_LABELS,
+  CALL_STATUSES,
 } from "../models.js";
 import * as store from "../store.js";
+import { failureReason } from "../diagnosis.js";
 import * as xport from "../export.js";
 
 const state = {
@@ -114,6 +116,7 @@ function tabs() {
     ["pipeline", "Embudo"],
     ["table", "Ranking"],
     ["cards", "Oportunidades"],
+    ["crm", "CRM"],
     ["learning", "Aprendizaje"],
   ];
   return el(
@@ -193,6 +196,7 @@ function viewArea() {
   if (state.view === "pipeline") area.appendChild(pipelineView());
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
+  else if (state.view === "crm") area.appendChild(crmView());
   else area.appendChild(learningView());
   return area;
 }
@@ -349,7 +353,18 @@ function buildCards() {
   const rows = visibleOpps();
   const tracking = store.getTracking();
   const handlers = {
-    onStatus: (id, st) => { store.setStatus(id, st); recompute().then(render); },
+    onStatus: (id, st) => {
+      store.setStatus(id, st);
+      // Aprender del CRM: un cambio de estado decisivo (interesado/reunión/
+      // rechazado/mal encaje) registra automáticamente un resultado con la foto
+      // de señales del lead, para que el solo hecho de mover la tarjeta calibre.
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      store.recordStatusOutcome(id, st, {
+        classification: lead?.scores?.classification,
+        signals: lead?.signals || null,
+      });
+      recompute().then(render);
+    },
     onNotes: (id, notes) => { store.setNotes(id, notes); },
     onOutcome: (id, outcome) => {
       // Stamp the lead's signal snapshot so calibration is reproducible even if
@@ -361,6 +376,96 @@ function buildCards() {
   };
   if (!rows.length) return el("p", { class: "empty", text: "Ningún candidato coincide con los filtros actuales." });
   return el("div", { class: "cards" }, rows.map((o) => renderCard(o, tracking[o.id], handlers)));
+}
+
+// ---- CRM view (tablero por estado de llamada) -------------------------------
+
+// Columnas del CRM, en orden de avance comercial. Las de fallo van marcadas.
+const CRM_COLUMNS = [
+  { key: "not_called", fail: false },
+  { key: "called", fail: false },
+  { key: "no_answer", fail: true },
+  { key: "interested", fail: false },
+  { key: "meeting_booked", fail: false },
+  { key: "follow_up", fail: true },
+  { key: "rejected", fail: true },
+  { key: "wrong_fit", fail: true },
+];
+
+function crmView() {
+  const tracking = store.getTracking();
+  const all = state.results.all;
+  // Agrupar leads por estado actual.
+  const byStatus = {};
+  for (const st of CALL_STATUSES) byStatus[st] = [];
+  for (const o of all) {
+    const st = tracking[o.id]?.status || "not_called";
+    (byStatus[st] || byStatus.not_called).push(o);
+  }
+
+  // Métricas de conversión del embudo comercial.
+  const total = all.length;
+  const contacted = all.length - byStatus.not_called.length;
+  const interested = byStatus.interested.length + byStatus.meeting_booked.length;
+  const meetings = byStatus.meeting_booked.length;
+  const rejected = byStatus.rejected.length + byStatus.wrong_fit.length;
+  const pct = (n, d) => (d ? Math.round((n / d) * 100) : 0);
+
+  const kpis = el("div", { class: "crm-kpis" }, [
+    crmKpi("Total", total, ""),
+    crmKpi("Contactados", contacted, `${pct(contacted, total)}%`),
+    crmKpi("Interesados", interested, `${pct(interested, contacted)}% de contactados`, "hot"),
+    crmKpi("Reuniones", meetings, `${pct(meetings, contacted)}% de contactados`, "hot"),
+    crmKpi("Rechazos", rejected, `${pct(rejected, contacted)}% de contactados`, "cool"),
+  ]);
+
+  // Tablero kanban.
+  const board = el("div", { class: "crm-board" }, CRM_COLUMNS.map((col) => {
+    const leads = byStatus[col.key] || [];
+    return el("div", { class: `crm-col ${col.fail ? "crm-col-fail" : ""}` }, [
+      el("div", { class: "crm-col-head" }, [
+        el("span", { class: "crm-col-title", text: STATUS_LABELS[col.key] }),
+        el("span", { class: "crm-col-n", text: String(leads.length) }),
+      ]),
+      el("div", { class: "crm-col-body" }, leads.length
+        ? leads.map((o) => crmCard(o, col.fail))
+        : [el("p", { class: "crm-empty", text: "—" })]),
+    ]);
+  }));
+
+  return el("div", {}, [
+    el("h2", { text: "CRM — seguimiento de llamadas" }),
+    el("p", { class: "hint", text: "Quién está en cada fase. Cambia el estado en la ficha; las columnas de fallo (no contesta, seguimiento, rechazado, mal encaje) muestran el motivo probable. El CRM alimenta el aprendizaje." }),
+    kpis,
+    board,
+  ]);
+}
+
+function crmKpi(label, n, sub, tone) {
+  return el("div", { class: `crm-kpi ${tone ? "kpi-" + tone : ""}` }, [
+    el("div", { class: "crm-kpi-n", text: String(n) }),
+    el("div", { class: "crm-kpi-l", text: label }),
+    sub ? el("div", { class: "crm-kpi-s", text: sub }) : null,
+  ]);
+}
+
+function crmCard(o, isFail) {
+  const s = o.scores;
+  const children = [
+    el("div", { class: "crm-card-top" }, [
+      el("span", { class: "crm-card-name", text: o.company }),
+      el("span", { class: `crm-card-conf conf-${s.confidence >= 75 ? "hot" : s.confidence >= 58 ? "warm" : "cool"}`, text: String(s.confidence) }),
+    ]),
+    el("p", { class: "crm-card-sub", text: `${o.city} · ${o.decisionMaker?.name || "decisor por identificar"}` }),
+  ];
+  // En columnas de fallo, mostrar el motivo probable (lectura de señales).
+  if (isFail) {
+    const fr = failureReason(o);
+    if (fr.causes.length) {
+      children.push(el("p", { class: "crm-card-fail", text: `⚠ ${fr.causes[0].cause}` }));
+    }
+  }
+  return el("div", { class: "crm-card", onClick: () => { state.view = "cards"; state.filters.search = o.company; render(); } }, children);
 }
 
 // ---- Learning loop view -----------------------------------------------------
