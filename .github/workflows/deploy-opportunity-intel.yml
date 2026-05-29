@@ -1,8 +1,10 @@
 name: Deploy Opportunity Intel
 
-# Publica la app interna (carpeta opportunity-intel/) en GitHub Pages.
-# Se ejecuta sola en cada push a la rama de trabajo o a main → la app del móvil
-# se actualiza sola cuando subimos mejoras o leads nuevos.
+# Actualización automática de la app interna (carpeta opportunity-intel/).
+# En cada push: corre los tests (puerta), construye la app de un solo archivo,
+# el snapshot y los exports de leads, y publica todo en GitHub Pages.
+# Si los tests fallan, NO se publica nada → la URL del móvil nunca recibe una
+# versión rota.
 
 on:
   push:
@@ -25,17 +27,49 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: opportunity-intel
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # 1) Puerta de calidad: si los tests fallan, el workflow para aquí.
+      - name: Tests
+        run: npm test
+
+      # 2) Construir artefactos de la app (sin dependencias, todo Node nativo).
+      - name: Build single-file app + snapshot + leads
+        run: |
+          mkdir -p _site
+          # App modular (servida por Pages): copiamos índice, fuentes y assets.
+          cp index.html _site/index.html
+          cp -r src _site/src
+          [ -f manifest.webmanifest ] && cp manifest.webmanifest _site/ || true
+          # App de un solo archivo (descargable / offline).
+          node bin/bundle.mjs --out _site/app.html
+          # Snapshot estático (vista rápida sin JS).
+          node bin/snapshot.mjs --out _site/snapshot.html
+          # Exports de los 20 mejores leads (CSV/JSON/hoja de llamadas).
+          node bin/run.mjs --dataset researched --final 20 --out _site/leads --quiet
+          # Marca de versión para ver cuándo se actualizó.
+          node -e "console.log(new Date().toISOString())" > _site/VERSION.txt
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: opportunity-intel/_site
+
   deploy:
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-      # La app es estática: subimos la carpeta tal cual, sin build.
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: opportunity-intel
       - id: deployment
         uses: actions/deploy-pages@v4

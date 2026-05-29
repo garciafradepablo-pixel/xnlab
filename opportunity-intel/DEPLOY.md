@@ -13,23 +13,43 @@ Aprendizaje).
 
 ## Opción A — GitHub Pages (recomendada: gratis y se actualiza sola)
 
-Ya está el workflow en `.github/workflows/deploy-opportunity-intel.yml`. Cada vez
-que subimos cambios a `opportunity-intel/**`, **la app del móvil se actualiza
-sola** (mejoras nuevas, leads nuevos).
+Ya está el workflow en `.github/workflows/deploy-opportunity-intel.yml`. Es un
+**pipeline de actualización automática**: en cada push a `opportunity-intel/**`
+
+1. **corre los tests** (puerta de calidad — si fallan, NO se publica nada);
+2. **construye** la app y los artefactos;
+3. **publica** en GitHub Pages.
+
+Así la app del móvil se actualiza sola con cada mejora o lead nuevo, y nunca
+recibe una versión rota.
+
+Lo que queda publicado en la URL:
+
+| Ruta | Qué es |
+|---|---|
+| `/` (`index.html`) | La app completa interactiva (la del día a día). |
+| `/app.html` | La app en **un solo archivo** (descargable / offline). |
+| `/snapshot.html` | Vista estática rápida (sin JS). |
+| `/leads/` | Export de los 20 mejores leads (CSV, JSON, hoja de llamadas). |
+| `/VERSION.txt` | Fecha/hora de la última actualización. |
 
 Activación (una sola vez, en GitHub):
 
 1. Repo → **Settings → Pages**.
 2. En **Build and deployment → Source**, elige **GitHub Actions**.
 3. Lanza el workflow: pestaña **Actions → Deploy Opportunity Intel → Run
-   workflow** (o simplemente haz un push que toque `opportunity-intel/`).
-4. La URL aparece en el propio job y en Settings → Pages. Será del tipo:
-   `https://<usuario>.github.io/xnlab/` (sirve `opportunity-intel/index.html`).
+   workflow** (o haz un push que toque `opportunity-intel/`).
+4. La URL aparece en el job y en Settings → Pages. Tipo:
+   `https://<usuario>.github.io/xnlab/`.
 
-A partir de ahí: cada push → nueva versión en segundos, sin tocar nada.
+A partir de ahí: cada push → nueva versión en ~1-2 min, sin tocar nada.
 
-> Nota: las rutas de la app son relativas (`./src/...`), así que funciona bajo
-> el subpath `/xnlab/` de Pages sin cambios.
+> **Instalar en el móvil como app:** abre la URL en el móvil → menú del
+> navegador → *Añadir a pantalla de inicio*. Gracias al `manifest.webmanifest`
+> se abre a pantalla completa, como una app nativa.
+
+> Nota: las rutas son relativas (`./src/...`), así que funciona bajo el subpath
+> `/xnlab/` de Pages sin cambios.
 
 ---
 

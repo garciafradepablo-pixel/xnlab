@@ -1,0 +1,20 @@
+{
+  "name": "01 · XN LAB — Inteligencia de Oportunidades",
+  "short_name": "01 · XN LAB",
+  "description": "Detecta momentos de negocio y prioriza a quién llamar.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0e0f12",
+  "theme_color": "#0e0f12",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' rx='96' fill='%230e0f12'/%3E%3Ctext x='50%25' y='50%25' dy='.1em' text-anchor='middle' font-family='Arial,sans-serif' font-size='150' font-weight='bold' fill='%23c9a227'%3E01%3C/text%3E%3Ctext x='50%25' y='72%25' text-anchor='middle' font-family='Arial,sans-serif' font-size='54' fill='%23e9ecf1'%3EXN LAB%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

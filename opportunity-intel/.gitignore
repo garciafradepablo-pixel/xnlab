@@ -1,4 +1,5 @@
-out/
-_*.mjs
-zsmoke*
 *.out
+_*.mjs
+_site/
+out/
+zsmoke*
