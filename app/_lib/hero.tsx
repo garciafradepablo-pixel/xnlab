@@ -346,12 +346,17 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             // warm protagonist, a medium cool counterweight, a small
             // accent — never a mirror. Opacities are pushed hard so the
             // dark reads as a SATURATED nebula, not a tea stain.
-            "radial-gradient(ellipse 60% 52% at 24% 20%, rgba(255,176,82,0.46) 0%, rgba(255,142,64,0.14) 32%, transparent 60%)",
-            "radial-gradient(ellipse 50% 50% at 82% 26%, rgba(220,84,156,0.34) 0%, transparent 58%)",
-            "radial-gradient(ellipse 46% 52% at 92% 58%, rgba(140,86,226,0.30) 0%, transparent 60%)",
-            "radial-gradient(ellipse 56% 52% at 12% 76%, rgba(54,176,200,0.30) 0%, transparent 60%)",
-            "radial-gradient(ellipse 50% 46% at 66% 90%, rgba(70,112,228,0.24) 0%, transparent 58%)",
-            "radial-gradient(ellipse 40% 38% at 46% 60%, rgba(240,122,94,0.20) 0%, transparent 58%)",
+            // DUALITY — warm hemisphere LEFT (the brand, premium in
+            // person) vs cool hemisphere RIGHT (the customer, premium on
+            // every screen). The chrome X sits on the meeting line: "the
+            // atmosphere between them is the work." Centre stays calm for
+            // the wordmark.
+            "radial-gradient(ellipse 58% 60% at 13% 30%, rgba(255,176,88,0.46) 0%, rgba(255,138,66,0.13) 33%, transparent 62%)",
+            "radial-gradient(ellipse 44% 48% at 7% 66%, rgba(238,140,84,0.26) 0%, transparent 60%)",
+            "radial-gradient(ellipse 42% 44% at 30% 88%, rgba(242,120,92,0.2) 0%, transparent 58%)",
+            "radial-gradient(ellipse 52% 56% at 87% 28%, rgba(152,96,228,0.34) 0%, transparent 60%)",
+            "radial-gradient(ellipse 48% 52% at 94% 62%, rgba(60,152,214,0.3) 0%, transparent 60%)",
+            "radial-gradient(ellipse 44% 46% at 74% 90%, rgba(72,112,232,0.2) 0%, transparent 58%)",
           ].join(", "),
           willChange: "transform, opacity",
         }}

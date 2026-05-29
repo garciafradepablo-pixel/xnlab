@@ -107,14 +107,15 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background: [
-            "radial-gradient(ellipse 52% 48% at 18% 28%, rgba(255,178,92,0.19) 0%, transparent 60%)",
-            "radial-gradient(ellipse 48% 46% at 86% 22%, rgba(222,86,156,0.17) 0%, transparent 60%)",
-            "radial-gradient(ellipse 46% 48% at 72% 86%, rgba(240,120,94,0.14) 0%, transparent 60%)",
+            // WARM HEMISPHERE (left) — the brand, premium in person.
+            "radial-gradient(ellipse 54% 50% at 14% 30%, rgba(255,178,92,0.2) 0%, transparent 60%)",
+            "radial-gradient(ellipse 46% 46% at 7% 70%, rgba(240,120,94,0.16) 0%, transparent 60%)",
+            "radial-gradient(ellipse 44% 44% at 30% 90%, rgba(232,150,90,0.13) 0%, transparent 58%)",
           ].join(", "),
           willChange: "transform, opacity",
         }}
-        initial={{ x: 0, y: 0, opacity: 0.7 }}
-        animate={reduced ? { x: 0, y: 0, opacity: 0.7 } : { x: [0, 30, -18, 0], y: [0, -22, 14, 0], opacity: [0.55, 1, 0.55] }}
+        initial={{ x: 0, y: 0, opacity: 0.78 }}
+        animate={reduced ? { x: 0, y: 0, opacity: 0.78 } : { x: [0, 22, -12, 0], y: [0, -18, 12, 0], opacity: [0.62, 0.95, 0.62] }}
         transition={reduced ? undefined : { duration: 26, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
       />
 
@@ -130,14 +131,15 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background: [
-            "radial-gradient(ellipse 50% 48% at 88% 62%, rgba(142,94,228,0.18) 0%, transparent 60%)",
-            "radial-gradient(ellipse 54% 50% at 10% 80%, rgba(56,176,206,0.16) 0%, transparent 60%)",
-            "radial-gradient(ellipse 46% 44% at 46% 8%, rgba(74,114,230,0.13) 0%, transparent 58%)",
+            // COOL HEMISPHERE (right) — the customer, premium on every screen.
+            "radial-gradient(ellipse 50% 50% at 88% 32%, rgba(146,96,230,0.18) 0%, transparent 60%)",
+            "radial-gradient(ellipse 52% 50% at 94% 72%, rgba(56,176,208,0.16) 0%, transparent 60%)",
+            "radial-gradient(ellipse 46% 44% at 72% 10%, rgba(74,114,232,0.13) 0%, transparent 58%)",
           ].join(", "),
           willChange: "transform, opacity",
         }}
         initial={{ x: 0, y: 0, opacity: 0.85 }}
-        animate={reduced ? { x: 0, y: 0, opacity: 0.85 } : { x: [0, -26, 16, 0], y: [0, 18, -12, 0], opacity: [0.95, 0.4, 0.95] }}
+        animate={reduced ? { x: 0, y: 0, opacity: 0.85 } : { x: [0, -22, 14, 0], y: [0, 16, -10, 0], opacity: [0.92, 0.62, 0.92] }}
         transition={reduced ? undefined : { duration: 30, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
       />
 
