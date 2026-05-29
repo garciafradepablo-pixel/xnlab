@@ -56,8 +56,9 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .btn-ghost:hover { color: var(--ink); border-color: var(--ink-dim); }
 
 /* ---- Tabs ---- */
-.tabs { display: flex; gap: 2px; padding: 0 22px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.tab { background: transparent; border: 0; color: var(--ink-dim); padding: 12px 16px; font-size: 13px; border-bottom: 2px solid transparent; }
+.tabs { display: flex; gap: 2px; padding: 0 22px; border-bottom: 1px solid var(--line); background: var(--panel); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tab { background: transparent; border: 0; color: var(--ink-dim); padding: 12px 16px; font-size: 13px; border-bottom: 2px solid transparent; white-space: nowrap; flex: 0 0 auto; }
 .tab.active { color: var(--ink); border-bottom-color: var(--accent); }
 .tab:hover { color: var(--ink); }
 
@@ -430,4 +431,59 @@ output { font-size: 12px; color: var(--accent); }
   .main { grid-template-columns: 1fr; }
   .config { position: static; min-height: 0; border-right: 0; border-bottom: 1px solid var(--line); }
   .cards { grid-template-columns: 1fr; }
+}
+
+/* ====================== MÓVIL: flex y legibilidad ====================== */
+@media (max-width: 600px) {
+  body { font-size: 15px; }                 /* texto base un punto mayor */
+  .app-head { flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
+  .head-actions { width: 100%; justify-content: space-between; }
+  .tagline { display: none; }                /* gana espacio en la barra */
+  .tabs { padding: 0 12px; }
+  .tab { padding: 12px 13px; font-size: 14px; }
+  .view { padding: 16px 14px; }
+
+  /* Cabecera de ficha: el anillo no aprieta al título */
+  .c-top { flex-wrap: wrap; }
+  .c-ident { flex: 1 1 60%; min-width: 0; }
+  .ring { order: -1; }                        /* anillo arriba-derecha, compacto */
+  .c-ident h3 { font-size: 17px; }
+
+  /* Métricas: la etiqueta no roba ancho a la barra */
+  .mbar { grid-template-columns: 64px 1fr 40px; gap: 6px; }
+
+  /* Acciones: contactos y estado a lo ancho, tocables */
+  .contact-line { gap: 6px; }
+  .ct-link, .ct-call { padding: 6px 11px; font-size: 13px; }  /* dedo-friendly */
+  .quick { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quick .q { padding: 11px 4px; font-size: 13px; }
+
+  /* Formularios: una sola columna, campos cómodos */
+  .lead-grid, .learn-grid { grid-template-columns: 1fr; }
+  .lead-f, .learn-f, .search-city, .notes { font-size: 16px; }  /* 16px evita zoom iOS */
+  .add-actions { flex-wrap: wrap; }
+  .add-actions .btn-primary { width: 100%; }
+
+  /* Filtros y exports en bloque */
+  .filters { gap: 6px; }
+  .filters input[type="search"] { min-width: 100%; flex: 1 1 100%; }
+  .filters select, .minev { flex: 1 1 45%; }
+  .export-btns .btn { flex: 1 1 45%; }
+
+  /* CRM y cobertura por sector: legibles en estrecho */
+  .crm-board { grid-template-columns: 1fr; }
+  .crm-kpis { gap: 8px; }
+  .crm-kpi { flex: 1 1 45%; min-width: 0; }
+  .sec-bar-row { grid-template-columns: 110px 1fr 52px; gap: 8px; }
+
+  /* Embudo: las fases envuelven sin desbordar */
+  .pipeline .stage { min-width: 90px; flex: 1 1 28%; }
+
+  /* Búsqueda de leads: ideas a una columna, enlaces tocables */
+  .search-ideas { grid-template-columns: 1fr; }
+  .q-link { padding: 11px 12px; font-size: 14px; }
+
+  /* Top picks y chips no se salen */
+  .tp-list { gap: 6px; }
+  .c-tags { gap: 5px; }
 }

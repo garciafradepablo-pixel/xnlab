@@ -600,27 +600,41 @@ function searchView() {
   // Selector de ciudad para personalizar las búsquedas.
   const cityInput = el("input", { type: "text", placeholder: "Ciudad (opcional, ej. Madrid)", class: "search-city" });
 
+  // Enlaces de búsqueda como <a> REALES (los móviles bloquean window.open, pero
+  // nunca un <a target=_blank>). Guardamos sus plantillas y reescribimos el href
+  // en vivo cuando cambia la ciudad.
+  const searchLinks = [];
+  const gQuery = (q) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+  function makeSearchLink(label, buildQuery) {
+    const a = el("a", { class: "q-link", target: "_blank", rel: "noopener", text: label });
+    a._build = buildQuery;
+    a.setAttribute("href", buildQuery(""));
+    searchLinks.push(a);
+    return a;
+  }
+  cityInput.addEventListener("input", () => {
+    const c = cityInput.value || "España";
+    for (const a of searchLinks) a.setAttribute("href", a._build(c === "" ? "España" : c));
+  });
+
   // Ideas por sector.
   blocks.push(el("div", { class: "search-ideas" }, SECTORS.map((sc) =>
     el("div", { class: "search-sector" }, [
       el("h4", { text: sc.label }),
       el("div", { class: "search-q" }, (SEARCH_IDEAS[sc.key] || []).map((q) =>
-        el("button", {
-          class: "q-link",
-          text: q.replace("{ciudad}", "…"),
-          onClick: () => {
-            const query = q.replace("{ciudad}", cityInput.value || "España");
-            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank", "noopener");
-          },
-        })
+        makeSearchLink(q.replace("{ciudad}", "…"), (city) =>
+          gQuery(q.replace("{ciudad}", city || "España"))
+        )
       )),
     ])
   )));
 
   blocks.push(el("div", { class: "search-tools" }, [
     el("span", { text: "Atajos: " }),
-    el("button", { class: "q-link", text: "LinkedIn — contrataciones marketing", onClick: () => window.open(`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent("buscamos responsable marketing " + (cityInput.value || ""))}`, "_blank", "noopener") }),
-    el("button", { class: "q-link", text: "Prensa — rondas de inversión", onClick: () => window.open("https://www.google.com/search?q=" + encodeURIComponent("ronda financiación startup española 2025") + "&tbm=nws", "_blank", "noopener") }),
+    makeSearchLink("LinkedIn — contrataciones marketing", (city) =>
+      `https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent("buscamos responsable marketing " + (city || ""))}`),
+    makeSearchLink("Prensa — rondas de inversión", () =>
+      gQuery("ronda financiación startup española 2025")),
   ]));
 
   // Formulario de alta.
