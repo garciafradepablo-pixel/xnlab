@@ -14,8 +14,8 @@ export function useMounted() {
 }
 
 // Shared design tokens
-export const ts = "0 1px 20px rgba(0,0,0,0.9)";
-export const tsS = "0 2px 40px rgba(0,0,0,0.95),0 0 20px rgba(0,0,0,0.8)";
+export const ts = "0 1px 18px rgba(0,0,0,0.92),0 0 6px rgba(0,0,0,0.55)";
+export const tsS = "0 2px 40px rgba(0,0,0,0.95),0 0 20px rgba(0,0,0,0.82)";
 export const serif = "var(--font-serif,'Cormorant Garamond',Georgia,serif)";
 
 // Word-by-word reveal
@@ -99,7 +99,8 @@ export function Label({
         fontWeight: 500,
         letterSpacing: "0.38em",
         textTransform: "uppercase",
-        color: "rgba(255,255,255,0.42)",
+        color: "rgba(255,255,255,0.46)",
+        textShadow: "0 1px 16px rgba(0,0,0,0.9)",
         ...style,
       }}
     >

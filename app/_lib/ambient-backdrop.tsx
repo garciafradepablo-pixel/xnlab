@@ -238,6 +238,23 @@ export function AmbientBackdrop() {
         />
       </div>
 
+      {/* Layer R — readability scrim. The aurora masses live at the edges,
+          but content columns live down the centre; this keeps a soft dark
+          spine through the middle so body copy and the faint editorial
+          labels never lose contrast against the brighter colour, while the
+          corners stay saturated. Legibility first, colour at the margins. */}
+      <div
+        aria-hidden
+        style={{
+          position: "fixed",
+          inset: 0,
+          zIndex: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(ellipse 64% 132% at 50% 50%, rgba(5,4,9,0.42) 0%, rgba(5,4,9,0.2) 38%, transparent 64%)",
+        }}
+      />
+
       {/* Layer E — vignette. Softened from the previous version (edges
           were 0.82 black, which read as oppressive/claustrophobic) to a
           graded cool-tinted shadow that frames the centre as the lit
