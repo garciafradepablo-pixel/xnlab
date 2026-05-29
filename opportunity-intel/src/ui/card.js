@@ -151,8 +151,11 @@ function quickStatus(opp, current, handlers) {
     QUICK_STATUS.map(([key, label]) =>
       el("button", {
         class: `q q-${key} ${current === key ? "active" : ""}`,
-        text: label,
-        onClick: () => handlers.onStatus?.(opp.id, key),
+        // Toggle: si ya está activo, al pulsar se desmarca (vuelve a "sin
+        // llamar"). Así un toque por error se deshace con otro toque.
+        title: current === key ? "Pulsa de nuevo para desmarcar" : label,
+        text: current === key ? `✓ ${label}` : label,
+        onClick: () => handlers.onStatus?.(opp.id, current === key ? "not_called" : key),
       })
     )
   );

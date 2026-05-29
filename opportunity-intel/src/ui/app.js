@@ -25,6 +25,7 @@ import {
 } from "../models.js";
 import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
+import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { buildLead } from "../newlead.js";
 import * as xport from "../export.js";
 
@@ -144,7 +145,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("button", { class: "btn-ghost", text: "Reiniciar", onClick: () => { if (confirm("¿Reiniciar todo el seguimiento, notas y aprendizaje?")) { store.resetAll(); location.reload(); } } }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v1" }),
     ]),
   ]);
 }
@@ -152,6 +153,7 @@ function header() {
 function tabs() {
   const items = [
     ["cards", "Oportunidades"],
+    ["connector", "01 ↔ XN"],
     ["search", "Buscar leads"],
     ["table", "Ranking"],
     ["crm", "CRM"],
@@ -236,6 +238,18 @@ function configPanel() {
     field("Umbral 01 → XN LAB (confianza)", xnThr),
     runBtn,
     el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
+    // Zona peligrosa, al fondo y blindada: exporta copia + doble confirmación.
+    el("div", { class: "danger-zone" }, [
+      el("h4", { text: "Zona de datos" }),
+      el("button", { class: "btn-ghost", text: "Exportar copia de seguridad", onClick: () => {
+        xport.download(`copia-seguridad-${new Date().toISOString().slice(0,10)}.json`, store.exportState(), "application/json");
+      } }),
+      el("button", { class: "btn-danger", text: "Borrar todos mis datos", onClick: () => {
+        if (!confirm("Esto borra TUS llamadas, notas, verificaciones y leads añadidos. ¿Has exportado una copia?")) return;
+        if (!confirm("Última confirmación: esto NO se puede deshacer. ¿Borrar definitivamente?")) return;
+        store.resetAll(); location.reload();
+      } }),
+    ]),
   ]);
 }
 
@@ -247,6 +261,7 @@ function viewArea() {
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
+  else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else area.appendChild(learningView());
   return area;
@@ -737,6 +752,86 @@ function addLeadForm() {
     el("div", { class: "add-actions" }, [save, msg]),
     el("p", { class: "hint", text: "* Nombre y momento son lo mínimo. Con una URL de fuente del momento, el lead puntúa más alto. El resto de huecos los confirmas luego desde la ficha (Verificación)." }),
   ]);
+}
+
+// ---- Conector 01 ↔ XN -------------------------------------------------------
+// El corazón del sistema: reparte cada oportunidad entre 01 Agency (ticket
+// 1.500–5.000 €) y XN LAB (transformación 8.000 €+), con el valor de cada
+// cartera, el porqué del reparto y el traspaso entre casas.
+
+function connectorView() {
+  const all = (state.results?.all || []).filter((o) => o.scores.classification !== "discard");
+  const o1 = all.filter((o) => o.scores.classification === "01");
+  const xn = all.filter((o) => o.scores.classification === "xn");
+
+  // Valor potencial de cada cartera = suma del ticket sugerido por lead.
+  const ticketOf = (o) => OFFER_LADDER[o.suggestedOfferKey]?.price || 0;
+  const sum = (arr) => arr.reduce((s, o) => s + ticketOf(o), 0);
+  const eur = (n) => `${n.toLocaleString("es-ES")} €`;
+
+  const blocks = [el("h2", { text: "Conector 01 ↔ XN LAB" })];
+  blocks.push(el("p", { class: "hint", text: "Cada oportunidad se reparte según el alcance del primer movimiento: 01 Agency capta y ejecuta (1.500–5.000 €); XN LAB transforma (8.000 €+). Aquí ves las dos carteras, su valor potencial y por qué cae cada lead donde cae." }));
+
+  // Cabecera con las dos casas y su valor.
+  blocks.push(el("div", { class: "conn-houses" }, [
+    el("div", { class: "conn-house house-01" }, [
+      el("div", { class: "conn-h-name", text: "01 Agency" }),
+      el("div", { class: "conn-h-n", text: String(o1.length) }),
+      el("div", { class: "conn-h-sub", text: `${eur(sum(o1))} potencial · ticket 1.500–5.000 €` }),
+    ]),
+    el("div", { class: "conn-arrow", text: "↔", title: "Traspaso entre casas" }),
+    el("div", { class: "conn-house house-xn" }, [
+      el("div", { class: "conn-h-name", text: "XN LAB" }),
+      el("div", { class: "conn-h-n", text: String(xn.length) }),
+      el("div", { class: "conn-h-sub", text: `${eur(sum(xn))} potencial · transformación 8.000 €+` }),
+    ]),
+  ]));
+
+  blocks.push(el("div", { class: "conn-total", html: `Valor potencial combinado del pipeline: <b>${eur(sum(all))}</b> en ${all.length} oportunidades.` }));
+
+  // Dos columnas con los leads de cada casa, con su oferta y el porqué.
+  const column = (title, leads, cls) => el("div", { class: `conn-col conn-col-${cls}` }, [
+    el("h3", { text: `${title} (${leads.length})` }),
+    leads.length ? el("div", { class: "conn-leads" }, leads.map((o) => {
+      const offer = OFFER_LADDER[o.suggestedOfferKey];
+      const why = connectorReason(o);
+      return el("div", { class: "conn-lead", onClick: () => { state.filters.search = o.company; goView("cards"); } }, [
+        el("div", { class: "conn-lead-top" }, [
+          el("span", { class: "conn-lead-name", text: o.company }),
+          el("span", { class: `conn-lead-score conf-${o.scores.confidence >= 75 ? "hot" : o.scores.confidence >= 58 ? "warm" : "cool"}`, text: String(o.scores.confidence) }),
+        ]),
+        el("div", { class: "conn-lead-offer", text: offer ? `${offer.label} · ${eur(offer.price)}` : "—" }),
+        el("div", { class: "conn-lead-why", text: why }),
+      ]);
+    })) : el("p", { class: "empty", text: "Sin leads en esta cartera ahora mismo." }),
+  ]);
+
+  blocks.push(el("div", { class: "conn-cols" }, [
+    column("01 Agency — captar y ejecutar", o1, "01"),
+    column("XN LAB — transformar", xn, "xn"),
+  ]));
+
+  // Candidatos a traspaso: 01 muy fuertes que rozan XN (handoff explícito).
+  const handoff = o1.filter((o) => o.scores.confidence >= 80 && o.scores.economicPotential === "very high");
+  if (handoff.length) {
+    blocks.push(el("div", { class: "sec" }, [
+      el("h4", { text: "Candidatos a escalar de 01 → XN" }),
+      el("p", { class: "hint", text: "Leads de 01 con confianza alta y capacidad económica muy alta: si el primer proyecto va bien, son candidatos a una transformación XN." }),
+      el("ul", { class: "bullets" }, handoff.map((o) => el("li", { text: `${o.company} — ${o.scores.confidence} · ${o.city}` }))),
+    ]));
+  }
+
+  return el("div", {}, blocks);
+}
+
+// Por qué cae un lead en su casa (texto corto y defendible).
+function connectorReason(o) {
+  const s = o.scores;
+  if (s.classification === "xn") {
+    return `Transformación integral: capacidad ${s.economicPotential}, confianza ${s.confidence}. El primer movimiento ya es de alcance XN.`;
+  }
+  const svc = matchServices(o, { max: 1 })[0];
+  return svc ? `Primer movimiento 01: ${svc.name}. Punto de entrada accionable y de ticket medio.` : `Encaje 01: proyecto acotado de ticket medio.`;
 }
 
 // ---- Learning loop view -----------------------------------------------------
