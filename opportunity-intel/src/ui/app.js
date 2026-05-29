@@ -33,7 +33,7 @@ import * as xport from "../export.js";
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
-  dataset: "demo", // demo (synthetic) | researched (real, Spain)
+  dataset: "researched", // researched (empresas reales) | demo (sintético de prueba)
   // Arranca en Oportunidades: lo primero que se ve son los mejores leads,
   // ordenados de mayor a menor puntuación.
   view: "cards", // cards | pipeline | table | crm | learning
@@ -110,10 +110,11 @@ function render() {
   root.appendChild(tabs());
   const scroller = el("div", { class: "scroll" });
   const main = el("div", { class: "main" });
-  // En escritorio el panel de configuración va fijo a la izquierda; en móvil se
-  // pliega (details) para no empujar las oportunidades hacia abajo.
+  // Configuración como BARRA plegable arriba del contenido (a todo el ancho),
+  // no como columna lateral — así no deja hueco vacío y va igual en móvil y
+  // escritorio. Cerrada por defecto.
   const cfg = el("details", { class: "config-wrap" }, [
-    el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda" }),
+    el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda y datos" }),
     configPanel(),
   ]);
   cfg.open = state._cfgOpen ?? false;
@@ -146,7 +147,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v2 · mapa" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v3 · real" }),
     ]),
   ]);
 }
