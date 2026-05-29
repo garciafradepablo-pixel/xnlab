@@ -62,6 +62,56 @@ export function evidenceProfile(opp) {
   };
 }
 
+/**
+ * Provenance / verification profile. Answers: how much of this lead is actually
+ * proven, and what is still an unverified gap to confirm before calling?
+ *
+ * A filter counts as VERIFIED only when it is green/yellow AND backed by at
+ * least one evidence point carrying a real citation URL. Grey filters (and any
+ * signal with no cited evidence) are GAPS — exactly the list an analyst should
+ * close. Red filters are tracked separately (proven-negative, not a gap).
+ *
+ * @returns {{ verifiedFilters:string[], gapFilters:string[],
+ *   citedCount:number, uncitedCount:number, sourceCount:number,
+ *   verifiedShare:number, fullyCited:boolean }}
+ */
+export function verificationProfile(opp) {
+  const evidence = Array.isArray(opp.evidence) ? opp.evidence : [];
+  // Which filters have at least one *cited* (url-bearing) evidence point.
+  const citedByFilter = new Set(
+    evidence.filter((e) => e.url).map((e) => e.filter)
+  );
+  const citedCount = evidence.filter((e) => e.url).length;
+  const uncitedCount = evidence.length - citedCount;
+
+  const verifiedFilters = [];
+  const gapFilters = [];
+  for (const key of FILTER_KEYS) {
+    const lvl = levelOf(opp, key);
+    if ((lvl === "green" || lvl === "yellow") && citedByFilter.has(key)) {
+      verifiedFilters.push(key);
+    } else if (lvl !== "red") {
+      // grey, or green/yellow asserted without a citation = a gap to confirm.
+      gapFilters.push(key);
+    }
+  }
+
+  // Distinct citation sources (deduped URLs) — breadth of provenance.
+  const sourceCount = new Set(
+    evidence.filter((e) => e.url).map((e) => e.url)
+  ).size;
+
+  return {
+    verifiedFilters,
+    gapFilters,
+    citedCount,
+    uncitedCount,
+    sourceCount,
+    verifiedShare: Math.round((verifiedFilters.length / FILTER_KEYS.length) * 100),
+    fullyCited: uncitedCount === 0 && citedCount > 0,
+  };
+}
+
 // --- Individual score computations ------------------------------------------
 
 function confidenceScore(opp, conservatism) {
@@ -239,6 +289,7 @@ export function scoreOpportunity(opp, config = {}) {
     greenCount,
     evidenceCount,
     discardReason,
+    verification: verificationProfile(opp),
     shortlistEligible:
       classification !== "discard" &&
       evidenceCount >= MIN_EVIDENCE_FOR_SHORTLIST &&

@@ -177,6 +177,19 @@ blockquote { margin: 0; padding: 8px 12px; background: var(--panel-2); border-ra
 .offer { color: var(--accent); font-weight: 600; }
 .sec-meta { font-size: 11px; color: var(--ink-dim); margin: 10px 0; }
 
+/* ---- Verification / provenance block ---- */
+.verif { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; margin: 8px 0; background: var(--panel-2); }
+.verif-real { border-color: rgba(63,185,80,.35); }
+.verif h4 { margin: 0 0 6px; }
+.verif-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.verif-pct { font-size: 18px; font-weight: 700; color: var(--green); font-variant-numeric: tabular-nums; }
+.verif-label { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: .4px; }
+.verif-line { font-size: 12px; color: var(--ink-dim); margin: 2px 0; }
+.verif-line.ok { color: var(--green); }
+.verif-gaps-h { font-size: 12px; color: var(--ink); margin: 6px 0 4px; font-weight: 600; }
+.verif-gaps { display: flex; flex-wrap: wrap; gap: 4px; }
+.verif-gap { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: rgba(212,167,44,.14); color: var(--yellow); border: 1px solid rgba(212,167,44,.35); }
+
 /* ---- Operational layer ---- */
 .ops { border-top: 1px solid var(--line); padding-top: 10px; margin-top: 8px; }
 .ops-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }

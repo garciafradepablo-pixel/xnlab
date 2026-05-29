@@ -21,7 +21,7 @@ import {
   STATUS_LABELS,
   evidenceVerdict,
 } from "../models.js";
-import { explainScore } from "../scoring.js";
+import { explainScore, verificationProfile } from "../scoring.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -71,6 +71,46 @@ function evidenceList(opp) {
 
 function bullets(arr) {
   return el("ul", { class: "bullets" }, (arr || []).map((x) => el("li", { text: x })));
+}
+
+/**
+ * Provenance block. For researched (real) leads it shows how much of the lead
+ * is backed by cited evidence and, crucially, the checklist of unverified gaps
+ * an analyst must confirm before calling. Returns null when there is nothing
+ * worth showing (a fully-verified synthetic lead with no gaps).
+ */
+function verificationBlock(opp) {
+  const v = verificationProfile(opp);
+  const isReal = opp.researched === true;
+  // Synthetic, fully-asserted leads have nothing useful to surface here.
+  if (!isReal && v.gapFilters.length === 0) return null;
+
+  const sourcesLine = el("p", { class: "verif-line", text:
+    `Verified (cited): ${v.verifiedFilters.length}/10 filters · ${v.sourceCount} source${v.sourceCount === 1 ? "" : "s"} · ${v.citedCount} cited evidence point${v.citedCount === 1 ? "" : "s"}` });
+
+  const children = [
+    el("div", { class: "verif-head" }, [
+      el("span", { class: "verif-pct", text: `${v.verifiedShare}%` }),
+      el("span", { class: "verif-label", text: isReal ? "evidence-verified" : "asserted (demo)" }),
+    ]),
+    sourcesLine,
+  ];
+
+  if (v.gapFilters.length) {
+    children.push(el("p", { class: "verif-gaps-h", text: "Confirm before calling:" }));
+    children.push(
+      el("div", { class: "verif-gaps" },
+        v.gapFilters.map((k) => el("span", { class: "verif-gap", text: FILTER_BY_KEY[k]?.label || k }))
+      )
+    );
+  } else {
+    children.push(el("p", { class: "verif-line ok", text: "All filters backed by cited evidence." }));
+  }
+
+  return el("div", { class: `verif ${isReal ? "verif-real" : ""}` }, [
+    el("h4", { text: "Verification" }),
+    ...children,
+  ]);
 }
 
 /**
@@ -190,6 +230,7 @@ export function renderCard(opp, record, handlers = {}) {
     contact,
     body,
     el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · demo data" : ""}` }),
+    verificationBlock(opp),
     ops,
     learnBox,
   ]);

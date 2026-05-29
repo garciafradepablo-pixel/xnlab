@@ -4,7 +4,7 @@
 // zero install, matching the rest of the project.
 // =============================================================================
 
-import { scoreOpportunity, countFlags, levelValue } from "../src/scoring.js";
+import { scoreOpportunity, countFlags, levelValue, verificationProfile } from "../src/scoring.js";
 import { runPipeline } from "../src/pipeline.js";
 import SEED from "../src/seed.js";
 import { FILTER_KEYS, DEFAULT_CONFIG } from "../src/models.js";
@@ -91,6 +91,36 @@ ok(res.ranked.every((o) => o.scores.evidenceCount >= 3), "all shortlisted have >
 // 11. The intentional 'discard' demo rows are actually discarded.
 const tajo = res.all.find((o) => o.id === "re-construcciones-tajo");
 ok(tajo && tajo.scores.classification === "discard", "low-fit contractor is discarded");
+
+// 12. verificationProfile — provenance accounting.
+// A filter is "verified" only when green/yellow AND backed by a cited (url)
+// evidence point. Grey signals, and green/yellow asserted without a citation,
+// are gaps. Red is neither verified nor a gap.
+const vEvidence = [
+  { filter: "transitionSignal", tier: 3, url: "https://src/a" }, // cited → verifies green
+  { filter: "economicCapacity", tier: 2, url: "https://src/a" }, // same source
+  { filter: "whyNow", tier: 2 }, // NO url → does not verify even though green
+];
+const vSignals = {};
+FILTER_KEYS.forEach((k) => (vSignals[k] = { level: "grey" }));
+vSignals.transitionSignal = { level: "green" };
+vSignals.economicCapacity = { level: "green" };
+vSignals.whyNow = { level: "green" };
+vSignals.strategicFit = { level: "red" };
+const vp = verificationProfile({ signals: vSignals, evidence: vEvidence });
+ok(vp.verifiedFilters.includes("transitionSignal"), "cited green filter is verified");
+ok(vp.verifiedFilters.includes("economicCapacity"), "second cited green filter is verified");
+ok(!vp.verifiedFilters.includes("whyNow"), "green filter WITHOUT a citation is not verified");
+ok(vp.gapFilters.includes("whyNow"), "uncited green filter is a gap to confirm");
+ok(!vp.gapFilters.includes("strategicFit"), "red filter is not counted as a gap");
+ok(!vp.verifiedFilters.includes("strategicFit"), "red filter is not verified");
+ok(vp.sourceCount === 1, "deduplicates citation sources by URL");
+ok(vp.citedCount === 2 && vp.uncitedCount === 1, "counts cited vs uncited evidence");
+ok(vp.verifiedShare === 20, "verifiedShare = 2/10 = 20%");
+
+// 13. scoreOpportunity exposes the verification profile.
+const vScored = scoreOpportunity({ signals: vSignals, evidence: vEvidence }, DEFAULT_CONFIG);
+ok(vScored.verification && Array.isArray(vScored.verification.gapFilters), "scoreOpportunity attaches verification");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
