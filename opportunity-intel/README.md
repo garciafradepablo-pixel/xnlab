@@ -120,6 +120,19 @@ demonstrate the engine on archetypes here, and attach *real, cited* evidence
 through the connector layer once live (below). The UI marks the data as
 `DEMO DATA` for exactly this reason.
 
+### Two datasets, switchable in the UI
+
+The config panel has a **Dataset** selector:
+
+- **Demo — synthetic** — the archetypes in `src/seed.js` (default).
+- **Researched — Spain** — real, verified leads in `src/data/researched.js`.
+
+The researched dataset **ships empty on purpose**: a lead may only be added once
+it carries at least three cited, verifiable evidence points. It is populated
+either by the live connectors (`node bin/run.mjs --enrich`) or by manual
+research following the protocol documented at the top of `src/data/researched.js`
+— never by fabrication.
+
 ---
 
 ## Connecting real data sources

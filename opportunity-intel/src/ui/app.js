@@ -8,6 +8,7 @@ import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
 import { runPipeline } from "../pipeline.js";
 import SEED from "../seed.js";
+import RESEARCHED from "../data/researched.js";
 import {
   SECTORS,
   SECTOR_BY_KEY,
@@ -23,6 +24,7 @@ import * as xport from "../export.js";
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
+  dataset: "demo", // demo (synthetic) | researched (real, Spain)
   view: "pipeline", // pipeline | table | cards | learning
   filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" },
 };
@@ -35,8 +37,12 @@ export async function mount(rootEl) {
   render();
 }
 
+function activeCandidates() {
+  return state.dataset === "researched" ? RESEARCHED : SEED;
+}
+
 async function recompute() {
-  state.results = await runPipeline(SEED, state.config);
+  state.results = await runPipeline(activeCandidates(), state.config);
   store.saveConfig(state.config);
 }
 
@@ -142,8 +148,18 @@ function configPanel() {
   const xnThr = el("input", { type: "number", min: "0", max: "100", value: String(c.xnThreshold), onChange: (e) => (c.xnThreshold = +e.target.value) });
   const country = el("input", { type: "text", value: c.country, onChange: (e) => (c.country = e.target.value) });
 
+  const datasetSel = el(
+    "select",
+    { onChange: async (e) => { state.dataset = e.target.value; await recompute(); render(); } },
+    [
+      el("option", { value: "demo", selected: state.dataset === "demo", text: `Demo — synthetic (${SEED.length})` }),
+      el("option", { value: "researched", selected: state.dataset === "researched", text: `Researched — Spain (${RESEARCHED.length})` }),
+    ]
+  );
+
   return el("aside", { class: "config" }, [
     el("h2", { text: "Search configuration" }),
+    field("Dataset", datasetSel),
     field("Country", country),
     field("Sectors", sectorChecks),
     field("Candidate volume (target)", candVol),
@@ -169,6 +185,17 @@ function viewArea() {
 
 function pipelineView() {
   const counts = state.results.counts;
+
+  // Empty-state for the researched dataset before it is populated.
+  if (counts.discovered === 0) {
+    return el("div", {}, [
+      el("h2", { text: "Candidate pipeline" }),
+      el("div", { class: "pipe-summary" }, [
+        el("p", { html: "<b>No researched leads yet.</b> The real-data pilot ships empty on purpose — a lead may only be added once it carries at least three cited, verifiable evidence points." }),
+        el("p", { class: "hint", text: "Populate it via the live connectors (node bin/run.mjs --enrich) or by manual research following the protocol in src/data/researched.js. Switch the Dataset selector back to ‘Demo’ to explore the system now." }),
+      ]),
+    ]);
+  }
   const stages = el("div", { class: "pipeline" }, PIPELINE_STAGES.map((st, i) => {
     const n = counts[st.key];
     const prev = i > 0 ? counts[PIPELINE_STAGES[i - 1].key] : n;
