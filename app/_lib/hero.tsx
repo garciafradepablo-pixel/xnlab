@@ -955,7 +955,11 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            "radial-gradient(circle at center, rgba(255,194,126,0.32) 0%, rgba(240,164,100,0.12) 30%, rgba(150,92,48,0.03) 54%, transparent 70%)",
+            // DUAL RIM-LIGHT — warm source from the left (the brand, in
+            // person), cool source from the right (the customer, on screen).
+            // The chrome X sits between them and catches both, so the
+            // sculpture itself embodies the duality of the whole field.
+            "radial-gradient(circle at 30% 48%, rgba(255,184,112,0.3) 0%, rgba(238,158,96,0.09) 32%, transparent 62%), radial-gradient(circle at 70% 52%, rgba(116,154,236,0.24) 0%, rgba(96,128,224,0.07) 32%, transparent 62%)",
           filter: "blur(26px)",
         }}
         initial={{ opacity: 0, scale: 0.92 }}
@@ -1031,7 +1035,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                   // Stacked drop-shadows blow up paint cost — Chromium
                   // re-rasterises the full layer per shadow. One wider
                   // shadow reads as the same atmospheric copper rim.
-                  filter: "drop-shadow(0 0 54px rgba(255,182,112,0.65))",
+                  // Dual edge-glow: warm bloom thrown to the left, cool to
+                  // the right, so the chrome reads as lit by both worlds at
+                  // once. Two offset shadows on a single static image —
+                  // rasterised once, composited cheaply by the parent.
+                  filter:
+                    "drop-shadow(-18px 1px 46px rgba(255,176,104,0.58)) drop-shadow(18px 1px 46px rgba(120,156,238,0.52))",
                 }}
               />
           </motion.div>
