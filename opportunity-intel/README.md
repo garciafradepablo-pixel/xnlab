@@ -125,13 +125,20 @@ through the connector layer once live (below). The UI marks the data as
 The config panel has a **Dataset** selector:
 
 - **Demo — synthetic** — the archetypes in `src/seed.js` (default).
-- **Researched — Spain** — real, verified leads in `src/data/researched.js`.
+- **Researched — Spain** — real, press-verified leads in `src/data/researched.js`.
 
-The researched dataset **ships empty on purpose**: a lead may only be added once
-it carries at least three cited, verifiable evidence points. It is populated
-either by the live connectors (`node bin/run.mjs --enrich`) or by manual
-research following the protocol documented at the top of `src/data/researched.js`
-— never by fabrication.
+The researched dataset holds a **pilot of 6 real Spanish opportunities**
+(researched 2026-05-29 via web search): boutique hotels, a funded foodtech
+brand, premium restaurant groups, and luxury developers — each carrying a
+press-verified *moment* (opening / funding / expansion) with real citation URLs.
+
+Honest limits of that pass: page fetching was blocked, so **websites, contacts,
+reviews and on-site tension could not be verified** — those signals are kept
+**grey**, and the first lever for every real lead is literally "verify the site
++ find the decision maker". Scores land in the 54–64 band and every lead reads
+"prepare a mini-audit first" — a real moment is a *hypothesis*, not a closed
+case. Run `node bin/run.mjs --enrich` (or the live connectors) to fill the grey
+gaps. A lead is only ever added with ≥3 cited evidence points — never fabricated.
 
 ---
 

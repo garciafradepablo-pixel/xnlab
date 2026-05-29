@@ -89,7 +89,9 @@ function header() {
       el("span", { class: "tagline", text: "Opportunity Intelligence — moments, not companies" }),
     ]),
     el("div", { class: "head-actions" }, [
-      el("span", { class: "demo-badge", text: "DEMO DATA — synthetic leads", title: "The seeded dataset is illustrative. Connect real sources via the enrichment adapters (see README)." }),
+      state.dataset === "researched"
+        ? el("span", { class: "demo-badge researched-badge", text: "RESEARCHED — press-verified moments", title: "Real leads: openings/funding/expansions verified from cited press. Websites, contacts and on-site tension are NOT verified (grey signals) — enrich before calling." })
+        : el("span", { class: "demo-badge", text: "DEMO DATA — synthetic leads", title: "The seeded dataset is illustrative. Connect real sources via the enrichment adapters (see README)." }),
       el("button", { class: "btn-ghost", text: "Reset", onClick: () => { if (confirm("Reset all tracking, notes and learning?")) { store.resetAll(); location.reload(); } } }),
     ]),
   ]);

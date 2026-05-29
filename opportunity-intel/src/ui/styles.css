@@ -51,6 +51,7 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
   font-size: 11px; color: var(--accent); border: 1px solid var(--accent);
   padding: 3px 8px; border-radius: 999px; letter-spacing: .5px;
 }
+.researched-badge { color: var(--green); border-color: var(--green); }
 .btn-ghost { background: transparent; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 6px; padding: 5px 12px; }
 .btn-ghost:hover { color: var(--ink); border-color: var(--ink-dim); }
 
