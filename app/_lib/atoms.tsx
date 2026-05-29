@@ -41,12 +41,12 @@ export function W({
           key={i}
           className="inline-block"
           variants={{
-            hidden: { opacity: 0, y: 16, filter: "blur(4px)" },
+            hidden: { opacity: 0, y: 26, filter: "blur(6px)" },
             visible: {
               opacity: 1,
               y: 0,
               filter: "blur(0px)",
-              transition: { duration: 0.95, ease: [0.22, 1, 0.36, 1], delay: delay + i * 0.065 },
+              transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: delay + i * 0.075 },
             },
           }}
         >
@@ -72,10 +72,10 @@ export function R({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, filter: "blur(5px)" }}
-      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-      viewport={{ once: true, margin: "-8%" }}
-      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay }}
+      initial={{ opacity: 0, y: 38, scale: 0.984, filter: "blur(7px)" }}
+      whileInView={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
+      viewport={{ once: true, margin: "-9%" }}
+      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
       style={style}
     >
@@ -142,14 +142,19 @@ export function Commentary({
           ...style,
         }}
       >
-        <span
+        <motion.span
           aria-hidden
+          initial={{ scaleX: 0, opacity: 0 }}
+          whileInView={{ scaleX: 1, opacity: 1 }}
+          viewport={{ once: true, margin: "-9%" }}
+          transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1], delay: delay + 0.18 }}
           style={{
             display: "inline-block",
             verticalAlign: "middle",
             width: "clamp(32px,3.8vw,48px)",
             height: 1,
             marginBottom: "clamp(14px,1.8vw,22px)",
+            transformOrigin: "center",
             background:
               "linear-gradient(to right, transparent 0%, rgba(232,183,131,0.6) 50%, transparent 100%)",
             filter: "drop-shadow(0 0 6px rgba(232,183,131,0.35))",

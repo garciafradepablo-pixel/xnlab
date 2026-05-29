@@ -107,15 +107,15 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background: [
-            "radial-gradient(ellipse 50% 46% at 18% 28%, rgba(255,176,90,0.15) 0%, transparent 60%)",
-            "radial-gradient(ellipse 46% 44% at 86% 22%, rgba(218,84,152,0.13) 0%, transparent 60%)",
-            "radial-gradient(ellipse 44% 46% at 72% 86%, rgba(238,118,92,0.11) 0%, transparent 60%)",
+            "radial-gradient(ellipse 52% 48% at 18% 28%, rgba(255,178,92,0.19) 0%, transparent 60%)",
+            "radial-gradient(ellipse 48% 46% at 86% 22%, rgba(222,86,156,0.17) 0%, transparent 60%)",
+            "radial-gradient(ellipse 46% 48% at 72% 86%, rgba(240,120,94,0.14) 0%, transparent 60%)",
           ].join(", "),
           willChange: "transform, opacity",
         }}
         initial={{ x: 0, y: 0, opacity: 0.7 }}
-        animate={reduced ? { x: 0, y: 0, opacity: 0.7 } : { x: [0, 30, -18, 0], y: [0, -22, 14, 0], opacity: [0.5, 0.95, 0.5] }}
-        transition={reduced ? undefined : { duration: 32, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+        animate={reduced ? { x: 0, y: 0, opacity: 0.7 } : { x: [0, 30, -18, 0], y: [0, -22, 14, 0], opacity: [0.55, 1, 0.55] }}
+        transition={reduced ? undefined : { duration: 26, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
       />
 
       {/* Layer A3 — AURORA COOL. The counterpart masses (violet, teal,
@@ -130,15 +130,15 @@ export function AmbientBackdrop() {
           zIndex: 0,
           pointerEvents: "none",
           background: [
-            "radial-gradient(ellipse 48% 46% at 88% 62%, rgba(138,92,224,0.14) 0%, transparent 60%)",
-            "radial-gradient(ellipse 52% 48% at 10% 80%, rgba(54,172,202,0.12) 0%, transparent 60%)",
-            "radial-gradient(ellipse 44% 42% at 46% 8%, rgba(72,112,228,0.1) 0%, transparent 58%)",
+            "radial-gradient(ellipse 50% 48% at 88% 62%, rgba(142,94,228,0.18) 0%, transparent 60%)",
+            "radial-gradient(ellipse 54% 50% at 10% 80%, rgba(56,176,206,0.16) 0%, transparent 60%)",
+            "radial-gradient(ellipse 46% 44% at 46% 8%, rgba(74,114,230,0.13) 0%, transparent 58%)",
           ].join(", "),
           willChange: "transform, opacity",
         }}
         initial={{ x: 0, y: 0, opacity: 0.85 }}
-        animate={reduced ? { x: 0, y: 0, opacity: 0.85 } : { x: [0, -26, 16, 0], y: [0, 18, -12, 0], opacity: [0.92, 0.45, 0.92] }}
-        transition={reduced ? undefined : { duration: 36, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
+        animate={reduced ? { x: 0, y: 0, opacity: 0.85 } : { x: [0, -26, 16, 0], y: [0, 18, -12, 0], opacity: [0.95, 0.4, 0.95] }}
+        transition={reduced ? undefined : { duration: 30, ease: "easeInOut", repeat: Infinity, repeatType: "loop" }}
       />
 
       {/* Layer B — faint violet/magenta undertone, upper-right. The
