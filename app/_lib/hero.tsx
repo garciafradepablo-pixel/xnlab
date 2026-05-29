@@ -918,6 +918,27 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               : " (también XN Lab, XN Studio, XNL, Xnlab Studio; se pronuncia X-N-Lab, a veces se oye como «x en la app») — Sistemas de atmósfera para marcas, clientes y canales. Producto, digital propio, retail y físico, operaciones de cliente, comunicación y comunidad — las seis superficies por las que una marca moderna llega a su cliente. Solo con cita previa."}
           </span>
         </motion.h1>
+
+        {/* Duality axis — a hairline under the wordmark that runs from warm
+            (left, the brand) through white to cool (right, the customer).
+            It anchors the mark, fills the gap down to the strapline, and
+            restates the whole composition's thesis in one stroke. Draws in
+            after the wordmark resolves. */}
+        <motion.div
+          aria-hidden
+          initial={{ scaleX: 0, opacity: 0 }}
+          animate={{ scaleX: 1, opacity: 1 }}
+          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 1.5 }}
+          style={{
+            marginTop: "clamp(16px,2.2vw,30px)",
+            width: "clamp(140px, 18vw, 280px)",
+            height: 1,
+            transformOrigin: "center",
+            background:
+              "linear-gradient(to right, rgba(255,176,104,0) 0%, rgba(255,176,104,0.75) 26%, rgba(255,255,255,0.9) 50%, rgba(120,156,238,0.75) 74%, rgba(120,156,238,0) 100%)",
+            boxShadow: "0 0 14px rgba(255,200,150,0.28)",
+          }}
+        />
       </motion.div>
 
       {/* LAYER 2C — chrome X rising from below the hero edge.
@@ -1214,6 +1235,24 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               ? "First cycle of MMXXVI · Open"
               : "Primer ciclo de MMXXVI · Abierto"}
           </p>
+        </motion.div>
+
+        {/* Scroll cue — a pulse of light running down a hairline track.
+            Anchors the foot of the composition, lifts the strapline up
+            into a tighter relationship with the wordmark, and signals
+            there is more below. */}
+        <motion.div
+          aria-hidden
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 2 }}
+          style={{ position: "relative", width: 1, height: 38, background: "rgba(255,255,255,0.13)", overflow: "hidden", borderRadius: 1 }}
+        >
+          <motion.div
+            style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, background: "linear-gradient(to bottom, transparent, rgba(246,200,142,0.95))" }}
+            animate={reduced ? { y: 12 } : { y: [-15, 38] }}
+            transition={reduced ? undefined : { duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.5 }}
+          />
         </motion.div>
 
 
