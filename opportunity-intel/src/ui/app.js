@@ -146,7 +146,7 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v1" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v2 · mapa" }),
     ]),
   ]);
 }
@@ -657,16 +657,24 @@ function searchView() {
   const resultsBox = el("div", { class: "discover-results" });
 
   const runDiscover = async () => {
-    resultsBox.innerHTML = "";
-    resultsBox.appendChild(el("p", { class: "hint", text: "Buscando…" }));
-    const found = await discover({ sector: secSel.value, query: qInput.value });
+    clear(resultsBox);
+    const status = el("p", { class: "hint", text: "🗺️ Buscando en el mapa…" });
+    resultsBox.appendChild(status);
+    let found = [];
+    try {
+      found = await discover({ sector: secSel.value, query: qInput.value });
+    } catch (e) {
+      // Si el backend falla, al menos mostramos el directorio interno.
+      found = []; status.textContent = "El mapa no respondió; mostrando directorio interno.";
+    }
     const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
     clear(resultsBox);
     if (!found.length) {
-      resultsBox.appendChild(el("p", { class: "empty", text: "Sin candidatos en el directorio para eso. Prueba otro sector/ciudad, o añádelo a mano abajo." }));
+      resultsBox.appendChild(el("p", { class: "empty", html: "Sin resultados para eso. Prueba algo más genérico (ej. <b>clínicas dentales</b>) o revisa que el descubrimiento del mapa esté activo. También puedes añadir la empresa a mano abajo." }));
       return;
     }
-    resultsBox.appendChild(el("p", { class: "count", text: `${found.length} candidatos reales` }));
+    const nMap = found.filter((c) => c.source === "places").length;
+    resultsBox.appendChild(el("p", { class: "count", text: `${found.length} candidatos${nMap ? ` · ${nMap} del mapa 🗺️` : " (directorio)"}` }));
     resultsBox.appendChild(el("div", { class: "discover-list" }, found.map((c) => {
       const already = existing.has(c.company.toLowerCase());
       const addBtn = el("button", {
