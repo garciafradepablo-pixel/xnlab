@@ -30,6 +30,7 @@ import {
 import { explainScore, verificationProfile } from "../scoring.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
+import { lensLabel } from "../lenses.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -446,12 +447,16 @@ export function renderCard(opp, record, handlers = {}) {
     el("ul", { class: "bullets" }, fr2.checks.map((c) => el("li", { text: c }))),
   ]);
 
-  // Radar de percepción + lo que Connect "piensa".
+  // Radar de percepción + lo que Connect "piensa" + la lente del sector.
+  const lens = lensLabel(opp.sector);
   const radarBlock = el("div", { class: "sec radar-sec" }, [
     el("h4", { text: "Radar de percepción — qué ve Connect" }),
     el("div", { class: "radar-wrap" }, [
       perceptionRadar(opp),
-      el("p", { class: "reasoning", html: `<span class="reason-ic">🧠</span> ${esc(reasoningLine(opp))}` }),
+      el("div", {}, [
+        el("p", { class: "reasoning", html: `<span class="reason-ic">🧠</span> ${esc(reasoningLine(opp))}` }),
+        lens ? el("p", { class: "lens-line", html: `<span class="lens-ic">🔬</span> Lente ${esc(lens)}` }) : null,
+      ]),
     ]),
   ]);
 

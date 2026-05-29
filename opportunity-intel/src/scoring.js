@@ -21,6 +21,7 @@ import {
   MIN_EVIDENCE_FOR_SHORTLIST,
   OFFER_LADDER,
 } from "./models.js";
+import { combineMultipliers } from "./lenses.js";
 
 const clamp = (n, lo = 0, hi = 100) => Math.max(lo, Math.min(hi, n));
 // Una cifra decimal: las puntuaciones dejan de parecer "redondas" (71, 61) y
@@ -271,8 +272,12 @@ export function scoreOpportunity(opp, config = {}) {
   const redCount = flags.red;
   const greenCount = flags.green;
 
+  // Lente por sector × aprendizaje: el motor evalúa cada empresa con la vara de
+  // su sector (versatilidad). combineMultipliers fusiona ambos; scoring lo
+  // renormaliza, así que solo cambia el equilibrio entre filtros.
+  const effectiveMult = combineMultipliers(opp.sector, config.weightMultipliers);
   const confidence = round(
-    confidenceScore(opp, conservatism, config.weightMultipliers)
+    confidenceScore(opp, conservatism, effectiveMult)
   );
   const evidence = evidenceStrength(opp);
   const conversation = conversationProbability(opp, conservatism, confidence);
