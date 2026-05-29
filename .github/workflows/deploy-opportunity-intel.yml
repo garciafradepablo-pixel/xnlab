@@ -1,0 +1,41 @@
+name: Deploy Opportunity Intel
+
+# Publica la app interna (carpeta opportunity-intel/) en GitHub Pages.
+# Se ejecuta sola en cada push a la rama de trabajo o a main → la app del móvil
+# se actualiza sola cuando subimos mejoras o leads nuevos.
+
+on:
+  push:
+    branches:
+      - main
+      - claude/opportunity-intelligence-app-vxWfo
+    paths:
+      - "opportunity-intel/**"
+      - ".github/workflows/deploy-opportunity-intel.yml"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un solo despliegue a la vez; el último gana.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      # La app es estática: subimos la carpeta tal cual, sin build.
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: opportunity-intel
+      - id: deployment
+        uses: actions/deploy-pages@v4

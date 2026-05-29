@@ -347,6 +347,27 @@ output { font-size: 12px; color: var(--accent); }
 .outcome-log li { padding: 6px 0; border-bottom: 1px solid var(--line); }
 .empty { color: var(--ink-dim); font-style: italic; }
 
+/* ---- Buscar / añadir leads ---- */
+.search-city { width: 100%; max-width: 320px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 9px 11px; margin-bottom: 14px; }
+.search-ideas { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.search-sector { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.search-sector h4 { margin: 0 0 8px; }
+.search-q { display: flex; flex-direction: column; gap: 6px; }
+.q-link { text-align: left; background: var(--panel-2); border: 1px solid var(--line); color: var(--o1); border-radius: 7px; padding: 7px 10px; font-size: 12.5px; cursor: pointer; }
+.q-link:hover { border-color: var(--accent); }
+.search-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 14px 0; font-size: 13px; color: var(--ink-dim); }
+.add-h { margin-top: 20px; }
+.add-lead { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px; }
+.lead-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lead-f { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 7px; padding: 8px 10px; font-size: 13px; font-family: inherit; }
+.add-actions { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+.add-actions .btn-primary { width: auto; padding: 9px 20px; }
+.add-msg { font-size: 12px; color: var(--red); }
+.user-leads { list-style: none; padding: 0; }
+.user-leads li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+.ul-del { background: transparent; border: 1px solid var(--line); color: var(--ink-dim); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
+.ul-del:hover { color: var(--red); border-color: var(--red); }
+
 /* ---- Cobertura por sector ---- */
 .sector-cov { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; }
 .sector-cov h3 { margin: 0 0 10px; font-size: 14px; }

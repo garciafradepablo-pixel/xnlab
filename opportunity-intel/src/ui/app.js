@@ -20,9 +20,12 @@ import {
   FILTER_BY_KEY,
   ECONOMIC_LABELS,
   CALL_STATUSES,
+  OFFER_LADDER,
+  TENSION_TYPES,
 } from "../models.js";
 import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
+import { buildLead } from "../newlead.js";
 import * as xport from "../export.js";
 
 const state = {
@@ -44,7 +47,8 @@ export async function mount(rootEl) {
 }
 
 function activeCandidates() {
-  const base = state.dataset === "researched" ? RESEARCHED : SEED;
+  // Dataset base + leads añadidos por el usuario (siempre presentes, son suyos).
+  const base = (state.dataset === "researched" ? RESEARCHED : SEED).concat(store.getUserLeads());
   // Aplica las verificaciones manuales del analista antes de puntuar: los
   // huecos confirmados se vuelven evidencia citada y suben la puntuación.
   const verifications = store.getVerifications();
@@ -123,6 +127,7 @@ function header() {
 function tabs() {
   const items = [
     ["cards", "Oportunidades"],
+    ["search", "Buscar leads"],
     ["table", "Ranking"],
     ["crm", "CRM"],
     ["pipeline", "Embudo"],
@@ -206,6 +211,7 @@ function viewArea() {
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
+  else if (state.view === "search") area.appendChild(searchView());
   else area.appendChild(learningView());
   return area;
 }
@@ -554,6 +560,136 @@ function crmCard(o, isFail) {
   return el("div", { class: "crm-card", onClick: () => { state.view = "cards"; state.filters.search = o.company; render(); } }, children);
 }
 
+// ---- Buscar / añadir leads --------------------------------------------------
+
+// Ideas de búsqueda por sector: consultas que abren Google/LinkedIn en otra
+// pestaña para encontrar el tipo de "momento" que el motor valora. Cada empresa
+// que encuentres, la añades abajo con el formulario.
+const SEARCH_IDEAS = {
+  health: [
+    "clínica dental nueva apertura {ciudad} 2025",
+    "clínica estética amplía sede {ciudad} 2025",
+    "fisioterapia medicina deportiva nueva clínica {ciudad}",
+    "clínica fertilidad reproducción asistida inaugura {ciudad}",
+  ],
+  realestate: [
+    "promotora lujo nueva promoción {ciudad} 2025",
+    "branded residences {ciudad} obra nueva",
+    "estudio arquitectura premio {ciudad} 2025",
+    "inmobiliaria lujo abre oficina {ciudad}",
+  ],
+  growth: [
+    "startup {ciudad} ronda financiación seed 2025",
+    "empresa {ciudad} amplía plantilla expansión 2025",
+    "marca consumo española nueva ronda inversión",
+    "empresa entra retail nacional 2025 {ciudad}",
+  ],
+  hospitality: [
+    "hotel boutique apertura {ciudad} 2025 reforma",
+    "restaurante premium abre {ciudad} 2025 grupo",
+    "rooftop nuevo {ciudad} apertura",
+    "grupo gastronómico expansión nuevo local {ciudad}",
+  ],
+};
+
+function searchView() {
+  const userLeads = store.getUserLeads();
+  const blocks = [el("h2", { text: "Buscar leads" })];
+  blocks.push(el("p", { class: "hint", text: "Busca el tipo de momento que el motor premia (aperturas, rondas, expansiones) en el sector que quieras, y añade abajo lo que encuentres. Tus leads se puntúan y rankean junto al resto, y se sincronizan al exportar/importar." }));
+
+  // Selector de ciudad para personalizar las búsquedas.
+  const cityInput = el("input", { type: "text", placeholder: "Ciudad (opcional, ej. Madrid)", class: "search-city" });
+
+  // Ideas por sector.
+  blocks.push(el("div", { class: "search-ideas" }, SECTORS.map((sc) =>
+    el("div", { class: "search-sector" }, [
+      el("h4", { text: sc.label }),
+      el("div", { class: "search-q" }, (SEARCH_IDEAS[sc.key] || []).map((q) =>
+        el("button", {
+          class: "q-link",
+          text: q.replace("{ciudad}", "…"),
+          onClick: () => {
+            const query = q.replace("{ciudad}", cityInput.value || "España");
+            window.open(`https://www.google.com/search?q=${encodeURIComponent(query)}`, "_blank", "noopener");
+          },
+        })
+      )),
+    ])
+  )));
+
+  blocks.push(el("div", { class: "search-tools" }, [
+    el("span", { text: "Atajos: " }),
+    el("button", { class: "q-link", text: "LinkedIn — contrataciones marketing", onClick: () => window.open(`https://www.linkedin.com/search/results/content/?keywords=${encodeURIComponent("buscamos responsable marketing " + (cityInput.value || ""))}`, "_blank", "noopener") }),
+    el("button", { class: "q-link", text: "Prensa — rondas de inversión", onClick: () => window.open("https://www.google.com/search?q=" + encodeURIComponent("ronda financiación startup española 2025") + "&tbm=nws", "_blank", "noopener") }),
+  ]));
+
+  // Formulario de alta.
+  blocks.push(el("h3", { text: "Añadir lead", class: "add-h" }));
+  blocks.push(addLeadForm());
+
+  // Leads ya añadidos.
+  if (userLeads.length) {
+    blocks.push(el("div", { class: "sec" }, [
+      el("h4", { text: `Tus leads añadidos (${userLeads.length})` }),
+      el("ul", { class: "user-leads" }, userLeads.map((l) =>
+        el("li", {}, [
+          el("span", { text: `${l.company} · ${SECTOR_BY_KEY[l.sector]?.label || l.sector} · ${l.city || "—"}` }),
+          el("button", { class: "ul-del", text: "✕", title: "Eliminar", onClick: () => { store.removeUserLead(l.id); recompute().then(render); } }),
+        ])
+      )),
+    ]));
+  }
+
+  return el("div", {}, blocks);
+}
+
+function addLeadForm() {
+  const f = (name, ph) => el("input", { name, placeholder: ph, class: "lead-f" });
+  const company = f("company", "Nombre de la empresa *");
+  const sector = el("select", { class: "lead-f" }, SECTORS.map((s) => el("option", { value: s.key, text: s.label })));
+  const subsector = f("subsector", "Subsector (ej. clínica dental)");
+  const city = f("city", "Ciudad");
+  const website = f("website", "Web (https://…)");
+  const dmName = f("dmName", "Decisor (nombre)");
+  const dmRole = f("dmRole", "Cargo del decisor");
+  const dmLinkedin = f("dmLinkedin", "LinkedIn del decisor (in/…)");
+  const phone = f("phone", "Teléfono");
+  const email = f("email", "Email");
+  const transitionNote = f("transitionNote", "Momento / transición (ej. abre 2ª sede en marzo) *");
+  const transitionUrl = f("transitionUrl", "Fuente del momento (URL prensa) — sube la puntuación");
+  const tensionNote = f("tensionNote", "Tensión que ves (ej. web anticuada, sin reservas)");
+  const offer = el("select", { class: "lead-f" }, Object.entries(OFFER_LADDER).map(([k, o]) => el("option", { value: k, text: `${o.label} · ${o.price.toLocaleString("es-ES")} €` })));
+
+  const msg = el("span", { class: "add-msg" });
+  const save = el("button", {
+    class: "btn-primary",
+    text: "Añadir y puntuar",
+    onClick: async () => {
+      if (!company.value.trim()) { msg.textContent = "El nombre es obligatorio."; return; }
+      const lead = buildLead({
+        company: company.value.trim(), sector: sector.value, subsector: subsector.value,
+        city: city.value, website: website.value || null,
+        dmName: dmName.value, dmRole: dmRole.value, dmLinkedin: dmLinkedin.value || null,
+        phone: phone.value || null, email: email.value || null,
+        transitionNote: transitionNote.value, transitionUrl: transitionUrl.value || null,
+        tensionNote: tensionNote.value, offer: offer.value,
+      });
+      store.saveUserLead(lead);
+      // Asegura que se vea: cambia a dataset que los incluye y abre Oportunidades.
+      await recompute();
+      state.view = "cards";
+      state.filters.search = lead.company;
+      render();
+    },
+  });
+
+  return el("div", { class: "add-lead" }, [
+    el("div", { class: "lead-grid" }, [company, sector, subsector, city, website, dmName, dmRole, dmLinkedin, phone, email, transitionNote, transitionUrl, tensionNote, offer]),
+    el("div", { class: "add-actions" }, [save, msg]),
+    el("p", { class: "hint", text: "* Nombre y momento son lo mínimo. Con una URL de fuente del momento, el lead puntúa más alto. El resto de huecos los confirmas luego desde la ficha (Verificación)." }),
+  ]);
+}
+
 // ---- Learning loop view -----------------------------------------------------
 
 function learningView() {
@@ -645,7 +781,7 @@ function importPickerEl() {
       reader.onload = () => {
         const res = store.importState(reader.result);
         if (!res.ok) { alert(`Error al importar: ${res.error}`); return; }
-        alert(`Importados ${res.addedOutcomes} resultado(s) nuevo(s) y fusionados ${res.mergedTracking} registro(s) de estado.`);
+        alert(`Importados ${res.addedOutcomes} resultado(s), ${res.addedLeads || 0} lead(s) y fusionados ${res.mergedTracking} registro(s) de estado.`);
         recompute().then(render);
       };
       reader.readAsText(file);

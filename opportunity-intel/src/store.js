@@ -17,6 +17,7 @@ const TRACK_KEY = `${NS}tracking`;
 const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
+const USER_LEADS_KEY = `${NS}userLeads`;
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
 const mem = new Map();
@@ -226,6 +227,8 @@ export function exportState() {
       exportedAt: new Date().toISOString(),
       tracking: getTracking(),
       learning: getLearning(),
+      verifications: getVerifications(),
+      userLeads: getUserLeads(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -294,7 +297,39 @@ export function importState(json, { replace = false } = {}) {
     write(TRACK_KEY, cur);
   }
 
-  return { ok: true, addedOutcomes, mergedTracking };
+  // --- verifications (merge por lead+filtro, lo más reciente gana) ---
+  const incomingVerif = data.verifications && typeof data.verifications === "object" ? data.verifications : {};
+  if (replace) {
+    write(VERIFY_KEY, incomingVerif);
+  } else {
+    const cur = getVerifications();
+    for (const [id, list] of Object.entries(incomingVerif)) {
+      const byFilter = new Map((cur[id] || []).map((v) => [v.filter, v]));
+      for (const v of list) {
+        const ex = byFilter.get(v.filter);
+        if (!ex || (v.at || "") > (ex.at || "")) byFilter.set(v.filter, v);
+      }
+      cur[id] = [...byFilter.values()];
+    }
+    write(VERIFY_KEY, cur);
+  }
+
+  // --- userLeads (merge por id) ---
+  const incomingLeads = Array.isArray(data.userLeads) ? data.userLeads : [];
+  let addedLeads = 0;
+  if (replace) {
+    write(USER_LEADS_KEY, incomingLeads);
+    addedLeads = incomingLeads.length;
+  } else {
+    const byId = new Map(getUserLeads().map((l) => [l.id, l]));
+    for (const l of incomingLeads) {
+      if (!byId.has(l.id)) addedLeads++;
+      byId.set(l.id, l);
+    }
+    write(USER_LEADS_KEY, [...byId.values()]);
+  }
+
+  return { ok: true, addedOutcomes, mergedTracking, addedLeads };
 }
 
 function outcomeKey(o) {
@@ -381,7 +416,30 @@ export function applyVerifications(opp, verifications = getLeadVerifications(opp
   return { ...opp, signals, evidence, _verified: verifications.length };
 }
 
+// ---- Leads añadidos desde dentro de la app ----------------------------------
+//
+// Pablo/Javi pueden añadir leads desde la propia app (sección "Buscar leads").
+// Se guardan aquí, se mezclan con el dataset investigado y se puntúan igual que
+// el resto. Exportables/importables junto al estado para compartir entre ambos.
+
+/** @returns {Array} leads de usuario (ya con forma de oportunidad). */
+export function getUserLeads() {
+  return read(USER_LEADS_KEY, []);
+}
+
+/** Añade o actualiza (por id) un lead de usuario. */
+export function saveUserLead(lead) {
+  const all = getUserLeads().filter((l) => l.id !== lead.id);
+  all.push(lead);
+  write(USER_LEADS_KEY, all);
+  return all;
+}
+
+export function removeUserLead(id) {
+  write(USER_LEADS_KEY, getUserLeads().filter((l) => l.id !== id));
+}
+
 /** Hard reset (used by the UI "reset demo" control). */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY].forEach((k) => storage.removeItem(k));
 }
