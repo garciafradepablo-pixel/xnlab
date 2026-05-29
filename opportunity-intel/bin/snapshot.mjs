@@ -106,9 +106,10 @@ function card(opp) {
   const dm = opp.decisionMaker || {};
   const sector = SECTOR_BY_KEY[opp.sector]?.label || opp.sector;
   const sec = (t, body) => `<div class="sec"><h4>${esc(t)}</h4>${body}</div>`;
-  return `<article class="card prio-${s.callPriority}">
+  const elite = s.confidence >= 90 ? "card-elite" : s.recommendation === "call_immediately" ? "card-priority" : "";
+  return `<article class="card prio-${s.callPriority} ${elite}">
     <div class="c-top">
-      <div class="c-rank">#${opp.ranking ?? "—"}</div>
+      <div class="c-rank">${s.confidence >= 90 ? '<span class="rank-crown">★</span>' : ""}<span>#${opp.ranking ?? "—"}</span></div>
       <div class="c-ident">
         <h3>${esc(opp.company)}</h3>
         <p class="c-sub">${esc(opp.subsector)} · ${esc(opp.city)}</p>
@@ -165,6 +166,16 @@ function table(list) {
   }</tbody></table>`;
 }
 
+function topPicksStrip(list) {
+  const picks = list.filter((o) => o.scores.classification !== "discard").slice(0, 5);
+  if (!picks.length) return "";
+  return `<div class="top-picks"><div class="tp-head"><span class="tp-bolt">⚡</span><span class="tp-title">Para llamar ya</span><span class="tp-sub">las mejores, de mayor a menor puntuación</span></div>
+    <div class="tp-list">${picks.map((o) => {
+      const s = o.scores; const tone = s.confidence >= 90 ? "elite" : s.confidence >= 75 ? "hot" : "warm";
+      return `<span class="tp-chip tp-${tone}"><span class="tp-score">${s.confidence}</span><span class="tp-name">${esc(o.company)}</span><span class="tp-badge badge-${s.classification}">${s.classification === "xn" ? "XN" : "01"}</span></span>`;
+    }).join("")}</div></div>`;
+}
+
 const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>01 · XN LAB — Inteligencia de Oportunidades (snapshot)</title>
@@ -178,31 +189,31 @@ h2{margin-top:6px;}
     <div class="brand"><span class="logo">01 · XN LAB</span><span class="tagline">Inteligencia de Oportunidades — momentos, no empresas</span></div>
     <div class="head-actions"><span class="demo-badge researched-badge">SNAPSHOT ESTÁTICO · ${new Date().toLocaleString("es-ES")}</span></div>
   </header>
-  <nav class="tabs"><button class="tab active">Embudo</button><button class="tab">Ranking</button><button class="tab">Oportunidades</button><button class="tab">Aprendizaje</button></nav>
+  <nav class="tabs"><button class="tab active">Oportunidades</button><button class="tab">Ranking</button><button class="tab">CRM</button><button class="tab">Embudo</button><button class="tab">Aprendizaje</button></nav>
 
   <p class="snap-note">Esto es un snapshot estático y autocontenido del panel — ábrelo en cualquier navegador, sin servidor. Para la herramienta interactiva (filtros, estado de llamada, notas, exportaciones, aprendizaje), ejecuta <code>npm run dev</code> dentro de <code>opportunity-intel/</code>.</p>
 
   <section class="snap-section">
-    <h2>Embudo de candidatos — Investigado (leads reales en España)</h2>
-    ${pipelineRow(real.counts)}
-    <div class="pipe-summary"><p>Leads reales verificados en prensa, con decisores verificados. Conservador a propósito: la tensión interna / dolor siguen en gris, así que las puntuaciones quedan por debajo de los arquetipos sintéticos y marcan “preparar mini-auditoría primero”.</p></div>
-  </section>
-
-  <section class="snap-section">
-    <h2>Oportunidades — Leads reales</h2>
+    <h2>Oportunidades — Leads reales (España)</h2>
+    ${topPicksStrip(real.final)}
     <div class="cards">${real.final.map(card).join("")}</div>
   </section>
 
   <section class="snap-section">
-    <h2>Dataset demo (arquetipos sintéticos) — embudo y ranking</h2>
-    ${pipelineRow(demo.counts)}
-    <div style="height:14px"></div>
+    <h2>Dataset demo — mejores oportunidades</h2>
+    ${topPicksStrip(demo.final)}
+    <div class="cards">${demo.final.slice(0, 6).map(card).join("")}</div>
+  </section>
+
+  <section class="snap-section">
+    <h2>Ranking completo (demo)</h2>
     ${table(demo.final)}
   </section>
 
   <section class="snap-section">
-    <h2>Dataset demo — mejores oportunidades</h2>
-    <div class="cards">${demo.final.slice(0, 4).map(card).join("")}</div>
+    <h2>Embudo de candidatos</h2>
+    ${pipelineRow(real.counts)}
+    <div class="pipe-summary"><p>Leads reales verificados en prensa, con decisores verificados. Conservador a propósito: la tensión interna / dolor siguen en gris, así que las puntuaciones quedan por debajo de los arquetipos sintéticos.</p></div>
   </section>
 
 </div></body></html>`;

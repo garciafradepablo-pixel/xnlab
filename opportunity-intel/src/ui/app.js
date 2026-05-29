@@ -29,7 +29,9 @@ const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
   dataset: "demo", // demo (synthetic) | researched (real, Spain)
-  view: "pipeline", // pipeline | table | cards | learning
+  // Arranca en Oportunidades: lo primero que se ve son los mejores leads,
+  // ordenados de mayor a menor puntuación.
+  view: "cards", // cards | pipeline | table | crm | learning
   filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" },
 };
 
@@ -113,10 +115,10 @@ function header() {
 
 function tabs() {
   const items = [
-    ["pipeline", "Embudo"],
-    ["table", "Ranking"],
     ["cards", "Oportunidades"],
+    ["table", "Ranking"],
     ["crm", "CRM"],
+    ["pipeline", "Embudo"],
     ["learning", "Aprendizaje"],
   ];
   return el(
@@ -344,8 +346,48 @@ function buildTable() {
 function cardsView() {
   return el("div", {}, [
     el("h2", { text: "Oportunidades" }),
+    topPicks(),
     filterBar(),
     el("div", { class: "results-region" }, [buildCards()]),
+  ]);
+}
+
+// Franja "para llamar ya": los mejores leads, lo primero que se ve. Llevan a la
+// ficha al pulsarlos. Solo aparece sin filtros activos (es el estado de entrada).
+function topPicks() {
+  const f = state.filters;
+  const filtering = f.search || f.sector !== "all" || f.city !== "all" ||
+    f.classification !== "all" || f.priority !== "all" ||
+    f.minEvidence || f.minConfidence || f.minEvStrength;
+  if (filtering) return el("span");
+
+  const picks = state.results.all
+    .filter((o) => o.scores.classification !== "discard")
+    .slice(0, 5);
+  if (!picks.length) return el("span");
+
+  const tracking = store.getTracking();
+  return el("div", { class: "top-picks" }, [
+    el("div", { class: "tp-head" }, [
+      el("span", { class: "tp-bolt", text: "⚡" }),
+      el("span", { class: "tp-title", text: "Para llamar ya" }),
+      el("span", { class: "tp-sub", text: "las mejores, de mayor a menor puntuación" }),
+    ]),
+    el("div", { class: "tp-list" }, picks.map((o) => {
+      const s = o.scores;
+      const st = tracking[o.id]?.status || "not_called";
+      const tone = s.confidence >= 90 ? "elite" : s.confidence >= 75 ? "hot" : "warm";
+      return el("button", {
+        class: `tp-chip tp-${tone}`,
+        title: `${o.company} · ${RECOMMENDATIONS[s.recommendation]}`,
+        onClick: () => { state.filters.search = o.company; render(); },
+      }, [
+        el("span", { class: "tp-score", text: String(s.confidence) }),
+        el("span", { class: "tp-name", text: o.company }),
+        el("span", { class: `tp-badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : "01" }),
+        st !== "not_called" ? el("span", { class: "tp-st", text: STATUS_LABELS[st] }) : null,
+      ]);
+    })),
   ]);
 }
 

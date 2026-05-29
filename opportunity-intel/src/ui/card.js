@@ -180,7 +180,10 @@ export function renderCard(opp, record, handlers = {}) {
 
   // ---- TOP: rank · identity · class pill · confidence ring ----
   const top = el("div", { class: "c-top" }, [
-    el("div", { class: "c-rank", text: `#${opp.ranking ?? "—"}` }),
+    el("div", { class: "c-rank" }, [
+      s.confidence >= 90 ? el("span", { class: "rank-crown", text: "★" }) : null,
+      el("span", { text: `#${opp.ranking ?? "—"}` }),
+    ]),
     el("div", { class: "c-ident" }, [
       el("h3", { text: opp.company }),
       el("p", { class: "c-sub", text: `${opp.subsector} · ${opp.city}` }),
@@ -313,7 +316,9 @@ export function renderCard(opp, record, handlers = {}) {
     el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · datos demo" : opp.researched ? " · investigado" : ""}` }),
   ]);
 
-  return el("article", { class: `card prio-${s.callPriority} st-${status}`, dataset: { id: opp.id } }, [
+  // Destacado de élite: leads de máxima puntuación / "llamar de inmediato".
+  const elite = s.confidence >= 90 ? "card-elite" : s.recommendation === "call_immediately" ? "card-priority" : "";
+  return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
     hook,
     metrics,

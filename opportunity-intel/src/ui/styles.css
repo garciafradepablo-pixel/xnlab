@@ -124,6 +124,23 @@ output { font-size: 12px; color: var(--accent); }
 .badge-01 { background: rgba(74,158,255,.18); color: var(--o1); }
 .badge-discard { color: var(--ink-dim); }
 
+/* ---- Top picks (franja "para llamar ya") ---- */
+.top-picks { background: linear-gradient(180deg, rgba(201,162,39,.10), rgba(201,162,39,.02)); border: 1px solid rgba(201,162,39,.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
+.tp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
+.tp-bolt { font-size: 15px; }
+.tp-title { font-size: 14px; font-weight: 800; letter-spacing: .3px; color: var(--ink); }
+.tp-sub { font-size: 12px; color: var(--ink-dim); }
+.tp-list { display: flex; gap: 8px; flex-wrap: wrap; }
+.tp-chip { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px 6px 6px; cursor: pointer; transition: transform .1s, border-color .1s; }
+.tp-chip:hover { transform: translateY(-1px); border-color: var(--accent); }
+.tp-score { font-size: 14px; font-weight: 800; font-variant-numeric: tabular-nums; min-width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+.tp-elite .tp-score { background: var(--accent); color: #1a1400; }
+.tp-hot .tp-score { background: rgba(63,185,80,.25); color: var(--green); }
+.tp-warm .tp-score { background: rgba(212,167,44,.25); color: var(--yellow); }
+.tp-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.tp-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 5px; }
+.tp-st { font-size: 11px; color: var(--ink-dim); border-left: 1px solid var(--line); padding-left: 8px; }
+
 /* ============================ HIGH-IMPACT CARD ============================ */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
 .card {
@@ -133,6 +150,12 @@ output { font-size: 12px; color: var(--accent); }
   transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
 }
 .card:hover { transform: translateY(-2px); border-color: #3a3f4a; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+/* Destacado de élite: leads top, lo primero que llama la atención. */
+.card-elite { border: 1px solid var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 34px rgba(201,162,39,.18); }
+.card-elite:hover { box-shadow: 0 0 0 1px var(--accent), 0 12px 40px rgba(201,162,39,.28); }
+.card-priority { border-color: rgba(63,185,80,.45); }
+.rank-crown { color: var(--accent); font-size: 13px; display: block; line-height: 1; }
+
 .card.prio-high { border-top: 3px solid var(--green); }
 .card.prio-medium { border-top: 3px solid var(--yellow); }
 .card.prio-low { border-top: 3px solid var(--grey); }
