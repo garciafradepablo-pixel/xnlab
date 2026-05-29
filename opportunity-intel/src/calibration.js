@@ -127,3 +127,49 @@ function successRate(list) {
   const s = list.filter((o) => SUCCESS.has(o.outcome)).length;
   return list.length ? s / list.length : 0;
 }
+
+// Estados de "cierre real" (reunión = la conversión que de verdad importa).
+const CLOSED = new Set(["meeting_booked"]);
+
+/**
+ * Calibración del ÍNDICE DE ÉXITO desde resultados reales.
+ *
+ * Compara lo que el motor predijo (successIndex en el momento de la llamada)
+ * con lo que de verdad pasó (reunión sí/no). Si el motor es optimista
+ * (predice alto pero cierra poco), devuelve un factor < 1 que lo corrige; si es
+ * pesimista, > 1. Así el Índice de Éxito deja de ser teórico y empieza a
+ * predecir el éxito REAL de quien llama.
+ *
+ * Conservador: necesita MIN_SAMPLE llamadas decisivas; el factor está acotado a
+ * ±35% para que no dé bandazos con pocos datos.
+ *
+ * @param {Array} log  outcomes; cada uno con { outcome, successIndexAtCall? }
+ * @returns {{ active, calls, observedRate, predictedRate, factor, note }}
+ */
+export function deriveSuccessCalibration(log = [], opts = {}) {
+  const cfg = { MIN_SAMPLE: 6, MAX_ADJ: 0.35, ...opts };
+  // Solo llamadas con veredicto de éxito/fallo y con la predicción registrada.
+  const evaluable = log.filter(
+    (o) => (SUCCESS.has(o.outcome) || FAILURE.has(o.outcome)) &&
+           typeof o.successIndexAtCall === "number"
+  );
+  const calls = evaluable.length;
+  if (calls < cfg.MIN_SAMPLE) {
+    return { active: false, calls, observedRate: null, predictedRate: null, factor: 1,
+      note: `Aún sin datos suficientes para calibrar el éxito (${calls}/${cfg.MIN_SAMPLE} llamadas decisivas).` };
+  }
+  const observedRate = evaluable.filter((o) => CLOSED.has(o.outcome)).length / calls;
+  const predictedRate = evaluable.reduce((s, o) => s + o.successIndexAtCall, 0) / calls / 100;
+  // factor = realidad / predicción, acotado.
+  let factor = predictedRate > 0.02 ? observedRate / predictedRate : 1;
+  factor = Math.max(1 - cfg.MAX_ADJ, Math.min(1 + cfg.MAX_ADJ, factor));
+  const dir = factor < 0.97 ? "a la baja (el motor era optimista)" :
+              factor > 1.03 ? "al alza (el motor era prudente)" : "casi sin cambios";
+  return {
+    active: true, calls,
+    observedRate: Math.round(observedRate * 100),
+    predictedRate: Math.round(predictedRate * 100),
+    factor: Math.round(factor * 100) / 100,
+    note: `Calibrado con ${calls} llamadas: cierre real ${Math.round(observedRate*100)}% vs previsto ${Math.round(predictedRate*100)}% → ajuste ${dir}.`,
+  };
+}

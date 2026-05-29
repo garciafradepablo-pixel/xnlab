@@ -80,11 +80,14 @@ async function recompute() {
   // feed straight back into scoring. When calibration is inactive (too few
   // calls) the multipliers are all 1.0 and scoring is unchanged.
   state.calibration = store.getCalibration();
+  state.successCal = store.getSuccessCalibration();
   const cfg = {
     ...state.config,
     weightMultipliers: state.calibration.active
       ? state.calibration.weightMultipliers
       : null,
+    // El Índice de Éxito aprende de lo que de verdad cierra (reuniones reales).
+    successFactor: state.successCal.active ? state.successCal.factor : 1,
   };
   state.results = await runPipeline(activeCandidates(), cfg);
   store.saveConfig(state.config);
@@ -583,6 +586,7 @@ function buildCards() {
       store.recordStatusOutcome(id, st, {
         classification: lead?.scores?.classification,
         signals: lead?.signals || null,
+        successIndex: lead?.scores?.successIndex,
       });
       recompute().then(render);
     },

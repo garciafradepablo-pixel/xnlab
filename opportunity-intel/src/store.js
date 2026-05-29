@@ -10,7 +10,7 @@
 // of the records does not change.
 // =============================================================================
 
-import { deriveCalibration } from "./calibration.js";
+import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
 
 const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
@@ -125,6 +125,9 @@ export function recordStatusOutcome(id, status, meta = {}) {
       outcome: status,
       classification: meta.classification || null,
       signals: meta.signals || null,
+      // Predicción del motor en el momento de la llamada, para calibrar el
+      // Índice de Éxito contra la realidad (lo que de verdad cierra).
+      successIndexAtCall: typeof meta.successIndex === "number" ? meta.successIndex : null,
       hypothesisCorrect: status === "interested" || status === "meeting_booked",
       createdAt: new Date().toISOString(),
     });
@@ -208,6 +211,11 @@ export function applyLearning(log = getLearning()) {
  */
 export function getCalibration() {
   return deriveCalibration(getLearning());
+}
+
+/** Calibración del Índice de Éxito desde los resultados reales de llamadas. */
+export function getSuccessCalibration() {
+  return deriveSuccessCalibration(getLearning());
 }
 
 // ---- Portability: export / import the operational state ---------------------
