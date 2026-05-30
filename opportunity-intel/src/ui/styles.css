@@ -196,10 +196,23 @@ html, body { height: 100%; }
 
 /* ---- Puerta de acceso (login / crear usuario) ---- */
 .auth-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; min-height: 100dvh; padding: 24px;
-  background: radial-gradient(circle at 30% 20%, rgba(201,162,39,.08), transparent 60%), var(--bg); }
-.auth-card { width: 100%; max-width: 360px; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 26px 22px; display: flex; flex-direction: column; gap: 12px; }
-.auth-logo { font-weight: 800; letter-spacing: 2px; font-size: 20px; text-align: center; }
+  background:
+    radial-gradient(circle at 22% 18%, rgba(74,158,255,.12), transparent 55%),
+    radial-gradient(circle at 82% 88%, rgba(201,162,39,.09), transparent 55%),
+    var(--bg); }
+.auth-card { width: 100%; max-width: 372px; background: linear-gradient(180deg, var(--panel), #121419); border: 1px solid var(--line);
+  border-radius: 20px; padding: 30px 26px; display: flex; flex-direction: column; gap: 12px;
+  box-shadow: 0 30px 80px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04); animation: caseIn .25s ease; }
+.auth-whale { display: flex; justify-content: center; margin-bottom: 2px; }
+.auth-whale .whale svg { width: 52px; height: 34px; }
+.auth-logo { font-weight: 800; letter-spacing: 3px; font-size: 22px; text-align: center; }
+.auth-kicker { text-align: center; color: var(--ink-dim); font-size: 11px; letter-spacing: .6px; margin: 2px 0 4px; }
+.auth-kicker::before, .auth-kicker::after { content: "—"; color: var(--line); margin: 0 6px; }
 .auth-tagline { text-align: center; color: var(--ink-dim); font-size: 13px; margin: 0 0 6px; }
+
+/* ---- Cabecera: lockup de marca con la ballena ---- */
+.brand-lock { display: flex; align-items: center; gap: 9px; }
+.brand-lock .whale svg { width: 30px; height: 20px; }
 .auth-f { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 9px; padding: 12px 13px; font-size: 16px; }
 .auth-f:focus { outline: none; border-color: var(--accent); }
 .auth-color-label { font-size: 12px; color: var(--ink-dim); margin: 4px 0 6px; }
