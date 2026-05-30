@@ -41,6 +41,7 @@ import { fetchWebFreshness } from "../enrichweb.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
+import { autoProgress, AUTO_BAR } from "../autopilot.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -76,6 +77,9 @@ export async function mount(rootEl) {
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
   render();
+
+  // Reanuda el piloto automático si quedó en marcha (no para entre sesiones).
+  if (autopilotState().on) { autoEmpty = 0; clearTimeout(autoTimer); autoTimer = setTimeout(autoTick, 1500); }
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
@@ -299,7 +303,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v25 · cierre del dinero" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v26 · piloto automático" }),
     ]),
   ]);
 }
@@ -1471,6 +1475,87 @@ const SEARCH_IDEAS = {
   ],
 };
 
+// ---- PILOTO AUTOMÁTICO: capta solo hasta el objetivo en 01 y XN -------------
+function autopilotState() {
+  if (!state._auto) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem("oi:autopilot")) || {}; } catch { saved = {}; }
+    state._auto = { on: !!saved.on, target: saved.target || 100, _msg: "" };
+  }
+  return state._auto;
+}
+function saveAuto() {
+  try { localStorage.setItem("oi:autopilot", JSON.stringify({ on: state._auto.on, target: state._auto.target })); } catch { /* */ }
+}
+let autoTimer = null, autoEmpty = 0;
+
+function startAuto() {
+  if (!allow("discover") && !allow("write")) return;
+  const a = autopilotState(); a.on = true; a._msg = "Arrancando…"; autoEmpty = 0; saveAuto();
+  patchAutoPanel(); autoTick();
+}
+function stopAuto() {
+  const a = autopilotState(); a.on = false; a._msg = "Detenido."; saveAuto();
+  clearTimeout(autoTimer); patchAutoPanel();
+}
+
+async function autoTick() {
+  const a = autopilotState();
+  if (!a.on) return;
+  const prog = autoProgress(state.results?.all || [], { target: a.target, bar: AUTO_BAR });
+  if (prog.done) { a.on = false; a._msg = `🐋 Objetivo alcanzado: ${a.target} en 01 y ${a.target} en XN.`; saveAuto(); patchAutoPanel(); render(); return; }
+  // Foco guiado por tus intereses la mitad de las veces; si no, barrido base.
+  const ints = getInterests(6).map((i) => i.q).filter(Boolean);
+  const focus = ints.length && Math.random() < 0.5 ? ints[Math.floor(Math.random() * ints.length)] : "";
+  const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
+  let res = { added: 0, seen: 0 };
+  try {
+    res = await runBatch({ config: state.config, query: focus, existingNames: existing, perBatch: 3, minScore: 0, token: auth.getToken(), onSave: (lead) => store.saveUserLead(lead) });
+  } catch { /* sin red o límite del mapa */ }
+  await recompute();
+  if (!a.on) return; // pudo detenerse durante el await
+  if ((res.seen || 0) === 0) autoEmpty++; else autoEmpty = 0;
+  if (autoEmpty >= 4) {
+    a.on = false; a._msg = "Pausado: sin novedades o límite diario del mapa alcanzado. Reanúdalo cuando quieras."; saveAuto();
+    patchAutoPanel(); render(); return;
+  }
+  a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}.`;
+  patchAutoPanel();
+  autoTimer = setTimeout(autoTick, 11000); // ~16 consultas/min, bajo el límite
+}
+
+function patchAutoPanel() {
+  if (!root) return;
+  const node = root.querySelector(".auto-panel");
+  if (node && node.parentNode) node.parentNode.replaceChild(autopilotPanel(), node);
+}
+
+function autopilotPanel() {
+  const a = autopilotState();
+  const prog = autoProgress(state.results?.all || [], { target: a.target, bar: AUTO_BAR });
+  const track = (label, n, pct, cls) => el("div", { class: "auto-track-row" }, [
+    el("span", { class: "auto-tl", html: `<b>${label}</b> ${n}/${a.target}` }),
+    el("div", { class: "auto-track" }, [el("div", { class: `auto-fill auto-fill-${cls}`, style: `width:${pct}%` })]),
+  ]);
+  const targetInput = el("input", { type: "number", min: "1", max: "1000", value: String(a.target), class: "auto-target",
+    onChange: (e) => { a.target = Math.max(1, +e.target.value || 100); saveAuto(); patchAutoPanel(); } });
+  const toggle = el("button", { class: `btn-agent ${a.on ? "auto-on" : ""}`,
+    html: a.on ? "⏸ Detener piloto" : "🐋 Arrancar piloto automático",
+    onClick: () => (a.on ? stopAuto() : startAuto()) });
+  return el("div", { class: "auto-panel" }, [
+    el("div", { class: "auto-head" }, [
+      el("span", { class: "auto-title", text: "Piloto automático de captación" }),
+      a.on ? el("span", { class: "auto-live", text: "● EN MARCHA" }) : null,
+    ]),
+    el("p", { class: "hint", text: "Mete empresas cualificadas solo —guiado por tus intereses— hasta tener tu objetivo en 01 y en XN. Arráncalo y déjalo correr." }),
+    track("01", prog.q01, prog.pct01, "01"),
+    track("XN", prog.qxn, prog.pctxn, "xn"),
+    el("div", { class: "auto-ctl" }, [el("label", { class: "auto-tlbl", text: "Objetivo por marca:" }), targetInput, toggle]),
+    a._msg ? el("p", { class: "auto-msg", text: a._msg }) : null,
+    el("p", { class: "auto-foot", text: "Corre mientras la pestaña esté abierta y dentro del presupuesto diario del mapa (se pausa y reanuda solo). Cuenta empresas con nota ≥70; llegar a 100 de nota exige enriquecimiento (en construcción)." }),
+  ]);
+}
+
 // Detecta el sector de una búsqueda; si es un nicho inédito, lo CREA al vuelo
 // (con la consulta como búsqueda y lente neutra que el uso afina). Así el
 // captador incorpora sectores nuevos solo, sin que el usuario los configure.
@@ -1495,7 +1580,11 @@ function searchView() {
     return el("section", { class: "search-view" }, blocks);
   }
 
-  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>. Tú solo lees el resultado." }));
+  // Piloto automático arriba del todo: lo que no para de meter empresas solo.
+  blocks.push(autopilotPanel());
+
+  blocks.push(el("h3", { class: "capt-h", text: "O capta a mano una búsqueda concreta" }));
+  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>." }));
 
   // --- CAPTADOR AUTOMÁTICO ---
   const qInput = el("input", { type: "search", class: "search-city capt-input", placeholder: "¿A quién quieres captar?", autocomplete: "off" });

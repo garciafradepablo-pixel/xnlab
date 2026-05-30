@@ -112,6 +112,28 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .cmd-empty { padding: 14px 12px; color: var(--ink-dim); font-size: 13px; }
 .cmd-hint { padding: 8px 16px; border-top: 1px solid var(--line); color: var(--ink-dim); font-size: 11px; }
 
+/* ---- Piloto automático ---- */
+.auto-panel { background: linear-gradient(180deg, rgba(74,158,255,.06), transparent 70%), var(--panel);
+  border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin-bottom: 18px; }
+.auto-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.auto-title { font-size: 15px; font-weight: 800; letter-spacing: .2px; }
+.auto-live { font-size: 11px; letter-spacing: 1px; color: var(--green); animation: pulse-soft 1.8s ease-in-out infinite; }
+@keyframes pulse-soft { 0%,100% { opacity: .5; } 50% { opacity: 1; } }
+.auto-track-row { display: grid; grid-template-columns: 92px 1fr; align-items: center; gap: 12px; margin: 8px 0; }
+.auto-tl { font-size: 13px; color: var(--ink-dim); }
+.auto-tl b { color: var(--ink); }
+.auto-track { height: 10px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+.auto-fill { display: block; height: 100%; border-radius: 999px; transition: width .6s cubic-bezier(.2,.8,.2,1); }
+.auto-fill-01 { background: var(--o1); }
+.auto-fill-xn { background: var(--xn); }
+.auto-ctl { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+.auto-tlbl { font-size: 12px; color: var(--ink-dim); }
+.auto-target { width: 72px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 7px 9px; }
+.btn-agent.auto-on { border-color: var(--green); color: var(--green); animation: none; box-shadow: none; }
+.auto-msg { margin: 10px 0 0; font-size: 13px; color: var(--ink); }
+.auto-foot { margin: 8px 0 0; font-size: 11px; color: var(--ink-dim); }
+.capt-h { margin: 6px 0 4px; font-size: 14px; color: var(--ink-dim); }
+
 /* ---- Captador automático ---- */
 .capt-bar { display: flex; gap: 8px; margin-bottom: 10px; }
 .capt-input { flex: 1; max-width: none; margin-bottom: 0; }
