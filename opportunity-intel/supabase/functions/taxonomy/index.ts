@@ -264,9 +264,41 @@ async function radarWithGemini(
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, token, prompt, items, forest, interests, niches } = await req.json().catch(() => ({}));
+    const { action, token, prompt, items, forest, interests, niches, queries } = await req.json().catch(() => ({}));
     const caller = await userByToken(String(token || ""));
     if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+
+    // seedcron: siembra los nichos del cerebro (hojas del mapa + radar) en la cola
+    // del cron 24/7, para que la captación desatendida cace lo que el mapa decide.
+    if (action === "seedcron") {
+      const svc = { apikey: SERVICE_KEY, Authorization: `Bearer ${SERVICE_KEY}` };
+      const qs = (Array.isArray(queries) ? queries : [])
+        .map((q: Record<string, unknown>) => ({ query: String(q?.query || "").trim().slice(0, 120), sector: q?.sector ? String(q.sector).slice(0, 40) : null }))
+        .filter((q: { query: string }) => q.query.length > 2)
+        .slice(0, 50);
+      if (!qs.length) return json({ ok: true, seeded: 0 });
+      let seeded = 0;
+      try {
+        const existRes = await fetch(`${SUPABASE_URL}/rest/v1/cron_queries?select=query`, { headers: svc });
+        const exist = await existRes.json();
+        const have = new Set((Array.isArray(exist) ? exist : []).map((r: { query: string }) => String(r.query).toLowerCase()));
+        const seen = new Set<string>();
+        const toInsert = qs.filter((q: { query: string }) => {
+          const k = q.query.toLowerCase();
+          if (have.has(k) || seen.has(k)) return false;
+          seen.add(k); return true;
+        });
+        if (toInsert.length) {
+          const ins = await fetch(`${SUPABASE_URL}/rest/v1/cron_queries`, {
+            method: "POST",
+            headers: { ...svc, "Content-Type": "application/json", Prefer: "return=minimal" },
+            body: JSON.stringify(toInsert.map((q: { query: string; sector: string | null }) => ({ query: q.query, sector: q.sector, active: true }))),
+          });
+          if (ins.ok) seeded = toInsert.length;
+        }
+      } catch { /* best-effort */ }
+      return json({ ok: true, seeded });
+    }
 
     // radar: propone nichos nuevos a explorar según el momento y lo ya trabajado.
     if (action === "radar") {

@@ -33,7 +33,7 @@ import { allSectors, sectorByKey, addCustomSector, getCustomSectors, removeCusto
 import {
   generateTaxonomy, getForest, mergeForest, clearForest, removePath,
   childrenAt, isLeaf, leavesUnder, leadsUnder, pathQuery, countUnder,
-  classifyLeads, pathNodes, allTags, leadMatchesFacet, radarSuggest,
+  classifyLeads, pathNodes, allTags, leadMatchesFacet, radarSuggest, seedCron,
 } from "../taxonomy.js";
 import { fetchContacts } from "../contacts.js";
 import { discover } from "../discovery.js";
@@ -93,8 +93,10 @@ export async function mount(rootEl) {
   // Reanuda el piloto automático si quedó en marcha (no para entre sesiones).
   if (autopilotState().on) { autoEmpty = 0; clearTimeout(autoTimer); autoTimer = setTimeout(autoTick, 1500); }
 
-  // Absorbe lo que el cron capturó solo (de noche, sin la app abierta).
+  // Absorbe lo que el cron capturó solo (de noche, sin la app abierta) y siembra
+  // el cron con los nichos del mapa, para que cace lo que el cerebro decide.
   absorbCronLeads();
+  seedCronFromMap();
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
@@ -1694,37 +1696,25 @@ async function autoTick() {
   // ——— CEREBRO AUTOMÁTICO: archiva, etiqueta, explora y saca contactos solo ———
   // 1) Auto-archivado + etiquetas de lo nuevo (un lote por tanda).
   let organized = 0;
-  if (a.on) {
-    try {
-      const unfiled = store.getUserLeads().filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length).slice(0, 40);
-      if (unfiled.length) {
-        const items = unfiled.map((l) => ({ company: l.company, subsector: l.subsector || sectorByKey(l.sector)?.label || "", city: l.city || "" }));
-        const assigns = await classifyLeads(items, getForest(), auth.getToken());
-        for (const as of (assigns || [])) {
-          const lead = unfiled[as.i];
-          if (!lead || !Array.isArray(as.path) || !as.path.length) continue;
-          mergeForest(pathNodes(as.path));
-          lead.categoryPath = as.path;
-          if (as.tags && Object.keys(as.tags).length) lead.tags = { ...(lead.tags || {}), ...as.tags };
-          store.saveUserLead(lead);
-          organized++;
-        }
-      }
-    } catch { /* best-effort */ }
-  }
-  // 2) Cada ~6 tandas el radar abre nichos nuevos solos (entran a la rotación).
+  if (a.on) { try { organized = await autoClassifyUnfiled(40); } catch { /* best-effort */ } }
+  // 2) Cada ~6 tandas el radar abre nichos nuevos solos: entran a la rotación
+  //    local Y se siembran en el cron 24/7 (el cerebro dirige la autopista).
   a._tick = (a._tick || 0) + 1;
   let opened = 0;
   if (a.on && a._tick % 6 === 0) {
     try {
       const interests = getInterests(10).map((i) => i.q).filter(Boolean);
       const sug = await radarSuggest(getForest(), interests, [], auth.getToken());
+      const seedQ = [];
       for (const s of (sug || []).slice(0, 2)) {
         if (!Array.isArray(s.path) || !s.path.length) continue;
         mergeForest(pathNodes(s.path));
-        recordSearch(pathQuery(s.path), ensureRootSector(s.path[0]), s.path[0]);
+        const rootKey = ensureRootSector(s.path[0]);
+        recordSearch(pathQuery(s.path), rootKey, s.path[0]);
+        seedQ.push({ query: pathQuery(s.path), sector: rootKey });
         opened++;
       }
+      if (seedQ.length) await seedCron(seedQ, auth.getToken());
     } catch { /* best-effort */ }
   }
   // 3) Un lead por tanda: rasca contactos de su web (gentil con sitios externos).
@@ -1789,6 +1779,11 @@ async function absorbCronLeads() {
     await recompute();
     render();
     flash(`🐋 ${added} empresa${added === 1 ? "" : "s"} captada${added === 1 ? "" : "s"} sola${added === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
+    // El cerebro las archiva y etiqueta solo en el mapa (lo del cron, organizado).
+    try {
+      const filed = await autoClassifyUnfiled(40);
+      if (filed) { await recompute(); render(); }
+    } catch { /* best-effort */ }
   }
 }
 
@@ -1869,6 +1864,35 @@ function ensureRootSector(rootName) {
   return r.ok ? r.key : "growth";
 }
 
+// Archiva y etiqueta (vía Gemini) los leads que aún no tienen carpeta. Reutilizado
+// por el piloto y por la absorción del cron. Devuelve cuántos archivó.
+async function autoClassifyUnfiled(limit = 40) {
+  const unfiled = store.getUserLeads().filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length).slice(0, limit);
+  if (!unfiled.length) return 0;
+  const items = unfiled.map((l) => ({ company: l.company, subsector: l.subsector || sectorByKey(l.sector)?.label || "", city: l.city || "" }));
+  let assigns = [];
+  try { assigns = await classifyLeads(items, getForest(), auth.getToken()); } catch { assigns = []; }
+  let filed = 0;
+  for (const as of (assigns || [])) {
+    const lead = unfiled[as.i];
+    if (!lead || !Array.isArray(as.path) || !as.path.length) continue;
+    mergeForest(pathNodes(as.path));
+    lead.categoryPath = as.path;
+    if (as.tags && Object.keys(as.tags).length) lead.tags = { ...(lead.tags || {}), ...as.tags };
+    store.saveUserLead(lead);
+    filed++;
+  }
+  return filed;
+}
+
+// Siembra las hojas del mapa en el cron 24/7: el cerebro dirige qué caza el cron.
+async function seedCronFromMap() {
+  try {
+    const leaves = leavesUnder([]).slice(0, 40).map((lf) => ({ query: pathQuery(lf.path), sector: ensureRootSector(lf.path[0]) }));
+    if (leaves.length) await seedCron(leaves, auth.getToken());
+  } catch { /* best-effort */ }
+}
+
 function captureMap() {
   const ui = catUI();
   const forest = getForest();
@@ -1887,6 +1911,7 @@ function captureMap() {
     ui.busy = false;
     if (r && r.tree && r.tree.length) {
       mergeForest(r.tree);
+      seedCronFromMap(); // el cron 24/7 empieza a cazar estos nichos solos
       for (const rootNode of r.tree) ui.expanded.add(pk([rootNode.name]));
       ui.status = r.ai
         ? "✓ Mapa generado con IA. Pulsa 🔍 en una categoría para traer empresas reales."
