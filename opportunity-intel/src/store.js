@@ -394,13 +394,16 @@ export function getLeadVerifications(id) {
  * @param {string} note    qué se observó
  * @param {string} [url]   qué se miró (web/reseñas) — sirve de cita
  */
-export function addVerification(id, filter, level, note, url) {
+export function addVerification(id, filter, level, note, url, meta = {}) {
   const all = getVerifications();
   const list = (all[id] || []).filter((v) => v.filter !== filter); // upsert por filtro
   list.push({
     filter, level, note: note || "",
     url: url || null,
-    by: getWho() || "analista",
+    by: meta.by || getWho() || "analista",
+    // Origen: una verificación manual (analista) o una lectura automática (web).
+    auto: !!meta.auto,
+    srcLabel: meta.srcLabel || null,
     at: new Date().toISOString(),
   });
   all[id] = list;
@@ -430,8 +433,8 @@ export function applyVerifications(opp, verifications = getLeadVerifications(opp
     signals[v.filter] = { level: v.level, note: v.note };
     evidence.push({
       filter: v.filter,
-      type: "verificación",
-      source: "Verificado por analista",
+      type: v.auto ? "web" : "verificación",
+      source: v.auto ? (v.srcLabel || "Lectura de su web") : "Verificado por analista",
       note: v.note || "Confirmado manualmente.",
       tier: 2,
       url: v.url || "verificación-manual",
