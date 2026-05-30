@@ -33,14 +33,14 @@ import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
 import * as xport from "../export.js";
+import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
   dataset: "researched", // researched (empresas reales) | demo (sintético de prueba)
-  // Arranca en Oportunidades: lo primero que se ve son los mejores leads,
-  // ordenados de mayor a menor puntuación.
-  view: "cards", // cards | pipeline | table | crm | learning
+  // Arranca en "Hoy": abrir la app y saber al instante a quién llamar y por qué.
+  view: "today", // today | cards | pipeline | table | crm | learning
   filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" },
 };
 
@@ -223,7 +223,7 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v11 · sectores" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v12 · hoy" }),
     ]),
   ]);
 }
@@ -244,6 +244,7 @@ function userChip() {
 
 function tabs() {
   const items = [
+    ["today", "Hoy"],
     ["cards", "Oportunidades"],
     ["connector", "01 ↔ XN"],
     ["search", "Buscar leads"],
@@ -349,7 +350,8 @@ function configPanel() {
 
 function viewArea() {
   const area = el("section", { class: "view" });
-  if (state.view === "pipeline") area.appendChild(pipelineView());
+  if (state.view === "today") area.appendChild(todayView());
+  else if (state.view === "pipeline") area.appendChild(pipelineView());
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
@@ -488,6 +490,86 @@ function rerenderResults() {
   if (!area) { render(); return; }
   clear(area);
   area.appendChild(state.view === "table" ? buildTable() : buildCards());
+}
+
+// ---- Vista "Hoy" (claridad ejecutiva) ---------------------------------------
+
+const eurFmt = (n) => `${Number(n || 0).toLocaleString("es-ES")} €`;
+
+function todayView() {
+  const tracking = store.getTracking();
+  const opps = state.results ? state.results.all : [];
+  const pulse = pipelinePulse(opps, tracking);
+  const calls = pickTodayCalls(opps, tracking, { limit: 3 });
+  const u = auth.currentUser();
+  const h = new Date().getHours();
+  const greet = h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
+
+  const blocks = [];
+  blocks.push(el("div", { class: "today-hero" }, [
+    el("div", { class: "today-greet", text: `${greet}${u ? `, ${u.name}` : ""}` }),
+    el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
+  ]));
+
+  // Pulso del pipeline: cuatro cifras que mandan.
+  blocks.push(el("div", { class: "pulse" }, [
+    pulseKpi(pulse.total, "oportunidades vivas"),
+    pulseKpi(pulse.pending, "por llamar"),
+    pulseKpi(pulse.meetings, "reuniones"),
+    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial", true),
+  ]));
+  blocks.push(el("div", { class: "pulse-split" }, [
+    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
+    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
+  ]));
+
+  // Las llamadas de hoy.
+  blocks.push(el("h2", { class: "today-h2", text: "Las 3 llamadas de hoy" }));
+  if (!calls.length) {
+    blocks.push(el("p", { class: "today-empty", text: "No hay oportunidades vivas todavía. Ve a Oportunidades y lanza una tanda para llenar el día." }));
+    blocks.push(el("button", { class: "btn-primary", text: "Ir a Oportunidades", onClick: () => goView("cards") }));
+  } else {
+    blocks.push(el("ol", { class: "today-calls" }, calls.map((o, i) => todayCall(o, i, tracking[o.id] || {}))));
+  }
+
+  return el("div", { class: "today" }, blocks);
+}
+
+function pulseKpi(value, label, accent) {
+  return el("div", { class: `kpi ${accent ? "kpi-accent" : ""}` }, [
+    el("div", { class: "kpi-n", text: String(value) }),
+    el("div", { class: "kpi-l", text: label }),
+  ]);
+}
+
+function todayCall(o, i, track) {
+  const s = o.scores;
+  const step = nextStep(o, track);
+  const tone = s.confidence >= 90 ? "elite" : s.confidence >= 75 ? "hot" : "warm";
+  const open = () => { state.filters.search = o.company; goView("cards"); };
+  const st = track.status || "not_called";
+
+  const actions = [];
+  if (o.phone) actions.push(el("a", { class: "tc-call", href: `tel:${o.phone}`, text: "Llamar", onClick: (e) => e.stopPropagation() }));
+  actions.push(el("button", { class: "tc-open", text: "Ver ficha", onClick: (e) => { e.stopPropagation(); open(); } }));
+
+  return el("li", { class: `tc tc-${tone}`, onClick: open }, [
+    el("div", { class: "tc-rank", text: String(i + 1) }),
+    el("div", { class: "tc-main" }, [
+      el("div", { class: "tc-line" }, [
+        el("span", { class: "tc-name", text: o.company }),
+        el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : "01" }),
+        el("span", { class: "tc-conf", title: "Confianza", text: String(s.confidence) }),
+        st !== "not_called" ? el("span", { class: "tc-status", text: STATUS_LABELS[st] }) : null,
+      ]),
+      el("div", { class: "tc-meta", text: `${sectorByKey(o.sector)?.label || o.sector} · ${o.city || "—"}` }),
+      el("div", { class: "tc-step" }, [
+        el("span", { class: "tc-action", text: `→ ${step.action}` }),
+        el("span", { class: "tc-why", text: step.why }),
+      ]),
+    ]),
+    el("div", { class: "tc-actions" }, actions),
+  ]);
 }
 
 // ---- Ranking table ----------------------------------------------------------
