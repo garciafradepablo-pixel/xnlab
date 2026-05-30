@@ -163,9 +163,9 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .capt-h { margin: 6px 0 4px; font-size: 14px; color: var(--ink-dim); }
 
 /* ---- Captador automático ---- */
-.capt-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+.capt-bar { display: flex; gap: 8px; margin-bottom: 10px; align-items: stretch; }
 .capt-input { flex: 1; max-width: none; margin-bottom: 0; }
-.capt-go { width: auto; flex: 0 0 auto; padding: 9px 22px; }
+.capt-bar .capt-go { width: auto; flex: 0 0 auto; padding: 9px 22px; margin-top: 0; }
 .capt-sector { min-height: 0; margin-bottom: 8px; }
 .chip-sector { display: inline-block; font-size: 12px; color: var(--ink-dim); border: 1px solid var(--line);
   border-radius: 999px; padding: 4px 12px; }
@@ -179,7 +179,7 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .chip-rate { display: inline-block; margin-left: 8px; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
 .chip-rate.good { color: var(--green); border-color: rgba(63,185,80,.4); }
 .chip-rate.bad { color: var(--ink-dim); }
-@media (max-width: 600px) { .capt-bar { flex-direction: column; } .capt-go { width: 100%; } }
+@media (max-width: 600px) { .capt-bar { flex-direction: column; } .capt-bar .capt-go { width: 100%; } }
 
 /* ---- Mapa de captación (árbol de categorías desde un prompt) ---- */
 .capture-map { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 18px;
@@ -189,11 +189,12 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .cmap-clear { background: transparent; border: 1px solid var(--line); color: var(--ink-dim);
   border-radius: 7px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .cmap-clear:hover { color: var(--ink); border-color: var(--ink-dim); }
-.cmap-bar { display: flex; gap: 8px; margin: 10px 0 4px; }
+.cmap-bar { display: flex; gap: 8px; margin: 10px 0 4px; align-items: stretch; }
 .cmap-input { flex: 1; max-width: none; margin-bottom: 0; padding: 11px 14px; font-size: 15px;
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; color: var(--ink); }
 .cmap-input:focus { outline: none; border-color: var(--accent); }
-.cmap-go { width: auto; flex: 0 0 auto; padding: 9px 20px; }
+/* Específico para ganar a .btn-primary { width:100% } y no acaparar la fila. */
+.cmap-bar .cmap-go { width: auto; flex: 0 0 auto; padding: 9px 22px; margin-top: 0; }
 .cmap-status { font-size: 13px; color: var(--accent); margin: 8px 0 2px; }
 .cmap-examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
 
@@ -258,7 +259,7 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .facet-chip:hover { color: var(--ink); border-color: var(--ink-dim); }
 .facet-chip.on { background: var(--accent); color: #1a1500; border-color: var(--accent); font-weight: 600; }
 .facet-clear { font-size: 11px; background: transparent; border: 0; color: #ff6b6b; cursor: pointer; padding: 3px 6px; }
-@media (max-width: 600px) { .cmap-bar { flex-direction: column; } .cmap-go { width: 100%; } }
+@media (max-width: 600px) { .cmap-bar { flex-direction: column; } .cmap-bar .cmap-go { width: 100%; } }
 
 /* ---- Aprendizaje por nicho (Memoria) ---- */
 .nicho-list { display: flex; flex-direction: column; gap: 8px; }
