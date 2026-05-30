@@ -133,21 +133,20 @@ export async function createUserAsync(name, password, color) {
 }
 
 /**
- * Inicia sesión. Intenta LOCAL primero (rápido, offline); si falla (la cuenta
- * no está en ESTE navegador, o la contraseña no coincide), pregunta al BACKEND
- * — que es la fuente de verdad — y, si confirma, cachea la cuenta en local.
- * Así "creé mi usuario en Safari" funciona también dentro de WhatsApp y en otro
- * dispositivo. @returns {Promise<{ok, error?, user?}>}
+ * Inicia sesión. REMOTE-FIRST cuando hay red: el backend es la fuente de verdad
+ * y, sobre todo, emite el TOKEN de sesión que el servidor exige para autorizar
+ * escrituras (RBAC). Sin token no se puede mutar la mesa compartida, así que un
+ * login solo-local no basta cuando hay conexión.
+ *
+ * - Servidor confirma → cachea cuenta + rol + token y deja sesión verificada.
+ * - Servidor dice "no encontrado" → puede ser una cuenta SOLO local anterior al
+ *   backend: se intenta entrar en local y se migra al servidor.
+ * - Servidor rechaza (contraseña incorrecta) → manda el servidor (no se cae a
+ *   una contraseña local obsoleta).
+ * - Sin red → caché local (sin token; las escrituras esperan a recuperar sesión).
+ * @returns {Promise<{ok, error?, user?}>}
  */
 export async function loginAsync(name, password) {
-  const localResult = login(name, password);
-  if (localResult.ok) {
-    // Migración silenciosa: una cuenta que solo existía en local (de antes del
-    // backend) se sube al servidor para volverse durable y funcionar en otros
-    // navegadores/dispositivos. Fire-and-forget: no retrasa la entrada.
-    migrateLocalUser(name, password);
-    return localResult;
-  }
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
@@ -155,12 +154,17 @@ export async function loginAsync(name, password) {
       write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
       return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
-    // El backend respondió con un error claro (no encontrado / contraseña mal).
-    if (r && r.error) return { ok: false, error: r.error };
-    return localResult;
+    // Servidor accesible pero sin esa cuenta: ¿cuenta solo-local de antes del
+    // backend? Intenta local y, si entra, migra para volverla durable.
+    if (r && /no encontrad/i.test(r.error || "")) {
+      const local = login(name, password);
+      if (local.ok) { migrateLocalUser(name, password); return local; }
+    }
+    // Otro rechazo del servidor (p. ej. contraseña incorrecta) es autoritativo.
+    return { ok: false, error: (r && r.error) || "No se pudo iniciar sesión." };
   } catch {
-    // Sin red: devuelve el resultado local (no empeora el comportamiento previo).
-    return localResult;
+    // Sin red: cae a la caché local (sin token de servidor).
+    return login(name, password);
   }
 }
 
@@ -251,6 +255,27 @@ export async function refreshSession() {
     }
     return { ok: false };
   } catch { return { ok: false }; }
+}
+
+/** Cambia la contraseña del usuario en sesión. Actualiza también el hash local. */
+export async function changePassword(newPassword) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada (vuelve a entrar online)." };
+  if (String(newPassword || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
+  try {
+    const r = await remote.remoteSetPassword(token, newPassword);
+    if (r && r.ok) {
+      // Mantén coherente el hash local para que el login offline siga valiendo.
+      const u = currentUser();
+      if (u) {
+        const users = getUsers();
+        const me = users.find((x) => norm(x.name) === norm(u.name));
+        if (me) { me.hash = hash(newPassword); write(USERS_KEY, users); }
+      }
+      return { ok: true };
+    }
+    return { ok: false, error: (r && r.error) || "No se pudo cambiar la contraseña." };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }
 
 /** Cambia el rol de otro usuario (solo admin; el servidor refuerza con 403). */

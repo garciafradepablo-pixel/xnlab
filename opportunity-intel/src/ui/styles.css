@@ -670,6 +670,13 @@ output { font-size: 12px; color: var(--accent); }
 .role-select { min-width: 120px; }
 .role-status { font-size: 12px; color: var(--ink-dim); min-width: 60px; }
 
+/* Sección de seguridad (cambio de contraseña). */
+.sec-zone { margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 8px; }
+.sec-f { width: 100%; }
+.sec-msg { font-size: 12px; color: var(--ink-dim); margin: 0; }
+.sec-msg.ok { color: #3fb950; }
+.sec-msg.err { color: #f85149; }
+
 /* ---- Cobertura por sector ---- */
 .sector-cov { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; }
 .sector-cov h3 { margin: 0 0 10px; font-size: 14px; }

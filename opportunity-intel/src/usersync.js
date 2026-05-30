@@ -49,6 +49,11 @@ export function remoteSetRole(token, targetName, role) {
   return call("setRole", { token, targetName, role });
 }
 
+/** Cambia la contraseña del propio usuario (requiere token de sesión válido). */
+export function remoteSetPassword(token, password) {
+  return call("setPassword", { token, password });
+}
+
 /** Lista de {name, color, role} de todas las cuentas. [] si falla. */
 export async function remoteList() {
   try { const r = await call("list", {}); return r.ok ? r.users : []; }

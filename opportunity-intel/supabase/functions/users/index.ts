@@ -1,7 +1,7 @@
 // =============================================================================
 // users — Cuentas durables + RBAC (Supabase).
 //
-// Acciones: register, login, me, list, setRole.
+// Acciones: register, login, me, list, setPassword, setRole.
 // - Contraseñas: SHA-256(salt + "::" + password), sal por usuario. El cliente
 //   nunca ve los hashes.
 // - Sesión: al register/login se emite un TOKEN opaco (no es la service_role
@@ -128,6 +128,22 @@ Deno.serve(async (req) => {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
       return json({ ok: true, user: { name: u.name, color: u.color, role: u.role } });
+    }
+
+    // setPassword: el propio usuario (sesión válida) cambia su contraseña. Sal
+    // nueva por cambio. No requiere admin: cada uno gestiona la suya.
+    if (action === "setPassword") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
+      const salt = randHex(16);
+      const pass_hash = await sha256(`${salt}::${password}`);
+      const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ salt, pass_hash }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo cambiar la contraseña." }, 500);
+      return json({ ok: true });
     }
 
     // setRole: SOLO admin. Protege al último admin de quedarse sin él.

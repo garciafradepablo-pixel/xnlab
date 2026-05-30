@@ -394,6 +394,7 @@ function configPanel() {
     field("Umbral 01 → XN LAB (confianza)", xnThr),
     runBtn,
     el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
+    securitySection(),
     // Zona peligrosa, al fondo y blindada. Export → roles con permiso de export;
     // borrado duro de la caché local → solo admin. El servidor además refuerza.
     (allow("export") || allow("hard_delete")) ? el("div", { class: "danger-zone" }, [
@@ -407,6 +408,30 @@ function configPanel() {
         store.resetAll(); location.reload();
       } }) : null,
     ]) : null,
+  ]);
+}
+
+// Cambio de contraseña del propio usuario (cualquier rol gestiona la suya).
+// Requiere sesión verificada (token); si entraste offline, avisa.
+function securitySection() {
+  if (!auth.currentUser()) return null;
+  const pw1 = el("input", { type: "password", class: "sec-f", placeholder: "Nueva contraseña (mín. 4)", autocomplete: "new-password" });
+  const pw2 = el("input", { type: "password", class: "sec-f", placeholder: "Repite la nueva contraseña", autocomplete: "new-password" });
+  const msg = el("p", { class: "sec-msg" });
+  const btn = el("button", { class: "btn-ghost", text: "Cambiar contraseña" });
+  btn.addEventListener("click", async () => {
+    msg.className = "sec-msg";
+    if (pw1.value !== pw2.value) { msg.textContent = "Las contraseñas no coinciden."; msg.classList.add("err"); return; }
+    btn.disabled = true; msg.textContent = "Guardando…";
+    const r = await auth.changePassword(pw1.value);
+    btn.disabled = false;
+    if (r.ok) { msg.textContent = "✓ Contraseña actualizada."; msg.classList.add("ok"); pw1.value = ""; pw2.value = ""; }
+    else { msg.textContent = r.error || "No se pudo."; msg.classList.add("err"); }
+  });
+  return el("div", { class: "sec-zone" }, [
+    el("h4", { text: "Seguridad" }),
+    el("p", { class: "config-note", text: "Cambia tu contraseña (se guarda cifrada en el servidor)." }),
+    pw1, pw2, btn, msg,
   ]);
 }
 
