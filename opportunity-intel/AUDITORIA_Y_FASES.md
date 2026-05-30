@@ -131,6 +131,7 @@ lead; donde falta señal, lo dice — no inventa. Texto copiable listo para envi
 | 5 — Vista "Hoy" | ✅ Enviada (v12) |
 | 8 — Sectores definibles | ✅ Enviada (v11) |
 | 10 — Guion + dossier por lead | ✅ Enviada (v13) |
+| 1 (parte: cuentas durables) — Login en backend | ✅ Enviada (v14): cuentas en Supabase, multi-dispositivo, con migración silenciosa de las locales |
 | 2 — Blindaje UI (partir `app.js` + tests de vista) | ⏳ Siguiente |
 | 3 — Enriquecimiento automático de leads | ⏳ Bloqueada: requiere activar Places API + Edge Functions de scraping |
 | 6 — Secuencias de seguimiento | ⏳ |

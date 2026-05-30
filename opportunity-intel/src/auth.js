@@ -14,9 +14,15 @@
 // multi-dispositivo real se conecta el backend (Supabase) — la forma no cambia.
 // =============================================================================
 
+import * as usersync from "./usersync.js";
+
 const NS = "oi:";
 const USERS_KEY = `${NS}users`;
 const SESSION_KEY = `${NS}session`;
+
+// Capa remota (Supabase). Inyectable para tests; en producción es usersync.
+let remote = usersync;
+export function __setRemote(r) { remote = r; }
 
 const mem = new Map();
 const storage =
@@ -85,6 +91,99 @@ export function login(name, password) {
   if (u.hash !== hash(password)) return { ok: false, error: "Contraseña incorrecta." };
   write(SESSION_KEY, { name: u.name });
   return { ok: true, user: { name: u.name, color: u.color } };
+}
+
+// Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
+// sesión persista y se pueda entrar sin red la próxima vez en este navegador.
+function cacheUser(name, color, password) {
+  const users = getUsers().filter((u) => norm(u.name) !== norm(name));
+  users.push({ name, color, hash: hash(password), createdAt: new Date().toISOString(), remote: true });
+  write(USERS_KEY, users);
+}
+
+/**
+ * Crea un usuario en el BACKEND (durable, multi-dispositivo) y lo cachea en
+ * local. Si el servidor no responde, cae al modo local para no bloquear.
+ * @returns {Promise<{ok, error?}>}
+ */
+export async function createUserAsync(name, password, color) {
+  const n = String(name || "").trim();
+  if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
+  if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
+  const finalColor = color || nextFreeColor();
+  try {
+    const r = await remote.remoteRegister(n, password, finalColor);
+    if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
+    cacheUser(r.user.name, r.user.color, password);
+    return { ok: true };
+  } catch {
+    // Sin red: crea al menos en local (se sincronizará cuando vuelva la red).
+    return createUser(n, password, finalColor);
+  }
+}
+
+/**
+ * Inicia sesión. Intenta LOCAL primero (rápido, offline); si falla (la cuenta
+ * no está en ESTE navegador, o la contraseña no coincide), pregunta al BACKEND
+ * — que es la fuente de verdad — y, si confirma, cachea la cuenta en local.
+ * Así "creé mi usuario en Safari" funciona también dentro de WhatsApp y en otro
+ * dispositivo. @returns {Promise<{ok, error?, user?}>}
+ */
+export async function loginAsync(name, password) {
+  const localResult = login(name, password);
+  if (localResult.ok) {
+    // Migración silenciosa: una cuenta que solo existía en local (de antes del
+    // backend) se sube al servidor para volverse durable y funcionar en otros
+    // navegadores/dispositivos. Fire-and-forget: no retrasa la entrada.
+    migrateLocalUser(name, password);
+    return localResult;
+  }
+  try {
+    const r = await remote.remoteLogin(name, password);
+    if (r && r.ok && r.user) {
+      cacheUser(r.user.name, r.user.color, password);
+      write(SESSION_KEY, { name: r.user.name });
+      return { ok: true, user: { name: r.user.name, color: r.user.color } };
+    }
+    // El backend respondió con un error claro (no encontrado / contraseña mal).
+    if (r && r.error) return { ok: false, error: r.error };
+    return localResult;
+  } catch {
+    // Sin red: devuelve el resultado local (no empeora el comportamiento previo).
+    return localResult;
+  }
+}
+
+/** Sube al backend una cuenta que solo existía en local, para hacerla durable.
+ *  Best-effort e idempotente: si ya existe en el servidor, solo la marca. */
+export async function migrateLocalUser(name, password) {
+  try {
+    const u = getUsers().find((x) => norm(x.name) === norm(name));
+    if (!u || u.remote) return;
+    const r = await remote.remoteRegister(u.name, password, u.color);
+    if (r && (r.ok || /existe/i.test(r.error || ""))) {
+      const users = getUsers();
+      const t = users.find((x) => norm(x.name) === norm(name));
+      if (t) { t.remote = true; write(USERS_KEY, users); }
+    }
+  } catch { /* sin red: se migrará en el próximo login */ }
+}
+
+/** Trae los colores de firma de todas las cuentas y los mezcla en local, para
+ *  teñir la actividad por autor de forma consistente entre dispositivos. */
+export async function syncRemoteColors() {
+  try {
+    const list = await remote.remoteList();
+    if (!Array.isArray(list) || !list.length) return;
+    const users = getUsers();
+    const byName = new Map(users.map((u) => [norm(u.name), u]));
+    for (const r of list) {
+      const ex = byName.get(norm(r.name));
+      if (ex) ex.color = r.color; // color es fijo: el del servidor manda
+      else users.push({ name: r.name, color: r.color, colorOnly: true }); // solo para teñir
+    }
+    write(USERS_KEY, users);
+  } catch { /* best-effort */ }
 }
 
 export function logout() { storage.removeItem(SESSION_KEY); }

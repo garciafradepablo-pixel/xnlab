@@ -52,6 +52,7 @@ export async function mount(rootEl) {
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
   // su color fijo y firma su actividad.
   if (!auth.currentUser()) { renderAuth(); return; }
+  auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
   render();
@@ -74,20 +75,27 @@ function renderAuth() {
     return sw;
   }));
 
-  const doLogin = () => {
-    const r = auth.login(nameI.value, passI.value);
+  const busy = (on, label) => { primary.disabled = on; primary.textContent = on ? "Conectando…" : label; };
+
+  const doLogin = async () => {
+    msg.textContent = "";
+    busy(true);
+    const r = await auth.loginAsync(nameI.value, passI.value);
+    busy(false, "Entrar");
     if (!r.ok) { msg.textContent = r.error; return; }
     mount(root); // re-entra ya con sesión
   };
-  const doCreate = () => {
-    const r = auth.createUser(nameI.value, passI.value, chosenColor);
-    if (!r.ok) { msg.textContent = r.error; return; }
-    auth.login(nameI.value, passI.value);
+  const doCreate = async () => {
+    msg.textContent = "";
+    busy(true);
+    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor);
+    if (!r.ok) { busy(false, "Crear usuario y entrar"); msg.textContent = r.error; return; }
+    await auth.loginAsync(nameI.value, passI.value);
     mount(root);
   };
 
   const primary = el("button", { class: "btn-primary auth-go", text: tab === "login" ? "Entrar" : "Crear usuario y entrar" });
-  primary.addEventListener("click", tab === "login" ? doLogin : doCreate);
+  primary.addEventListener("click", () => { (tab === "login" ? doLogin : doCreate)(); });
   passI.addEventListener("keydown", (e) => { if (e.key === "Enter") primary.click(); });
 
   const switcher = el("button", { class: "auth-switch", text: tab === "login" ? "¿No tienes usuario? Crear uno" : "Ya tengo usuario — entrar" });
@@ -224,7 +232,7 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v13 · guion" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v14 · cuentas" }),
     ]),
   ]);
 }
