@@ -549,6 +549,7 @@ function buildLearningForm(opp, handlers) {
       handlers.onOutcome?.(opp.id, {
         id: opp.id,
         classification: opp.scores.classification,
+        sector: opp.sector || null,
         outcome: outcome.value,
         objection: objection.value,
         whatWorked: worked.value,

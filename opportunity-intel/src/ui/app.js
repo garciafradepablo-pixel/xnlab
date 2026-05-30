@@ -40,6 +40,7 @@ import { dueFollowups, dueLabel } from "../followups.js";
 import { fetchWebFreshness } from "../enrichweb.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
+import { sectorPerformance, sectorRate } from "../sectorlearning.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -298,7 +299,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v23 · captador con sectores automáticos" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v24 · aprende qué nichos cierran" }),
     ]),
   ]);
 }
@@ -1158,6 +1159,7 @@ function cardHandlers(afterMutate) {
       const lead = (state.results?.all || []).find((o) => o.id === id);
       store.recordStatusOutcome(id, st, {
         classification: lead?.scores?.classification,
+        sector: lead?.sector || null,
         signals: lead?.signals || null,
         successIndex: lead?.scores?.successIndex,
       });
@@ -1488,6 +1490,11 @@ function searchView() {
         class: `chip-sector ${inf.isNew ? "is-new" : ""}`,
         text: inf.isNew ? `✦ Sector nuevo creado: ${inf.label}` : `Sector detectado: ${sectorByKey(inf.key)?.label || inf.label}`,
       }));
+      // Si ya tenemos resultados de ese nicho, lo decimos (memoria por sector).
+      const perf = inf.key ? sectorRate(store.getLearning(), inf.key, { minSample: 3 }) : null;
+      if (perf && perf.ranked) {
+        sectorChip.appendChild(el("span", { class: `chip-rate ${perf.rate >= 50 ? "good" : "bad"}`, text: `este nicho convierte ${perf.rate}% (${perf.decisive} llamadas)` }));
+      }
     }
 
     // 2) Descubrir empresas reales.
@@ -1784,6 +1791,25 @@ function learningView() {
     }
   }
   blocks.push(el("div", { class: "verif verif-real" }, [el("h4", { text: "Calibración de la puntuación" }), ...calChildren]));
+
+  // Qué NICHOS cierran mejor — cierra el círculo con el captador: capta más de
+  // lo que de verdad convierte. Honesto: pocos datos → "calibrando".
+  const sectorPerf = sectorPerformance(log, { minSample: 3 });
+  if (sectorPerf.length) {
+    blocks.push(el("div", { class: "sec" }, [
+      el("h4", { text: "Qué nichos cierran mejor" }),
+      el("p", { class: "hint", text: "Conversión real por sector (interés/reunión frente a rechazo/mal encaje). Capta más de lo que convierte. Un nicho con pocos datos aún calibra." }),
+      el("div", { class: "nicho-list" }, sectorPerf.map((r) => {
+        const label = sectorByKey(r.sector)?.label || r.sector;
+        const tone = r.ranked ? (r.rate >= 50 ? "nicho-good" : "nicho-bad") : "nicho-cal";
+        return el("div", { class: `nicho ${tone}` }, [
+          el("span", { class: "nicho-name", text: label }),
+          el("span", { class: "nicho-bar" }, [el("span", { class: "nicho-fill", style: `width:${r.ranked ? r.rate : 0}%` })]),
+          el("span", { class: "nicho-rate", text: r.ranked ? `${r.rate}% · ${r.decisive} llamadas` : `calibrando (${r.decisive}/3)` }),
+        ]);
+      })),
+    ]));
+  }
 
   if (summary.topObjections.length) {
     blocks.push(el("div", { class: "sec" }, [

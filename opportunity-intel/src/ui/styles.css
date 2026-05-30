@@ -126,7 +126,23 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .capt-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .capt-actions .btn-primary { width: auto; padding: 9px 18px; }
 .dc-added { color: var(--green); font-size: 12px; font-weight: 600; flex: 0 0 auto; }
+.chip-rate { display: inline-block; margin-left: 8px; font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); }
+.chip-rate.good { color: var(--green); border-color: rgba(63,185,80,.4); }
+.chip-rate.bad { color: var(--ink-dim); }
 @media (max-width: 600px) { .capt-bar { flex-direction: column; } .capt-go { width: 100%; } }
+
+/* ---- Aprendizaje por nicho (Memoria) ---- */
+.nicho-list { display: flex; flex-direction: column; gap: 8px; }
+.nicho { display: grid; grid-template-columns: 1fr 120px auto; align-items: center; gap: 12px; }
+.nicho-name { font-size: 13px; color: var(--ink); }
+.nicho-bar { height: 8px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+.nicho-fill { display: block; height: 100%; border-radius: 999px; background: var(--grey); transition: width .5s; }
+.nicho-good .nicho-fill { background: var(--green); }
+.nicho-bad .nicho-fill { background: var(--red); }
+.nicho-cal .nicho-fill { background: var(--line); }
+.nicho-rate { font-size: 12px; color: var(--ink-dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.nicho-good .nicho-rate { color: var(--green); }
+@media (max-width: 600px) { .nicho { grid-template-columns: 1fr auto; } .nicho-bar { display: none; } }
 
 /* ---- Layout: shell fijo + un único contenedor de scroll ---- */
 /* La app ocupa el alto de la ventana (con soporte de dvh para móviles donde la
