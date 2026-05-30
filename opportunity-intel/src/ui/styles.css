@@ -1243,3 +1243,31 @@ button:disabled { cursor: not-allowed; }
   .eco-panel { right: 12px; left: 12px; width: auto; bottom: 78px; }
   .eco-fab { right: 16px; bottom: 16px; }
 }
+
+/* ====================== Microanimaciones de entrada ======================
+   Premium "feel": el contenido entra con un fundido sutil y, en rejillas/listas,
+   escalonado. Respeta prefers-reduced-motion (bloque universal de arriba). */
+@keyframes riseIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+.view > * { animation: riseIn .34s cubic-bezier(.2,.8,.2,1) both; }
+
+/* Entrada escalonada de tarjetas y filas (las primeras, sin recargar al scrollear). */
+.cards > .card, .today-calls > .tc, .crm-card, .conn-lead, .discover-card, .nicho {
+  animation: riseIn .36s cubic-bezier(.2,.8,.2,1) both;
+}
+.cards > .card:nth-child(1), .today-calls > .tc:nth-child(1) { animation-delay: .02s; }
+.cards > .card:nth-child(2), .today-calls > .tc:nth-child(2) { animation-delay: .06s; }
+.cards > .card:nth-child(3), .today-calls > .tc:nth-child(3) { animation-delay: .10s; }
+.cards > .card:nth-child(4) { animation-delay: .14s; }
+.cards > .card:nth-child(5) { animation-delay: .18s; }
+.cards > .card:nth-child(6) { animation-delay: .22s; }
+
+/* KPIs del pulso entran escalonados. */
+.pulse > .kpi:nth-child(1) { animation: riseIn .4s cubic-bezier(.2,.8,.2,1) both; animation-delay: .02s; }
+.pulse > .kpi:nth-child(2) { animation: riseIn .4s cubic-bezier(.2,.8,.2,1) both; animation-delay: .08s; }
+.pulse > .kpi:nth-child(3) { animation: riseIn .4s cubic-bezier(.2,.8,.2,1) both; animation-delay: .14s; }
+.pulse > .kpi:nth-child(4) { animation: riseIn .4s cubic-bezier(.2,.8,.2,1) both; animation-delay: .20s; }
+
+/* Pressable: todo lo clicable cede al pulsar (tacto físico tipo iOS). */
+.card, .tc, .crm-card, .conn-lead, .zone, .tab, .q, .kpi, .idea-chip { will-change: transform; }
+.card:active, .tc:active, .crm-card:active, .conn-lead:active { transform: scale(.992); }
