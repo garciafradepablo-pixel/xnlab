@@ -220,17 +220,35 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .cat-children { border-left: 1px solid var(--line); margin-left: 14px; }
 .cat-leads { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; padding-bottom: 6px; }
 .cat-leads-empty { font-size: 12px; color: var(--ink-dim); font-style: italic; padding: 4px 0 8px; }
-.cat-lead { display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  background: transparent; border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer;
-  color: var(--ink); text-align: left; font-size: 13px; }
+.cat-lead { display: flex; align-items: center; gap: 7px; border-radius: 6px; padding: 5px 8px;
+  color: var(--ink); font-size: 13px; }
 .cat-lead:hover { background: var(--panel-2); }
-.cat-lead-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
+.cat-lead-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;
+  cursor: pointer; background: transparent; border: 0; color: var(--ink); text-align: left; font-size: 13px; padding: 0; }
+.cat-lead-name:hover { color: var(--accent); }
 .cat-lead-city { flex: 0 0 auto; font-size: 11px; color: var(--ink-dim); }
 .cat-tag { flex: 0 0 auto; font-size: 10px; color: var(--ink-dim); border: 1px solid var(--line);
   border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+.cat-contact { flex: 0 0 auto; font-size: 11px; text-decoration: none; color: var(--accent);
+  border: 1px solid rgba(201,162,39,.4); border-radius: 6px; padding: 1px 6px; }
+.cat-contact:hover { background: rgba(201,162,39,.12); }
+.cat-contact-btn { flex: 0 0 auto; background: transparent; border: 0; cursor: pointer; font-size: 12px;
+  padding: 3px 5px; border-radius: 6px; color: var(--ink-dim); }
+.cat-contact-btn:hover { background: rgba(201,162,39,.15); }
 
-.cmap-actions { display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; flex-wrap: wrap; }
-.cmap-organize { width: auto; padding: 7px 14px; font-size: 13px; }
+.cmap-actions { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; flex-wrap: wrap; }
+.cmap-organize, .cmap-radar { width: auto; padding: 7px 14px; font-size: 13px; }
+
+/* Radar de momentos */
+.radar-box { border: 1px solid rgba(201,162,39,.3); border-radius: 10px; padding: 12px; margin: 8px 0;
+  background: rgba(201,162,39,.04); }
+.radar-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.radar-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+.radar-card { border-top: 1px solid var(--line); padding: 9px 0; }
+.radar-path { font-size: 14px; font-weight: 600; color: var(--ink); }
+.radar-why { font-size: 12px; color: var(--ink-dim); margin: 3px 0 7px; }
+.radar-acts { display: flex; gap: 8px; align-items: center; }
+.radar-add { width: auto; padding: 5px 12px; font-size: 12px; }
 .cmap-actions .hint { margin: 0; }
 .cat-facets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 2px;
   padding: 8px 0; border-top: 1px dashed var(--line); }

@@ -213,12 +213,68 @@ async function classifyWithGemini(
   }
 }
 
+// —— Radar de momentos: propone nichos nuevos a explorar ——————————————————————
+async function radarWithGemini(
+  forest: unknown,
+  interests: string[],
+  niches: string[],
+): Promise<Array<{ path: string[]; why: string }> | null> {
+  if (!GEMINI_API_KEY) return null;
+  const today = new Date().toISOString().slice(0, 10);
+  const sys =
+    "Eres el radar de oportunidades de XNLAB, un estudio creativo de élite. Propones " +
+    "NICHOS NUEVOS de clientes a explorar AHORA, partiendo de lo que el equipo ya " +
+    "trabaja. Razonas sobre estacionalidad, ciclos de negocio y nichos adyacentes de " +
+    "alto valor; eres honesto: son hipótesis a explorar, no noticias verificadas.\n\n" +
+    `Fecha de hoy: ${today}.\n` +
+    "Árbol de categorías actual (JSON):\n" + JSON.stringify(Array.isArray(forest) ? forest : []) + "\n" +
+    (interests.length ? "Lo que más busca el equipo: " + interests.join(", ") + "\n" : "") +
+    (niches.length ? "Nichos que mejor convierten: " + niches.join(", ") + "\n" : "") + "\n" +
+    "Propón 4-7 nichos NUEVOS y concretos (no repitas hojas que ya estén en el árbol). " +
+    "Para cada uno da una ruta de carpetas (raíz→hoja) y un 'why' de UNA frase con el " +
+    "motivo de por qué AHORA (momento, estacionalidad, transición típica del sector). " +
+    "Nichos buscables (negocios reales), nombres cortos en español, minúscula salvo " +
+    "nombres propios.\n\n" +
+    'Devuelve SOLO JSON: {"suggestions":[{"path":["...","..."],"why":"..."}]}';
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: sys }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.6 },
+        }),
+      },
+    );
+    const data = await res.json();
+    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const parsed = JSON.parse(txt);
+    const raw = Array.isArray(parsed?.suggestions) ? parsed.suggestions : [];
+    return raw
+      .map((s: Record<string, unknown>) => ({ path: cleanPath(s.path), why: String(s.why ?? "").trim().slice(0, 180) }))
+      .filter((s: { path: string[] }) => s.path.length)
+      .slice(0, 8);
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, token, prompt, items, forest } = await req.json().catch(() => ({}));
+    const { action, token, prompt, items, forest, interests, niches } = await req.json().catch(() => ({}));
     const caller = await userByToken(String(token || ""));
     if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+
+    // radar: propone nichos nuevos a explorar según el momento y lo ya trabajado.
+    if (action === "radar") {
+      const ints = (Array.isArray(interests) ? interests : []).map((s: unknown) => String(s).slice(0, 60)).filter(Boolean).slice(0, 12);
+      const nch = (Array.isArray(niches) ? niches : []).map((s: unknown) => String(s).slice(0, 60)).filter(Boolean).slice(0, 12);
+      const suggestions = (await radarWithGemini(forest, ints, nch)) || [];
+      return json({ ok: true, suggestions, ai: !!GEMINI_API_KEY && suggestions.length > 0 });
+    }
 
     // classify: organiza un lote de empresas en el árbol y las etiqueta.
     if (action === "classify") {

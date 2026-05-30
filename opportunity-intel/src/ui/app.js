@@ -33,8 +33,9 @@ import { allSectors, sectorByKey, addCustomSector, getCustomSectors, removeCusto
 import {
   generateTaxonomy, getForest, mergeForest, clearForest, removePath,
   childrenAt, isLeaf, leavesUnder, leadsUnder, pathQuery, countUnder,
-  classifyLeads, pathNodes, allTags, leadMatchesFacet,
+  classifyLeads, pathNodes, allTags, leadMatchesFacet, radarSuggest,
 } from "../taxonomy.js";
+import { fetchContacts } from "../contacts.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
@@ -1869,12 +1870,58 @@ function captureMap() {
     render();
   }
 
+  // Radar de momentos: pide nichos nuevos a explorar (Gemini) y los muestra.
+  async function runRadar() {
+    if (ui.busy) return;
+    ui.busy = true; ui.status = "📡 Buscando nichos del momento…"; patchCaptureMap();
+    const interests = (getInterests(10) || []).map((i) => i.q).filter(Boolean);
+    let sug = [];
+    try { sug = await radarSuggest(getForest(), interests, [], auth.getToken()); } catch { sug = []; }
+    ui.busy = false;
+    ui.radar = sug;
+    ui.status = sug.length
+      ? `📡 ${sug.length} nichos propuestos — añade al mapa los que te interesen.`
+      : "El radar no propuso nada ahora. Reinténtalo en un momento.";
+    patchCaptureMap();
+  }
+
   function leadRow(l) {
     const tagVals = l.tags && typeof l.tags === "object" ? Object.values(l.tags).filter(Boolean) : [];
-    return el("button", { class: "cat-lead", title: "Abrir en el ranking", onClick: () => { state.filters.search = l.company; goView("cards"); } }, [
-      el("span", { class: "cat-lead-name", text: l.company }),
-      ...tagVals.slice(0, 3).map((v) => el("span", { class: "cat-tag", text: v })),
+    const stop = (e) => e.stopPropagation();
+    const contacts = [];
+    if (l.email) contacts.push(el("a", { class: "cat-contact", href: `mailto:${l.email}`, title: l.email, text: "✉", onClick: stop }));
+    if (l.phone) contacts.push(el("a", { class: "cat-contact", href: `tel:${l.phone}`, title: l.phone, text: "☎", onClick: stop }));
+    if (l.instagram) contacts.push(el("a", { class: "cat-contact", href: l.instagram, target: "_blank", rel: "noopener", title: "Instagram", text: "IG", onClick: stop }));
+    if (l.linkedin) contacts.push(el("a", { class: "cat-contact", href: l.linkedin, target: "_blank", rel: "noopener", title: "LinkedIn", text: "in", onClick: stop }));
+    const findBtn = el("button", { class: "cat-contact-btn", title: "Buscar contactos en su web", text: "📇" });
+    findBtn.addEventListener("click", async (e) => {
+      e.stopPropagation();
+      if (!l.website) { ui.status = `«${l.company}» no tiene web guardada para rascar contactos.`; patchCaptureMap(); return; }
+      findBtn.textContent = "…"; findBtn.disabled = true;
+      let c = null;
+      try { c = await fetchContacts(l.website, auth.getToken()); } catch { c = null; }
+      if (c) {
+        if (!l.email && c.email) l.email = c.email;
+        if (!l.phone && c.phone) l.phone = c.phone;
+        if (!l.instagram && c.instagram) l.instagram = c.instagram;
+        if (!l.linkedin && c.linkedin) l.linkedin = c.linkedin;
+        store.saveUserLead(l);
+        ui.status = (c.email || c.phone || c.instagram || c.linkedin)
+          ? `✓ Contactos de «${l.company}» añadidos desde su web.`
+          : `Sin contactos visibles en la web de «${l.company}».`;
+      } else {
+        ui.status = `No pude leer la web de «${l.company}» (bloqueada o sin contactos).`;
+      }
+      patchCaptureMap();
+    });
+    const name = el("span", { class: "cat-lead-name", title: "Abrir en el ranking", text: l.company,
+      onClick: () => { state.filters.search = l.company; goView("cards"); } });
+    return el("div", { class: "cat-lead" }, [
+      name,
+      ...tagVals.slice(0, 2).map((v) => el("span", { class: "cat-tag", text: v })),
+      ...contacts,
       el("span", { class: "cat-lead-city", text: l.city || "" }),
+      findBtn,
     ]);
   }
   function leadList(path, depth) {
@@ -1929,13 +1976,33 @@ function captureMap() {
   // Auto-organizar: mete en el árbol los leads que han ido apareciendo.
   const leadsAll = store.getUserLeads();
   const unfiled = leadsAll.filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length).length;
+  const actions = [
+    el("button", { class: "btn cmap-radar", text: ui.busy ? "…" : "📡 Radar de momentos", title: "Sugiere nichos nuevos a explorar según el momento", onClick: runRadar }),
+  ];
   if (leadsAll.length) {
-    blocks.push(el("div", { class: "cmap-actions" }, [
-      el("button", { class: "btn cmap-organize", text: ui.busy ? "…" : `🧠 Auto-organizar leads${unfiled ? ` (${unfiled} sin archivar)` : ""}`, onClick: organizeLeads }),
-      el("span", { class: "hint", text: "Gemini los reparte en carpetas y los etiqueta solo." }),
-    ]));
+    actions.push(el("button", { class: "btn cmap-organize", text: ui.busy ? "…" : `🧠 Auto-organizar leads${unfiled ? ` (${unfiled} sin archivar)` : ""}`, onClick: organizeLeads }));
   }
+  blocks.push(el("div", { class: "cmap-actions" }, actions));
   if (ui.status) blocks.push(el("p", { class: "cmap-status", text: ui.status }));
+
+  // Radar: nichos propuestos a explorar (añadir al mapa o descartar).
+  if (ui.radar && ui.radar.length) {
+    const cards = [el("div", { class: "radar-head" }, [
+      el("span", { class: "radar-title", text: "📡 Nichos a explorar" }),
+      el("button", { class: "facet-clear", text: "✕ ocultar", onClick: () => { ui.radar = null; patchCaptureMap(); } }),
+    ])];
+    ui.radar.forEach((s, idx) => {
+      cards.push(el("div", { class: "radar-card" }, [
+        el("div", { class: "radar-path", text: s.path.join(" / ") }),
+        s.why ? el("div", { class: "radar-why", text: s.why }) : null,
+        el("div", { class: "radar-acts" }, [
+          el("button", { class: "btn radar-add", text: "➕ añadir al mapa", onClick: () => { mergeForest(pathNodes(s.path)); ui.expanded.add(pk([s.path[0]])); ui.radar.splice(idx, 1); ui.status = `✓ «${s.path.join(" / ")}» añadido al mapa.`; patchCaptureMap(); } }),
+          el("button", { class: "facet-clear", text: "descartar", onClick: () => { ui.radar.splice(idx, 1); patchCaptureMap(); } }),
+        ]),
+      ]));
+    });
+    blocks.push(el("div", { class: "radar-box" }, cards));
+  }
 
   // Filtro por etiquetas (entorno · clase · estética), cruzable como en Apollo.
   const tagGroups = allTags(leadsAll);
