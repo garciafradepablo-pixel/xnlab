@@ -249,6 +249,19 @@ output { font-size: 12px; color: var(--accent); }
 .tc-script { background: transparent; color: var(--ink); border: 1px solid var(--accent); text-align: center; white-space: nowrap; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
 .tc-script:hover { background: rgba(212,175,90,.1); }
 
+/* ---- Seguimientos de hoy (Fase 6) ---- */
+.fu-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fu { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: pointer;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 11px; padding: 11px 14px; }
+.fu:hover { border-color: var(--accent); }
+.fu-main { min-width: 0; }
+.fu-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fu-name { font-weight: 600; font-size: 14px; }
+.fu-chan { font-size: 11px; font-weight: 700; color: var(--o1); background: rgba(74,158,255,.1); border-radius: 5px; padding: 1px 7px; }
+.fu-step { font-size: 11px; color: var(--ink-dim); font-family: var(--mono); }
+.fu-action { font-size: 12px; color: var(--ink-dim); margin-top: 3px; }
+.fu-due { font-size: 12px; color: var(--accent); white-space: nowrap; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
+
 /* ---- Guion + dossier (modal, Fase 10) ---- */
 .pb-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6); backdrop-filter: blur(3px);
   display: flex; align-items: flex-start; justify-content: center; padding: 4vh 16px; overflow-y: auto; }

@@ -35,6 +35,7 @@ import * as auth from "../auth.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
+import { dueFollowups, dueLabel } from "../followups.js";
 
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
@@ -232,7 +233,7 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v14 · cuentas" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v15 · seguimientos" }),
     ]),
   ]);
 }
@@ -541,7 +542,29 @@ function todayView() {
     blocks.push(el("ol", { class: "today-calls" }, calls.map((o, i) => todayCall(o, i, tracking[o.id] || {}))));
   }
 
+  // Seguimientos que tocan hoy: hilos abiertos con un toque vencido.
+  const due = dueFollowups(opps, tracking);
+  if (due.length) {
+    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos para hoy · ${due.length}` }));
+    blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
+  }
+
   return el("div", { class: "today" }, blocks);
+}
+
+function followupRow(opp, fu) {
+  const open = () => { state.filters.search = opp.company; goView("cards"); };
+  return el("li", { class: "fu", onClick: open, title: fu.script }, [
+    el("div", { class: "fu-main" }, [
+      el("div", { class: "fu-line" }, [
+        el("span", { class: "fu-name", text: opp.company }),
+        el("span", { class: "fu-chan", text: fu.channel }),
+        el("span", { class: "fu-step", text: `toque ${fu.step}/${fu.total}` }),
+      ]),
+      el("div", { class: "fu-action", text: fu.action }),
+    ]),
+    el("span", { class: "fu-due", text: dueLabel(fu.dueAt) }),
+  ]);
 }
 
 function pulseKpi(value, label, accent) {
