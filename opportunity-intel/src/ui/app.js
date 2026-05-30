@@ -293,7 +293,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v18 · ficha a pantalla completa" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v19 · aprendizaje automático" }),
     ]),
   ]);
 }
@@ -1546,8 +1546,8 @@ function learningView() {
 
   const cal = state.calibration || store.getCalibration();
 
-  blocks.push(el("h2", { text: "Aprendizaje" }));
-  blocks.push(el("p", { class: "hint", text: "Los resultados que registras en cada ficha alimentan esta vista Y recalibran la puntuación — con topes para que una primera semana ruidosa no distorsione el modelo. Comparte el archivo para que cuenten las llamadas de todos." }));
+  blocks.push(el("h2", { text: "Memoria — el sistema aprende solo" }));
+  blocks.push(el("p", { class: "hint", html: "No registras nada a mano. <b>Cada vez que marcas el resultado de una llamada con un toque en la ficha</b> (Interesado · Reunión · Rechazado · Mal encaje), el sistema guarda la foto de señales de ese lead y <b>recalibra la puntuación solo</b> — con topes para que una primera semana ruidosa no distorsione el modelo. Lo único que el sistema no puede adivinar es qué te dijo el cliente: ese único toque lo enciende todo." }));
 
   // Controles para compartir — hacen portable el registro de llamadas.
   blocks.push(el("div", { class: "share-bar" }, [
@@ -1606,7 +1606,7 @@ function learningView() {
       )),
     ]));
   } else {
-    blocks.push(el("p", { class: "empty", text: "Aún no hay resultados registrados. Registra el resultado de una llamada desde cualquier ficha." }));
+    blocks.push(el("p", { class: "empty", text: "El sistema aún no ha aprendido nada porque todavía no se ha marcado ninguna llamada. Llama desde una ficha y toca el resultado (Interesado/Reunión/Rechazado): a partir de la 3ª, la puntuación se calibra sola." }));
   }
 
   return el("div", {}, blocks);

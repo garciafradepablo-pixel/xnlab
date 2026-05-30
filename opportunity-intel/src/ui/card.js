@@ -397,7 +397,12 @@ export function renderCard(opp, record, handlers = {}) {
       dm.linkedin
         ? el("a", { class: "ct-dm", href: linkedinUrl(dm.linkedin), target: "_blank", rel: "noopener", title: "LinkedIn del decisor", html: `<b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}` })
         : el("span", { class: "ct", html: `<b>${esc(dm.name || "—")}</b>${dm.role ? ` · ${esc(dm.role)}` : ""}` }),
-      opp.phone ? el("a", { class: "ct-link ct-call", href: `tel:${esc(opp.phone.replace(/\s/g, ""))}`, title: "Llamar", text: `☎ ${opp.phone}` }) : null,
+      opp.phone ? el("a", {
+        class: "ct-link ct-call", href: `tel:${esc(opp.phone.replace(/\s/g, ""))}`, title: "Llamar (marca el toque automáticamente)", text: `☎ ${opp.phone}`,
+        // Captura automática del toque: al llamar, si el lead está sin tocar, se
+        // marca "llamado" solo. El usuario no registra nada a mano.
+        onClick: (handlers.onStatus && status === "not_called") ? () => handlers.onStatus(opp.id, "called") : undefined,
+      }) : null,
       opp.email ? el("a", { class: "ct-link", href: `mailto:${esc(opp.email)}`, title: opp.email, text: "✉ email" }) : null,
       opp.website ? ctLink("🌐 web", webUrl(opp.website), opp.website) : null,
       ctLink("📍 Maps", mapsUrl(opp), "Buscar en Google Maps"),
@@ -496,7 +501,8 @@ export function renderCard(opp, record, handlers = {}) {
     readOnly ? null : verificationBlock(opp, handlers),
     sec("Notas", notes),
     readOnly ? null : el("div", { class: "ops-detail" }, [
-      el("button", { class: "btn-learn", text: "+ Registrar resultado de llamada", onClick: () => learnBox.classList.toggle("open") }),
+      el("p", { class: "learn-auto", html: "<b>El sistema aprende solo.</b> Marca el resultado con un toque arriba (Interesado · Reunión · Rechazado) y recalibra la puntuación automáticamente — sin formularios." }),
+      el("button", { class: "btn-learn", text: "Añadir detalle de la llamada (opcional)", onClick: () => learnBox.classList.toggle("open") }),
       learnBox,
     ]),
     el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · datos demo" : opp.researched ? " · investigado" : ""}` }),

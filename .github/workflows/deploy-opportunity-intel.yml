@@ -21,9 +21,11 @@ permissions:
   pages: write
   id-token: write
 
-# Un solo despliegue a la vez; el último gana.
+# Un solo despliegue a la vez POR RAMA: así un push a una rama de trabajo nunca
+# cancela el deploy de main a media publicación (era la causa de que main se
+# quedara sin desplegar). Cada ref tiene su propio grupo.
 concurrency:
-  group: pages
+  group: pages-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
