@@ -112,6 +112,22 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .cmd-empty { padding: 14px 12px; color: var(--ink-dim); font-size: 13px; }
 .cmd-hint { padding: 8px 16px; border-top: 1px solid var(--line); color: var(--ink-dim); font-size: 11px; }
 
+/* ---- Captador automático ---- */
+.capt-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+.capt-input { flex: 1; max-width: none; margin-bottom: 0; }
+.capt-go { width: auto; flex: 0 0 auto; padding: 9px 22px; }
+.capt-sector { min-height: 0; margin-bottom: 8px; }
+.chip-sector { display: inline-block; font-size: 12px; color: var(--ink-dim); border: 1px solid var(--line);
+  border-radius: 999px; padding: 4px 12px; }
+.chip-sector.is-new { color: var(--accent); border-color: rgba(201,162,39,.5); background: rgba(201,162,39,.08); font-weight: 600; }
+.capt-status { margin: 6px 0 12px; }
+.capt-done p { margin: 0 0 10px; font-size: 14px; }
+.capt-done b { color: var(--accent); }
+.capt-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.capt-actions .btn-primary { width: auto; padding: 9px 18px; }
+.dc-added { color: var(--green); font-size: 12px; font-weight: 600; flex: 0 0 auto; }
+@media (max-width: 600px) { .capt-bar { flex-direction: column; } .capt-go { width: 100%; } }
+
 /* ---- Layout: shell fijo + un único contenedor de scroll ---- */
 /* La app ocupa el alto de la ventana (con soporte de dvh para móviles donde la
    barra del navegador cambia de tamaño). Cabecera y tabs quedan fijas; SOLO

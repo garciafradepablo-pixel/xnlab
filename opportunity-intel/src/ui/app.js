@@ -38,6 +38,8 @@ import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
 import { fetchWebFreshness } from "../enrichweb.js";
+import { inferSector } from "../sectorinfer.js";
+import { recordSearch, getInterests } from "../interests.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -296,7 +298,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v22 · 3 zonas + ⌘K" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v23 · captador con sectores automáticos" }),
     ]),
   ]);
 }
@@ -1440,9 +1442,22 @@ const SEARCH_IDEAS = {
   ],
 };
 
+// Detecta el sector de una búsqueda; si es un nicho inédito, lo CREA al vuelo
+// (con la consulta como búsqueda y lente neutra que el uso afina). Así el
+// captador incorpora sectores nuevos solo, sin que el usuario los configure.
+function ensureSector(query) {
+  const inf = inferSector(query, allSectors());
+  if (!inf || inf.empty) return null;
+  if (inf.key) return { key: inf.key, label: sectorByKey(inf.key)?.label || inf.label, isNew: false };
+  const r = addCustomSector(inf.label, [query], null);
+  if (r.ok) return { key: r.key, label: inf.label, isNew: true };
+  const found = allSectors().find((s) => s.label.toLowerCase() === inf.label.toLowerCase());
+  return found ? { key: found.key, label: found.label, isNew: false } : { key: "growth", label: "Crecimiento", isNew: false };
+}
+
 function searchView() {
   const userLeads = store.getUserLeads();
-  const blocks = [el("h2", { text: "Descubrir leads" })];
+  const blocks = [el("h2", { text: "Captar clientes" })];
 
   // RBAC: descubrir y añadir leads exige permiso de escritura/descubrimiento.
   // Un viewer/analyst ve un aviso de solo lectura en vez de los controles.
@@ -1451,91 +1466,93 @@ function searchView() {
     return el("section", { class: "search-view" }, blocks);
   }
 
-  blocks.push(el("p", { class: "hint", text: "Elige sector y/o escribe (ej. 'clínicas dentales Madrid') y pulsa Descubrir: aparecen empresas reales aquí mismo. Añádelas de un toque — entran al ranking y las enriqueces luego. Abajo puedes añadir cualquier otra a mano." }));
+  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>. Tú solo lees el resultado." }));
 
-  // --- DESCUBRIDOR INTERNO ---
-  const secSel = el("select", { class: "lead-f" }, [
-    el("option", { value: "all", text: "Todos los sectores" }),
-    ...allSectors().map((s) => el("option", { value: s.key, text: s.label })),
-  ]);
-  const qInput = el("input", { type: "search", class: "lead-f", placeholder: "Qué y dónde (ej. clínicas dentales Madrid)" });
+  // --- CAPTADOR AUTOMÁTICO ---
+  const qInput = el("input", { type: "search", class: "search-city capt-input", placeholder: "¿A quién quieres captar?", autocomplete: "off" });
+  const sectorChip = el("div", { class: "capt-sector" });
+  const statusBox = el("div", { class: "capt-status" });
   const resultsBox = el("div", { class: "discover-results" });
 
-  const runDiscover = async () => {
-    clear(resultsBox);
-    const status = el("p", { class: "hint", text: "🗺️ Buscando en el mapa…" });
-    resultsBox.appendChild(status);
-    let found = [];
-    try {
-      found = await discover({ sector: secSel.value, query: qInput.value, token: auth.getToken() });
-    } catch (e) {
-      // Si el backend falla, al menos mostramos el directorio interno.
-      found = []; status.textContent = "El mapa no respondió; mostrando directorio interno.";
+  async function captar() {
+    const q = qInput.value.trim();
+    clear(sectorChip); clear(statusBox); clear(resultsBox);
+    if (!q) { statusBox.appendChild(el("p", { class: "hint", text: "Escribe a quién quieres captar." })); return; }
+
+    // 1) Sector: lo detecta o lo crea al vuelo.
+    const inf = ensureSector(q);
+    const sectorKey = inf ? inf.key : "all";
+    if (inf) {
+      recordSearch(q, inf.key, inf.label);
+      sectorChip.appendChild(el("span", {
+        class: `chip-sector ${inf.isNew ? "is-new" : ""}`,
+        text: inf.isNew ? `✦ Sector nuevo creado: ${inf.label}` : `Sector detectado: ${sectorByKey(inf.key)?.label || inf.label}`,
+      }));
     }
+
+    // 2) Descubrir empresas reales.
+    captBtn.disabled = true; captBtn.textContent = "Captando…";
+    statusBox.appendChild(el("p", { class: "hint", text: "🗺️ Buscando empresas reales en el mapa…" }));
+    let found = [];
+    try { found = await discover({ sector: sectorKey, query: q, token: auth.getToken() }); } catch { found = []; }
+
+    // 3) Auto-incorporar las nuevas y puntuarlas (entran al ranking solas).
     const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
-    clear(resultsBox);
+    let added = 0;
+    for (const c of found) {
+      const k = `${c.company || ""}`.toLowerCase();
+      if (!k || existing.has(k)) continue;
+      store.saveUserLead(buildLead({
+        company: c.company, sector: sectorKey === "all" ? (c.sector || "growth") : sectorKey,
+        subsector: c.subsector || "", city: c.city || "", website: c.website || null,
+        phone: c.phone || null, googleMaps: c.googleMaps || null,
+      }));
+      existing.add(k); added++;
+    }
+    await recompute();
+    captBtn.disabled = false; captBtn.textContent = "Captar";
+
+    // 4) Resumen + acceso directo al ranking.
+    clear(statusBox);
     if (!found.length) {
-      resultsBox.appendChild(el("p", { class: "empty", html: "Sin resultados para eso. Prueba algo más genérico (ej. <b>clínicas dentales</b>) o revisa que el descubrimiento del mapa esté activo. También puedes añadir la empresa a mano abajo." }));
+      statusBox.appendChild(el("p", { class: "empty", html: "El mapa no devolvió empresas para eso. Prueba algo más concreto (ej. <b>clínicas dentales Valencia</b>) o añade una a mano abajo." }));
       return;
     }
-    const nMap = found.filter((c) => c.source === "places").length;
-    resultsBox.appendChild(el("p", { class: "count", text: `${found.length} candidatos${nMap ? ` · ${nMap} del mapa 🗺️` : " (directorio)"}` }));
-    resultsBox.appendChild(el("div", { class: "discover-list" }, found.map((c) => {
-      const already = existing.has(c.company.toLowerCase());
-      const addBtn = el("button", {
-        class: "btn-add-cand",
-        text: already ? "✓ Añadido" : "+ Añadir",
-        disabled: already,
-      });
-      addBtn.addEventListener("click", async () => {
-        const lead = buildLead({
-          company: c.company, sector: c.sector || secSel.value === "all" ? c.sector : secSel.value,
-          subsector: c.subsector, city: c.city, website: c.website || null,
-          phone: c.phone || null, googleMaps: c.googleMaps || null,
-        });
-        store.saveUserLead(lead);
-        addBtn.textContent = "✓ Añadido"; addBtn.disabled = true;
-        await recompute();
-      });
-      const meta = [];
-      if (c.source === "places") meta.push(el("span", { class: "dc-src dc-src-places", text: "🗺️ mapa" }));
-      else meta.push(el("span", { class: "dc-src", text: "directorio" }));
-      if (c.rating) meta.push(el("span", { class: "dc-rating", text: `★ ${c.rating}${c.reviews ? ` (${c.reviews})` : ""}` }));
-      return el("div", { class: "discover-card" }, [
+    statusBox.appendChild(el("div", { class: "capt-done" }, [
+      el("p", { html: `Capté <b>${found.length}</b> empresas${added !== found.length ? ` · <b>${added}</b> nuevas` : ""} — ya están <b>puntuadas en el ranking</b>.` }),
+      el("div", { class: "capt-actions" }, [
+        el("button", { class: "btn-primary", text: "Ver en el ranking →", onClick: () => goView("table") }),
+        el("button", { class: "btn", text: "Ver oportunidades", onClick: () => goView("cards") }),
+      ]),
+    ]));
+    resultsBox.appendChild(el("div", { class: "discover-list" }, found.map((c) =>
+      el("div", { class: "discover-card" }, [
         el("div", { class: "dc-main" }, [
           el("div", { class: "dc-name", text: c.company }),
           el("div", { class: "dc-sub", text: `${c.subsector ? c.subsector + " · " : ""}${c.city || "—"}` }),
-          el("div", { class: "dc-meta" }, [
-            ...meta,
-            c.website ? el("a", { class: "ct-link", href: c.website, target: "_blank", rel: "noopener", text: "🌐 web" }) : null,
-            c.phone ? el("a", { class: "ct-link", href: `tel:${c.phone.replace(/\s/g, "")}`, text: "☎" }) : null,
-          ]),
         ]),
-        addBtn,
-      ]);
-    })));
-  };
+        el("span", { class: "dc-added", text: "✓ en ranking" }),
+      ])
+    )));
+  }
 
-  const discoverBtn = el("button", { class: "btn-primary", text: "Descubrir", onClick: runDiscover });
-  qInput.addEventListener("keydown", (e) => { if (e.key === "Enter") runDiscover(); });
+  const captBtn = el("button", { class: "btn-primary capt-go", text: "Captar", onClick: captar });
+  qInput.addEventListener("keydown", (e) => { if (e.key === "Enter") captar(); });
+  blocks.push(el("div", { class: "capt-bar" }, [qInput, captBtn]));
+  blocks.push(sectorChip);
 
-  blocks.push(el("div", { class: "discover-bar" }, [secSel, qInput, discoverBtn]));
-
-  // Ideas rápidas: rellenan el buscador y lanzan la búsqueda.
-  const ideaChips = [
-    ["health", "clínicas dentales Madrid"],
-    ["hospitality", "restaurante premium"],
-    ["realestate", "inmobiliaria lujo"],
-    ["growth", "marca DTC"],
-  ];
+  // Tus intereses: lo que más buscas, a un clic. Si aún no hay historial, ideas.
+  const interests = getInterests(8);
+  const chips = interests.length
+    ? interests.map((it) => [it.q, it.q])
+    : [["clínicas dentales Madrid"], ["restaurante premium Marbella"], ["promotora branded residences"], ["estudios de tatuaje Barcelona"]].map(([q]) => [q, q]);
   blocks.push(el("div", { class: "idea-chips" }, [
-    el("span", { class: "idea-lbl", text: "Ideas:" }),
-    ...ideaChips.map(([sec, q]) => el("button", { class: "idea-chip", text: q, onClick: () => { secSel.value = sec; qInput.value = q; runDiscover(); } })),
+    el("span", { class: "idea-lbl", text: interests.length ? "Tus intereses:" : "Ideas:" }),
+    ...chips.map(([label, q]) => el("button", { class: "idea-chip", text: label, onClick: () => { qInput.value = q; captar(); } })),
   ]));
 
+  blocks.push(statusBox);
   blocks.push(resultsBox);
-  // Muestra candidatos de entrada al abrir la pestaña.
-  setTimeout(runDiscover, 0);
 
   // Sectores personalizados (Fase 8): crear nichos nuevos sin tocar código.
   blocks.push(sectorManager());
