@@ -10,6 +10,6 @@
     "snapshot": "node bin/snapshot.mjs",
     "bundle": "node bin/bundle.mjs",
     "launcher": "node bin/bundle.mjs --launcher --remote https://garciafradepablo-pixel.github.io/xnlab/app.html",
-    "test": "node test/scoring.test.mjs && node test/enrichment.test.mjs && node test/calibration.test.mjs && node test/services.test.mjs && node test/verification.test.mjs && node test/freshness.test.mjs && node test/discovery.test.mjs && node test/agent.test.mjs && node test/lenses.test.mjs"
+    "test": "node test/scoring.test.mjs && node test/enrichment.test.mjs && node test/calibration.test.mjs && node test/services.test.mjs && node test/verification.test.mjs && node test/freshness.test.mjs && node test/discovery.test.mjs && node test/agent.test.mjs && node test/lenses.test.mjs && node test/customsectors.test.mjs"
   }
 }

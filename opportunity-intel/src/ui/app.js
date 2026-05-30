@@ -28,6 +28,7 @@ import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { buildLead } from "../newlead.js";
+import { allSectors, sectorByKey, addCustomSector, getCustomSectors, removeCustomSector } from "../customsectors.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
@@ -222,7 +223,7 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v10 · usuarios" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v11 · sectores" }),
     ]),
   ]);
 }
@@ -270,7 +271,7 @@ function configPanel() {
   const c = state.config;
   const field = (label, control) => el("div", { class: "field" }, [el("label", { text: label }), control]);
 
-  const sectorChecks = el("div", { class: "checks" }, SECTORS.map((sct) =>
+  const sectorChecks = el("div", { class: "checks" }, allSectors().map((sct) =>
     el("label", { class: "check" }, [
       el("input", {
         type: "checkbox",
@@ -394,7 +395,7 @@ function pipelineView() {
   const bySector = sectorCoverage();
   const coverage = el("div", { class: "sector-cov" }, [
     el("h3", { text: "Cobertura por sector" }),
-    el("div", { class: "sec-bars" }, SECTORS.map((sc) => {
+    el("div", { class: "sec-bars" }, allSectors().map((sc) => {
       const c = bySector[sc.key] || { n: 0, avg: 0 };
       const pct = counts.final ? Math.round((c.n / counts.final) * 100) : 0;
       return el("div", { class: "sec-bar-row", title: `${c.n} en el Top · puntuación media ${c.avg}` }, [
@@ -462,7 +463,7 @@ function filterBar() {
 
   return el("div", { class: "filters" }, [
     el("input", { type: "search", placeholder: "Buscar empresa / ciudad / decisor…", value: f.search, onInput: (e) => { f.search = e.target.value; rerenderResults(); } }),
-    sel("sector", [opt("all", "Todos los sectores", f.sector === "all"), ...SECTORS.map((s) => opt(s.key, s.label, f.sector === s.key))]),
+    sel("sector", [opt("all", "Todos los sectores", f.sector === "all"), ...allSectors().map((s) => opt(s.key, s.label, f.sector === s.key))]),
     sel("city", [opt("all", "Todas las ciudades", f.city === "all"), ...cities.map((c) => opt(c, c, f.city === c))]),
     sel("classification", [opt("all", "Solo oportunidades (01 + XN)", f.classification === "all"), ...Object.entries(CLASSIFICATIONS).map(([k, v]) => opt(k, v, f.classification === k))]),
     sel("priority", [opt("all", "Cualquier prioridad", f.priority === "all"), opt("high", "Prioridad alta", f.priority === "high"), opt("medium", "Media", f.priority === "medium"), opt("low", "Baja", f.priority === "low")]),
@@ -509,23 +510,23 @@ function buildTable() {
       const s = o.scores;
       const t = tracking[o.id] || {};
       return el("tr", { class: `row-${s.classification}`, onClick: () => { state.filters.search = o.company; goView("cards"); } }, [
-        el("td", { text: `#${o.ranking}` }),
-        el("td", { class: "td-company", text: o.company }),
-        el("td", { text: SECTOR_BY_KEY[o.sector]?.label || o.sector }),
-        el("td", { text: o.city }),
-        el("td", {}, el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : s.classification === "01" ? "01" : s.classification === "unqualified" ? "?" : "—" })),
-        el("td", { class: "num strong", text: String(s.confidence) }),
-        el("td", { class: "num", text: String(s.evidence) }),
-        el("td", { class: "num", text: String(s.conversation) }),
-        el("td", { class: "num", text: String(s.meeting) }),
-        el("td", { class: "num", text: String(s.closing) }),
-        el("td", { text: ECONOMIC_LABELS[s.economicPotential] || s.economicPotential }),
-        el("td", { class: "td-reco", text: RECOMMENDATIONS[s.recommendation] }),
-        el("td", { text: STATUS_LABELS[t.status || "not_called"] }),
+        el("td", { class: "td-rank", "data-k": "#", text: `#${o.ranking}` }),
+        el("td", { class: "td-company", "data-k": "Empresa", text: o.company }),
+        el("td", { "data-k": "Sector", text: sectorByKey(o.sector)?.label || o.sector }),
+        el("td", { "data-k": "Ciudad", text: o.city }),
+        el("td", { "data-k": "Clase" }, el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : s.classification === "01" ? "01" : s.classification === "unqualified" ? "?" : "—" })),
+        el("td", { class: "num strong", "data-k": "Conf", text: String(s.confidence) }),
+        el("td", { class: "num", "data-k": "Evid", text: String(s.evidence) }),
+        el("td", { class: "num", "data-k": "Conv", text: String(s.conversation) }),
+        el("td", { class: "num", "data-k": "Reun", text: String(s.meeting) }),
+        el("td", { class: "num", "data-k": "Cierre", text: String(s.closing) }),
+        el("td", { "data-k": "Econ", text: ECONOMIC_LABELS[s.economicPotential] || s.economicPotential }),
+        el("td", { class: "td-reco", "data-k": "Recom", text: RECOMMENDATIONS[s.recommendation] }),
+        el("td", { "data-k": "Estado", text: STATUS_LABELS[t.status || "not_called"] }),
       ]);
     })),
   ]);
-  return el("div", {}, [el("p", { class: "count", text: `${rows.length} candidatos` }), table]);
+  return el("div", { class: "rank-wrap" }, [el("p", { class: "count", text: `${rows.length} candidatos` }), el("div", { class: "rank-scroll" }, [table])]);
 }
 
 // ---- Opportunity cards ------------------------------------------------------
@@ -845,7 +846,7 @@ function searchView() {
   // --- DESCUBRIDOR INTERNO ---
   const secSel = el("select", { class: "lead-f" }, [
     el("option", { value: "all", text: "Todos los sectores" }),
-    ...SECTORS.map((s) => el("option", { value: s.key, text: s.label })),
+    ...allSectors().map((s) => el("option", { value: s.key, text: s.label })),
   ]);
   const qInput = el("input", { type: "search", class: "lead-f", placeholder: "Qué y dónde (ej. clínicas dentales Madrid)" });
   const resultsBox = el("div", { class: "discover-results" });
@@ -926,6 +927,9 @@ function searchView() {
   // Muestra candidatos de entrada al abrir la pestaña.
   setTimeout(runDiscover, 0);
 
+  // Sectores personalizados (Fase 8): crear nichos nuevos sin tocar código.
+  blocks.push(sectorManager());
+
   // Formulario de alta.
   blocks.push(el("h3", { text: "Añadir lead", class: "add-h" }));
   blocks.push(addLeadForm());
@@ -936,7 +940,7 @@ function searchView() {
       el("h4", { text: `Tus leads añadidos (${userLeads.length})` }),
       el("ul", { class: "user-leads" }, userLeads.map((l) =>
         el("li", {}, [
-          el("span", { text: `${l.company} · ${SECTOR_BY_KEY[l.sector]?.label || l.sector} · ${l.city || "—"}` }),
+          el("span", { text: `${l.company} · ${sectorByKey(l.sector)?.label || l.sector} · ${l.city || "—"}` }),
           el("button", { class: "ul-del", text: "✕", title: "Eliminar", onClick: () => { store.removeUserLead(l.id); recompute().then(render); } }),
         ])
       )),
@@ -946,10 +950,43 @@ function searchView() {
   return el("div", {}, blocks);
 }
 
+// Gestor de sectores personalizados: el usuario crea nichos (tatuaje, música…)
+// con sus consultas de búsqueda. La lente arranca neutra y se afina con el uso.
+function sectorManager() {
+  const custom = getCustomSectors();
+  const name = el("input", { class: "lead-f", placeholder: "Nuevo sector (ej. Tatuaje, Música, Fitness)" });
+  const queries = el("input", { class: "lead-f", placeholder: "Qué buscar, separado por comas (ej. estudio tatuaje, tattoo studio)" });
+  const msg = el("span", { class: "add-msg" });
+  const add = el("button", {
+    class: "btn", text: "+ Crear sector",
+    onClick: async () => {
+      const r = addCustomSector(name.value, queries.value);
+      if (!r.ok) { msg.textContent = r.error; return; }
+      name.value = ""; queries.value = "";
+      await recompute(); render();
+    },
+  });
+  const list = custom.length
+    ? el("div", { class: "user-leads" }, custom.map((s) =>
+        el("div", {}, [
+          el("span", { text: `${s.label} · busca: ${(s.queries || []).join(", ")}` }),
+          el("button", { class: "ul-del", text: "✕", title: "Eliminar sector", onClick: () => { removeCustomSector(s.key); recompute().then(render); } }),
+        ])
+      ))
+    : el("p", { class: "hint", text: "Aún no has creado sectores propios. Crea uno y el agente lo barrerá también." });
+  return el("details", { class: "sector-mgr" }, [
+    el("summary", { class: "sector-mgr-sum", text: `🧩 Sectores personalizados (${custom.length})` }),
+    el("p", { class: "hint", text: "Crea cualquier nicho. Sus consultas alimentan al agente; su lente se afina con tus resultados." }),
+    el("div", { class: "sector-add" }, [name, queries, add]),
+    msg,
+    list,
+  ]);
+}
+
 function addLeadForm() {
   const f = (name, ph) => el("input", { name, placeholder: ph, class: "lead-f" });
   const company = f("company", "Nombre de la empresa *");
-  const sector = el("select", { class: "lead-f" }, SECTORS.map((s) => el("option", { value: s.key, text: s.label })));
+  const sector = el("select", { class: "lead-f" }, allSectors().map((s) => el("option", { value: s.key, text: s.label })));
   const subsector = f("subsector", "Subsector (ej. clínica dental)");
   const city = f("city", "Ciudad");
   const website = f("website", "Web (https://…)");

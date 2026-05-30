@@ -21,16 +21,25 @@ import { discover } from "./discovery.js";
 import { buildLead } from "./newlead.js";
 import { scoreOpportunity } from "./scoring.js";
 import { SECTORS } from "./models.js";
+import { allSectors, queriesFor } from "./customsectors.js";
 
 // Rotación de "semillas" de búsqueda por sector. Cada tanda avanza por ellas
 // para no repetir siempre lo mismo y barrer ciudades distintas.
 const CITIES = ["Madrid", "Barcelona", "Valencia", "Sevilla", "Málaga", "Bilbao", "Zaragoza", "Marbella"];
-const SECTOR_QUERIES = {
+const BASE_QUERIES = {
   health: ["clínicas dentales", "clínicas estética", "fisioterapia deportiva", "clínica fertilidad"],
   hospitality: ["restaurantes premium", "hoteles boutique", "grupos gastronómicos"],
   realestate: ["inmobiliaria lujo", "promotora residencial", "estudio arquitectura"],
   growth: ["marca DTC", "agencia tecnológica", "startup"],
 };
+// Consultas por sector = base + las definidas en sectores custom (Fase 8).
+function queriesForSector(key) {
+  return queriesFor(key) || BASE_QUERIES[key] || [];
+}
+// Todos los sectores activos (base + custom).
+function activeSectorKeys() {
+  return allSectors().map((s) => s.key);
+}
 
 let seedCursor = 0; // avanza entre tandas
 
@@ -45,7 +54,7 @@ const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
  * @param {number} perBatch   nº de consultas por tanda
  */
 function buildQueries(userQuery, sectors, perBatch) {
-  const secs = sectors && sectors.length ? sectors : SECTORS.map((s) => s.key);
+  const secs = sectors && sectors.length ? sectors : activeSectorKeys();
   const q = (userQuery || "").trim();
 
   // Prompt libre: si ya menciona una ciudad la respetamos; si no, lo lanzamos
@@ -63,7 +72,7 @@ function buildQueries(userQuery, sectors, perBatch) {
   let guard = 0;
   while (out.length < perBatch && guard++ < perBatch * 8) {
     const sec = pick(secs);
-    const qs = SECTOR_QUERIES[sec] || [];
+    const qs = queriesForSector(sec);
     if (!qs.length) continue;
     const query = `${pick(qs)} ${pick(CITIES)}`;
     if (seen.has(query)) continue;

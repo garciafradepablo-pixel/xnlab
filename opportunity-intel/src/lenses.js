@@ -16,6 +16,7 @@
 // =============================================================================
 
 import { FILTER_KEYS } from "./models.js";
+import { customLensFor } from "./customsectors.js";
 
 const flat = () => Object.fromEntries(FILTER_KEYS.map((k) => [k, 1]));
 
@@ -80,12 +81,18 @@ const PRETTY = {
  * Devuelve los multiplicadores de la lente del sector (o todo 1.0 si no hay).
  */
 export function lensFor(sector) {
-  return SECTOR_LENSES[sector] || flat();
+  if (SECTOR_LENSES[sector]) return SECTOR_LENSES[sector];
+  // Sectores custom (creados desde la app) traen su propia lente.
+  const custom = customLensFor(sector);
+  return custom || flat();
 }
 
 /** Etiqueta legible de la lente aplicada (para mostrar en la ficha). */
 export function lensLabel(sector) {
-  return PRETTY[sector] || null;
+  if (PRETTY[sector]) return PRETTY[sector];
+  // Sector custom con lente propia → etiqueta genérica.
+  if (customLensFor(sector)) return `${sector}: lente personalizada`;
+  return null;
 }
 
 /**
