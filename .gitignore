@@ -46,3 +46,7 @@ next-env.d.ts
 # claude code — local-only settings (shared .claude/settings.json, if
 # ever added, stays tracked; the personal overrides do not)
 .claude/settings.local.json
+
+# relevo — datos sensibles, solo locales (perfiles reales + brutos sin destilar)
+/relevos/perfiles.local.md
+/relevos/_inbox/
