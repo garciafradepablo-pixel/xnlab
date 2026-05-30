@@ -12,6 +12,7 @@
 
 import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
 import { currentUser } from "./auth.js";
+import * as statesync from "./statesync.js";
 
 const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
@@ -20,6 +21,7 @@ const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
+const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
 const mem = new Map();
@@ -45,6 +47,125 @@ function write(key, value) {
     storage.setItem(key, JSON.stringify(value));
   } catch {
     /* quota / private mode — fail silent, demo is non-critical */
+  }
+}
+
+// =============================================================================
+// Estado compartido (Supabase) — la mesa de trabajo común de Pablo y Javi.
+//
+// localStorage sigue siendo la caché/offline; el servidor es la fuente durable.
+// El estado solo se sincroniza cuando se ARRANCA explícitamente (startSharedSync,
+// tras iniciar sesión). En tests/CLI no se arranca → cero red, comportamiento
+// idéntico al anterior. Capa remota inyectable para tests.
+// =============================================================================
+
+let remote = statesync;
+export function __setStateRemote(r) { remote = r; } // tests
+
+let syncEnabled = false;
+let pushTimer = null;
+let pushInFlight = false;
+let pushAgain = false;
+
+// Estado visible para la UI: "idle" | "syncing" | "synced" | "offline" | "local".
+let syncState = "idle";
+const syncListeners = new Set();
+export function getSyncState() { return syncState; }
+export function onSyncState(cb) { syncListeners.add(cb); return () => syncListeners.delete(cb); }
+function setSync(s) {
+  if (s === syncState) return;
+  syncState = s;
+  for (const cb of syncListeners) { try { cb(s); } catch { /* */ } }
+}
+
+function getRev() { return Number(read(REV_KEY, 0)) || 0; }
+function setRev(r) { write(REV_KEY, Number(r) || 0); }
+
+/** Documento compartido = exactamente lo que serializa exportState(). */
+function snapshot() { return JSON.parse(exportState()); }
+
+/**
+ * Arranca la sincronización compartida: trae el documento del servidor, lo
+ * fusiona con lo local (no destructivo) y sube de vuelta lo que solo existía en
+ * este navegador (migración desde localStorage). Idempotente y seguro.
+ * @returns {Promise<{ok:boolean, error?:string}>}
+ */
+export async function startSharedSync() {
+  syncEnabled = true;
+  return pullSharedState();
+}
+export function stopSharedSync() {
+  syncEnabled = false;
+  if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+}
+export function isSyncEnabled() { return syncEnabled; }
+
+/** Trae y fusiona el estado compartido en local. Luego sube lo local-only. */
+export async function pullSharedState() {
+  setSync("syncing");
+  try {
+    const r = await remote.remoteLoadState();
+    if (r && r.ok) {
+      if (r.data) {
+        importState(r.data, { replace: false }); // newest-per-entity wins
+        // Config compartida: adóptala solo si aquí no había una guardada (no pisa
+        // ajustes locales deliberados).
+        if (r.data.config && getSavedConfig(null) == null) saveConfig(r.data.config);
+      }
+      setRev(r.rev || 0);
+      // Migración: sube lo que solo estaba en este navegador. Si no hay nada
+      // nuevo el servidor simplemente reescribe lo mismo (barato y seguro).
+      await pushSharedState();
+      return { ok: true };
+    }
+    setSync("local");
+    return { ok: false, error: (r && r.error) || "sin respuesta" };
+  } catch {
+    setSync("offline");
+    return { ok: false, error: "offline" };
+  }
+}
+
+/**
+ * Sube el estado local al servidor con control optimista por `rev`. Si hay
+ * conflicto (otro escribió antes), re-fusiona lo del servidor y reintenta una
+ * vez. Nunca pisa ciegamente.
+ * @returns {Promise<{ok:boolean, conflict?:boolean, error?:string}>}
+ */
+export async function pushSharedState() {
+  setSync("syncing");
+  try {
+    let r = await remote.remoteSaveState(snapshot(), getRev(), getWho());
+    if (r && r.conflict) {
+      if (r.data) importState(r.data, { replace: false });
+      setRev(r.rev || 0);
+      r = await remote.remoteSaveState(snapshot(), getRev(), getWho());
+    }
+    if (r && r.ok) { setRev(r.rev || 0); setSync("synced"); return { ok: true }; }
+    setSync("local");
+    return { ok: false, conflict: !!(r && r.conflict), error: (r && r.error) || "no guardado" };
+  } catch {
+    setSync("offline");
+    return { ok: false, error: "offline" };
+  }
+}
+
+/** Programa una subida con rebote: agrupa ráfagas de cambios en una escritura. */
+function scheduleSync() {
+  if (!syncEnabled) return; // off en tests/CLI → cero red
+  if (pushInFlight) { pushAgain = true; return; }
+  if (pushTimer) clearTimeout(pushTimer);
+  pushTimer = setTimeout(runScheduledPush, 800);
+  // No mantener vivo el event loop por un timer pendiente (Node).
+  if (pushTimer && typeof pushTimer.unref === "function") pushTimer.unref();
+}
+async function runScheduledPush() {
+  pushTimer = null;
+  pushInFlight = true;
+  try { await pushSharedState(); }
+  finally {
+    pushInFlight = false;
+    if (pushAgain) { pushAgain = false; scheduleSync(); }
   }
 }
 
@@ -84,6 +205,7 @@ export function setStatus(id, status) {
   const all = getTracking();
   all[id] = { ...getRecord(id), status, updatedAt: new Date().toISOString(), by: getWho() || null };
   write(TRACK_KEY, all);
+  scheduleSync();
   return all[id];
 }
 
@@ -91,6 +213,7 @@ export function setNotes(id, notes) {
   const all = getTracking();
   all[id] = { ...getRecord(id), notes, updatedAt: new Date().toISOString(), by: getWho() || null };
   write(TRACK_KEY, all);
+  scheduleSync();
   return all[id];
 }
 
@@ -117,6 +240,7 @@ export function addOutcome(outcome) {
   const log = getLearning();
   log.push({ ...outcome, createdAt: new Date().toISOString() });
   write(LEARN_KEY, log);
+  scheduleSync();
   return log;
 }
 
@@ -149,6 +273,7 @@ export function recordStatusOutcome(id, status, meta = {}) {
     });
   }
   write(LEARN_KEY, log);
+  scheduleSync();
   return log;
 }
 
@@ -367,6 +492,7 @@ export function getSavedConfig(fallback) {
 }
 export function saveConfig(config) {
   write(CONFIG_KEY, config);
+  scheduleSync();
 }
 
 // ---- Verificaciones manuales (cierra huecos grises con evidencia citada) ----
@@ -408,6 +534,7 @@ export function addVerification(id, filter, level, note, url, meta = {}) {
   });
   all[id] = list;
   write(VERIFY_KEY, all);
+  scheduleSync();
   return list;
 }
 
@@ -417,6 +544,7 @@ export function removeVerification(id, filter) {
   all[id] = all[id].filter((v) => v.filter !== filter);
   if (!all[id].length) delete all[id];
   write(VERIFY_KEY, all);
+  scheduleSync();
 }
 
 /**
@@ -459,14 +587,19 @@ export function saveUserLead(lead) {
   const all = getUserLeads().filter((l) => l.id !== lead.id);
   all.push(lead);
   write(USER_LEADS_KEY, all);
+  scheduleSync();
   return all;
 }
 
 export function removeUserLead(id) {
   write(USER_LEADS_KEY, getUserLeads().filter((l) => l.id !== id));
+  scheduleSync();
 }
 
-/** Hard reset (used by the UI "reset demo" control). */
+/** Hard reset de la caché LOCAL (control "borrar" de la UI). No borra el estado
+ *  compartido del servidor: al recargar/iniciar sesión se vuelve a traer desde
+ *  Supabase. Es deliberado — evita que un borrado local destruya el trabajo
+ *  compartido del equipo. */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
 }

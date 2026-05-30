@@ -647,6 +647,12 @@ output { font-size: 12px; color: var(--accent); }
 .btn-danger:hover { background: rgba(240,71,71,.1); }
 .ver-tag { font-size: 11px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
 
+/* Indicador discreto de sincronización con el servidor compartido. */
+.sync-badge { font-size: 10px; letter-spacing: 0.3px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+.sync-badge.sync-synced { color: #3fb950; border-color: rgba(63, 185, 80, 0.4); }
+.sync-badge.sync-syncing { color: #c9a227; border-color: rgba(201, 162, 39, 0.4); }
+.sync-badge.sync-offline, .sync-badge.sync-local { color: #f0883e; border-color: rgba(240, 136, 62, 0.4); }
+
 /* ---- Cobertura por sector ---- */
 .sector-cov { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; }
 .sector-cov h3 { margin: 0 0 10px; font-size: 14px; }

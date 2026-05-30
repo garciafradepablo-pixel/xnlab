@@ -53,10 +53,40 @@ export async function mount(rootEl) {
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
   // su color fijo y firma su actividad.
   if (!auth.currentUser()) { renderAuth(); return; }
+  ensureSyncSubscription();
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
   render();
+
+  // Trae la mesa de trabajo compartida (CRM, notas, verificaciones, leads) desde
+  // Supabase y, cuando llega, recalcula y repinta. Best-effort: sin red seguimos
+  // trabajando en local (caché) y se subirá al recuperar conexión.
+  store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
+}
+
+// —— Indicador discreto de sincronización ————————————————————————————————————
+const SYNC_LABEL = {
+  syncing: "Guardando…",
+  synced: "Sincronizado",
+  offline: "Sin conexión · local",
+  local: "Solo local",
+  idle: "",
+};
+let syncSubscribed = false;
+function ensureSyncSubscription() {
+  if (syncSubscribed) return;
+  syncSubscribed = true;
+  store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
+}
+function updateSyncBadge(s) {
+  if (!root) return;
+  const node = root.querySelector(".sync-badge");
+  if (!node) return;
+  const label = SYNC_LABEL[s] || "";
+  node.textContent = label;
+  node.className = `sync-badge sync-${s}`;
+  node.style.display = label ? "" : "none";
 }
 
 // ---- Puerta de acceso (login / crear usuario) ------------------------------
@@ -233,9 +263,22 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v15 · seguimientos" }),
+      syncBadge(),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v16 · mesa compartida" }),
     ]),
   ]);
+}
+
+// Indicador discreto del estado de sincronización con el servidor compartido.
+function syncBadge() {
+  const s = store.getSyncState();
+  const label = SYNC_LABEL[s] || "";
+  return el("span", {
+    class: `sync-badge sync-${s}`,
+    text: label,
+    style: label ? "" : "display:none",
+    title: "Estado de sincronización con el servidor compartido",
+  });
 }
 
 // Chip del usuario en sesión: inicial sobre su color de firma + cerrar sesión.
@@ -1380,6 +1423,7 @@ function importPickerEl() {
         const res = store.importState(reader.result);
         if (!res.ok) { alert(`Error al importar: ${res.error}`); return; }
         alert(`Importados ${res.addedOutcomes} resultado(s), ${res.addedLeads || 0} lead(s) y fusionados ${res.mergedTracking} registro(s) de estado.`);
+        store.pushSharedState(); // propaga lo importado a la mesa compartida
         recompute().then(render);
       };
       reader.readAsText(file);
