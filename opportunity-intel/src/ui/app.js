@@ -318,7 +318,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v33 · deploy arreglado" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v35 · acabado premium" }),
     ]),
   ]);
 }
@@ -1322,10 +1322,12 @@ function cardHandlers(afterMutate) {
 // (de marca, dirección y valor). El soplo va en oro de acento.
 function whaleMark() {
   return el("span", { class: "whale", html:
-    '<svg viewBox="0 0 64 42" width="36" height="24" aria-hidden="true">' +
-    '<path class="whale-spout" d="M21 9 q-3 -7 0 -9 M21 9 q3 -6 6 -8 M21 9 q-1 -8 -4 -10" fill="none" stroke="#c9a227" stroke-width="1.7" stroke-linecap="round"/>' +
-    '<path d="M5 25 q11 -15 29 -13 q15 1 24 11 q-7 2 -13 1 q3 4 2 9 q-7 -2 -9 -7 q-13 5 -26 0 q-2 -1 -4 -2 z" fill="#4a9eff"/>' +
-    '<circle cx="15" cy="23" r="1.5" fill="#0e0f12"/></svg>' });
+    '<svg viewBox="0 0 64 40" width="34" height="21" aria-hidden="true">' +
+    '<defs><linearGradient id="whg" x1="0" y1="0" x2="1" y2="1">' +
+    '<stop offset="0" stop-color="#5aa9ff"/><stop offset="1" stop-color="#3a7fe0"/></linearGradient></defs>' +
+    '<path class="whale-spout" d="M25 10 q-2 -6 1 -9 M25 10 q3 -5 6 -8 M25 10 q-1 -8 -3 -10" fill="none" stroke="#c9a227" stroke-width="1.5" stroke-linecap="round"/>' +
+    '<path d="M5 27 C5 16 15 10 30 11 C39 11.5 44 15 47 19 L61 7 C56 15 55 17 53 20 C56 23 58 26 61 30 L46 23 C40 28 27 30 16 28 C9 27 6 27.4 5 27 Z" fill="url(#whg)"/>' +
+    '<circle cx="13" cy="22.5" r="1.1" fill="#0b1220"/></svg>' });
 }
 
 // Vista de CASO a pantalla completa: al entrar en una oportunidad se ve SOLO ese
