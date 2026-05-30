@@ -265,7 +265,7 @@ output { font-size: 12px; color: var(--accent); }
 .fu-due { font-size: 12px; color: var(--accent); white-space: nowrap; flex: 0 0 auto; font-variant-numeric: tabular-nums; }
 
 /* ---- Guion + dossier (modal, Fase 10) ---- */
-.pb-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6); backdrop-filter: blur(3px);
+.pb-overlay { position: fixed; inset: 0; z-index: 70; background: rgba(0,0,0,.6); backdrop-filter: blur(3px);
   display: flex; align-items: flex-start; justify-content: center; padding: 4vh 16px; overflow-y: auto; }
 .pb-panel { width: 100%; max-width: 640px; background: var(--bg); border: 1px solid var(--line);
   border-radius: 16px; padding: 22px 24px; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
@@ -877,4 +877,84 @@ button:disabled { cursor: not-allowed; }
 .lead-f:focus, .learn-f:focus, .notes:focus, .status-sel:focus,
 .search-city:focus, .sec-f:focus {
   border-color: var(--accent);
+}
+
+/* ====================== Vista de CASO a pantalla completa ======================
+   Al entrar en una oportunidad se ve SOLO ese caso, ocupando la pantalla, con
+   todo el análisis desplegado en paneles. La ballena azul (CONNECT) firma la
+   cabecera y el pie: entra una señal, sale un chorro de marca. */
+.case-screen {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; flex-direction: column;
+  background:
+    radial-gradient(circle at 16% -5%, rgba(74,158,255,.12), transparent 55%),
+    radial-gradient(circle at 92% 6%, rgba(201,162,39,.07), transparent 50%),
+    var(--bg);
+  overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
+  animation: caseIn .22s ease;
+}
+@keyframes caseIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+.case-bar {
+  position: sticky; top: 0; z-index: 3;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  padding: 12px 22px; border-bottom: 1px solid var(--line);
+  background: rgba(14,15,18,.82); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+}
+.case-back { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 600; }
+.case-back:hover { border-color: var(--accent); }
+.case-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.case-brand-t { font-weight: 800; letter-spacing: 1.5px; font-size: 14px; white-space: nowrap; }
+.case-brand-t i { font-style: italic; font-weight: 500; letter-spacing: .4px; color: var(--accent); font-size: 12px; }
+.case-rank { font-family: var(--mono); color: var(--ink-dim); font-size: 14px; flex: 0 0 auto; }
+
+.whale { display: inline-flex; flex: 0 0 auto; filter: drop-shadow(0 1px 5px rgba(74,158,255,.4)); }
+.whale .whale-spout { animation: spout 3.2s ease-in-out infinite; transform-origin: 21px 9px; }
+@keyframes spout { 0%,100% { opacity:.45; transform: translateY(1px) scaleY(.9); } 50% { opacity:1; transform: translateY(-1px) scaleY(1.1); } }
+
+.case-body { flex: 1 1 auto; width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px; }
+
+/* La tarjeta, ancha y elevada; el análisis SIEMPRE abierto y repartido en
+   paneles que llenan el ancho (un panel de mando, no una columna estrecha). */
+.case-card.card { max-width: none; width: 100%; padding: 22px 24px; border-radius: 18px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.45); opacity: 1; }
+.case-card.card:hover { transform: none; }
+.case-card .c-ident h3 { font-size: 26px; }
+.case-card .c-hook { padding: 12px 14px; }
+.case-card .c-hook p { font-size: 15px; }
+.case-card .c-detail > summary { display: none; }
+.case-card .c-detail[open] {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px; margin-top: 18px;
+}
+.case-card .c-detail[open] > *:not(summary) {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 14px 16px; margin: 0; align-self: start;
+}
+/* El radar abre a todo el ancho: es el elemento visual ancla. */
+.case-card .c-detail[open] > .radar-sec { grid-column: 1 / -1; }
+
+.case-foot {
+  display: flex; align-items: center; justify-content: center; gap: 14px;
+  padding: 24px 22px 34px; border-top: 1px solid var(--line);
+  color: var(--ink-dim); text-align: left; max-width: 760px; margin: 0 auto;
+}
+.case-foot p { margin: 0; font-size: 13px; line-height: 1.55; }
+.case-foot b { color: var(--ink); font-weight: 700; }
+
+/* Affordance de apertura en la tarjeta de la rejilla. */
+.c-title-open { cursor: pointer; }
+.c-title-open:hover { color: var(--accent); }
+.c-open { flex: 0 0 auto; background: var(--panel-2); color: var(--ink-dim);
+  border: 1px solid var(--line); border-radius: 8px; width: 30px; height: 30px;
+  font-size: 15px; line-height: 1; padding: 0; }
+.c-open:hover { color: var(--ink); border-color: var(--accent); }
+
+@media (max-width: 600px) {
+  .case-body { padding: 14px; }
+  .case-card.card { padding: 16px 14px; }
+  .case-card .c-ident h3 { font-size: 21px; }
+  .case-card .c-detail[open] { grid-template-columns: 1fr; }
+  .case-bar { padding: 10px 14px; }
+  .case-brand-t i { display: none; }
 }

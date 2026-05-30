@@ -312,13 +312,17 @@ export function renderCard(opp, record, handlers = {}) {
   const readOnly = !handlers.onStatus && !handlers.onNotes && !handlers.onOutcome && !handlers.onVerify;
 
   // ---- TOP: rank · identity · class pill · confidence ring ----
+  // Entrar en el caso: el título (y el botón ⤢) abren la vista a pantalla
+  // completa. Si no hay onOpen (p.ej. ya dentro de la propia vista de caso), el
+  // título se comporta como texto normal.
+  const openCase = handlers.onOpen ? () => handlers.onOpen(opp.id) : null;
   const top = el("div", { class: "c-top" }, [
     el("div", { class: "c-rank" }, [
       s.confidence >= 90 ? el("span", { class: "rank-crown", text: "★" }) : null,
       el("span", { text: `#${opp.ranking ?? "—"}` }),
     ]),
     el("div", { class: "c-ident" }, [
-      el("h3", { text: opp.company }),
+      el("h3", { class: openCase ? "c-title-open" : "", title: openCase ? "Abrir el caso a pantalla completa" : null, text: opp.company, onClick: openCase || undefined }),
       el("p", { class: "c-sub", text: `${opp.subsector} · ${opp.city}` }),
       // Foco radical: en reposo, solo lo que decide si llamar — éxito, casa y
       // facilidad de contacto. (Recomendación y € viven en el análisis.)
@@ -333,6 +337,7 @@ export function renderCard(opp, record, handlers = {}) {
       ]),
     ]),
     confidenceRing(s.confidence),
+    openCase ? el("button", { class: "c-open", title: "Abrir el caso a pantalla completa", text: "⤢", onClick: openCase }) : null,
   ]);
 
   // ---- HOOK: the single reason to call now ----

@@ -742,7 +742,7 @@ function todayCall(o, i, track) {
   const s = o.scores;
   const step = nextStep(o, track);
   const tone = s.confidence >= 90 ? "elite" : s.confidence >= 75 ? "hot" : "warm";
-  const open = () => { state.filters.search = o.company; goView("cards"); };
+  const open = () => openCase(o.id); // entrar en el caso = pantalla completa
   const st = track.status || "not_called";
 
   const actions = [];
@@ -1009,14 +1009,16 @@ function topPicks() {
   ]);
 }
 
-function buildCards() {
-  const rows = visibleOpps();
-  const tracking = store.getTracking();
+// Handlers de la tarjeta (mutación + apertura). Compartidos por la rejilla y por
+// la vista de caso a pantalla completa. `afterMutate` permite que la capa de
+// caso se repinte tras un cambio sin perder el contexto.
+function cardHandlers(afterMutate) {
   // RBAC: solo los roles con permiso de escritura reciben handlers de mutación.
   // Un viewer/analyst ve las tarjetas en modo lectura (sin botones de estado,
   // notas, resultado ni verificación). onPlaybook (lectura) se mantiene siempre.
   const canWrite = isWriter(auth.currentRole());
-  const handlers = {
+  const refresh = () => recompute().then(() => { render(); afterMutate?.(); });
+  return {
     onStatus: !canWrite ? undefined : (id, st) => {
       store.setStatus(id, st);
       // Aprender del CRM: un cambio de estado decisivo (interesado/reunión/
@@ -1028,7 +1030,7 @@ function buildCards() {
         signals: lead?.signals || null,
         successIndex: lead?.scores?.successIndex,
       });
-      recompute().then(render);
+      refresh();
     },
     onNotes: !canWrite ? undefined : (id, notes) => { store.setNotes(id, notes); },
     onOutcome: !canWrite ? undefined : (id, outcome) => {
@@ -1036,18 +1038,79 @@ function buildCards() {
       // the dataset later changes. Then recompute — outcomes recalibrate scores.
       const lead = (state.results?.all || []).find((o) => o.id === id);
       store.addOutcome({ ...outcome, signals: lead?.signals || null });
-      recompute().then(render);
+      refresh();
     },
     onVerify: !canWrite ? undefined : (id, filter, level, note, url) => {
       // El analista confirma un hueco → se vuelve evidencia citada y recalcula.
       store.addVerification(id, filter, level, note, url);
-      recompute().then(render);
+      refresh();
     },
     onPlaybook: (id) => {
       const lead = (state.results?.all || []).find((o) => o.id === id);
       openPlaybook(lead);
     },
+    onOpen: (id) => openCase(id),
   };
+}
+
+// Pequeña ballena azul: la marca de CONNECT. Entra una señal, sale un chorro
+// (de marca, dirección y valor). El soplo va en oro de acento.
+function whaleMark() {
+  return el("span", { class: "whale", html:
+    '<svg viewBox="0 0 64 42" width="36" height="24" aria-hidden="true">' +
+    '<path class="whale-spout" d="M21 9 q-3 -7 0 -9 M21 9 q3 -6 6 -8 M21 9 q-1 -8 -4 -10" fill="none" stroke="#c9a227" stroke-width="1.7" stroke-linecap="round"/>' +
+    '<path d="M5 25 q11 -15 29 -13 q15 1 24 11 q-7 2 -13 1 q3 4 2 9 q-7 -2 -9 -7 q-13 5 -26 0 q-2 -1 -4 -2 z" fill="#4a9eff"/>' +
+    '<circle cx="15" cy="23" r="1.5" fill="#0e0f12"/></svg>' });
+}
+
+// Vista de CASO a pantalla completa: al entrar en una oportunidad se ve SOLO ese
+// caso, ocupando la pantalla, con todo el análisis desplegado en paneles. Cierra
+// con ← Volver, Esc o clic en el fondo. Reutiliza la tarjeta (toda la
+// inteligencia ya vive ahí) y la presenta ancha, con cabecera y firma de marca.
+function openCase(id) {
+  let lead = (state.results?.all || []).find((o) => o.id === id);
+  if (!lead) return;
+
+  const overlay = el("div", { class: "case-screen", onClick: (e) => { if (e.target === overlay) close(); } });
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  function close() { overlay.remove(); document.removeEventListener("keydown", onKey); }
+  document.addEventListener("keydown", onKey);
+
+  const body = el("div", { class: "case-body" });
+  // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
+  // título no apile overlays. El resto de handlers mutan y repintan el caso.
+  const handlers = { ...cardHandlers(rebuild), onOpen: undefined };
+  function rebuild() {
+    lead = (state.results?.all || []).find((o) => o.id === id) || lead;
+    clear(body);
+    const card = renderCard(lead, store.getTracking()[lead.id], handlers);
+    card.classList.add("case-card");
+    const det = card.querySelector(".c-detail");
+    if (det) det.open = true; // en pantalla completa el análisis va siempre abierto
+    body.appendChild(card);
+  }
+  rebuild();
+
+  const bar = el("div", { class: "case-bar" }, [
+    el("button", { class: "case-back", text: "← Volver", onClick: close }),
+    el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al chorro</i>' })]),
+    el("span", { class: "case-rank", text: `#${lead.ranking ?? "—"}` }),
+  ]);
+  const foot = el("div", { class: "case-foot" }, [
+    whaleMark(),
+    el("p", { html: 'Entra una señal, sale un chorro de <b>marca</b>, <b>dirección</b> y <b>valor</b>. — la ballena azul de XN&nbsp;LAB.' }),
+  ]);
+
+  overlay.appendChild(bar);
+  overlay.appendChild(body);
+  overlay.appendChild(foot);
+  document.body.appendChild(overlay);
+}
+
+function buildCards() {
+  const rows = visibleOpps();
+  const tracking = store.getTracking();
+  const handlers = cardHandlers();
   if (!rows.length) {
     const f = state.filters;
     const filtering = f.search || f.sector !== "all" || f.city !== "all" || f.classification !== "all" || f.priority !== "all" || f.minEvidence || f.minConfidence || f.minEvStrength;
