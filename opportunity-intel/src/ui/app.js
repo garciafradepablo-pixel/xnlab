@@ -396,9 +396,9 @@ function configPanel() {
 
   // Botón con feedback visible: en el móvil, el panel queda arriba y los
   // resultados abajo, así que sin confirmación parecía "que no hacía nada".
-  const runBtn = el("button", { class: "btn-primary", text: "Ejecutar embudo" });
+  const runBtn = el("button", { class: "btn-primary", text: "Buscar oportunidades" });
   runBtn.addEventListener("click", async () => {
-    runBtn.textContent = "Recalculando…";
+    runBtn.textContent = "Buscando…";
     runBtn.disabled = true;
     await recompute();
     runBtn.textContent = `✓ ${state.results.counts.final} oportunidades`;
@@ -407,16 +407,24 @@ function configPanel() {
   });
 
   return el("aside", { class: "config" }, [
-    field("Dataset", datasetSel),
-    field("País", country),
-    field("Sectores", sectorChecks),
-    field("Volumen de candidatos (objetivo)", candVol),
-    field("Nº final de leads", finalCount),
-    field("Conservadurismo", el("div", {}, [conservSlider, conservOut])),
-    field("Puntuación mínima", minScore),
-    field("Umbral 01 → XN LAB (confianza)", xnThr),
+    // Esenciales: lo único que el usuario toca a diario.
+    el("div", { class: "cfg-essentials" }, [
+      field("Dataset", datasetSel),
+      field("País", country),
+      field("Sectores", sectorChecks),
+    ]),
     runBtn,
-    el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
+    // Mandos del motor: potentes pero fuera de la vista por defecto (premium:
+    // superficie simple, complejidad a un clic).
+    el("details", { class: "cfg-advanced" }, [
+      el("summary", { text: "Ajustes avanzados del motor" }),
+      field("Volumen de candidatos (objetivo)", candVol),
+      field("Nº final de leads", finalCount),
+      field("Conservadurismo", el("div", {}, [conservSlider, conservOut])),
+      field("Puntuación mínima", minScore),
+      field("Umbral 01 → XN LAB (confianza)", xnThr),
+      el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
+    ]),
     securitySection(),
     // Zona peligrosa, al fondo y blindada. Export → roles con permiso de export;
     // borrado duro de la caché local → solo admin. El servidor además refuerza.
