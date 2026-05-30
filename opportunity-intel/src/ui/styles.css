@@ -173,6 +173,53 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .chip-rate.bad { color: var(--ink-dim); }
 @media (max-width: 600px) { .capt-bar { flex-direction: column; } .capt-go { width: 100%; } }
 
+/* ---- Mapa de captación (árbol de categorías desde un prompt) ---- */
+.capture-map { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 18px;
+  background: linear-gradient(180deg, rgba(201,162,39,.05), transparent 60%), var(--panel); }
+.cmap-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+.cmap-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.cmap-clear { background: transparent; border: 1px solid var(--line); color: var(--ink-dim);
+  border-radius: 7px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+.cmap-clear:hover { color: var(--ink); border-color: var(--ink-dim); }
+.cmap-bar { display: flex; gap: 8px; margin: 10px 0 4px; }
+.cmap-input { flex: 1; max-width: none; margin-bottom: 0; padding: 11px 14px; font-size: 15px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; color: var(--ink); }
+.cmap-input:focus { outline: none; border-color: var(--accent); }
+.cmap-go { width: auto; flex: 0 0 auto; padding: 9px 20px; }
+.cmap-status { font-size: 13px; color: var(--accent); margin: 8px 0 2px; }
+.cmap-examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+
+.cat-tree { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
+.cat-node { display: block; }
+.cat-row { display: flex; align-items: center; justify-content: space-between; gap: 6px;
+  border-radius: 8px; padding-right: 6px; }
+.cat-row:hover { background: var(--panel-2); }
+.cat-name { flex: 1; display: flex; align-items: center; gap: 8px; background: transparent; border: 0;
+  color: var(--ink); text-align: left; padding: 7px 4px; font-size: 14px; cursor: pointer; min-width: 0; }
+.cat-row.is-folder .cat-label { font-weight: 600; }
+.cat-row.is-leaf .cat-label { color: var(--ink-dim); }
+.cat-caret { width: 12px; flex: 0 0 auto; color: var(--ink-dim); font-size: 11px; }
+.cat-ico { flex: 0 0 auto; }
+.cat-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-count { flex: 0 0 auto; font-size: 11px; font-weight: 600; color: var(--accent);
+  background: rgba(201,162,39,.12); border-radius: 999px; padding: 1px 8px; }
+.cat-tools { display: flex; gap: 2px; flex: 0 0 auto; opacity: .55; transition: opacity .15s; }
+.cat-row:hover .cat-tools { opacity: 1; }
+.cat-find, .cat-del { background: transparent; border: 0; cursor: pointer; font-size: 13px;
+  padding: 5px 7px; border-radius: 6px; color: var(--ink-dim); }
+.cat-find:hover { background: rgba(201,162,39,.15); }
+.cat-del:hover { color: #ff6b6b; }
+.cat-children { border-left: 1px solid var(--line); margin-left: 14px; }
+.cat-leads { display: flex; flex-direction: column; gap: 2px; padding-top: 2px; padding-bottom: 6px; }
+.cat-leads-empty { font-size: 12px; color: var(--ink-dim); font-style: italic; padding: 4px 0 8px; }
+.cat-lead { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  background: transparent; border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer;
+  color: var(--ink); text-align: left; font-size: 13px; }
+.cat-lead:hover { background: var(--panel-2); }
+.cat-lead-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-lead-city { flex: 0 0 auto; font-size: 11px; color: var(--ink-dim); }
+@media (max-width: 600px) { .cmap-bar { flex-direction: column; } .cmap-go { width: 100%; } }
+
 /* ---- Aprendizaje por nicho (Memoria) ---- */
 .nicho-list { display: flex; flex-direction: column; gap: 8px; }
 .nicho { display: grid; grid-template-columns: 1fr 120px auto; align-items: center; gap: 12px; }

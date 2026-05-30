@@ -30,6 +30,10 @@ import { failureReason } from "../diagnosis.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { buildLead } from "../newlead.js";
 import { allSectors, sectorByKey, addCustomSector, getCustomSectors, removeCustomSector } from "../customsectors.js";
+import {
+  generateTaxonomy, getForest, mergeForest, clearForest, removePath,
+  childrenAt, isLeaf, leavesUnder, leadsUnder, pathQuery, countUnder,
+} from "../taxonomy.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
@@ -1727,6 +1731,168 @@ function ensureSector(query) {
   return found ? { key: found.key, label: found.label, isNew: false } : { key: "growth", label: "Crecimiento", isNew: false };
 }
 
+// ---- MAPA DE CAPTACIÓN: una idea → árbol de categorías anidadas -------------
+// El usuario escribe una sola línea; Gemini (Edge Function `taxonomy`) devuelve
+// un árbol de carpetas dentro de carpetas. Cada carpeta tiene un 🔍 que trae
+// empresas reales del mapa y las archiva dentro (taggeadas con su ruta).
+const pk = (path) => (path || []).join("");
+
+function catUI() {
+  if (!state._cat) state._cat = { expanded: new Set(), status: "", busy: false, lastPrompt: "" };
+  return state._cat;
+}
+function patchCaptureMap() {
+  if (!root) return;
+  const node = root.querySelector(".capture-map");
+  if (node && node.parentNode) node.parentNode.replaceChild(captureMap(), node);
+}
+
+// Resuelve (o crea) el sector raíz de una ruta, para que los leads entren al
+// motor de scoring con una lente coherente por nicho raíz.
+function ensureRootSector(rootName) {
+  const name = String(rootName || "").trim();
+  if (!name) return "growth";
+  const inf = inferSector(name, allSectors());
+  if (inf && inf.key) return inf.key;
+  const existing = allSectors().find((s) => s.label.toLowerCase() === name.toLowerCase());
+  if (existing) return existing.key;
+  const r = addCustomSector(name, [name], null);
+  return r.ok ? r.key : "growth";
+}
+
+function captureMap() {
+  const ui = catUI();
+  const forest = getForest();
+  const BASE_KEYS = new Set(SECTORS.map((s) => s.key));
+
+  const promptInput = el("input", {
+    type: "search", class: "cmap-input", autocomplete: "off", value: ui.lastPrompt || "",
+    placeholder: "Describe tu idea — ej. «clínicas» o «creatividades / avatares / 3d / ia»",
+  });
+  async function gen() {
+    const p = promptInput.value.trim();
+    if (!p || ui.busy) return;
+    ui.lastPrompt = p; ui.busy = true; ui.status = "🧠 Generando categorías…"; patchCaptureMap();
+    let r = { tree: [] };
+    try { r = await generateTaxonomy(p, auth.getToken()); } catch { r = { tree: [] }; }
+    ui.busy = false;
+    if (r && r.tree && r.tree.length) {
+      mergeForest(r.tree);
+      for (const rootNode of r.tree) ui.expanded.add(pk([rootNode.name]));
+      ui.status = r.ai
+        ? "✓ Mapa generado con IA. Pulsa 🔍 en una categoría para traer empresas reales."
+        : "✓ Mapa creado a partir de tu ruta. Pulsa 🔍 en una categoría para buscar empresas.";
+    } else {
+      ui.status = "No pude generar categorías. Prueba a describirlo de otra forma.";
+    }
+    render();
+  }
+  const genBtn = el("button", { class: "btn-primary cmap-go", text: ui.busy ? "…" : "Generar mapa", onClick: gen });
+  promptInput.addEventListener("keydown", (e) => { if (e.key === "Enter") gen(); });
+
+  // Trae empresas reales para todas las hojas bajo `path` y las archiva dentro.
+  async function discoverNode(path) {
+    if (ui.busy) return;
+    const leaves = leavesUnder(path);
+    if (!leaves.length) return;
+    const cap = Math.min(leaves.length, 8); // tope por barrido (cuida el límite del mapa)
+    ui.busy = true; ui.expanded.add(pk(path));
+    const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
+    let added = 0, swept = 0;
+    for (const leaf of leaves.slice(0, cap)) {
+      const rootKey = ensureRootSector(leaf.path[0]);
+      const discKey = BASE_KEYS.has(rootKey) ? rootKey : "all";
+      ui.status = `🗺️ Buscando «${leaf.name}»… (${swept + 1}/${cap})`; patchCaptureMap();
+      let found = [];
+      try { found = await discover({ sector: discKey, query: pathQuery(leaf.path), token: auth.getToken() }); }
+      catch { found = []; }
+      for (const c of found) {
+        const k = `${c.company || ""}`.toLowerCase();
+        if (!k || existing.has(k)) continue;
+        store.saveUserLead(buildLead({
+          company: c.company, sector: rootKey, subsector: c.subsector || leaf.name,
+          city: c.city || "", website: c.website || null, phone: c.phone || null,
+          googleMaps: c.googleMaps || null, categoryPath: leaf.path,
+        }));
+        existing.add(k); added++;
+      }
+      swept++;
+    }
+    recordSearch(pathQuery(path), ensureRootSector(path[0] || ""), path[0] || "");
+    await recompute();
+    ui.busy = false;
+    ui.status = added
+      ? `✓ +${added} empresas archivadas en «${path.join(" / ")}» — ya están puntuadas en el ranking.`
+      : "El mapa no devolvió empresas. Prueba un nicho más concreto, o conecta la API del mapa (Google Places) para nichos nuevos.";
+    render();
+  }
+
+  function leadRow(l) {
+    return el("button", { class: "cat-lead", title: "Abrir en el ranking", onClick: () => { state.filters.search = l.company; goView("cards"); } }, [
+      el("span", { class: "cat-lead-name", text: l.company }),
+      el("span", { class: "cat-lead-city", text: l.city || "" }),
+    ]);
+  }
+  function leadList(path, depth) {
+    const leads = leadsUnder(path, store.getUserLeads());
+    const pad = `padding-left:${10 + depth * 16}px`;
+    if (!leads.length) return el("div", { class: "cat-leads-empty", style: pad, text: "Sin empresas aún — pulsa 🔍 para buscar." });
+    return el("div", { class: "cat-leads", style: pad }, leads.slice(0, 60).map(leadRow));
+  }
+  function nodeRow(node, path, depth) {
+    const leaf = !node.children || !node.children.length;
+    const expanded = ui.expanded.has(pk(path));
+    const count = countUnder(path, store.getUserLeads());
+    const toggle = () => { if (expanded) ui.expanded.delete(pk(path)); else ui.expanded.add(pk(path)); patchCaptureMap(); };
+    return el("div", { class: `cat-row ${leaf ? "is-leaf" : "is-folder"}`, style: `padding-left:${8 + depth * 16}px` }, [
+      el("button", { class: "cat-name", onClick: toggle }, [
+        el("span", { class: "cat-caret", text: leaf ? "·" : (expanded ? "▾" : "▸") }),
+        el("span", { class: "cat-ico", text: leaf ? "◦" : (expanded ? "📂" : "📁") }),
+        el("span", { class: "cat-label", text: node.name }),
+        count ? el("span", { class: "cat-count", text: String(count) }) : null,
+      ]),
+      el("div", { class: "cat-tools" }, [
+        el("button", { class: "cat-find", title: "Buscar empresas reales en esta categoría", text: "🔍", onClick: () => discoverNode(path) }),
+        el("button", { class: "cat-del", title: "Quitar esta categoría", text: "✕", onClick: () => { removePath(path); patchCaptureMap(); } }),
+      ]),
+    ]);
+  }
+  function renderNode(node, path, depth) {
+    const wrap = el("div", { class: "cat-node" }, [nodeRow(node, path, depth)]);
+    if (ui.expanded.has(pk(path))) {
+      if (node.children && node.children.length) {
+        wrap.appendChild(el("div", { class: "cat-children" }, node.children.map((c) => renderNode(c, [...path, c.name], depth + 1))));
+      } else {
+        wrap.appendChild(leadList(path, depth + 1));
+      }
+    }
+    return wrap;
+  }
+
+  const blocks = [
+    el("div", { class: "cmap-head" }, [
+      el("span", { class: "cmap-title", text: "🗂️ Mapa de captación" }),
+      forest.length ? el("button", {
+        class: "cmap-clear", text: "Vaciar mapa", title: "Borrar todas las categorías (no borra los leads ya captados)",
+        onClick: () => { if (confirm("¿Borrar todo el mapa de categorías? Los leads ya captados se quedan en el ranking.")) { clearForest(); ui.status = ""; render(); } },
+      }) : null,
+    ]),
+    el("p", { class: "hint", html: "Escribe <b>una idea</b> y Connect crea solo un árbol de <b>categorías anidadas</b> (carpetas dentro de carpetas). Luego pulsa <b>🔍</b> en cualquier carpeta para traer empresas reales y archivarlas dentro." }),
+    el("div", { class: "cmap-bar" }, [promptInput, genBtn]),
+    ui.status ? el("p", { class: "cmap-status", text: ui.status }) : null,
+  ];
+  if (forest.length) {
+    blocks.push(el("div", { class: "cat-tree" }, forest.map((n) => renderNode(n, [n.name], 0))));
+  } else {
+    blocks.push(el("div", { class: "cmap-examples" }, [
+      el("span", { class: "hint", text: "Ejemplos para empezar:" }),
+      ...["clínicas", "creatividades / avatares / 3d / ia", "restauración premium"].map((ex) =>
+        el("button", { class: "idea-chip", text: ex, onClick: () => { promptInput.value = ex; gen(); } })),
+    ]));
+  }
+  return el("section", { class: "capture-map" }, blocks);
+}
+
 function searchView() {
   const userLeads = store.getUserLeads();
   const blocks = [el("h2", { text: "Captar clientes" })];
@@ -1738,7 +1904,10 @@ function searchView() {
     return el("section", { class: "search-view" }, blocks);
   }
 
-  // Piloto automático arriba del todo: lo que no para de meter empresas solo.
+  // Mapa de captación: una idea → árbol de categorías. Lo primero y más fácil.
+  blocks.push(captureMap());
+
+  // Piloto automático: lo que no para de meter empresas solo.
   blocks.push(autopilotPanel());
 
   blocks.push(el("h3", { class: "capt-h", text: "O capta a mano una búsqueda concreta" }));

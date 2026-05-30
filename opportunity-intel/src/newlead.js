@@ -76,6 +76,7 @@ export function buildLead(input) {
     company: input.company || "Sin nombre",
     sector: input.sector || "growth",
     subsector: input.subsector || "",
+    categoryPath: Array.isArray(input.categoryPath) && input.categoryPath.length ? input.categoryPath : null,
     city: input.city || "",
     region: input.region || "",
     country: "Spain",
