@@ -404,8 +404,8 @@ output { font-size: 12px; color: var(--accent); }
 
 /* ---- Vista "Hoy" (centro de mando) ---- */
 .today-hero { margin: 4px 0 18px; }
-.today-greet { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
-.today-sub { color: var(--ink-dim); font-size: 14px; margin-top: 4px; }
+.today-greet { font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
+.today-sub { color: var(--ink-dim); font-size: 15px; margin-top: 8px; }
 
 .pulse { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
 .kpi { background: linear-gradient(180deg, rgba(255,255,255,.035), transparent 60%), var(--panel);
