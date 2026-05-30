@@ -224,8 +224,22 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
   background: transparent; border: 0; border-radius: 6px; padding: 5px 8px; cursor: pointer;
   color: var(--ink); text-align: left; font-size: 13px; }
 .cat-lead:hover { background: var(--panel-2); }
-.cat-lead-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cat-lead-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; }
 .cat-lead-city { flex: 0 0 auto; font-size: 11px; color: var(--ink-dim); }
+.cat-tag { flex: 0 0 auto; font-size: 10px; color: var(--ink-dim); border: 1px solid var(--line);
+  border-radius: 999px; padding: 1px 7px; white-space: nowrap; }
+
+.cmap-actions { display: flex; align-items: center; gap: 10px; margin: 4px 0 2px; flex-wrap: wrap; }
+.cmap-organize { width: auto; padding: 7px 14px; font-size: 13px; }
+.cmap-actions .hint { margin: 0; }
+.cat-facets { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 8px 0 2px;
+  padding: 8px 0; border-top: 1px dashed var(--line); }
+.facet-lbl { font-size: 12px; color: var(--ink-dim); margin-right: 2px; }
+.facet-chip { font-size: 11px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim);
+  border-radius: 999px; padding: 3px 10px; cursor: pointer; }
+.facet-chip:hover { color: var(--ink); border-color: var(--ink-dim); }
+.facet-chip.on { background: var(--accent); color: #1a1500; border-color: var(--accent); font-weight: 600; }
+.facet-clear { font-size: 11px; background: transparent; border: 0; color: #ff6b6b; cursor: pointer; padding: 3px 6px; }
 @media (max-width: 600px) { .cmap-bar { flex-direction: column; } .cmap-go { width: 100%; } }
 
 /* ---- Aprendizaje por nicho (Memoria) ---- */

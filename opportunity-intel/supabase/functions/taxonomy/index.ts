@@ -144,19 +144,101 @@ async function fromGemini(prompt: string): Promise<Node[] | null> {
   }
 }
 
+// —— Clasificador: organiza empresas en el árbol y las etiqueta por dimensiones —
+const TAG_DIMS = ["entorno", "clase", "estetica"];
+function cleanPath(arr: unknown): string[] {
+  if (!Array.isArray(arr)) return [];
+  return arr.map((s) => String(s).trim().replace(/\s+/g, " ").slice(0, 48)).filter(Boolean).slice(0, MAX_DEPTH);
+}
+function cleanTags(obj: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (obj && typeof obj === "object") {
+    for (const d of TAG_DIMS) {
+      const v = String((obj as Record<string, unknown>)[d] ?? "").trim().slice(0, 32);
+      if (v) out[d] = v;
+    }
+  }
+  return out;
+}
+
+async function classifyWithGemini(
+  items: Array<{ company: string; subsector?: string; city?: string }>,
+  forest: unknown,
+): Promise<Array<{ i: number; path: string[]; tags: Record<string, string> }> | null> {
+  if (!GEMINI_API_KEY || !items.length) return null;
+  const list = items
+    .map((it, i) => `${i}: ${it.company || "?"}${it.subsector ? ` · ${it.subsector}` : ""}${it.city ? ` · ${it.city}` : ""}`)
+    .join("\n");
+  const sys =
+    "Eres el cerebro de captación de XNLAB. Organizas empresas en un ÁRBOL de " +
+    "categorías coherente (carpetas y subcarpetas) y las etiquetas por dimensiones " +
+    "cruzables, para prospectar como un Apollo interno.\n\n" +
+    "Árbol de categorías actual (JSON; puede venir vacío):\n" +
+    JSON.stringify(Array.isArray(forest) ? forest : []) + "\n\n" +
+    "Empresas a clasificar (índice: nombre · subsector · ciudad):\n" + list + "\n\n" +
+    "Para CADA empresa devuelve:\n" +
+    "- \"path\": la ruta de carpetas más específica y adecuada, de la raíz a la hoja " +
+    "(p.ej. [\"clínicas\",\"ortopedia\"]). REUTILIZA ramas del árbol actual cuando " +
+    "encajen; crea subcarpetas nuevas cuando haga falta. Agrupa con criterio (tipo " +
+    "de negocio, entorno, clase). Máximo 4 niveles, nombres cortos en español, " +
+    "minúscula salvo nombres propios.\n" +
+    "- \"tags\": objeto con etiquetas cruzables (cadena vacía si no se deduce):\n" +
+    "    \"entorno\": dónde opera (urbano, costa, rural, online…)\n" +
+    "    \"clase\": nivel/tier (lujo, premium, medio, económico)\n" +
+    "    \"estetica\": vibe estético (minimalista, clásico, moderno, urbano…)\n\n" +
+    "NO inventes datos que no se deduzcan del nombre/subsector/ciudad; ante la duda, " +
+    "deja la etiqueta vacía. Devuelve SOLO JSON: " +
+    '{"assignments":[{"i":0,"path":["..."],"tags":{"entorno":"","clase":"","estetica":""}}]}';
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: sys }] }],
+          generationConfig: { responseMimeType: "application/json", temperature: 0.2 },
+        }),
+      },
+    );
+    const data = await res.json();
+    const txt = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const parsed = JSON.parse(txt);
+    const raw = Array.isArray(parsed?.assignments) ? parsed.assignments : [];
+    return raw
+      .map((a: Record<string, unknown>) => ({ i: Number(a.i), path: cleanPath(a.path), tags: cleanTags(a.tags) }))
+      .filter((a: { i: number; path: string[] }) => Number.isInteger(a.i) && a.i >= 0 && a.i < items.length && a.path.length);
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { token, prompt } = await req.json().catch(() => ({}));
+    const { action, token, prompt, items, forest } = await req.json().catch(() => ({}));
     const caller = await userByToken(String(token || ""));
     if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+
+    // classify: organiza un lote de empresas en el árbol y las etiqueta.
+    if (action === "classify") {
+      const batch = (Array.isArray(items) ? items : []).slice(0, 40)
+        .map((it: Record<string, unknown>) => ({
+          company: String(it?.company || "").slice(0, 80),
+          subsector: String(it?.subsector || "").slice(0, 60),
+          city: String(it?.city || "").slice(0, 40),
+        }))
+        .filter((it: { company: string }) => it.company);
+      if (!batch.length) return json({ ok: true, assignments: [] });
+      const assignments = (await classifyWithGemini(batch, forest)) || [];
+      return json({ ok: true, assignments, ai: !!GEMINI_API_KEY && assignments.length > 0 });
+    }
+
+    // por defecto: genera un árbol a partir de una idea en lenguaje natural.
     const text = String(prompt || "").trim();
     if (!text) return json({ ok: false, error: "Escribe una idea." }, 400);
-
-    // Con "/" explícito confiamos en la ruta del usuario; si no, Gemini la imagina.
     const tree = (await fromGemini(text)) || fallbackForest(text);
-    const ai = !!GEMINI_API_KEY && tree.length > 0;
-    return json({ ok: true, tree, ai });
+    return json({ ok: true, tree, ai: !!GEMINI_API_KEY && tree.length > 0 });
   } catch (e) {
     return json({ ok: false, error: String(e) }, 500);
   }
