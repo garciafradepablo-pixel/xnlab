@@ -47,6 +47,6 @@ next-env.d.ts
 # ever added, stays tracked; the personal overrides do not)
 .claude/settings.local.json
 
-# relevo — datos sensibles, solo locales (perfiles reales + brutos sin destilar)
-/relevos/perfiles.local.md
-/relevos/_inbox/
+# eco — datos sensibles, solo locales (perfiles reales + brutos sin destilar)
+/ecos/perfiles.local.md
+/ecos/_inbox/

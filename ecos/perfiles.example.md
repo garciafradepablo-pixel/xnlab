@@ -1,7 +1,7 @@
 # Perfiles — plantilla
 
 > Copia este fichero a `perfiles.local.md` (que NO se sube al repo) y rellénalo
-> con los nombres reales y cómo habla cada uno. El comando `/relevo` lo lee para
+> con los nombres reales y cómo habla cada uno. El comando `/eco` lo lee para
 > traducir entre vosotros. Cuanto mejor lo calibres, mejor escupe el delfín.
 >
 > Mantenemos los nombres reales fuera del repo a propósito: el estudio es anónimo

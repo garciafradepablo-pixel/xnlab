@@ -1,4 +1,4 @@
-# Relevo 0000 · de A → B  (ejemplo)
+# Eco 0000 · de A → B  (ejemplo)
 *MMXXVI*
 
 > Ejemplo de la forma que escupe el delfín. Bórralo cuando empecéis de verdad.
