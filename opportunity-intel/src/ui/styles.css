@@ -1376,3 +1376,8 @@ button:disabled { cursor: not-allowed; }
 .cron-new-item:active { transform: scale(.97); }
 .cron-new-name { font-size: 13px; font-weight: 600; color: var(--ink); }
 .cron-new-city { font-size: 11px; color: var(--ink-dim); }
+
+/* Momento en prensa (por qué ahora). */
+.mom-kind { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
+  color: var(--green); background: rgba(63,185,80,.14); border-radius: 999px; padding: 3px 11px; margin-bottom: 8px; }
+.mom-src { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--o1); }
