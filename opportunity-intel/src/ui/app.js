@@ -38,10 +38,12 @@ import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
-import { fetchWebFreshness } from "../enrichweb.js";
+import { fetchWebFreshness, webSignalsToVerifications } from "../enrichweb.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
+import { autoProgress, AUTO_BAR } from "../autopilot.js";
+import { synthesize } from "../synthesis.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -62,6 +64,8 @@ let root;
 
 export async function mount(rootEl) {
   root = rootEl;
+  // Enlace de invitación: ?invite=Nombre → abre directo en "crear usuario".
+  try { const inv = new URLSearchParams(location.search).get("invite"); if (inv) { state._invite = inv; if (!auth.currentUser()) state._authTab = "create"; } } catch { /* */ }
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
   // su color fijo y firma su actividad.
   if (!auth.currentUser()) {
@@ -78,6 +82,9 @@ export async function mount(rootEl) {
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
   render();
+
+  // Reanuda el piloto automático si quedó en marcha (no para entre sesiones).
+  if (autopilotState().on) { autoEmpty = 0; clearTimeout(autoTimer); autoTimer = setTimeout(autoTick, 1500); }
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
@@ -153,7 +160,7 @@ function renderAuth() {
     msg.textContent = "";
     if (!chosenColor) { msg.textContent = "No quedan colores de firma libres. Pide a un admin que libere uno."; return; }
     busy(true);
-    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor);
+    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor, state._invite);
     if (!r.ok) { busy(false, "Crear usuario y entrar"); msg.textContent = r.error; return; }
     await auth.loginAsync(nameI.value, passI.value);
     mount(root);
@@ -167,7 +174,10 @@ function renderAuth() {
   switcher.addEventListener("click", () => { state._authTab = tab === "login" ? "create" : "login"; renderAuth(); });
 
   const card = el("div", { class: "auth-card" }, [
+    el("div", { class: "auth-whale" }, [whaleMark()]),
     el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+    el("p", { class: "auth-kicker", text: "Inteligencia de oportunidades · de la señal al chorro" }),
+    state._invite ? el("p", { class: "auth-invite", text: "Tienes una invitación a Connect — crea tu usuario abajo." }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
     nameI, passI,
     tab === "create" ? el("div", {}, [
@@ -292,7 +302,10 @@ function goView(view) {
 function header() {
   return el("header", { class: "app-head" }, [
     el("div", { class: "brand" }, [
-      el("span", { class: "logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+      el("div", { class: "brand-lock" }, [
+        whaleMark(),
+        el("span", { class: "logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+      ]),
       el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
     ]),
     el("div", { class: "head-actions" }, [
@@ -301,7 +314,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v25 · cierre del dinero" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v33 · deploy arreglado" }),
     ]),
   ]);
 }
@@ -322,16 +335,100 @@ function syncBadge() {
 function userChip() {
   const u = auth.currentUser();
   if (!u) return el("span");
-  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.name[0].toUpperCase() });
-  const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para cerrar sesión` }, [
+  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
     el("span", { class: `role-badge role-${u.role}`, text: roleLabel(u.role) }),
   ]);
-  chip.addEventListener("click", () => {
-    if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); mount(root); }
-  });
+  chip.addEventListener("click", openProfile);
   return chip;
+}
+
+// Notas privadas: SOLO en este dispositivo (localStorage), nunca al servidor.
+const notesKey = (name) => `oi:notes:${String(name || "").toLowerCase()}`;
+function getUserNotes(name) { try { return localStorage.getItem(notesKey(name)) || ""; } catch { return ""; } }
+function setUserNotes(name, v) { try { localStorage.setItem(notesKey(name), v); } catch { /* */ } }
+
+const PROFILE_EMOJIS = ["🐋", "🦊", "🦉", "🐺", "🦅", "🦈", "🐉", "🦁", "🐯", "🦄", "🤖", "👁", "⚡", "✦", "◆", "★"];
+
+// Perfil del usuario: avatar (emoji), notas privadas, contraseña e invitación.
+// Más personal y más privado, sin foto que suba a ningún sitio.
+function openProfile() {
+  const u = auth.currentUser();
+  if (!u) return;
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => overlay.remove();
+
+  const dot = el("span", { class: "prof-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const picker = el("div", { class: "prof-emojis" });
+  const mark = (val) => [...picker.children].forEach((c) => c.classList?.[c._val === val ? "add" : "remove"]?.("sel"));
+  PROFILE_EMOJIS.forEach((e) => {
+    const b = el("button", { class: `prof-emoji ${u.avatar === e ? "sel" : ""}`, text: e });
+    b._val = e;
+    b.addEventListener("click", async () => { await auth.setAvatar(e); dot.textContent = e; mark(e); render(); });
+    picker.appendChild(b);
+  });
+  const clearB = el("button", { class: "prof-emoji prof-clear", text: "∅", title: "Sin emoji (usa tu inicial)" });
+  clearB._val = null;
+  clearB.addEventListener("click", async () => { await auth.setAvatar(""); dot.textContent = u.name[0].toUpperCase(); mark(null); render(); });
+  picker.appendChild(clearB);
+
+  const notes = el("textarea", { class: "prof-notes", placeholder: "Tus notas privadas (solo en este dispositivo)…" });
+  notes.value = getUserNotes(u.name);
+  notes.addEventListener("input", () => setUserNotes(u.name, notes.value));
+
+  const base = String(location.href || "").split("?")[0].split("#")[0];
+  const inviteBox = el("div", { class: "prof-invitebox" });
+  const renderInviteLink = (code) => {
+    clear(inviteBox);
+    const link = `${base}?invite=${encodeURIComponent(code)}`;
+    const linkInput = el("input", { class: "prof-link", value: link, readonly: "" });
+    const copyL = el("button", { class: "btn", text: "Copiar enlace" });
+    copyL.addEventListener("click", () => {
+      const done = () => { copyL.textContent = "✓ Copiado"; setTimeout(() => (copyL.textContent = "Copiar enlace"), 1400); };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
+    });
+    inviteBox.appendChild(el("p", { class: "config-note", text: "Enlace de un solo uso · caduca en 14 días." }));
+    inviteBox.appendChild(el("div", { class: "prof-linkrow" }, [linkInput, copyL]));
+  };
+  const genBtn = el("button", { class: "btn-primary", text: "Generar invitación", onClick: async () => {
+    genBtn.disabled = true; genBtn.textContent = "Generando…";
+    const r = await auth.createInvite("editor");
+    genBtn.disabled = false; genBtn.textContent = "Generar otra invitación";
+    if (r.ok && r.code) renderInviteLink(r.code);
+    else inviteBox.appendChild(el("p", { class: "sec-msg err", text: r.error || "No se pudo." }));
+  } });
+
+  overlay.appendChild(el("div", { class: "pb-panel prof-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", { class: "prof-id" }, [dot, el("div", {}, [
+        el("div", { class: "prof-name", text: u.name }),
+        el("div", { class: "prof-role", text: roleLabel(u.role) }),
+      ])]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Tus notas privadas" }),
+      el("p", { class: "config-note", text: "Solo en este dispositivo. No se comparten ni suben al servidor." }),
+      notes,
+    ]),
+    el("div", { class: "prof-sec" }, [securitySection()]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Invitar a alguien" }),
+      allow("manage_roles")
+        ? el("div", {}, [
+            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Genera un enlace de un solo uso." }),
+            genBtn, inviteBox,
+          ])
+        : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
+    ]),
+    el("div", { class: "prof-foot" }, [
+      el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); close(); mount(root); } } }),
+    ]),
+  ]));
+  document.body.appendChild(overlay);
 }
 
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
@@ -1241,8 +1338,10 @@ function openCase(id) {
   document.addEventListener("keydown", onKey);
 
   const body = el("div", { class: "case-body" });
+  const synthWrap = el("div", {}); // síntesis inteligente (se refresca con la nota)
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
+  body.appendChild(synthWrap);
   body.appendChild(freshPanel);
   body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
@@ -1250,6 +1349,8 @@ function openCase(id) {
   const handlers = { ...cardHandlers(rebuild), onOpen: undefined };
   function rebuild() {
     lead = (state.results?.all || []).find((o) => o.id === id) || lead;
+    clear(synthWrap);
+    synthWrap.appendChild(caseSynthHero(lead));
     clear(cardWrap);
     const card = renderCard(lead, store.getTracking()[lead.id], handlers);
     card.classList.add("case-card");
@@ -1258,7 +1359,7 @@ function openCase(id) {
     cardWrap.appendChild(card);
   }
   rebuild();
-  loadFreshness(lead, freshPanel); // automático: lee su web al abrir el caso
+  loadFreshness(lead, freshPanel, rebuild); // automático: lee su web y sube la nota
 
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
@@ -1279,7 +1380,7 @@ function openCase(id) {
 // Medición AUTOMÁTICA de la web del lead: ¿desde cuándo no la mejoran? Se lee al
 // abrir el caso (cacheada en servidor), sin que el usuario pida nada. Honesta:
 // si no se puede leer, lo dice (gris) — nunca inventa.
-async function loadFreshness(lead, panel) {
+async function loadFreshness(lead, panel, onScoreChange) {
   clear(panel);
   if (!lead.website) {
     panel.appendChild(freshCard({ note: "Este lead no tiene web registrada — no podemos medir su frescura." }, "gray"));
@@ -1291,6 +1392,51 @@ async function loadFreshness(lead, panel) {
   clear(panel);
   const kind = r && r.ok && r.readable ? "ok" : "gray";
   panel.appendChild(freshCard(r, kind));
+  // La lectura de la web alimenta el motor: una web obsoleta sube la nota
+  // (indicio citado) por la misma vía que una verificación del analista.
+  if (kind === "ok" && allow("write") && applyWebToScore(lead.id, r)) {
+    await recompute();
+    onScoreChange?.();
+  }
+}
+
+// Enchufa la lectura de la web al scoring vía el sistema de verificación
+// (auto). Idempotente (upsert por filtro). @returns {boolean} si cambió algo.
+function applyWebToScore(leadId, r) {
+  const vs = webSignalsToVerifications(r);
+  if (!vs.length) return false;
+  const existing = store.getLeadVerifications(leadId);
+  let changed = false;
+  for (const v of vs) {
+    if (existing.some((x) => x.auto && x.filter === v.filter)) continue;
+    store.addVerification(leadId, v.filter, v.level, v.note, r.url || null, { auto: true, srcLabel: "Lectura de su web" });
+    changed = true;
+  }
+  return changed;
+}
+
+// Hero de SÍNTESIS inteligente: veredicto + temperatura + medidor animado +
+// palancas. Lee la nota ya enriquecida y la conversión del nicho. Dinámico: el
+// medidor sube solo al abrir.
+function caseSynthHero(lead) {
+  const sr = sectorRate(store.getLearning(), lead.sector, { minSample: 3 });
+  const syn = synthesize(lead, { sectorRate: sr });
+  const meterFill = el("span", { class: `synth-meter-fill synth-${syn.temp}`, style: "width:0%" });
+  // Animación: sube al valor real en el siguiente frame.
+  setTimeout(() => { meterFill.style.width = `${syn.conf}%`; }, 30);
+  const levers = el("div", { class: "synth-levers" }, syn.levers.length
+    ? syn.levers.map((l) => el("span", { class: `synth-lever ${l.strong ? "strong" : ""}`, title: l.note || "", text: l.label }))
+    : [el("span", { class: "synth-lever muted", text: "Sin palancas confirmadas aún" })]);
+  return el("div", { class: `synth-hero synth-h-${syn.temp}` }, [
+    el("div", { class: "synth-top" }, [
+      el("span", { class: `synth-temp synth-${syn.temp}`, text: syn.tempLabel }),
+      el("div", { class: "synth-meter" }, [meterFill]),
+      el("span", { class: "synth-conf", text: String(syn.conf) }),
+    ]),
+    el("p", { class: "synth-headline", text: syn.headline }),
+    levers,
+    el("div", { class: "synth-action" }, [el("span", { class: "synth-arrow", text: "→" }), el("span", { text: syn.nextAction })]),
+  ]);
 }
 
 function freshMetric(big, label, tone) {
@@ -1473,6 +1619,101 @@ const SEARCH_IDEAS = {
   ],
 };
 
+// ---- PILOTO AUTOMÁTICO: capta solo hasta el objetivo en 01 y XN -------------
+function autopilotState() {
+  if (!state._auto) {
+    let saved = {};
+    try { saved = JSON.parse(localStorage.getItem("oi:autopilot")) || {}; } catch { saved = {}; }
+    state._auto = { on: !!saved.on, target: saved.target || 100, _msg: "" };
+  }
+  return state._auto;
+}
+function saveAuto() {
+  try { localStorage.setItem("oi:autopilot", JSON.stringify({ on: state._auto.on, target: state._auto.target })); } catch { /* */ }
+}
+let autoTimer = null, autoEmpty = 0;
+
+function startAuto() {
+  if (!allow("discover") && !allow("write")) return;
+  const a = autopilotState(); a.on = true; a._msg = "Arrancando…"; autoEmpty = 0; saveAuto();
+  patchAutoPanel(); autoTick();
+}
+function stopAuto() {
+  const a = autopilotState(); a.on = false; a._msg = "Detenido."; saveAuto();
+  clearTimeout(autoTimer); patchAutoPanel();
+}
+
+async function autoTick() {
+  const a = autopilotState();
+  if (!a.on) return;
+  const prog = autoProgress(state.results?.all || [], { target: a.target, bar: AUTO_BAR });
+  if (prog.done) { a.on = false; a._msg = `🐋 Objetivo alcanzado: ${a.target} en 01 y ${a.target} en XN.`; saveAuto(); patchAutoPanel(); render(); return; }
+  // Foco guiado por tus intereses la mitad de las veces; si no, barrido base.
+  const ints = getInterests(6).map((i) => i.q).filter(Boolean);
+  const focus = ints.length && Math.random() < 0.5 ? ints[Math.floor(Math.random() * ints.length)] : "";
+  const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
+  let res = { added: 0, seen: 0 };
+  try {
+    res = await runBatch({ config: state.config, query: focus, existingNames: existing, perBatch: 3, minScore: 0, token: auth.getToken(), onSave: (lead) => store.saveUserLead(lead) });
+  } catch { /* sin red o límite del mapa */ }
+  await recompute();
+  if (!a.on) return; // pudo detenerse durante el await
+  if ((res.seen || 0) === 0) autoEmpty++; else autoEmpty = 0;
+  if (autoEmpty >= 4) {
+    a.on = false; a._msg = "Pausado: sin novedades o límite diario del mapa alcanzado. Reanúdalo cuando quieras."; saveAuto();
+    patchAutoPanel(); render(); return;
+  }
+  // Mejora por el camino: lee la web del mejor lead aún sin enriquecer y sube
+  // su nota (indicio citado). Una por tanda, best-effort.
+  try {
+    const cand = (state.results?.all || [])
+      .filter((o) => o && o.website && o.scores && o.scores.classification !== "discard"
+        && !store.getLeadVerifications(o.id).some((v) => v.auto))
+      .sort((a2, b2) => (b2.scores.confidence || 0) - (a2.scores.confidence || 0))[0];
+    if (cand) {
+      const r = await fetchWebFreshness(cand.website, auth.getToken());
+      if (r && r.ok && applyWebToScore(cand.id, r)) await recompute();
+    }
+  } catch { /* best-effort */ }
+  if (!a.on) return;
+
+  a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}.`;
+  patchAutoPanel();
+  autoTimer = setTimeout(autoTick, 11000); // ~16 consultas/min, bajo el límite
+}
+
+function patchAutoPanel() {
+  if (!root) return;
+  const node = root.querySelector(".auto-panel");
+  if (node && node.parentNode) node.parentNode.replaceChild(autopilotPanel(), node);
+}
+
+function autopilotPanel() {
+  const a = autopilotState();
+  const prog = autoProgress(state.results?.all || [], { target: a.target, bar: AUTO_BAR });
+  const track = (label, n, pct, cls) => el("div", { class: "auto-track-row" }, [
+    el("span", { class: "auto-tl", html: `<b>${label}</b> ${n}/${a.target}` }),
+    el("div", { class: "auto-track" }, [el("div", { class: `auto-fill auto-fill-${cls}`, style: `width:${pct}%` })]),
+  ]);
+  const targetInput = el("input", { type: "number", min: "1", max: "1000", value: String(a.target), class: "auto-target",
+    onChange: (e) => { a.target = Math.max(1, +e.target.value || 100); saveAuto(); patchAutoPanel(); } });
+  const toggle = el("button", { class: `btn-agent ${a.on ? "auto-on" : ""}`,
+    html: a.on ? "⏸ Detener piloto" : "🐋 Arrancar piloto automático",
+    onClick: () => (a.on ? stopAuto() : startAuto()) });
+  return el("div", { class: "auto-panel" }, [
+    el("div", { class: "auto-head" }, [
+      el("span", { class: "auto-title", text: "Piloto automático de captación" }),
+      a.on ? el("span", { class: "auto-live", text: "● EN MARCHA" }) : null,
+    ]),
+    el("p", { class: "hint", text: "Mete empresas cualificadas solo —guiado por tus intereses— hasta tener tu objetivo en 01 y en XN. Arráncalo y déjalo correr." }),
+    track("01", prog.q01, prog.pct01, "01"),
+    track("XN", prog.qxn, prog.pctxn, "xn"),
+    el("div", { class: "auto-ctl" }, [el("label", { class: "auto-tlbl", text: "Objetivo por marca:" }), targetInput, toggle]),
+    a._msg ? el("p", { class: "auto-msg", text: a._msg }) : null,
+    el("p", { class: "auto-foot", text: "Corre mientras la pestaña esté abierta y dentro del presupuesto diario del mapa (se pausa y reanuda solo). Cuenta empresas con nota ≥70; llegar a 100 de nota exige enriquecimiento (en construcción)." }),
+  ]);
+}
+
 // Detecta el sector de una búsqueda; si es un nicho inédito, lo CREA al vuelo
 // (con la consulta como búsqueda y lente neutra que el uso afina). Así el
 // captador incorpora sectores nuevos solo, sin que el usuario los configure.
@@ -1497,7 +1738,11 @@ function searchView() {
     return el("section", { class: "search-view" }, blocks);
   }
 
-  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>. Tú solo lees el resultado." }));
+  // Piloto automático arriba del todo: lo que no para de meter empresas solo.
+  blocks.push(autopilotPanel());
+
+  blocks.push(el("h3", { class: "capt-h", text: "O capta a mano una búsqueda concreta" }));
+  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>." }));
 
   // --- CAPTADOR AUTOMÁTICO ---
   const qInput = el("input", { type: "search", class: "search-city capt-input", placeholder: "¿A quién quieres captar?", autocomplete: "off" });

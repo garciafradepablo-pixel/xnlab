@@ -60,7 +60,7 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,color,role,token_at&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
   const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!u || tokenExpired(u.token_at)) return null; // sesión caducada → re-login
@@ -79,31 +79,71 @@ async function issueToken(id: string): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, name, password, color, token, targetName, role } = await req.json().catch(() => ({}));
+    const { action, name, password, color, token, targetName, role, avatar, invite } = await req.json().catch(() => ({}));
     const nm = String(name || "").trim();
     const nameLower = nm.toLowerCase();
 
-    // list: nombres + colores + roles (no sensible).
+    // list: nombres + colores + roles + avatar (no sensible).
     if (action === "list") {
-      const res = await rest(`connect_users?select=name,color,role`);
+      const res = await rest(`connect_users?select=name,color,role,avatar`);
       const rows = await res.json();
       return json({ ok: true, users: Array.isArray(rows) ? rows : [] });
     }
 
-    // register: crea cuenta, emite token, devuelve rol.
+    // setAvatar: el propio usuario (sesión válida) fija su emoji/avatar.
+    if (action === "setAvatar") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const av = String(avatar || "").trim().slice(0, 8); // emoji corto; nada de URLs largas
+      const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
+        method: "PATCH", body: JSON.stringify({ avatar: av || null }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo guardar el avatar." }, 500);
+      return json({ ok: true, avatar: av || null });
+    }
+
+    // createInvite: SOLO admin. Genera un código de invitación de un solo uso.
+    if (action === "createInvite") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN puede invitar." }, 403);
+      const code = randHex(10);
+      const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const inv = await rest(`connect_invites`, {
+        method: "POST", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ code, created_by: caller.name || null, role: normRole(String(role || "editor")), expires_at }),
+      });
+      if (!inv.ok) return json({ ok: false, error: "No se pudo crear la invitación." }, 500);
+      return json({ ok: true, code, expires_at });
+    }
+
+    // register: crea cuenta, emite token, devuelve rol. CERRADO: salvo el primer
+    // usuario del workspace, exige una invitación válida (registro privado).
     if (action === "register") {
       if (nm.length < 2) return json({ ok: false, error: "El nombre debe tener al menos 2 caracteres." });
       if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
       const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const existing = await chk.json();
       if (Array.isArray(existing) && existing.length) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
-      // El PRIMER usuario del workspace nace admin.
+      // El PRIMER usuario del workspace nace admin y no necesita invitación.
       const anyRes = await rest(`connect_users?select=id&limit=1`);
       const any = await anyRes.json();
       const firstUser = !(Array.isArray(any) && any.length);
+      // Registro cerrado: si ya hay usuarios, exige invitación válida.
+      let inviteRole: string | null = null;
+      const inviteCode = String(invite || "").trim();
+      if (!firstUser) {
+        if (!inviteCode) return json({ ok: false, error: "Necesitas una invitación para crear tu usuario. Pide el enlace a un admin." }, 403);
+        const ir = await (await rest(`connect_invites?select=code,role,used_by,expires_at&code=eq.${encodeURIComponent(inviteCode)}`)).json();
+        const row0 = Array.isArray(ir) ? ir[0] : null;
+        if (!row0) return json({ ok: false, error: "Invitación no válida." }, 403);
+        if (row0.used_by) return json({ ok: false, error: "Esa invitación ya se usó." }, 403);
+        if (row0.expires_at && new Date(row0.expires_at) < new Date()) return json({ ok: false, error: "La invitación ha caducado." }, 403);
+        inviteRole = normRole(row0.role || "editor");
+      }
       const salt = randHex(16);
       const pass_hash = await sha256(`${salt}::${password}`);
-      const newRole = firstUser ? "admin" : "editor";
+      const newRole = firstUser ? "admin" : (inviteRole || "editor");
       const ins = await rest(`connect_users`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -114,28 +154,33 @@ Deno.serve(async (req) => {
         if (ins.status === 409 || t.includes("duplicate")) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
         return json({ ok: false, error: "No se pudo crear el usuario." }, 500);
       }
+      if (!firstUser && inviteCode) {
+        await rest(`connect_invites?code=eq.${encodeURIComponent(inviteCode)}`, {
+          method: "PATCH", body: JSON.stringify({ used_by: nm, used_at: new Date().toISOString() }),
+        });
+      }
       const row = (await ins.json())[0];
       const tok = await issueToken(row.id);
-      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, token: tok } });
+      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, token: tok } });
     }
 
     // login: verifica, emite token, devuelve rol.
     if (action === "login") {
-      const res = await rest(`connect_users?select=id,name,color,role,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const rows = await res.json();
       const u = Array.isArray(rows) ? rows[0] : null;
       if (!u) return json({ ok: false, error: "Usuario no encontrado." });
       const h = await sha256(`${u.salt}::${password}`);
       if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
       const tok = await issueToken(u.id);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, token: tok } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, token: tok } });
     }
 
     // me: valida un token y devuelve el usuario+rol (fuente de verdad del rol).
     if (action === "me") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null } });
     }
 
     // setPassword: el propio usuario (sesión válida) cambia su contraseña. Sal

@@ -64,7 +64,11 @@ function extract(html: string) {
   const generator = gen ? gen[1].slice(0, 80) : null;
   const tt = h.match(/<title[^>]*>([^<]*)<\/title>/i);
   const title = tt ? tt[1].trim().slice(0, 140) : null;
-  return { copyright_year, has_viewport, generator, title };
+  // Señales honestas adicionales (frases específicas; no inventamos).
+  const opening = /(pr[oó]xima\s+apertura|nueva\s+apertura|gran\s+apertura|coming\s+soon|pr[oó]ximamente|nuevo\s+local|nueva\s+sede)/i.test(h);
+  const hiring = /(únete\s+al\s+equipo|trabaja\s+con\s+nosotros|estamos\s+contratando|ofertas?\s+de\s+empleo|we'?re\s+hiring|join\s+our\s+team)/i.test(h);
+  const booking = /(reservar|reserva\s+(?:tu\s+)?mesa|pide\s+cita|book\s+(?:a\s+table|now)|agendar?\s+cita)/i.test(h);
+  return { copyright_year, has_viewport, generator, title, signals: { opening, hiring, booking } };
 }
 
 function verdict(sig: { copyright_year: number | null; has_viewport: boolean }): string {
@@ -129,7 +133,7 @@ Deno.serve(async (req: Request) => {
   const record = {
     url, fetched_at: new Date().toISOString(), http_status: status,
     copyright_year: sig.copyright_year, has_viewport: sig.has_viewport,
-    generator: sig.generator, title: sig.title, note,
+    generator: sig.generator, title: sig.title, note, signals: sig.signals,
   };
   try { await db.from("web_enrichment").upsert(record); } catch { /* best-effort */ }
   return json({ ok: true, readable: true, ...row(record) });
@@ -139,6 +143,7 @@ function row(d: any) {
   return {
     url: d.url, fetched_at: d.fetched_at, http_status: d.http_status,
     copyright_year: d.copyright_year, has_viewport: d.has_viewport,
-    generator: d.generator, title: d.title, note: d.note, readable: true,
+    generator: d.generator, title: d.title, note: d.note,
+    signals: d.signals || {}, readable: true,
   };
 }

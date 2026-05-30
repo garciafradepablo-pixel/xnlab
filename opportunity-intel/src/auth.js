@@ -113,10 +113,11 @@ export function login(name, password) {
 // Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
 // sesión persista y se pueda entrar sin red la próxima vez en este navegador.
 // Guarda también rol y token de sesión devueltos por el servidor.
-function cacheUser(name, color, password, role, token) {
+function cacheUser(name, color, password, role, token, avatar) {
+  const prev = getUsers().find((u) => norm(u.name) === norm(name));
   const users = getUsers().filter((u) => norm(u.name) !== norm(name));
   users.push({
-    name, color, hash: hash(password),
+    name, color, avatar: avatar ?? prev?.avatar ?? null, hash: hash(password),
     role: role ? normalizeRole(role) : DEFAULT_ROLE,
     token: token || null,
     createdAt: new Date().toISOString(), remote: true,
@@ -129,13 +130,13 @@ function cacheUser(name, color, password, role, token) {
  * local. Si el servidor no responde, cae al modo local para no bloquear.
  * @returns {Promise<{ok, error?}>}
  */
-export async function createUserAsync(name, password, color) {
+export async function createUserAsync(name, password, color, invite) {
   const n = String(name || "").trim();
   if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
   if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
   const finalColor = color || nextFreeColor();
   try {
-    const r = await remote.remoteRegister(n, password, finalColor);
+    const r = await remote.remoteRegister(n, password, finalColor, invite);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
     cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
     return { ok: true };
@@ -163,7 +164,7 @@ export async function loginAsync(name, password) {
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
-      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
+      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar);
       write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
       return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
@@ -218,11 +219,32 @@ export async function syncRemoteColors() {
     const byName = new Map(users.map((u) => [norm(u.name), u]));
     for (const r of list) {
       const ex = byName.get(norm(r.name));
-      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); } // color y rol: el servidor manda
-      else users.push({ name: r.name, color: r.color, role: r.role ? normalizeRole(r.role) : undefined, colorOnly: true }); // para teñir/badge
+      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; } // color/rol/avatar: el servidor manda
+      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, colorOnly: true }); // para teñir/badge
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
+}
+
+/** Genera un código de invitación (solo admin). {ok, code?, error?} */
+export async function createInvite(role) {
+  const s = read(SESSION_KEY, null);
+  if (!s?.token) return { ok: false, error: "Necesitas una sesión verificada (con token)." };
+  try { return await remote.remoteCreateInvite(s.token, role || "editor"); }
+  catch { return { ok: false, error: "Sin conexión para crear la invitación." }; }
+}
+
+/** Fija el avatar (emoji) del usuario en sesión. Server-first; cae a local. */
+export async function setAvatar(avatar) {
+  const av = String(avatar || "").trim().slice(0, 8);
+  const s = read(SESSION_KEY, null);
+  const users = getUsers();
+  const u = s && users.find((x) => norm(x.name) === norm(s.name));
+  if (u) { u.avatar = av || null; write(USERS_KEY, users); }
+  try {
+    if (s?.token) { const r = await remote.remoteSetAvatar(s.token, av); if (r && r.ok) return { ok: true, avatar: av }; }
+  } catch { /* sin red: queda en local */ }
+  return { ok: true, avatar: av, local: !s?.token };
 }
 
 export function logout() { storage.removeItem(SESSION_KEY); }
@@ -233,7 +255,7 @@ export function currentUser() {
   if (!s) return null;
   const u = getUsers().find((x) => norm(x.name) === norm(s.name));
   if (!u) return null;
-  return { name: u.name, color: u.color, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+  return { name: u.name, color: u.color, avatar: u.avatar || null, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
 }
 
 /** Rol del usuario en sesión (admin/editor/viewer/analyst). viewer si no hay sesión. */

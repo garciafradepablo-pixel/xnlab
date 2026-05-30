@@ -29,9 +29,14 @@ async function call(action, payload) {
   return res.json();
 }
 
-/** Registra una cuenta. {ok, user:{name,color,role,token}?, error?} (puede lanzar sin red). */
-export function remoteRegister(name, password, color) {
-  return call("register", { name, password, color });
+/** Registra una cuenta (requiere invitación salvo el primer usuario). */
+export function remoteRegister(name, password, color, invite) {
+  return call("register", { name, password, color, invite });
+}
+
+/** Genera un código de invitación (solo admin; el servidor refuerza). */
+export function remoteCreateInvite(token, role) {
+  return call("createInvite", { token, role });
 }
 
 /** Verifica credenciales. {ok, user:{name,color,role,token}?, error?} (puede lanzar sin red). */
@@ -52,6 +57,11 @@ export function remoteSetRole(token, targetName, role) {
 /** Cambia la contraseña del propio usuario (requiere token de sesión válido). */
 export function remoteSetPassword(token, password) {
   return call("setPassword", { token, password });
+}
+
+/** Fija el avatar (emoji) del propio usuario (requiere token de sesión válido). */
+export function remoteSetAvatar(token, avatar) {
+  return call("setAvatar", { token, avatar });
 }
 
 /** Lista de {name, color, role} de todas las cuentas. [] si falla. */
