@@ -587,6 +587,9 @@ output { font-size: 12px; color: var(--accent); }
 
 /* ============================ HIGH-IMPACT CARD ============================ */
 .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 16px; }
+/* Velocidad en listas largas: el navegador omite renderizar tarjetas fuera de
+   pantalla; contain-intrinsic-size evita saltos del scroll. */
+.cards > .card { content-visibility: auto; contain-intrinsic-size: auto 440px; }
 .card {
   background: linear-gradient(180deg, var(--panel) 0%, #13151a 100%);
   border: 1px solid var(--line); border-radius: 14px; padding: 16px;
