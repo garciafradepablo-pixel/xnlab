@@ -85,10 +85,12 @@ Detección casi en tiempo real de "momentos" (aperturas, rondas, contrataciones,
 cambios de web) por feeds/alertas. *Resultado: Connect avisa del momento antes
 que la competencia — la esencia de "captar el momento, no la empresa".*
 
-### Fase 5 — Vista "Hoy" (claridad ejecutiva)
+### Fase 5 — Vista "Hoy" (claridad ejecutiva) ✅ HECHA (v12)
 Pantalla de entrada: las 3 mejores llamadas del día, el siguiente paso de cada
 una, y el pulso del pipeline. *Resultado: cero fricción — abrir y saber a quién
-llamar.*
+llamar.* **Enviado:** `src/today.js` (lógica pura, 17 checks), tab "Hoy" por
+defecto, pulso (vivas · por llamar · reuniones · cartera con reparto 01/XN), y
+regla de venta cableada (una conversación viva se cierra antes que una fría).
 
 ### Fase 6 — Secuencias de seguimiento multi-toque
 Tras "no contesta", Connect propone el siguiente toque (canal + cuándo + guion)
@@ -100,10 +102,11 @@ perder nuestra selección de élite.*
 el Índice de Éxito y las lentes se recalibran con datos de verdad de 01 y XN.
 *Resultado: con cada llamada, Connect predice mejor que nadie quién cierra.*
 
-### Fase 8 — Sectores y lentes definibles desde la app
+### Fase 8 — Sectores y lentes definibles desde la app ✅ HECHA (v11)
 El usuario crea un sector nuevo (tatuaje, música…) y define su lente (qué pesa).
 *Resultado: versatilidad total — Connect se adapta a cualquier nicho sin tocar
-código.*
+código.* **Enviado:** `src/customsectors.js` (53 checks), gestor de sectores en
+"Buscar leads", consultas que alimentan al agente y lente que alimenta al motor.
 
 ### Fase 9 — Accesibilidad, rendimiento y pulido
 **Resuelve H6, H10.** Roles ARIA, foco, teclado, contraste; separar datos demo
@@ -116,6 +119,25 @@ listo para enviar — en la voz de 01/XN. *Resultado: de "a quién llamar" a "qu
 decir y qué mandar", cerrando el círculo de captación a conversión.*
 
 ---
+
+## 3b. Estado de ejecución (vivo)
+
+| Fase | Estado |
+|---|---|
+| 5 — Vista "Hoy" | ✅ Enviada (v12) |
+| 8 — Sectores definibles | ✅ Enviada (v11) |
+| 2 — Blindaje UI (partir `app.js` + tests de vista) | ⏳ Siguiente |
+| 3 — Enriquecimiento automático de leads | ⏳ Alta prioridad (sube leads a 70+ solos) |
+| 10 — Guion + dossier por lead | ⏳ Cierra el círculo captación→conversión |
+| 6 — Secuencias de seguimiento | ⏳ |
+| 1 — Backend compartido (Pablo y Javi mismo estado) | ⏳ Requiere decisión de infra |
+| 4 — Señales de intención en vivo | ⏳ |
+| 7 — Aprendizaje profundo del cierre | ⏳ |
+| 9 — Accesibilidad + rendimiento | ⏳ |
+
+**Móvil:** el ranking de 13 columnas que se recortaba por los lados ahora es de
+tarjetas apiladas (empresa + confianza arriba, resto etiqueta→valor). Nada se
+pierde. (v11)
 
 ## 4. Principio rector (no negociable en ninguna fase)
 
