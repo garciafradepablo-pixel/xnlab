@@ -70,6 +70,13 @@ export function availableColors() {
   return SIGNATURE_COLORS.filter((c) => !used.has(c));
 }
 
+/** Mapa color → nombre del usuario que lo firma (para bloquear los cogidos). */
+export function colorOwners() {
+  const m = new Map();
+  for (const u of getUsers()) if (u.color && !m.has(u.color)) m.set(u.color, u.name);
+  return m;
+}
+
 /** Color libre que aún no usa nadie (o el primero si todos cogidos). */
 export function nextFreeColor() {
   return availableColors()[0] || SIGNATURE_COLORS[0];

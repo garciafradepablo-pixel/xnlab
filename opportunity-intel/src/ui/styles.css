@@ -95,6 +95,8 @@ html, body { height: 100%; }
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
 .swatch.sel { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px currentColor; }
+.swatch.taken { cursor: not-allowed; opacity: 0.45; filter: grayscale(0.4); position: relative; display: flex; align-items: center; justify-content: center; }
+.swatch.taken .swatch-lock { font-size: 13px; line-height: 1; filter: drop-shadow(0 0 1px rgba(0,0,0,0.8)); }
 .auth-go { margin-top: 4px; }
 .auth-msg { color: var(--red); font-size: 12px; min-height: 14px; margin: 0; text-align: center; }
 .auth-switch { background: transparent; border: 0; color: var(--o1); font-size: 12px; cursor: pointer; }

@@ -110,16 +110,25 @@ function renderAuth() {
   const nameI = el("input", { class: "auth-f", placeholder: "Usuario", autocomplete: "username" });
   const passI = el("input", { class: "auth-f", type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
 
-  // Selector de color (solo al crear). Solo se ofrecen los colores aún libres:
-  // un color ya elegido por otra cuenta desaparece del catálogo.
-  const freeColors = auth.availableColors();
-  let chosenColor = freeColors[0] || null;
-  const swatches = el("div", { class: "swatches" }, freeColors.map((c) => {
+  // Selector de color (solo al crear). Se muestran los 8 colores, pero los que
+  // ya pertenecen a alguien salen BLOQUEADOS (no seleccionables) con su dueño;
+  // solo quedan elegibles los libres. Por defecto se marca el primer libre.
+  const owners = auth.colorOwners();
+  let chosenColor = auth.availableColors()[0] || null;
+  const swatches = el("div", { class: "swatches" }, auth.SIGNATURE_COLORS.map((c) => {
+    const owner = owners.get(c);
+    if (owner) {
+      // Cogido: bloqueado, atenuado, con candado y nombre del dueño.
+      return el("button", {
+        class: "swatch taken", style: `background:${c}`, disabled: "",
+        title: `Reservado para ${owner}`, html: "<span class='swatch-lock'>🔒</span>",
+      });
+    }
     const sw = el("button", { class: `swatch ${c === chosenColor ? "sel" : ""}`, style: `background:${c}`, title: c });
     sw.addEventListener("click", () => { chosenColor = c; [...swatches.children].forEach((x) => x.classList?.remove?.("sel")); sw.classList.add("sel"); });
     return sw;
   }));
-  const noColors = freeColors.length === 0;
+  const noColors = chosenColor === null;
 
   const busy = (on, label) => { primary.disabled = on; primary.textContent = on ? "Conectando…" : label; };
 

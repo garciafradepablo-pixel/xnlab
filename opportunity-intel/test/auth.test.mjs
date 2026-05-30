@@ -158,5 +158,13 @@ ok(!free.includes("#3fb950") && !free.includes("#f0883e"), "los colores tomados 
 ok(auth.SIGNATURE_COLORS.filter((c) => !usedNow.has(c)).length === free.length, "ofrece exactamente los colores libres");
 ok(!usedNow.has(auth.nextFreeColor()) || free.length === 0, "nextFreeColor() devuelve un color libre");
 
+// 13. colorOwners: cada color cogido sabe a qué usuario pertenece (para bloquearlo).
+const owners = auth.colorOwners();
+ok([...usedNow].every((c) => owners.has(c)), "todo color en uso tiene dueño conocido");
+ok(free.every((c) => !owners.has(c)), "los colores libres no tienen dueño");
+const someTaken = "#3fb950";
+ok(auth.getUsers().some((u) => u.color === someTaken && u.name === owners.get(someTaken)),
+   "el dueño de un color cogido es un usuario real que lo firma");
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
