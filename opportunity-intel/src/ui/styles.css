@@ -361,8 +361,11 @@ output { font-size: 12px; color: var(--accent); }
 .today-sub { color: var(--ink-dim); font-size: 14px; margin-top: 4px; }
 
 .pulse { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 10px; }
-.kpi { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 14px; }
-.kpi-n { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.02em; }
+.kpi { background: linear-gradient(180deg, rgba(255,255,255,.035), transparent 60%), var(--panel);
+  border: 1px solid var(--line); border-radius: 16px; padding: 18px 16px; box-shadow: var(--sh-1);
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease; }
+.kpi:hover { transform: translateY(-2px); border-color: #3a3f4a; box-shadow: var(--sh-2); }
+.kpi-n { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1; letter-spacing: -0.03em; }
 .kpi-l { color: var(--ink-dim); font-size: 12px; margin-top: 6px; }
 .kpi-accent { border-color: rgba(212,175,90,.4); background: linear-gradient(180deg, rgba(212,175,90,.08), transparent); }
 .kpi-accent .kpi-n { color: var(--accent); }
