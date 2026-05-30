@@ -653,6 +653,23 @@ output { font-size: 12px; color: var(--accent); }
 .sync-badge.sync-syncing { color: #c9a227; border-color: rgba(201, 162, 39, 0.4); }
 .sync-badge.sync-offline, .sync-badge.sync-local { color: #f0883e; border-color: rgba(240, 136, 62, 0.4); }
 
+/* Badge de rol (RBAC) junto a la firma del usuario. */
+.role-badge { font-size: 9px; font-weight: 800; letter-spacing: 0.6px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-dim); text-transform: uppercase; }
+.role-badge.role-admin { color: #c9a227; border-color: rgba(201, 162, 39, 0.5); }
+.role-badge.role-editor { color: #3fb950; border-color: rgba(63, 185, 80, 0.5); }
+.role-badge.role-viewer { color: #9aa3b0; }
+.role-badge.role-analyst { color: #4a9eff; border-color: rgba(74, 158, 255, 0.5); }
+
+/* Aviso de solo lectura para roles sin permiso de mutación. */
+.ro-notice { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid #f0883e; border-radius: var(--radius); padding: 12px 14px; color: var(--ink-dim); font-size: 13px; }
+
+/* Gestión de usuarios (admin). */
+.users-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.user-row { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; }
+.user-row-name { flex: 1; font-weight: 600; }
+.role-select { min-width: 120px; }
+.role-status { font-size: 12px; color: var(--ink-dim); min-width: 60px; }
+
 /* ---- Cobertura por sector ---- */
 .sector-cov { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; }
 .sector-cov h3 { margin: 0 0 10px; font-size: 14px; }

@@ -15,6 +15,7 @@
 // =============================================================================
 
 import * as usersync from "./usersync.js";
+import { normalizeRole, DEFAULT_ROLE } from "./roles.js";
 
 const NS = "oi:";
 const USERS_KEY = `${NS}users`;
@@ -84,20 +85,29 @@ export function createUser(name, password, color) {
   return { ok: true };
 }
 
-/** Inicia sesión. Devuelve {ok, error?, user?}. */
+/** Inicia sesión (local). Devuelve {ok, error?, user?}. */
 export function login(name, password) {
   const u = getUsers().find((x) => norm(x.name) === norm(name));
   if (!u) return { ok: false, error: "Usuario no encontrado." };
   if (u.hash !== hash(password)) return { ok: false, error: "Contraseña incorrecta." };
-  write(SESSION_KEY, { name: u.name });
-  return { ok: true, user: { name: u.name, color: u.color } };
+  // Sesión local sin backend: conserva el rol cacheado (o el por defecto). Sin
+  // token, el servidor rechazará mutaciones — es el comportamiento honesto
+  // offline: puedes mirar, pero escribir compartido exige sesión verificada.
+  write(SESSION_KEY, { name: u.name, role: u.role || DEFAULT_ROLE, token: u.token || null });
+  return { ok: true, user: { name: u.name, color: u.color, role: u.role || DEFAULT_ROLE } };
 }
 
 // Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
 // sesión persista y se pueda entrar sin red la próxima vez en este navegador.
-function cacheUser(name, color, password) {
+// Guarda también rol y token de sesión devueltos por el servidor.
+function cacheUser(name, color, password, role, token) {
   const users = getUsers().filter((u) => norm(u.name) !== norm(name));
-  users.push({ name, color, hash: hash(password), createdAt: new Date().toISOString(), remote: true });
+  users.push({
+    name, color, hash: hash(password),
+    role: role ? normalizeRole(role) : DEFAULT_ROLE,
+    token: token || null,
+    createdAt: new Date().toISOString(), remote: true,
+  });
   write(USERS_KEY, users);
 }
 
@@ -114,7 +124,7 @@ export async function createUserAsync(name, password, color) {
   try {
     const r = await remote.remoteRegister(n, password, finalColor);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
-    cacheUser(r.user.name, r.user.color, password);
+    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
     return { ok: true };
   } catch {
     // Sin red: crea al menos en local (se sincronizará cuando vuelva la red).
@@ -141,9 +151,9 @@ export async function loginAsync(name, password) {
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
-      cacheUser(r.user.name, r.user.color, password);
-      write(SESSION_KEY, { name: r.user.name });
-      return { ok: true, user: { name: r.user.name, color: r.user.color } };
+      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
+      write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
+      return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
     // El backend respondió con un error claro (no encontrado / contraseña mal).
     if (r && r.error) return { ok: false, error: r.error };
@@ -164,7 +174,19 @@ export async function migrateLocalUser(name, password) {
     if (r && (r.ok || /existe/i.test(r.error || ""))) {
       const users = getUsers();
       const t = users.find((x) => norm(x.name) === norm(name));
-      if (t) { t.remote = true; write(USERS_KEY, users); }
+      if (t) {
+        t.remote = true;
+        // Si el registro devolvió rol/token (cuenta nueva en el servidor),
+        // adóptalos para que la sesión quede verificada y pueda escribir.
+        if (r.ok && r.user) {
+          t.role = normalizeRole(r.user.role);
+          if (r.user.token) {
+            t.token = r.user.token;
+            write(SESSION_KEY, { name: t.name, role: t.role, token: t.token });
+          }
+        }
+        write(USERS_KEY, users);
+      }
     }
   } catch { /* sin red: se migrará en el próximo login */ }
 }
@@ -179,8 +201,8 @@ export async function syncRemoteColors() {
     const byName = new Map(users.map((u) => [norm(u.name), u]));
     for (const r of list) {
       const ex = byName.get(norm(r.name));
-      if (ex) ex.color = r.color; // color es fijo: el del servidor manda
-      else users.push({ name: r.name, color: r.color, colorOnly: true }); // solo para teñir
+      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); } // color y rol: el servidor manda
+      else users.push({ name: r.name, color: r.color, role: r.role ? normalizeRole(r.role) : undefined, colorOnly: true }); // para teñir/badge
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
@@ -188,12 +210,64 @@ export async function syncRemoteColors() {
 
 export function logout() { storage.removeItem(SESSION_KEY); }
 
-/** Usuario en sesión (con su color) o null. */
+/** Usuario en sesión (con color y rol) o null. */
 export function currentUser() {
   const s = read(SESSION_KEY, null);
   if (!s) return null;
   const u = getUsers().find((x) => norm(x.name) === norm(s.name));
-  return u ? { name: u.name, color: u.color } : null;
+  if (!u) return null;
+  return { name: u.name, color: u.color, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+}
+
+/** Rol del usuario en sesión (admin/editor/viewer/analyst). viewer si no hay sesión. */
+export function currentRole() {
+  const u = currentUser();
+  return u ? u.role : "viewer";
+}
+
+/** Token de sesión opaco para autorizar mutaciones en el servidor. null si no hay. */
+export function getToken() {
+  const s = read(SESSION_KEY, null);
+  return s ? (s.token || null) : null;
+}
+
+/**
+ * Revalida la sesión contra el servidor (fuente de verdad del rol): si un admin
+ * cambió tu rol, se refleja aquí. Best-effort; si no hay red, deja lo cacheado.
+ * @returns {Promise<{ok:boolean, role?:string}>}
+ */
+export async function refreshSession() {
+  const s = read(SESSION_KEY, null);
+  if (!s || !s.token) return { ok: false };
+  try {
+    const r = await remote.remoteMe(s.token);
+    if (r && r.ok && r.user) {
+      const role = normalizeRole(r.user.role);
+      write(SESSION_KEY, { ...s, role });
+      const users = getUsers();
+      const u = users.find((x) => norm(x.name) === norm(s.name));
+      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; write(USERS_KEY, users); }
+      return { ok: true, role };
+    }
+    return { ok: false };
+  } catch { return { ok: false }; }
+}
+
+/** Cambia el rol de otro usuario (solo admin; el servidor refuerza con 403). */
+export async function setUserRole(targetName, role) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
+  try {
+    const r = await remote.remoteSetRole(token, targetName, role);
+    if (r && r.ok) {
+      // Refleja el cambio en la caché local para el badge.
+      const users = getUsers();
+      const u = users.find((x) => norm(x.name) === norm(targetName));
+      if (u) { u.role = normalizeRole(role); write(USERS_KEY, users); }
+      return { ok: true };
+    }
+    return { ok: false, error: (r && r.error) || "No se pudo cambiar el rol." };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }
 
 /** Color de un usuario por nombre (para teñir su actividad). null si no existe. */

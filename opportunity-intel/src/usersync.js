@@ -9,6 +9,11 @@
 // El backend es la fuente de verdad; auth.js cachea en local para mantener la
 // sesión y poder entrar sin red. Las contraseñas se hashean y verifican en el
 // servidor (SHA-256 + sal por usuario); el cliente nunca ve los hashes.
+//
+// RBAC: el login/registro devuelven el ROL del usuario y un TOKEN de sesión
+// opaco. El token viaja en las llamadas que mutan datos (estado compartido,
+// descubrimiento) y el servidor decide con él si tu rol tiene permiso (403 si
+// no). El token NO es la service_role key — es un identificador de sesión.
 // =============================================================================
 
 const ENDPOINT = "https://fecfncfkkgzazuetcllx.supabase.co/functions/v1/users";
@@ -24,17 +29,27 @@ async function call(action, payload) {
   return res.json();
 }
 
-/** Registra una cuenta en el servidor. {ok, user?, error?} (puede lanzar si no hay red). */
+/** Registra una cuenta. {ok, user:{name,color,role,token}?, error?} (puede lanzar sin red). */
 export function remoteRegister(name, password, color) {
   return call("register", { name, password, color });
 }
 
-/** Verifica credenciales en el servidor. {ok, user?, error?} (puede lanzar si no hay red). */
+/** Verifica credenciales. {ok, user:{name,color,role,token}?, error?} (puede lanzar sin red). */
 export function remoteLogin(name, password) {
   return call("login", { name, password });
 }
 
-/** Lista de {name, color} de todas las cuentas (para teñir por autor). [] si falla. */
+/** Revalida un token y devuelve el usuario+rol actuales del servidor. {ok, user?} */
+export function remoteMe(token) {
+  return call("me", { token });
+}
+
+/** Cambia el rol de otro usuario (solo admin lo logra; el servidor refuerza). */
+export function remoteSetRole(token, targetName, role) {
+  return call("setRole", { token, targetName, role });
+}
+
+/** Lista de {name, color, role} de todas las cuentas. [] si falla. */
 export async function remoteList() {
   try { const r = await call("list", {}); return r.ok ? r.users : []; }
   catch { return []; }

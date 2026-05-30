@@ -1,7 +1,18 @@
 // Tests del estado compartido (store.js + statesync) con un servidor fake en
 // memoria. Verifica: subir/bajar estado entre "navegadores", fusión no
 // destructiva, resolución de conflicto sin perder datos, e indicador de sync.
-import * as store from "../src/store.js";
+//
+// El estado compartido ahora exige un rol con permiso de escritura, así que
+// montamos una sesión ADMIN en localStorage ANTES de importar store.js (que
+// captura localStorage al cargar). Importación dinámica para asegurar el orden.
+globalThis.localStorage = (() => {
+  const m = new Map();
+  return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
+})();
+globalThis.localStorage.setItem("oi:users", JSON.stringify([{ name: "Tester", color: "#4a9eff", role: "admin", token: "tok-admin" }]));
+globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Tester", role: "admin", token: "tok-admin" }));
+
+const store = await import("../src/store.js");
 
 let passed = 0, failed = 0;
 function ok(cond, msg) { if (cond) { passed++; } else { failed++; console.error("FAIL:", msg); } }
@@ -81,6 +92,23 @@ await (async function run() {
   await store.pushSharedState();
   ok(notified === "synced", "onSyncState notifica el estado 'synced'");
   unsub();
+
+  // —— RBAC en cliente: un VIEWER no empuja cambios al servidor ——————————————
+  // (defensa de cortesía; el servidor además devuelve 403 — eso se cubre en
+  // roles.test.mjs y en la verificación E2E.)
+  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Mirona", role: "viewer", token: "tok-viewer" }));
+  globalThis.localStorage.setItem("oi:users", JSON.stringify([{ name: "Mirona", color: "#4a9eff", role: "viewer", token: "tok-viewer" }]));
+  const revBefore = server.srv.rev;
+  let viewerTriedToSave = false;
+  const origSave = server.remoteSaveState;
+  server.remoteSaveState = async (...a) => { viewerTriedToSave = true; return origSave(...a); };
+  const viewerPush = await store.pushSharedState();
+  ok(!viewerPush.ok, "viewer: pushSharedState no procede");
+  ok(!viewerTriedToSave, "viewer: ni siquiera llama al servidor (corte de cortesía)");
+  ok(server.srv.rev === revBefore, "viewer: el documento del servidor no cambia");
+  server.remoteSaveState = origSave;
+  // Restaura la sesión admin para no afectar a otras comprobaciones.
+  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Tester", role: "admin", token: "tok-admin" }));
 
   console.log(`${passed} passed, ${failed} failed`);
   if (failed) process.exit(1);

@@ -1,0 +1,164 @@
+// =============================================================================
+// users — Cuentas durables + RBAC (Supabase).
+//
+// Acciones: register, login, me, list, setRole.
+// - Contraseñas: SHA-256(salt + "::" + password), sal por usuario. El cliente
+//   nunca ve los hashes.
+// - Sesión: al register/login se emite un TOKEN opaco (no es la service_role
+//   key) que el cliente guarda y envía en las llamadas que mutan datos. El
+//   servidor resuelve token → usuario/rol y decide permisos.
+// - Roles: admin/editor/viewer/analyst. El primer usuario del workspace nace
+//   admin; el resto editor. setRole es solo-admin y protege al último admin.
+//
+// verify_jwt=false: la publishable no es un JWT; la autenticación es propia.
+// =============================================================================
+
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+const cors = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const json = (body: unknown, status = 200) =>
+  new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
+
+const ROLES = ["admin", "editor", "viewer", "analyst"];
+const normRole = (r: string) => (ROLES.includes(r) ? r : "viewer");
+
+async function sha256(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+function randHex(n: number): string {
+  const a = new Uint8Array(n);
+  crypto.getRandomValues(a);
+  return [...a].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+async function rest(path: string, init: RequestInit = {}) {
+  return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...init,
+    headers: {
+      apikey: SERVICE_KEY,
+      Authorization: `Bearer ${SERVICE_KEY}`,
+      "Content-Type": "application/json",
+      ...(init.headers || {}),
+    },
+  });
+}
+
+async function userByToken(token: string) {
+  if (!token) return null;
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role&token=eq.${encodeURIComponent(token)}`);
+  const rows = await res.json();
+  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+}
+
+async function issueToken(id: string): Promise<string> {
+  const token = randHex(24);
+  await rest(`connect_users?id=eq.${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ token, token_at: new Date().toISOString() }),
+  });
+  return token;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  try {
+    const { action, name, password, color, token, targetName, role } = await req.json().catch(() => ({}));
+    const nm = String(name || "").trim();
+    const nameLower = nm.toLowerCase();
+
+    // list: nombres + colores + roles (no sensible).
+    if (action === "list") {
+      const res = await rest(`connect_users?select=name,color,role`);
+      const rows = await res.json();
+      return json({ ok: true, users: Array.isArray(rows) ? rows : [] });
+    }
+
+    // register: crea cuenta, emite token, devuelve rol.
+    if (action === "register") {
+      if (nm.length < 2) return json({ ok: false, error: "El nombre debe tener al menos 2 caracteres." });
+      if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
+      const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const existing = await chk.json();
+      if (Array.isArray(existing) && existing.length) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
+      // El PRIMER usuario del workspace nace admin.
+      const anyRes = await rest(`connect_users?select=id&limit=1`);
+      const any = await anyRes.json();
+      const firstUser = !(Array.isArray(any) && any.length);
+      const salt = randHex(16);
+      const pass_hash = await sha256(`${salt}::${password}`);
+      const newRole = firstUser ? "admin" : "editor";
+      const ins = await rest(`connect_users`, {
+        method: "POST",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ name: nm, name_lower: nameLower, color: color || "#4a9eff", pass_hash, salt, role: newRole }),
+      });
+      if (!ins.ok) {
+        const t = await ins.text();
+        if (ins.status === 409 || t.includes("duplicate")) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
+        return json({ ok: false, error: "No se pudo crear el usuario." }, 500);
+      }
+      const row = (await ins.json())[0];
+      const tok = await issueToken(row.id);
+      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, token: tok } });
+    }
+
+    // login: verifica, emite token, devuelve rol.
+    if (action === "login") {
+      const res = await rest(`connect_users?select=id,name,color,role,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const rows = await res.json();
+      const u = Array.isArray(rows) ? rows[0] : null;
+      if (!u) return json({ ok: false, error: "Usuario no encontrado." });
+      const h = await sha256(`${u.salt}::${password}`);
+      if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
+      const tok = await issueToken(u.id);
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, token: tok } });
+    }
+
+    // me: valida un token y devuelve el usuario+rol (fuente de verdad del rol).
+    if (action === "me") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role } });
+    }
+
+    // setRole: SOLO admin. Protege al último admin de quedarse sin él.
+    if (action === "setRole") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN puede cambiar roles." }, 403);
+      const tgt = String(targetName || "").trim().toLowerCase();
+      const newRole = normRole(String(role || ""));
+      if (!tgt) return json({ ok: false, error: "Falta el usuario objetivo." }, 400);
+      if (newRole !== "admin") {
+        const adminsRes = await rest(`connect_users?select=name_lower&role=eq.admin`);
+        const admins = await adminsRes.json();
+        const adminSet = new Set((Array.isArray(admins) ? admins : []).map((a: any) => a.name_lower));
+        if (adminSet.has(tgt) && adminSet.size <= 1) {
+          return json({ ok: false, error: "No puedes degradar al último ADMIN." }, 400);
+        }
+      }
+      const up = await rest(`connect_users?name_lower=eq.${encodeURIComponent(tgt)}`, {
+        method: "PATCH",
+        headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ role: newRole }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo cambiar el rol." }, 500);
+      const updated = await up.json();
+      if (!Array.isArray(updated) || !updated.length) return json({ ok: false, error: "Usuario objetivo no encontrado." }, 404);
+      return json({ ok: true, user: { name: updated[0].name, role: updated[0].role } });
+    }
+
+    return json({ ok: false, error: "Acción no válida." }, 400);
+  } catch (e) {
+    return json({ ok: false, error: String(e) }, 500);
+  }
+});

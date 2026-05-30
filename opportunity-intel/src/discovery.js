@@ -112,10 +112,12 @@ const SUPABASE_ANON_KEY = "sb_publishable_GtToYg33N8bT7T6O3OEmQw_Wu_hEvkS";
 
 /**
  * Conector Google Places (vía Edge Function). Devuelve candidatos reales del
- * mapa para `query`. Si el backend no tiene la API key configurada, responde
- * [] y la app sigue con su directorio interno (degradación elegante).
+ * mapa para `query`. El `token` de sesión autoriza la llamada: el servidor exige
+ * un rol con permiso de descubrimiento (admin/editor) o responde 403. Si no hay
+ * API key configurada o falta permiso, responde [] y la app sigue con su
+ * directorio interno (degradación elegante).
  */
-export async function placesAdapter({ query, sector = null, max = 20 } = {}) {
+export async function placesAdapter({ query, sector = null, max = 20, token = null } = {}) {
   if (typeof fetch === "undefined" || !query) return [];
   try {
     const res = await fetch(PLACES_ENDPOINT, {
@@ -125,7 +127,7 @@ export async function placesAdapter({ query, sector = null, max = 20 } = {}) {
         apikey: SUPABASE_ANON_KEY,
         Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
-      body: JSON.stringify({ query, sector, max }),
+      body: JSON.stringify({ query, sector, max, token }),
       signal: typeof AbortSignal !== "undefined" ? AbortSignal.timeout(12000) : undefined,
     });
     if (!res.ok) return [];
@@ -140,12 +142,12 @@ export async function placesAdapter({ query, sector = null, max = 20 } = {}) {
  * Descubrimiento combinado: directorio + (si hay) Places. Async para que el
  * conictor live encaje sin cambiar la UI.
  */
-export async function discover({ sector = "all", query = "", live = true } = {}) {
+export async function discover({ sector = "all", query = "", live = true, token = null } = {}) {
   const local = searchCandidates({ sector, query });
   // Sin texto no tiene sentido llamar al mapa (Places necesita una consulta).
   if (!live || !query.trim()) return local;
   let remote = [];
-  try { remote = await placesAdapter({ query, sector: sector === "all" ? null : sector }); }
+  try { remote = await placesAdapter({ query, sector: sector === "all" ? null : sector, token }); }
   catch { remote = []; }
   // Dedup por nombre+ciudad: el directorio curado tiene prioridad.
   const seen = new Set(local.map((c) => norm(`${c.company}|${c.city}`)));

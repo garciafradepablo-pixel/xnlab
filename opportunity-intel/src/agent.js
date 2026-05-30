@@ -102,6 +102,7 @@ export async function runBatch({
   existingNames = new Set(),
   perBatch = 5,
   minScore = 0,
+  token = null,
   onSave = () => {},
 } = {}) {
   const queries = buildQueries(query, sectors, perBatch);
@@ -112,7 +113,7 @@ export async function runBatch({
 
   for (const { sector, query: q } of queries) {
     let candidates = [];
-    try { candidates = await discover({ sector, query: q }); } catch { candidates = []; }
+    try { candidates = await discover({ sector, query: q, token }); } catch { candidates = []; }
     for (const c of candidates) {
       seen++;
       const nameKey = String(c.company || "").toLowerCase();

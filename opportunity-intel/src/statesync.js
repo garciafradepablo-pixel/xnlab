@@ -28,22 +28,26 @@ async function call(action, payload) {
     headers: { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({ action, ...payload }),
   });
+  // 401/403 (sesión o permiso) son respuestas legítimas con cuerpo JSON, no
+  // errores de red: deja que el llamante las interprete. Solo 5xx es "caído".
   if (!res.ok && res.status >= 500) throw new Error(`backend ${res.status}`);
   return res.json();
 }
 
-/** Trae el documento compartido. {ok, data, rev} (data=null si aún no existe). */
-export function remoteLoadState(workspace = "default") {
-  return call("load", { workspace });
+/**
+ * Trae el documento compartido. El `token` de sesión identifica al usuario; el
+ * servidor exige sesión válida para leer. {ok, data, rev} (data=null si vacío).
+ */
+export function remoteLoadState(token, workspace = "default") {
+  return call("load", { workspace, token });
 }
 
 /**
- * Guarda el documento compartido con control optimista por `rev`.
+ * Guarda el documento compartido con control optimista por `rev`. El servidor
+ * exige que el ROL detrás del `token` pueda escribir (admin/editor) o devuelve
+ * 403 — refuerzo real, no solo ocultar botones.
  * @returns {Promise<{ok, rev?, conflict?, data?, error?}>}
- *   ok:true → guardado, `rev` es el nuevo número de revisión.
- *   conflict:true → otro escribió antes; `data`/`rev` traen lo del servidor
- *   para que el cliente re-fusione y reintente.
  */
-export function remoteSaveState(data, rev, by, workspace = "default") {
-  return call("save", { workspace, data, rev, by: by || null });
+export function remoteSaveState(data, rev, token, workspace = "default") {
+  return call("save", { workspace, data, rev, token });
 }

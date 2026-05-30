@@ -17,25 +17,46 @@ console.log("auth.test.mjs");
 
 // ── Remoto FALSO: un "servidor" en memoria, controlable y sin red. ───────────
 function fakeRemote() {
-  const db = new Map(); // name_lower → {name,color,password}
+  const db = new Map(); // name_lower → {name,color,password,role,token}
   let down = false;
+  let tokenSeq = 0;
   return {
     setDown: (v) => { down = v; },
-    seed: (name, password, color) => db.set(name.toLowerCase(), { name, color, password }),
+    seed: (name, password, color, role = "editor") => db.set(name.toLowerCase(), { name, color, password, role, token: null }),
+    db,
     remoteRegister: async (name, password, color) => {
       if (down) throw new Error("offline");
       if (db.has(name.toLowerCase())) return { ok: false, error: "Ya existe un usuario con ese nombre." };
-      db.set(name.toLowerCase(), { name, color, password });
-      return { ok: true, user: { name, color } };
+      // El primer usuario del workspace nace admin (como el servidor real).
+      const role = db.size === 0 ? "admin" : "editor";
+      const token = `tok-${++tokenSeq}`;
+      db.set(name.toLowerCase(), { name, color, password, role, token });
+      return { ok: true, user: { name, color, role, token } };
     },
     remoteLogin: async (name, password) => {
       if (down) throw new Error("offline");
       const u = db.get(String(name).toLowerCase());
       if (!u) return { ok: false, error: "Usuario no encontrado." };
       if (u.password !== password) return { ok: false, error: "Contraseña incorrecta." };
-      return { ok: true, user: { name: u.name, color: u.color } };
+      u.token = `tok-${++tokenSeq}`;
+      return { ok: true, user: { name: u.name, color: u.color, role: u.role, token: u.token } };
     },
-    remoteList: async () => (down ? [] : [...db.values()].map((u) => ({ name: u.name, color: u.color }))),
+    remoteMe: async (token) => {
+      if (down) throw new Error("offline");
+      const u = [...db.values()].find((x) => x.token === token);
+      return u ? { ok: true, user: { name: u.name, color: u.color, role: u.role } } : { ok: false, error: "Sesión no válida." };
+    },
+    remoteSetRole: async (token, targetName, role) => {
+      if (down) throw new Error("offline");
+      const caller = [...db.values()].find((x) => x.token === token);
+      if (!caller) return { ok: false, error: "Sesión no válida." };
+      if (caller.role !== "admin") return { ok: false, error: "Solo un ADMIN puede cambiar roles." };
+      const tgt = db.get(String(targetName).toLowerCase());
+      if (!tgt) return { ok: false, error: "Usuario objetivo no encontrado." };
+      tgt.role = role;
+      return { ok: true, user: { name: tgt.name, role: tgt.role } };
+    },
+    remoteList: async () => (down ? [] : [...db.values()].map((u) => ({ name: u.name, color: u.color, role: u.role }))),
   };
 }
 
@@ -91,6 +112,43 @@ auth.__setRemote(R);
 R.seed("Javi", "javi1234", "#8b7bd8");
 await auth.syncRemoteColors();
 ok(auth.colorOf("Javi") === "#8b7bd8", "trae el color de firma de Javi para teñir su trabajo");
+
+// ── RBAC: rol y token de sesión ──────────────────────────────────────────────
+globalThis.localStorage.removeItem("oi:users");
+globalThis.localStorage.removeItem("oi:session");
+const RB = fakeRemote();
+auth.__setRemote(RB);
+
+// 7. El PRIMER usuario nace admin y la sesión guarda rol + token.
+await auth.createUserAsync("Jefa", "clave1234", "#3fb950");
+const jefaLogin = await auth.loginAsync("Jefa", "clave1234");
+ok(jefaLogin.ok && jefaLogin.user.role === "admin", "el primer usuario entra como admin");
+ok(auth.currentRole() === "admin", "currentRole() = admin");
+ok(typeof auth.getToken() === "string" && auth.getToken().length > 0, "hay token de sesión tras login");
+
+// 8. Un segundo usuario nace editor (no admin).
+const RB2alt = await auth.createUserAsync("Curra", "clave5678", "#f0883e");
+ok(RB2alt.ok, "se crea el segundo usuario");
+ok(RB.db.get("curra").role === "editor", "el segundo usuario nace editor");
+
+// 9. setUserRole: el admin (sesión actual = Jefa) puede degradar a Curra a viewer.
+await auth.loginAsync("Jefa", "clave1234"); // asegura sesión admin
+const sr = await auth.setUserRole("Curra", "viewer");
+ok(sr.ok, "admin cambia el rol de Curra a viewer");
+ok(RB.db.get("curra").role === "viewer", "el servidor refleja el rol viewer");
+
+// 10. Un no-admin NO puede cambiar roles (el servidor lo rechaza).
+await auth.loginAsync("Curra", "clave5678"); // ahora la sesión es de un viewer
+ok(auth.currentRole() === "viewer", "Curra entra como viewer");
+const srBad = await auth.setUserRole("Jefa", "viewer");
+ok(!srBad.ok, "un viewer NO puede cambiar roles (servidor lo rechaza)");
+ok(RB.db.get("jefa").role === "admin", "Jefa sigue siendo admin");
+
+// 11. refreshSession trae el rol actualizado del servidor (un admin me ascendió).
+RB.db.get("curra").role = "analyst"; // simula que un admin cambió el rol en el servidor
+const rs = await auth.refreshSession();
+ok(rs.ok && rs.role === "analyst", "refreshSession trae el rol nuevo del servidor");
+ok(auth.currentRole() === "analyst", "currentRole() refleja el rol revalidado");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

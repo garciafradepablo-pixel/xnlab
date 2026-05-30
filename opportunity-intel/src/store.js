@@ -11,7 +11,8 @@
 // =============================================================================
 
 import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
-import { currentUser } from "./auth.js";
+import { currentUser, currentRole, getToken } from "./auth.js";
+import { can } from "./roles.js";
 import * as statesync from "./statesync.js";
 
 const NS = "oi:"; // namespace
@@ -104,7 +105,7 @@ export function isSyncEnabled() { return syncEnabled; }
 export async function pullSharedState() {
   setSync("syncing");
   try {
-    const r = await remote.remoteLoadState();
+    const r = await remote.remoteLoadState(getToken());
     if (r && r.ok) {
       if (r.data) {
         importState(r.data, { replace: false }); // newest-per-entity wins
@@ -113,9 +114,10 @@ export async function pullSharedState() {
         if (r.data.config && getSavedConfig(null) == null) saveConfig(r.data.config);
       }
       setRev(r.rev || 0);
-      // Migración: sube lo que solo estaba en este navegador. Si no hay nada
-      // nuevo el servidor simplemente reescribe lo mismo (barato y seguro).
-      await pushSharedState();
+      // Migración: sube lo que solo estaba en este navegador, SOLO si tu rol
+      // puede escribir. Un viewer/analyst carga y mira, pero no empuja nada.
+      if (can(currentRole(), "write")) await pushSharedState();
+      else setSync("synced");
       return { ok: true };
     }
     setSync("local");
@@ -130,18 +132,24 @@ export async function pullSharedState() {
  * Sube el estado local al servidor con control optimista por `rev`. Si hay
  * conflicto (otro escribió antes), re-fusiona lo del servidor y reintenta una
  * vez. Nunca pisa ciegamente.
- * @returns {Promise<{ok:boolean, conflict?:boolean, error?:string}>}
+ *
+ * El servidor exige rol con permiso de escritura (admin/editor); si no, 403.
+ * Aquí cortamos antes por UX (sin gastar una llamada) pero el servidor es la
+ * autoridad. @returns {Promise<{ok:boolean, conflict?:boolean, error?:string}>}
  */
 export async function pushSharedState() {
+  // Guarda local de cortesía: un rol sin escritura no intenta subir.
+  if (!can(currentRole(), "write")) { setSync("synced"); return { ok: false, error: "rol sin permiso de escritura" }; }
   setSync("syncing");
   try {
-    let r = await remote.remoteSaveState(snapshot(), getRev(), getWho());
+    let r = await remote.remoteSaveState(snapshot(), getRev(), getToken());
     if (r && r.conflict) {
       if (r.data) importState(r.data, { replace: false });
       setRev(r.rev || 0);
-      r = await remote.remoteSaveState(snapshot(), getRev(), getWho());
+      r = await remote.remoteSaveState(snapshot(), getRev(), getToken());
     }
     if (r && r.ok) { setRev(r.rev || 0); setSync("synced"); return { ok: true }; }
+    // 403/401: el servidor rechazó por permiso/sesión. No es "offline".
     setSync("local");
     return { ok: false, conflict: !!(r && r.conflict), error: (r && r.error) || "no guardado" };
   } catch {

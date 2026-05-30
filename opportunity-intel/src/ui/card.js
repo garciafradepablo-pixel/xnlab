@@ -306,6 +306,10 @@ export function renderCard(opp, record, handlers = {}) {
   const sector = SECTOR_BY_KEY[opp.sector]?.label || opp.sector;
   const status = record?.status || "not_called";
   const dm = opp.decisionMaker || {};
+  // Modo lectura (viewer/analyst): sin handlers de mutación → no pintamos los
+  // controles que escriben (estado, notas, resultado, verificación). El usuario
+  // ve todo el análisis pero no puede tocar la mesa compartida.
+  const readOnly = !handlers.onStatus && !handlers.onNotes && !handlers.onOutcome && !handlers.onVerify;
 
   // ---- TOP: rank · identity · class pill · confidence ring ----
   const top = el("div", { class: "c-top" }, [
@@ -395,7 +399,7 @@ export function renderCard(opp, record, handlers = {}) {
       opp.linkedin ? ctLink("in empresa", linkedinUrl(opp.linkedin), "LinkedIn de la empresa") : null,
       opp.instagram ? ctLink(`◎ ${opp.instagram}`, instagramUrl(opp.instagram), "Instagram") : null,
     ]),
-    quickStatus(opp, status, handlers),
+    readOnly ? null : quickStatus(opp, status, handlers),
   ]);
 
   // ---- PANEL DE FALLO: si el estado es negativo/inconcluso, por qué ----
@@ -420,8 +424,8 @@ export function renderCard(opp, record, handlers = {}) {
   const sec = (title, node) => el("div", { class: "sec" }, [el("h4", { text: title }), node]);
   const tensions = el("div", { class: "tensions" }, (opp.tensions || []).map((t) => el("span", { class: "tension", text: TENSION_TYPES[t] || t })));
 
-  // operational: notes + learning form
-  const notes = el("textarea", { class: "notes", placeholder: "Notas tras la llamada…", onChange: (e) => handlers.onNotes?.(opp.id, e.target.value) });
+  // operational: notes + learning form (solo si puedes escribir)
+  const notes = el("textarea", { class: "notes", placeholder: "Notas tras la llamada…", onChange: (e) => handlers.onNotes?.(opp.id, e.target.value), readonly: readOnly });
   notes.value = record?.notes || "";
   const learnBox = buildLearningForm(opp, handlers);
 
@@ -484,9 +488,9 @@ export function renderCard(opp, record, handlers = {}) {
     sec("Respuesta recomendada", el("p", { class: "resp", html: `${esc(opp.objectionResponse)}` })),
     sec("Razones para NO llamar", bullets(opp.reasonsNotToCall)),
     sec("Qué invalidaría la tesis", bullets(opp.invalidators)),
-    verificationBlock(opp, handlers),
+    readOnly ? null : verificationBlock(opp, handlers),
     sec("Notas", notes),
-    el("div", { class: "ops-detail" }, [
+    readOnly ? null : el("div", { class: "ops-detail" }, [
       el("button", { class: "btn-learn", text: "+ Registrar resultado de llamada", onClick: () => learnBox.classList.toggle("open") }),
       learnBox,
     ]),

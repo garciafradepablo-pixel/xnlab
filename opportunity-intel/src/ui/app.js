@@ -36,6 +36,12 @@ import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { dueFollowups, dueLabel } from "../followups.js";
+import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
+
+// Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
+// (UX); la seguridad real la imponen las Edge Functions (403). No te fíes solo
+// de esto.
+const allow = (action) => can(auth.currentRole(), action);
 
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
@@ -59,9 +65,9 @@ export async function mount(rootEl) {
   await recompute();
   render();
 
-  // Trae la mesa de trabajo compartida (CRM, notas, verificaciones, leads) desde
-  // Supabase y, cuando llega, recalcula y repinta. Best-effort: sin red seguimos
-  // trabajando en local (caché) y se subirá al recuperar conexión.
+  // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
+  // badge/controles. Después trae la mesa compartida. Ambos best-effort.
+  auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
   store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
 }
 
@@ -286,8 +292,10 @@ function userChip() {
   const u = auth.currentUser();
   if (!u) return el("span");
   const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.name[0].toUpperCase() });
-  const chip = el("button", { class: "user-chip", title: `${u.name} — pulsa para cerrar sesión` }, [
-    dot, el("span", { class: "user-name", text: u.name }),
+  const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para cerrar sesión` }, [
+    dot,
+    el("span", { class: "user-name", text: u.name }),
+    el("span", { class: `role-badge role-${u.role}`, text: roleLabel(u.role) }),
   ]);
   chip.addEventListener("click", () => {
     if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); mount(root); }
@@ -305,6 +313,8 @@ function tabs() {
     ["crm", "CRM"],
     ["pipeline", "Embudo"],
     ["learning", "Aprendizaje"],
+    // Gestión de usuarios/roles: solo admin.
+    ...(allow("manage_roles") ? [["users", "Usuarios"]] : []),
   ];
   return el(
     "nav",
@@ -384,18 +394,19 @@ function configPanel() {
     field("Umbral 01 → XN LAB (confianza)", xnThr),
     runBtn,
     el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
-    // Zona peligrosa, al fondo y blindada: exporta copia + doble confirmación.
-    el("div", { class: "danger-zone" }, [
+    // Zona peligrosa, al fondo y blindada. Export → roles con permiso de export;
+    // borrado duro de la caché local → solo admin. El servidor además refuerza.
+    (allow("export") || allow("hard_delete")) ? el("div", { class: "danger-zone" }, [
       el("h4", { text: "Zona de datos" }),
-      el("button", { class: "btn-ghost", text: "Exportar copia de seguridad", onClick: () => {
+      allow("export") ? el("button", { class: "btn-ghost", text: "Exportar copia de seguridad", onClick: () => {
         xport.download(`copia-seguridad-${new Date().toISOString().slice(0,10)}.json`, store.exportState(), "application/json");
-      } }),
-      el("button", { class: "btn-danger", text: "Borrar todos mis datos", onClick: () => {
-        if (!confirm("Esto borra TUS llamadas, notas, verificaciones y leads añadidos. ¿Has exportado una copia?")) return;
-        if (!confirm("Última confirmación: esto NO se puede deshacer. ¿Borrar definitivamente?")) return;
+      } }) : null,
+      allow("hard_delete") ? el("button", { class: "btn-danger", text: "Borrar todos mis datos", onClick: () => {
+        if (!confirm("Esto borra la caché local de llamadas, notas, verificaciones y leads añadidos. ¿Has exportado una copia?")) return;
+        if (!confirm("Última confirmación: esto NO se puede deshacer en este navegador. ¿Borrar definitivamente?")) return;
         store.resetAll(); location.reload();
-      } }),
-    ]),
+      } }) : null,
+    ]) : null,
   ]);
 }
 
@@ -410,9 +421,71 @@ function viewArea() {
   else if (state.view === "crm") area.appendChild(crmView());
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
+  else if (state.view === "users") area.appendChild(usersView());
   else area.appendChild(learningView());
   return area;
 }
+
+// ---- Gestión de usuarios y roles (solo admin) -------------------------------
+//
+// El cliente refuerza el acceso ocultando la pestaña, pero la verdad la impone
+// el servidor: setRole exige un token de admin o devuelve 403. Aquí el admin ve
+// el equipo y puede cambiar el rol de cada uno.
+function usersView() {
+  // Cinturón y tirantes: aunque la pestaña esté oculta, si se navega a "users"
+  // sin permiso, no se muestra nada operable.
+  if (!allow("manage_roles")) {
+    return el("div", {}, [el("h2", { text: "Usuarios" }), el("p", { class: "ro-notice", text: "Solo un ADMIN puede gestionar usuarios y roles." })]);
+  }
+  const me = auth.currentUser();
+  const wrap = el("div", {}, [
+    el("h2", { text: "Usuarios y roles" }),
+    el("p", { class: "hint", text: "Cambia el rol de cada miembro. El cambio se aplica en el servidor (no solo aquí): un VIEWER no podrá modificar la mesa aunque manipule su navegador. Los cambios se reflejan en la próxima carga del afectado." }),
+  ]);
+
+  const list = el("div", { class: "users-list" });
+  wrap.appendChild(list);
+
+  const renderList = () => {
+    clear(list);
+    const users = auth.getUsers()
+      .filter((u) => !u.colorOnly || u.role) // muestra cuentas reales (con rol conocido)
+      .sort((a, b) => a.name.localeCompare(b.name));
+    if (!users.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay otras cuentas." })); return; }
+    for (const u of users) {
+      const role = u.role || "editor";
+      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.name[0] || "?").toUpperCase() });
+      const sel = el("select", { class: "lead-f role-select" }, ROLES.map((r) =>
+        el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })
+      ));
+      const isMe = me && norm(u.name) === norm(me.name);
+      sel.disabled = isMe; // no te cambias el rol a ti mismo desde aquí (evita autobloqueo)
+      const status = el("span", { class: "role-status" });
+      sel.addEventListener("change", async () => {
+        const newRole = sel.value;
+        status.textContent = "Guardando…";
+        const r = await auth.setUserRole(u.name, newRole);
+        if (r.ok) { status.textContent = "✓"; setTimeout(() => (status.textContent = ""), 1500); }
+        else { status.textContent = r.error || "Error"; sel.value = role; }
+      });
+      list.appendChild(el("div", { class: "user-row" }, [
+        dot,
+        el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
+        el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
+        sel,
+        status,
+      ]));
+    }
+  };
+  renderList();
+
+  // Trae la lista fresca del servidor (colores + roles) y repinta.
+  auth.syncRemoteColors().then(renderList).catch(() => {});
+  return wrap;
+}
+
+// Helper local de normalización de nombres (igual criterio que auth.js).
+const norm = (s) => String(s || "").trim().toLowerCase();
 
 function pipelineView() {
   const counts = state.results.counts;
@@ -753,7 +826,8 @@ function cardsView() {
   return el("div", {}, [
     el("div", { class: "view-head" }, [
       el("h2", { text: "Oportunidades" }),
-      agentButton(),
+      // El agente descubre y añade leads → solo roles con permiso.
+      (allow("discover") || allow("write")) ? agentButton() : null,
     ]),
     el("div", { class: "agent-report", id: "agent-report" }),
     topPicks(),
@@ -793,6 +867,7 @@ function agentButton() {
         existingNames: existing,
         perBatch: 5,
         minScore: AGENT_MIN_SCORE,
+        token: auth.getToken(),
         onSave: (lead) => { store.saveUserLead(lead); existing.add(lead.company); },
       });
       totalSeen += res.seen; totalEval += res.evaluated; addedTotal += res.added;
@@ -889,8 +964,12 @@ function topPicks() {
 function buildCards() {
   const rows = visibleOpps();
   const tracking = store.getTracking();
+  // RBAC: solo los roles con permiso de escritura reciben handlers de mutación.
+  // Un viewer/analyst ve las tarjetas en modo lectura (sin botones de estado,
+  // notas, resultado ni verificación). onPlaybook (lectura) se mantiene siempre.
+  const canWrite = isWriter(auth.currentRole());
   const handlers = {
-    onStatus: (id, st) => {
+    onStatus: !canWrite ? undefined : (id, st) => {
       store.setStatus(id, st);
       // Aprender del CRM: un cambio de estado decisivo (interesado/reunión/
       // rechazado/mal encaje) registra automáticamente un resultado con la foto
@@ -903,15 +982,15 @@ function buildCards() {
       });
       recompute().then(render);
     },
-    onNotes: (id, notes) => { store.setNotes(id, notes); },
-    onOutcome: (id, outcome) => {
+    onNotes: !canWrite ? undefined : (id, notes) => { store.setNotes(id, notes); },
+    onOutcome: !canWrite ? undefined : (id, outcome) => {
       // Stamp the lead's signal snapshot so calibration is reproducible even if
       // the dataset later changes. Then recompute — outcomes recalibrate scores.
       const lead = (state.results?.all || []).find((o) => o.id === id);
       store.addOutcome({ ...outcome, signals: lead?.signals || null });
       recompute().then(render);
     },
-    onVerify: (id, filter, level, note, url) => {
+    onVerify: !canWrite ? undefined : (id, filter, level, note, url) => {
       // El analista confirma un hueco → se vuelve evidencia citada y recalcula.
       store.addVerification(id, filter, level, note, url);
       recompute().then(render);
@@ -1063,6 +1142,14 @@ const SEARCH_IDEAS = {
 function searchView() {
   const userLeads = store.getUserLeads();
   const blocks = [el("h2", { text: "Descubrir leads" })];
+
+  // RBAC: descubrir y añadir leads exige permiso de escritura/descubrimiento.
+  // Un viewer/analyst ve un aviso de solo lectura en vez de los controles.
+  if (!allow("discover") && !allow("write")) {
+    blocks.push(el("p", { class: "ro-notice", text: `Tu rol (${roleLabel(auth.currentRole())}) es de solo lectura: puedes consultar el ranking y los dossiers, pero no descubrir ni añadir leads. Pide a un ADMIN que cambie tu rol si necesitas operar.` }));
+    return el("section", { class: "search-view" }, blocks);
+  }
+
   blocks.push(el("p", { class: "hint", text: "Elige sector y/o escribe (ej. 'clínicas dentales Madrid') y pulsa Descubrir: aparecen empresas reales aquí mismo. Añádelas de un toque — entran al ranking y las enriqueces luego. Abajo puedes añadir cualquier otra a mano." }));
 
   // --- DESCUBRIDOR INTERNO ---
@@ -1079,7 +1166,7 @@ function searchView() {
     resultsBox.appendChild(status);
     let found = [];
     try {
-      found = await discover({ sector: secSel.value, query: qInput.value });
+      found = await discover({ sector: secSel.value, query: qInput.value, token: auth.getToken() });
     } catch (e) {
       // Si el backend falla, al menos mostramos el directorio interno.
       found = []; status.textContent = "El mapa no respondió; mostrando directorio interno.";
