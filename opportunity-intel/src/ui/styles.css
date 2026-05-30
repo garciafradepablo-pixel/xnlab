@@ -912,7 +912,7 @@ button:disabled { cursor: not-allowed; }
 .whale .whale-spout { animation: spout 3.2s ease-in-out infinite; transform-origin: 21px 9px; }
 @keyframes spout { 0%,100% { opacity:.45; transform: translateY(1px) scaleY(.9); } 50% { opacity:1; transform: translateY(-1px) scaleY(1.1); } }
 
-.case-body { flex: 1 1 auto; width: 100%; max-width: 1180px; margin: 0 auto; padding: 22px; }
+.case-body { flex: 1 1 auto; width: 100%; max-width: 1320px; margin: 0 auto; padding: 22px; }
 
 /* La tarjeta, ancha y elevada; el análisis SIEMPRE abierto y repartido en
    paneles que llenan el ancho (un panel de mando, no una columna estrecha). */
