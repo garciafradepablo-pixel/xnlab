@@ -75,6 +75,10 @@ jobs:
 
   deploy:
     needs: build
+    # El entorno github-pages solo admite la rama por defecto. Publicamos SOLO
+    # desde main: los push a ramas de trabajo validan con tests (job build) pero
+    # no intentan desplegar — así no fallan ni envían emails de error.
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
