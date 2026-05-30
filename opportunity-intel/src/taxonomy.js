@@ -213,6 +213,27 @@ export async function classifyLeads(items, forest, token) {
 }
 
 /**
+ * Radar de momentos: pide nichos nuevos a explorar según el momento + lo que el
+ * equipo ya trabaja. Devuelve [{ path:[...], why:"..." }] o [].
+ */
+export async function radarSuggest(forest, interests, niches, token) {
+  if (typeof fetch === "undefined") return [];
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON, Authorization: `Bearer ${ANON}` },
+      body: JSON.stringify({ action: "radar", forest: forest || getForest(), interests: interests || [], niches: niches || [], token: token || null }),
+      signal: typeof AbortSignal !== "undefined" ? AbortSignal.timeout(20000) : undefined,
+    });
+    if (!res.ok) return [];
+    const d = await res.json();
+    return d && d.ok && Array.isArray(d.suggestions) ? d.suggestions : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
  * Genera un árbol a partir de una idea. Llama a la Edge Function (Gemini); si no
  * hay red o falla, cae al respaldo local. Devuelve { ok, tree, ai }.
  */
