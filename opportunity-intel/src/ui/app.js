@@ -35,6 +35,7 @@ import * as auth from "../auth.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
+import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
 import { fetchWebFreshness } from "../enrichweb.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
@@ -294,7 +295,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v20 · radar de web automático" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v21 · propuesta + métrica norte" }),
     ]),
   ]);
 }
@@ -696,10 +697,10 @@ function todayView() {
 
   // Pulso del pipeline: cuatro cifras que mandan.
   blocks.push(el("div", { class: "pulse" }, [
+    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
     pulseKpi(pulse.total, "oportunidades vivas"),
     pulseKpi(pulse.pending, "por llamar"),
-    pulseKpi(pulse.meetings, "reuniones"),
-    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial", true),
+    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
   ]));
   blocks.push(el("div", { class: "pulse-split" }, [
     el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
@@ -830,6 +831,50 @@ function openPlaybook(opp) {
     pb.gaps.length ? el("div", { class: "pb-gaps" }, [
       el("div", { class: "pb-pk", text: "Antes de llamar, confirmar" }),
       el("ul", {}, pb.gaps.map((g) => el("li", { text: g }))),
+    ]) : null,
+    el("div", { class: "pb-actions" }, [copyBtn]),
+  ]);
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+}
+
+// Propuesta de colaboración lista para enviar. Cierra hacia el diagnóstico (la
+// métrica norte), nunca al precio. Texto copiable.
+function openProposal(opp) {
+  if (!opp) return;
+  const svc = matchServices(opp, { max: 1 })[0] || null;
+  const p = buildProposal(opp, { service: svc });
+
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => overlay.remove();
+
+  const copyBtn = el("button", { class: "pb-copy", text: "Copiar propuesta", onClick: () => {
+    const txt = proposalToText(opp, p);
+    const done = () => { copyBtn.textContent = "✓ Copiada"; setTimeout(() => (copyBtn.textContent = "Copiar propuesta"), 1400); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(done).catch(done);
+    else done();
+  } });
+
+  const panel = el("div", { class: "pb-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", {}, [
+        el("div", { class: "pb-title", text: p.title }),
+        el("div", { class: "pb-sub", text: "Lista para enviar. Cierra agendando el diagnóstico — el precio se concreta ahí, en privado." }),
+      ]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    ...p.sections.map((sec) => el("div", { class: "pb-part" }, [
+      el("div", { class: "pb-pk", text: sec.h }),
+      el("div", { class: "pb-pv", text: sec.body }),
+    ])),
+    el("div", { class: "pb-obj" }, [
+      el("div", { class: "pb-pk", text: "Siguiente paso" }),
+      el("div", { class: "pb-pv", text: p.cta }),
+    ]),
+    p.gaps.length ? el("div", { class: "pb-gaps" }, [
+      el("div", { class: "pb-pk", text: "Interno — confirmar antes de enviar" }),
+      el("ul", {}, p.gaps.map((g) => el("li", { text: g }))),
     ]) : null,
     el("div", { class: "pb-actions" }, [copyBtn]),
   ]);
@@ -1057,6 +1102,10 @@ function cardHandlers(afterMutate) {
     onPlaybook: (id) => {
       const lead = (state.results?.all || []).find((o) => o.id === id);
       openPlaybook(lead);
+    },
+    onProposal: (id) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      openProposal(lead);
     },
     onOpen: (id) => openCase(id),
   };

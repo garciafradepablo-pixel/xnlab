@@ -313,6 +313,9 @@ output { font-size: 12px; color: var(--accent); }
 .pb-trigger { width: 100%; background: transparent; color: var(--ink); border: 1px dashed var(--accent);
   border-radius: 9px; padding: 9px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 4px 0 2px; }
 .pb-trigger:hover { background: rgba(212,175,90,.1); }
+.doc-actions { display: flex; gap: 8px; margin: 4px 0 2px; }
+.doc-actions .pb-trigger { margin: 0; flex: 1 1 0; }
+.pb-trigger-proposal { border-style: solid; background: rgba(212,175,90,.08); }
 
 /* ---- Ranking table ---- */
 /* En pantallas medias la tabla puede no caber: scroll horizontal propio,

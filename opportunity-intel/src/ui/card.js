@@ -389,8 +389,15 @@ export function renderCard(opp, record, handlers = {}) {
       el("blockquote", { text: opp.callOpening }),
       copyBtn(opp.callOpening),
     ]),
-    handlers.onPlaybook
-      ? el("button", { class: "pb-trigger", text: "📞 Guion + dossier", title: "Qué decir y qué mandar", onClick: () => handlers.onPlaybook(opp.id) })
+    (handlers.onPlaybook || handlers.onProposal)
+      ? el("div", { class: "doc-actions" }, [
+          handlers.onPlaybook
+            ? el("button", { class: "pb-trigger", text: "📞 Guion + dossier", title: "Qué decir y qué mandar", onClick: () => handlers.onPlaybook(opp.id) })
+            : null,
+          handlers.onProposal
+            ? el("button", { class: "pb-trigger pb-trigger-proposal", text: "✎ Propuesta", title: "Genera la propuesta lista para enviar (cierra agendando el diagnóstico)", onClick: () => handlers.onProposal(opp.id) })
+            : null,
+        ])
       : null,
     el("div", { class: "contact-line" }, [
       // Decisor: si hay LinkedIn personal, el nombre es el enlace.
