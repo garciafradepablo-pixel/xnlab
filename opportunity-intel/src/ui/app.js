@@ -1643,18 +1643,21 @@ let autoTimer = null, autoEmpty = 0;
 function startAuto() {
   if (!allow("discover") && !allow("write")) return;
   const a = autopilotState(); a.on = true; a._msg = "Arrancando…"; autoEmpty = 0; saveAuto();
+  clearTimeout(autoTimer); // nunca dos bucles a la vez (doble gasto de cuota Places)
   patchAutoPanel(); autoTick();
 }
 function stopAuto() {
-  const a = autopilotState(); a.on = false; a._msg = "Detenido."; saveAuto();
+  const a = autopilotState(); a.on = false; a._ticking = false; a._msg = "Detenido."; saveAuto();
   clearTimeout(autoTimer); patchAutoPanel();
 }
 
 async function autoTick() {
   const a = autopilotState();
-  if (!a.on) return;
+  if (!a.on || a._ticking) return; // re-entrada: una sola tanda a la vez
+  a._ticking = true;
+  clearTimeout(autoTimer);
   const prog = autoProgress(state.results?.all || [], { target: a.target, bar: AUTO_BAR });
-  if (prog.done) { a.on = false; a._msg = `🐋 Objetivo alcanzado: ${a.target} en 01 y ${a.target} en XN.`; saveAuto(); patchAutoPanel(); render(); return; }
+  if (prog.done) { a.on = false; a._ticking = false; a._msg = `🐋 Objetivo alcanzado: ${a.target} en 01 y ${a.target} en XN.`; saveAuto(); patchAutoPanel(); render(); return; }
   // Foco guiado por tus intereses la mitad de las veces; si no, barrido base.
   const ints = getInterests(6).map((i) => i.q).filter(Boolean);
   const focus = ints.length && Math.random() < 0.5 ? ints[Math.floor(Math.random() * ints.length)] : "";
@@ -1664,10 +1667,10 @@ async function autoTick() {
     res = await runBatch({ config: state.config, query: focus, existingNames: existing, perBatch: 3, minScore: 0, token: auth.getToken(), onSave: (lead) => store.saveUserLead(lead) });
   } catch { /* sin red o límite del mapa */ }
   await recompute();
-  if (!a.on) return; // pudo detenerse durante el await
+  if (!a.on) { a._ticking = false; return; } // pudo detenerse durante el await
   if ((res.seen || 0) === 0) autoEmpty++; else autoEmpty = 0;
   if (autoEmpty >= 4) {
-    a.on = false; a._msg = "Pausado: sin novedades o límite diario del mapa alcanzado. Reanúdalo cuando quieras."; saveAuto();
+    a.on = false; a._ticking = false; a._msg = "Pausado: sin novedades o límite diario del mapa alcanzado. Reanúdalo cuando quieras."; saveAuto();
     patchAutoPanel(); render(); return;
   }
   // Mejora por el camino: lee la web del mejor lead aún sin enriquecer y sube
@@ -1682,6 +1685,7 @@ async function autoTick() {
       if (r && r.ok && applyWebToScore(cand.id, r)) await recompute();
     }
   } catch { /* best-effort */ }
+  a._ticking = false;
   if (!a.on) return;
 
   a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}.`;
