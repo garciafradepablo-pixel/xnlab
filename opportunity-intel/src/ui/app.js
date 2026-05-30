@@ -157,7 +157,7 @@ function renderAuth() {
     msg.textContent = "";
     if (!chosenColor) { msg.textContent = "No quedan colores de firma libres. Pide a un admin que libere uno."; return; }
     busy(true);
-    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor);
+    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor, state._invite);
     if (!r.ok) { busy(false, "Crear usuario y entrar"); msg.textContent = r.error; return; }
     await auth.loginAsync(nameI.value, passI.value);
     mount(root);
@@ -172,7 +172,7 @@ function renderAuth() {
 
   const card = el("div", { class: "auth-card" }, [
     el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
-    state._invite ? el("p", { class: "auth-invite", text: `${state._invite} te invita a Connect — crea tu usuario.` }) : null,
+    state._invite ? el("p", { class: "auth-invite", text: "Tienes una invitación a Connect — crea tu usuario abajo." }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
     nameI, passI,
     tab === "create" ? el("div", {}, [
@@ -306,7 +306,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v29 · perfil, avatar e invitación" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v30 · registro privado por invitación" }),
     ]),
   ]);
 }
@@ -371,13 +371,26 @@ function openProfile() {
   notes.addEventListener("input", () => setUserNotes(u.name, notes.value));
 
   const base = String(location.href || "").split("?")[0].split("#")[0];
-  const link = `${base}?invite=${encodeURIComponent(u.name)}`;
-  const linkInput = el("input", { class: "prof-link", value: link, readonly: "" });
-  const copyL = el("button", { class: "btn", text: "Copiar enlace" });
-  copyL.addEventListener("click", () => {
-    const done = () => { copyL.textContent = "✓ Copiado"; setTimeout(() => (copyL.textContent = "Copiar enlace"), 1400); };
-    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
-  });
+  const inviteBox = el("div", { class: "prof-invitebox" });
+  const renderInviteLink = (code) => {
+    clear(inviteBox);
+    const link = `${base}?invite=${encodeURIComponent(code)}`;
+    const linkInput = el("input", { class: "prof-link", value: link, readonly: "" });
+    const copyL = el("button", { class: "btn", text: "Copiar enlace" });
+    copyL.addEventListener("click", () => {
+      const done = () => { copyL.textContent = "✓ Copiado"; setTimeout(() => (copyL.textContent = "Copiar enlace"), 1400); };
+      if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
+    });
+    inviteBox.appendChild(el("p", { class: "config-note", text: "Enlace de un solo uso · caduca en 14 días." }));
+    inviteBox.appendChild(el("div", { class: "prof-linkrow" }, [linkInput, copyL]));
+  };
+  const genBtn = el("button", { class: "btn-primary", text: "Generar invitación", onClick: async () => {
+    genBtn.disabled = true; genBtn.textContent = "Generando…";
+    const r = await auth.createInvite("editor");
+    genBtn.disabled = false; genBtn.textContent = "Generar otra invitación";
+    if (r.ok && r.code) renderInviteLink(r.code);
+    else inviteBox.appendChild(el("p", { class: "sec-msg err", text: r.error || "No se pudo." }));
+  } });
 
   overlay.appendChild(el("div", { class: "pb-panel prof-panel" }, [
     el("div", { class: "pb-head" }, [
@@ -396,8 +409,12 @@ function openProfile() {
     el("div", { class: "prof-sec" }, [securitySection()]),
     el("div", { class: "prof-sec" }, [
       el("h4", { text: "Invitar a alguien" }),
-      el("p", { class: "config-note", text: "Comparte este enlace para que cree su propio usuario en Connect." }),
-      el("div", { class: "prof-linkrow" }, [linkInput, copyL]),
+      allow("manage_roles")
+        ? el("div", {}, [
+            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Genera un enlace de un solo uso." }),
+            genBtn, inviteBox,
+          ])
+        : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
     ]),
     el("div", { class: "prof-foot" }, [
       el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); close(); mount(root); } } }),

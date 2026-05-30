@@ -130,13 +130,13 @@ function cacheUser(name, color, password, role, token, avatar) {
  * local. Si el servidor no responde, cae al modo local para no bloquear.
  * @returns {Promise<{ok, error?}>}
  */
-export async function createUserAsync(name, password, color) {
+export async function createUserAsync(name, password, color, invite) {
   const n = String(name || "").trim();
   if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
   if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
   const finalColor = color || nextFreeColor();
   try {
-    const r = await remote.remoteRegister(n, password, finalColor);
+    const r = await remote.remoteRegister(n, password, finalColor, invite);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
     cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
     return { ok: true };
@@ -224,6 +224,14 @@ export async function syncRemoteColors() {
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
+}
+
+/** Genera un código de invitación (solo admin). {ok, code?, error?} */
+export async function createInvite(role) {
+  const s = read(SESSION_KEY, null);
+  if (!s?.token) return { ok: false, error: "Necesitas una sesión verificada (con token)." };
+  try { return await remote.remoteCreateInvite(s.token, role || "editor"); }
+  catch { return { ok: false, error: "Sin conexión para crear la invitación." }; }
 }
 
 /** Fija el avatar (emoji) del usuario en sesión. Server-first; cae a local. */

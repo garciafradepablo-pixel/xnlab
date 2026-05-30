@@ -29,9 +29,14 @@ async function call(action, payload) {
   return res.json();
 }
 
-/** Registra una cuenta. {ok, user:{name,color,role,token}?, error?} (puede lanzar sin red). */
-export function remoteRegister(name, password, color) {
-  return call("register", { name, password, color });
+/** Registra una cuenta (requiere invitación salvo el primer usuario). */
+export function remoteRegister(name, password, color, invite) {
+  return call("register", { name, password, color, invite });
+}
+
+/** Genera un código de invitación (solo admin; el servidor refuerza). */
+export function remoteCreateInvite(token, role) {
+  return call("createInvite", { token, role });
 }
 
 /** Verifica credenciales. {ok, user:{name,color,role,token}?, error?} (puede lanzar sin red). */

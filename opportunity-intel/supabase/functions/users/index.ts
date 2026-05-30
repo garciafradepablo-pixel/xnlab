@@ -79,7 +79,7 @@ async function issueToken(id: string): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, name, password, color, token, targetName, role, avatar } = await req.json().catch(() => ({}));
+    const { action, name, password, color, token, targetName, role, avatar, invite } = await req.json().catch(() => ({}));
     const nm = String(name || "").trim();
     const nameLower = nm.toLowerCase();
 
@@ -102,20 +102,48 @@ Deno.serve(async (req) => {
       return json({ ok: true, avatar: av || null });
     }
 
-    // register: crea cuenta, emite token, devuelve rol.
+    // createInvite: SOLO admin. Genera un código de invitación de un solo uso.
+    if (action === "createInvite") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN puede invitar." }, 403);
+      const code = randHex(10);
+      const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
+      const inv = await rest(`connect_invites`, {
+        method: "POST", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({ code, created_by: caller.name || null, role: normRole(String(role || "editor")), expires_at }),
+      });
+      if (!inv.ok) return json({ ok: false, error: "No se pudo crear la invitación." }, 500);
+      return json({ ok: true, code, expires_at });
+    }
+
+    // register: crea cuenta, emite token, devuelve rol. CERRADO: salvo el primer
+    // usuario del workspace, exige una invitación válida (registro privado).
     if (action === "register") {
       if (nm.length < 2) return json({ ok: false, error: "El nombre debe tener al menos 2 caracteres." });
       if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
       const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const existing = await chk.json();
       if (Array.isArray(existing) && existing.length) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
-      // El PRIMER usuario del workspace nace admin.
+      // El PRIMER usuario del workspace nace admin y no necesita invitación.
       const anyRes = await rest(`connect_users?select=id&limit=1`);
       const any = await anyRes.json();
       const firstUser = !(Array.isArray(any) && any.length);
+      // Registro cerrado: si ya hay usuarios, exige invitación válida.
+      let inviteRole: string | null = null;
+      const inviteCode = String(invite || "").trim();
+      if (!firstUser) {
+        if (!inviteCode) return json({ ok: false, error: "Necesitas una invitación para crear tu usuario. Pide el enlace a un admin." }, 403);
+        const ir = await (await rest(`connect_invites?select=code,role,used_by,expires_at&code=eq.${encodeURIComponent(inviteCode)}`)).json();
+        const row0 = Array.isArray(ir) ? ir[0] : null;
+        if (!row0) return json({ ok: false, error: "Invitación no válida." }, 403);
+        if (row0.used_by) return json({ ok: false, error: "Esa invitación ya se usó." }, 403);
+        if (row0.expires_at && new Date(row0.expires_at) < new Date()) return json({ ok: false, error: "La invitación ha caducado." }, 403);
+        inviteRole = normRole(row0.role || "editor");
+      }
       const salt = randHex(16);
       const pass_hash = await sha256(`${salt}::${password}`);
-      const newRole = firstUser ? "admin" : "editor";
+      const newRole = firstUser ? "admin" : (inviteRole || "editor");
       const ins = await rest(`connect_users`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
@@ -126,9 +154,14 @@ Deno.serve(async (req) => {
         if (ins.status === 409 || t.includes("duplicate")) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
         return json({ ok: false, error: "No se pudo crear el usuario." }, 500);
       }
+      if (!firstUser && inviteCode) {
+        await rest(`connect_invites?code=eq.${encodeURIComponent(inviteCode)}`, {
+          method: "PATCH", body: JSON.stringify({ used_by: nm, used_at: new Date().toISOString() }),
+        });
+      }
       const row = (await ins.json())[0];
       const tok = await issueToken(row.id);
-      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, token: tok } });
+      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, token: tok } });
     }
 
     // login: verifica, emite token, devuelve rol.
