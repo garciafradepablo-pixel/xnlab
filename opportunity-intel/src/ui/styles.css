@@ -1110,6 +1110,11 @@ button:disabled { cursor: not-allowed; }
 }
 .eco-head { display: flex; align-items: center; justify-content: space-between; }
 .eco-title { font-family: var(--mono); font-size: 13px; letter-spacing: .04em; color: var(--accent); }
+.eco-clarity { font-size: 12px; color: var(--ink-dim); margin: -6px 0 0; }
+.eco-verdict { display: flex; gap: 6px; margin-top: 9px; }
+.eco-vbtn { flex: 1; font-size: 11px; padding: 5px 6px; border-radius: 7px; border: 1px solid var(--line); background: transparent; color: var(--ink-dim); cursor: pointer; }
+.eco-vbtn:hover { color: var(--ink); border-color: var(--ink-dim); }
+.eco-vbtn.on { background: var(--accent); color: #1a1500; border-color: var(--accent); }
 .eco-x { background: transparent; border: 0; color: var(--ink-dim); font-size: 14px; cursor: pointer; }
 .eco-compose { display: flex; flex-direction: column; gap: 8px; }
 .eco-row { display: flex; align-items: center; gap: 8px; }

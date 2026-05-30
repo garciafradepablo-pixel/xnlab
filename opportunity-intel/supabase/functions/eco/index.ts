@@ -107,7 +107,7 @@ async function distill(text: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, token, to, transcript, id } = await req.json().catch(() => ({}));
+    const { action, token, to, transcript, id, verdict } = await req.json().catch(() => ({}));
 
     // send: destila y entrega a la otra persona. Exige rol con escritura.
     if (action === "send") {
@@ -158,6 +158,32 @@ Deno.serve(async (req) => {
         { method: "PATCH", body: JSON.stringify({ read_at: new Date().toISOString() }) },
       );
       return json({ ok: true });
+    }
+
+    // verdict: el receptor marca su eco como 'clear' (lo entendió sin repreguntar)
+    // o 'ask' (tengo que preguntar). Es LA señal con la que medimos la eficiencia.
+    if (action === "verdict") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const v = verdict === "clear" || verdict === "ask" ? verdict : null;
+      if (!v) return json({ ok: false, error: "Verdict no válido." }, 400);
+      const now = new Date().toISOString();
+      await rest(
+        `connect_ecos?id=eq.${encodeURIComponent(String(id || ""))}&to_name_lower=eq.${encodeURIComponent(caller.name_lower)}`,
+        { method: "PATCH", body: JSON.stringify({ verdict: v, verdict_at: now, read_at: now }) },
+      );
+      return json({ ok: true });
+    }
+
+    // sent: mis ecos enviados con su verdict — para medir si llegan claros.
+    if (action === "sent") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const res = await rest(
+        `connect_ecos?select=id,to_name,verdict,created_at&from_name=eq.${encodeURIComponent(caller.name)}&order=created_at.desc&limit=100`,
+      );
+      const ecos = await res.json();
+      return json({ ok: true, ecos: Array.isArray(ecos) ? ecos : [] });
     }
 
     return json({ ok: false, error: "Acción no válida." }, 400);

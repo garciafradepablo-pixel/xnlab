@@ -63,7 +63,7 @@ function togglePanel() {
   document.querySelector(".eco-fab")?.classList.toggle("on", panelOpen);
   if (!panel) return;
   panel.style.display = panelOpen ? "flex" : "none";
-  if (panelOpen) { renderPanel(); refreshInbox(); }
+  if (panelOpen) { renderPanel(); refreshInbox(); refreshSent(); }
   else stopRec();
 }
 
@@ -73,6 +73,18 @@ async function refreshInbox() {
   if (!getToken()) return;
   const r = await api("inbox");
   if (r && r.ok) { inbox = r.ecos || []; paintBadge(); if (panelOpen) renderPanel(); }
+}
+
+// Mis ecos enviados (con su veredicto) → la métrica norte: ¿llegan claros?
+let sent = [];
+async function refreshSent() {
+  if (!getToken()) return;
+  const r = await api("sent");
+  if (r && r.ok) { sent = r.ecos || []; if (panelOpen) renderPanel(); }
+}
+function clarity() {
+  const judged = sent.filter((e) => e.verdict);
+  return { clear: judged.filter((e) => e.verdict === "clear").length, judged: judged.length };
 }
 function unreadCount() { return inbox.filter((e) => !e.read_at).length; }
 function paintBadge() {
@@ -92,11 +104,14 @@ function renderPanel() {
   const me = currentUser();
   const others = getUsers().filter((u) => u.name !== (me && me.name));
 
-  // Cabecera
+  // Cabecera + métrica norte (¿tus ecos llegan claros?)
   panel.appendChild(el("div", { class: "eco-head" }, [
     el("span", { class: "eco-title", text: "EC · Eco" }),
     el("button", { class: "eco-x", text: "✕", title: "Cerrar", onClick: togglePanel }),
   ]));
+  const c = clarity();
+  panel.appendChild(el("p", { class: "eco-clarity", text:
+    c.judged ? `Tus ecos llegan claros: ${c.clear}/${c.judged}` : "Claridad: aún sin señal. Marca abajo los que recibas." }));
 
   // —— Enviar ——
   const status = el("p", { class: "eco-status" });
@@ -170,6 +185,10 @@ function ecoCard(e) {
       el("p", { text: e.raw }),
     ]));
   }
+  // Veredicto de un clic: la señal de eficiencia que el receptor devuelve.
+  children.push(el("div", { class: "eco-verdict" }, [
+    vBtn("clear", "Claro", e), vBtn("ask", "Tengo que preguntar", e),
+  ]));
   const card = el("div", { class: `eco-card ${unread ? "unread" : ""}` }, children);
   if (unread) {
     // Marcar leído al abrir/tocar la tarjeta.
@@ -183,6 +202,19 @@ function ecoCard(e) {
     }, { once: true });
   }
   return card;
+}
+
+function vBtn(val, label, e) {
+  const b = el("button", { class: `eco-vbtn ${e.verdict === val ? "on" : ""}`, text: label });
+  b.addEventListener("click", async (ev) => {
+    ev.stopPropagation(); // no dispares el "marcar leído" de la tarjeta
+    e.verdict = val;
+    if (!e.read_at) e.read_at = new Date().toISOString();
+    paintBadge();
+    renderPanel();
+    await api("verdict", { id: e.id, verdict: val });
+  });
+  return b;
 }
 
 // —— Dictado (Web Speech API) ——————————————————————————————————————————————————
