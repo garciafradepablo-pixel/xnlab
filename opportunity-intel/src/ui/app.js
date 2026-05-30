@@ -42,6 +42,7 @@ import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
 import { autoProgress, AUTO_BAR } from "../autopilot.js";
+import { synthesize } from "../synthesis.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -311,7 +312,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v31 · marca premium" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v32 · síntesis inteligente" }),
     ]),
   ]);
 }
@@ -1335,8 +1336,10 @@ function openCase(id) {
   document.addEventListener("keydown", onKey);
 
   const body = el("div", { class: "case-body" });
+  const synthWrap = el("div", {}); // síntesis inteligente (se refresca con la nota)
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
+  body.appendChild(synthWrap);
   body.appendChild(freshPanel);
   body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
@@ -1344,6 +1347,8 @@ function openCase(id) {
   const handlers = { ...cardHandlers(rebuild), onOpen: undefined };
   function rebuild() {
     lead = (state.results?.all || []).find((o) => o.id === id) || lead;
+    clear(synthWrap);
+    synthWrap.appendChild(caseSynthHero(lead));
     clear(cardWrap);
     const card = renderCard(lead, store.getTracking()[lead.id], handlers);
     card.classList.add("case-card");
@@ -1406,6 +1411,30 @@ function applyWebToScore(leadId, r) {
     changed = true;
   }
   return changed;
+}
+
+// Hero de SÍNTESIS inteligente: veredicto + temperatura + medidor animado +
+// palancas. Lee la nota ya enriquecida y la conversión del nicho. Dinámico: el
+// medidor sube solo al abrir.
+function caseSynthHero(lead) {
+  const sr = sectorRate(store.getLearning(), lead.sector, { minSample: 3 });
+  const syn = synthesize(lead, { sectorRate: sr });
+  const meterFill = el("span", { class: `synth-meter-fill synth-${syn.temp}`, style: "width:0%" });
+  // Animación: sube al valor real en el siguiente frame.
+  setTimeout(() => { meterFill.style.width = `${syn.conf}%`; }, 30);
+  const levers = el("div", { class: "synth-levers" }, syn.levers.length
+    ? syn.levers.map((l) => el("span", { class: `synth-lever ${l.strong ? "strong" : ""}`, title: l.note || "", text: l.label }))
+    : [el("span", { class: "synth-lever muted", text: "Sin palancas confirmadas aún" })]);
+  return el("div", { class: `synth-hero synth-h-${syn.temp}` }, [
+    el("div", { class: "synth-top" }, [
+      el("span", { class: `synth-temp synth-${syn.temp}`, text: syn.tempLabel }),
+      el("div", { class: "synth-meter" }, [meterFill]),
+      el("span", { class: "synth-conf", text: String(syn.conf) }),
+    ]),
+    el("p", { class: "synth-headline", text: syn.headline }),
+    levers,
+    el("div", { class: "synth-action" }, [el("span", { class: "synth-arrow", text: "→" }), el("span", { text: syn.nextAction })]),
+  ]);
 }
 
 function freshMetric(big, label, tone) {

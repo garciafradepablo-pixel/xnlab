@@ -1078,6 +1078,30 @@ button:disabled { cursor: not-allowed; }
 
 .case-body { flex: 1 1 auto; width: 100%; max-width: 1320px; margin: 0 auto; padding: 22px; }
 
+/* Síntesis inteligente del caso (veredicto + medidor animado + palancas). */
+.synth-hero { background: linear-gradient(180deg, rgba(255,255,255,.02), transparent), var(--panel);
+  border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
+.synth-h-hot { border-color: rgba(63,185,80,.45); box-shadow: 0 0 0 1px rgba(63,185,80,.2); }
+.synth-h-warm { border-color: rgba(212,167,44,.4); }
+.synth-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.synth-temp { font-size: 11px; font-weight: 800; letter-spacing: 1.4px; padding: 4px 10px; border-radius: 999px; flex: 0 0 auto; }
+.synth-temp.synth-hot { color: var(--green); background: rgba(63,185,80,.14); }
+.synth-temp.synth-warm { color: var(--accent); background: rgba(212,167,44,.12); }
+.synth-temp.synth-cold { color: var(--ink-dim); background: var(--panel-2); }
+.synth-meter { flex: 1; height: 10px; background: var(--panel-2); border-radius: 999px; overflow: hidden; }
+.synth-meter-fill { display: block; height: 100%; border-radius: 999px; transition: width 1s cubic-bezier(.2,.8,.2,1); }
+.synth-meter-fill.synth-hot { background: var(--green); }
+.synth-meter-fill.synth-warm { background: var(--accent); }
+.synth-meter-fill.synth-cold { background: var(--grey); }
+.synth-conf { font-size: 20px; font-weight: 800; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.synth-headline { margin: 0 0 10px; font-size: 15px; line-height: 1.45; color: var(--ink); }
+.synth-levers { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.synth-lever { font-size: 12px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); color: var(--ink-dim); }
+.synth-lever.strong { color: var(--green); border-color: rgba(63,185,80,.4); background: rgba(63,185,80,.08); }
+.synth-lever.muted { font-style: italic; }
+.synth-action { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--accent); }
+.synth-arrow { color: var(--accent); }
+
 /* Medición automática de la web del lead (frescura / antigüedad). */
 .case-fresh { margin-bottom: 16px; }
 .case-fresh-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
