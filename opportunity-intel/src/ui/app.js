@@ -327,7 +327,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v44 · momento en prensa" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v45 · momento en prensa" }),
     ]),
   ]);
 }
@@ -1354,9 +1354,11 @@ function openCase(id) {
 
   const body = el("div", { class: "case-body" });
   const synthWrap = el("div", {}); // síntesis inteligente (se refresca con la nota)
+  const momentumPanel = el("div", { class: "case-fresh" }); // momento en prensa (por qué ahora)
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
   body.appendChild(synthWrap);
+  body.appendChild(momentumPanel);
   body.appendChild(freshPanel);
   body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
