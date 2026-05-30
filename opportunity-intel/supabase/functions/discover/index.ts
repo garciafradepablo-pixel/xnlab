@@ -15,6 +15,13 @@ const json = (body: unknown, status = 200) =>
 
 const CAN_DISCOVER = new Set(["admin", "editor"]);
 
+// Rate-limit por usuario (defensa en profundidad contra abuso de cuota de Google
+// Places si un token se filtra o un script se desboca). Generoso para el uso
+// real: una tanda del agente son ~5 consultas seguidas, así que NUNCA lo toca.
+const WIN_CAP = 30;   // máx. llamadas por ventana de 60 s
+const DAY_CAP = 300;  // máx. llamadas por usuario y día
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // caducidad de sesión (30 días)
+
 function cityFrom(addr: string): string {
   if (!addr) return "";
   const parts = addr.split(",").map((s) => s.trim());
@@ -25,12 +32,44 @@ function cityFrom(addr: string): string {
 function sbAdmin() {
   return createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 }
-async function roleByToken(token: string): Promise<string | null> {
+async function userByToken(token: string): Promise<{ id: string; role: string } | null> {
   if (!token) return null;
   try {
-    const { data } = await sbAdmin().from("connect_users").select("role").eq("token", token).maybeSingle();
-    return data?.role ?? null;
+    const { data } = await sbAdmin().from("connect_users").select("id,role,token_at").eq("token", token).maybeSingle();
+    if (!data) return null;
+    if (data.token_at && Date.now() - new Date(data.token_at).getTime() > TOKEN_TTL_MS) return null; // sesión caducada
+    return { id: data.id, role: data.role };
   } catch { return null; }
+}
+
+// Cuenta una llamada de descubrimiento y decide si se permite. Ventana móvil de
+// 60 s + tope diario, por usuario. Devuelve {ok} o {ok:false, msg} para 429.
+async function rateLimit(userId: string): Promise<{ ok: boolean; msg?: string }> {
+  const db = sbAdmin();
+  const now = Date.now();
+  const today = new Date().toISOString().slice(0, 10);
+  try {
+    const { data } = await db.from("discover_usage")
+      .select("day,day_count,win_start,win_count").eq("user_id", userId).maybeSingle();
+    let dayCount = 0, winCount = 0, winStart = now;
+    if (data) {
+      dayCount = data.day === today ? data.day_count : 0;
+      const ws = data.win_start ? new Date(data.win_start).getTime() : 0;
+      if (now - ws < 60_000) { winCount = data.win_count; winStart = ws; } // misma ventana
+    }
+    if (dayCount >= DAY_CAP) return { ok: false, msg: `Límite diario de descubrimiento alcanzado (${DAY_CAP}). Vuelve mañana.` };
+    if (winCount >= WIN_CAP) return { ok: false, msg: "Demasiadas búsquedas seguidas. Espera unos segundos." };
+    await db.from("discover_usage").upsert({
+      user_id: userId, day: today, day_count: dayCount + 1,
+      win_start: new Date(winStart).toISOString(), win_count: winCount + 1,
+      updated_at: new Date().toISOString(),
+    });
+    return { ok: true };
+  } catch {
+    // Si el contador falla, no bloqueamos el trabajo legítimo (fail-open). El
+    // RBAC sigue exigiendo token válido con rol; el riesgo residual es acotado.
+    return { ok: true };
+  }
 }
 async function getApiKey(): Promise<string | null> {
   const fromEnv = Deno.env.get("GOOGLE_PLACES_API_KEY");
@@ -52,9 +91,13 @@ Deno.serve(async (req: Request) => {
   try { body = await req.json(); } catch { return json({ error: "JSON inválido" }, 400); }
 
   // RBAC: exige sesión con permiso de descubrimiento.
-  const role = await roleByToken((body.token || "").trim());
-  if (!role) return json({ error: "Sesión no válida." }, 401);
-  if (!CAN_DISCOVER.has(role)) return json({ error: "Tu rol no permite descubrir leads." }, 403);
+  const user = await userByToken((body.token || "").trim());
+  if (!user) return json({ error: "Sesión no válida." }, 401);
+  if (!CAN_DISCOVER.has(user.role)) return json({ error: "Tu rol no permite descubrir leads." }, 403);
+
+  // Rate-limit por usuario antes de gastar cuota de Google Places.
+  const rl = await rateLimit(user.id);
+  if (!rl.ok) return json({ error: rl.msg }, 429);
 
   const query = (body.query || "").trim();
   const sector = body.sector || null;

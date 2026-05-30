@@ -30,6 +30,12 @@ const json = (body: unknown, status = 200) =>
 const ROLES = ["admin", "editor", "viewer", "analyst"];
 const normRole = (r: string) => (ROLES.includes(r) ? r : "viewer");
 
+// Caducidad de sesión: un token más viejo que esto deja de valer y exige
+// re-login. Limita la ventana de un token filtrado.
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
+const tokenExpired = (tokenAt: string | null) =>
+  !!tokenAt && Date.now() - new Date(tokenAt).getTime() > TOKEN_TTL_MS;
+
 async function sha256(s: string): Promise<string> {
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -54,9 +60,11 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,color,role&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
-  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!u || tokenExpired(u.token_at)) return null; // sesión caducada → re-login
+  return u;
 }
 
 async function issueToken(id: string): Promise<string> {

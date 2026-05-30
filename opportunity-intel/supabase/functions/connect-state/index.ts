@@ -36,6 +36,8 @@ const json = (body: unknown, status = 200) =>
 
 // Capacidad de escritura por rol (copia de roles.js; el servidor manda).
 const CAN_WRITE = new Set(["admin", "editor"]);
+// Caducidad de sesión (igual que en `users`): token viejo → re-login.
+const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 async function rest(path: string, init: RequestInit = {}) {
   return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -51,9 +53,11 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=name,role&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=name,role,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
-  return Array.isArray(rows) && rows[0] ? rows[0] : null;
+  const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
+  if (!u || (u.token_at && Date.now() - new Date(u.token_at).getTime() > TOKEN_TTL_MS)) return null;
+  return u;
 }
 
 Deno.serve(async (req) => {
