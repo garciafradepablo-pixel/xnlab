@@ -31,25 +31,28 @@ ok(lg.ok, "login local de prueba correcto");
 
 try {
   await mount(root);
-  ok(root.querySelector(".tabs") != null, "con sesión renderiza la barra de pestañas (shell)");
-  ok(root.querySelector(".tab") != null, "hay al menos una pestaña");
+  ok(root.querySelector(".navwrap") != null, "con sesión renderiza el shell de navegación");
+  ok(root.querySelector(".zones") != null, "renderiza la barra de zonas");
   ok(root.querySelector(".app-head") != null, "renderiza la cabecera de la app");
 } catch (e) { ok(false, "mount con sesión no debe lanzar: " + e.message); }
 
-// ── 3. Cambiar a "Oportunidades" renderiza tarjetas ──────────────────────────
-function tabByText(re) {
-  return root.querySelectorAll(".tab").find((t) => re.test(t.textContent));
-}
+// ── 3. Nav premium: zona "Captar" → subpestaña "Oportunidades" → tarjetas ────
+const byText = (sel, re) => root.querySelectorAll(sel).find((t) => re.test(t.textContent));
 try {
-  const oppTab = tabByText(/Oportun/i);
-  ok(oppTab != null, "existe la pestaña de Oportunidades");
-  if (oppTab) {
-    oppTab.click();
-    const card = root.querySelector(".card");
-    ok(card != null, "la vista de Oportunidades renderiza al menos una tarjeta");
-    ok(root.querySelector(".c-open") != null, "la tarjeta ofrece el botón de abrir caso (⤢)");
+  ok(root.querySelector(".zones") != null, "renderiza la barra de zonas (nav nivel 1)");
+  const capture = byText(".zone", /Captar/i);
+  ok(capture != null, "existe la zona Captar");
+  if (capture) {
+    capture.click();
+    const oppTab = byText(".tab", /Oportun/i);
+    ok(oppTab != null, "la zona Captar muestra la subpestaña Oportunidades");
+    if (oppTab) {
+      oppTab.click();
+      ok(root.querySelector(".card") != null, "Oportunidades renderiza al menos una tarjeta");
+      ok(root.querySelector(".c-open") != null, "la tarjeta ofrece el botón de abrir caso (⤢)");
+    }
   }
-} catch (e) { ok(false, "cambiar a Oportunidades no debe lanzar: " + e.message); }
+} catch (e) { ok(false, "navegar Captar→Oportunidades no debe lanzar: " + e.message); }
 
 // ── 4. Abrir un caso a pantalla completa (código nuevo) y cerrarlo ────────────
 try {
@@ -68,13 +71,34 @@ try {
   }
 } catch (e) { ok(false, "abrir/cerrar caso no debe lanzar: " + e.message); }
 
-// ── 5. Recorrer todas las pestañas sin que ninguna lance ─────────────────────
+// ── 5. Recorrer TODAS las zonas y sus subpestañas sin que nada lance ─────────
 try {
-  for (const t of root.querySelectorAll(".tab")) {
-    t.click();
-    ok(root.querySelector(".tabs") != null, `la pestaña «${t.textContent.trim().slice(0, 18)}» renderiza sin romper el shell`);
+  const zoneEls = root.querySelectorAll(".zone");
+  ok(zoneEls.length >= 4, "hay al menos 4 zonas (Trabajar/Captar/Cerrar/Memoria)");
+  for (const z of zoneEls) {
+    if (/⌘K/.test(z.textContent)) continue; // el botón de comandos se prueba aparte
+    z.click();
+    ok(root.querySelector(".navwrap") != null, `la zona «${z.textContent.trim().slice(0, 14)}» renderiza sin romper el shell`);
+    for (const t of root.querySelectorAll(".subtabs .tab")) {
+      t.click();
+      ok(root.querySelector(".navwrap") != null, `subpestaña «${t.textContent.trim().slice(0, 14)}» ok`);
+    }
   }
-} catch (e) { ok(false, "navegar por las pestañas no debe lanzar: " + e.message); }
+} catch (e) { ok(false, "navegar zonas/subpestañas no debe lanzar: " + e.message); }
+
+// ── 6. La paleta de comandos (⌘K) abre y cierra ──────────────────────────────
+try {
+  const cmdBtn = root.querySelectorAll(".zone").find((z) => /⌘K/.test(z.textContent));
+  ok(cmdBtn != null, "existe el botón ⌘K");
+  if (cmdBtn) {
+    cmdBtn.click();
+    const palette = document.body.querySelector(".cmd-overlay");
+    ok(palette != null, "⌘K abre la paleta de comandos");
+    ok(palette && palette.querySelector(".cmd-input") != null, "la paleta tiene campo de búsqueda");
+    ok(palette && palette.querySelector(".cmd-item") != null, "la paleta lista comandos");
+    if (palette) { palette.remove(); ok(document.body.querySelector(".cmd-overlay") == null, "la paleta se cierra"); }
+  }
+} catch (e) { ok(false, "la paleta ⌘K no debe lanzar: " + e.message); }
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

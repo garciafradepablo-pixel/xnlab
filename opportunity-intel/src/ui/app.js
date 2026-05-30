@@ -68,6 +68,7 @@ export async function mount(rootEl) {
     return;
   }
   ensureSyncSubscription();
+  ensureHotkeys(); // ⌘K disponible en toda la app
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
@@ -295,7 +296,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v21 · propuesta + métrica norte" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v22 · 3 zonas + ⌘K" }),
     ]),
   ]);
 }
@@ -328,30 +329,104 @@ function userChip() {
   return chip;
 }
 
+// Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
+// "en qué estoy") y las vistas de cada zona debajo. Menos superficie, más
+// dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
+const ZONES = [
+  { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
+  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
+  { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
+];
+function zonesForUser() {
+  const z = ZONES.map((zz) => ({ ...zz }));
+  if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", views: [["users", "Usuarios"]] });
+  return z;
+}
+function zoneOfView(view) {
+  for (const z of zonesForUser()) if (z.views.some(([k]) => k === view)) return z.key;
+  return "work";
+}
+
 function tabs() {
-  const items = [
-    ["today", "Hoy"],
-    ["cards", "Oportunidades"],
-    ["connector", "01 ↔ XN"],
-    ["search", "Buscar leads"],
-    ["table", "Ranking"],
-    ["crm", "CRM"],
-    ["pipeline", "Embudo"],
-    ["learning", "Aprendizaje"],
-    // Gestión de usuarios/roles: solo admin.
-    ...(allow("manage_roles") ? [["users", "Usuarios"]] : []),
-  ];
-  return el(
-    "nav",
-    { class: "tabs" },
-    items.map(([key, label]) =>
-      el("button", {
-        class: `tab ${state.view === key ? "active" : ""}`,
-        text: label,
-        onClick: () => goView(key),
-      })
-    )
-  );
+  const zs = zonesForUser();
+  const activeZone = zoneOfView(state.view);
+  const zoneBar = el("nav", { class: "zones" }, [
+    ...zs.map((z) => el("button", {
+      class: `zone ${z.key === activeZone ? "active" : ""}`,
+      text: z.label,
+      // Entrar a una zona: si ya estás en una de sus vistas, te quedas; si no,
+      // vas a la primera.
+      onClick: () => goView(z.views.some(([k]) => k === state.view) ? state.view : z.views[0][0]),
+    })),
+    el("button", { class: "zone zone-cmd", title: "Comandos (⌘K / Ctrl+K)", text: "⌘K", onClick: openCommand }),
+  ]);
+  const zone = zs.find((z) => z.key === activeZone);
+  const subs = zone && zone.views.length > 1
+    ? el("nav", { class: "subtabs" }, zone.views.map(([key, label]) =>
+        el("button", { class: `tab ${state.view === key ? "active" : ""}`, text: label, onClick: () => goView(key) })))
+    : null;
+  return el("div", { class: "navwrap" }, [zoneBar, subs]);
+}
+
+// Paleta de comandos (⌘K): saltar a cualquier vista, buscar una empresa (abre su
+// ficha) o lanzar una acción — sin ratón. Firma premium.
+function openCommand() {
+  if (document.body.querySelector && document.body.querySelector(".cmd-overlay")) return;
+  const overlay = el("div", { class: "cmd-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const input = el("input", { class: "cmd-input", placeholder: "Ir a una vista, buscar una empresa o una acción…", autocomplete: "off" });
+  const list = el("div", { class: "cmd-list" });
+  let items = [], sel = 0;
+  function close() { overlay.remove(); document.removeEventListener("keydown", onKey); }
+  function build(q) {
+    const out = [];
+    for (const z of zonesForUser()) for (const [key, label] of z.views)
+      out.push({ kind: "nav", label: `Ir a ${label}`, run: () => { close(); goView(key); } });
+    out.push({ kind: "act", label: "Buscar oportunidades (recalcular)", run: async () => { close(); await recompute(); goView("cards"); } });
+    out.push({ kind: "act", label: "Cerrar sesión", run: () => { close(); if (confirm("¿Cerrar sesión?")) { auth.logout(); mount(root); } } });
+    for (const o of (state.results?.all || []))
+      out.push({ kind: "lead", label: `${o.company}${o.city ? " · " + o.city : ""}`, run: () => { close(); openCase(o.id); } });
+    const qq = q.trim().toLowerCase();
+    return qq ? out.filter((c) => c.label.toLowerCase().includes(qq)).slice(0, 14) : out.slice(0, 8);
+  }
+  function paint() {
+    items = build(input.value);
+    if (sel >= items.length) sel = Math.max(0, items.length - 1);
+    clear(list);
+    items.forEach((c, i) => list.appendChild(el("div", {
+      class: `cmd-item cmd-${c.kind} ${i === sel ? "sel" : ""}`, text: c.label, onClick: () => c.run(),
+    })));
+    if (!items.length) list.appendChild(el("div", { class: "cmd-empty", text: "Sin resultados." }));
+  }
+  const onKey = (e) => {
+    if (e.key === "Escape") close();
+    else if (e.key === "ArrowDown") { sel = Math.min(sel + 1, items.length - 1); paint(); e.preventDefault?.(); }
+    else if (e.key === "ArrowUp") { sel = Math.max(sel - 1, 0); paint(); e.preventDefault?.(); }
+    else if (e.key === "Enter") { items[sel]?.run(); }
+  };
+  document.addEventListener("keydown", onKey);
+  input.addEventListener("input", () => { sel = 0; paint(); });
+  overlay.appendChild(el("div", { class: "cmd-panel" }, [
+    el("div", { class: "cmd-bar" }, [el("span", { class: "cmd-k", text: "⌘K" }), input]),
+    list,
+    el("div", { class: "cmd-hint", text: "↑↓ moverse · ↵ abrir · esc cerrar" }),
+  ]));
+  document.body.appendChild(overlay);
+  paint();
+  setTimeout(() => input.focus(), 0);
+}
+
+// Atajo global ⌘K / Ctrl+K para abrir la paleta. Se registra una sola vez.
+let hotkeysBound = false;
+function ensureHotkeys() {
+  if (hotkeysBound) return;
+  hotkeysBound = true;
+  document.addEventListener("keydown", (e) => {
+    if ((e.metaKey || e.ctrlKey) && (e.key === "k" || e.key === "K")) {
+      e.preventDefault?.();
+      if (auth.currentUser()) openCommand();
+    }
+  });
 }
 
 // ---- Search configuration panel --------------------------------------------
