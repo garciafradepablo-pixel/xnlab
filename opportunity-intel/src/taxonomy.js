@@ -157,6 +157,61 @@ function localFallback(prompt) {
   return [{ name: title.slice(0, 48), children: [] }];
 }
 
+/** Convierte una ruta ["a","b","c"] en un sub-árbol encadenado (para mergeForest). */
+export function pathNodes(path) {
+  const p = (path || []).filter(Boolean);
+  if (!p.length) return [];
+  let node = { name: p[p.length - 1], children: [] };
+  for (let i = p.length - 2; i >= 0; i--) node = { name: p[i], children: [node] };
+  return [node];
+}
+
+// —— Etiquetas multidimensión (entorno · clase · estética) ————————————————————
+/** Dimensiones y valores distintos presentes en los leads, con conteo. */
+export function allTags(leads) {
+  const dims = new Map(); // dim -> Map(value -> count)
+  for (const l of leads || []) {
+    const t = l && l.tags;
+    if (!t || typeof t !== "object") continue;
+    for (const [dim, val] of Object.entries(t)) {
+      if (!val) continue;
+      if (!dims.has(dim)) dims.set(dim, new Map());
+      const m = dims.get(dim);
+      m.set(val, (m.get(val) || 0) + 1);
+    }
+  }
+  return [...dims.entries()].map(([dim, m]) => ({
+    dim,
+    values: [...m.entries()].map(([value, count]) => ({ value, count })).sort((a, b) => b.count - a.count),
+  }));
+}
+/** ¿El lead casa con un filtro de faceta {dim, value}? (null = no filtra) */
+export function leadMatchesFacet(lead, facet) {
+  if (!facet || !facet.dim) return true;
+  return !!(lead && lead.tags && eq(lead.tags[facet.dim] || "", facet.value));
+}
+
+/**
+ * Clasifica un lote de empresas en el árbol (vía Edge Function `classify`).
+ * Devuelve [{ i, path:[...], tags:{...} }] o [] si no hay IA/red.
+ */
+export async function classifyLeads(items, forest, token) {
+  if (typeof fetch === "undefined" || !Array.isArray(items) || !items.length) return [];
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON, Authorization: `Bearer ${ANON}` },
+      body: JSON.stringify({ action: "classify", items, forest: forest || getForest(), token: token || null }),
+      signal: typeof AbortSignal !== "undefined" ? AbortSignal.timeout(20000) : undefined,
+    });
+    if (!res.ok) return [];
+    const d = await res.json();
+    return d && d.ok && Array.isArray(d.assignments) ? d.assignments : [];
+  } catch {
+    return [];
+  }
+}
+
 /**
  * Genera un árbol a partir de una idea. Llama a la Edge Function (Gemini); si no
  * hay red o falla, cae al respaldo local. Devuelve { ok, tree, ai }.

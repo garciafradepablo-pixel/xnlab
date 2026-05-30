@@ -6,6 +6,7 @@
 import {
   getForest, mergeForest, clearForest, removePath,
   childrenAt, isLeaf, leavesUnder, leadsUnder, pathQuery, countUnder,
+  pathNodes, allTags, leadMatchesFacet,
 } from "../src/taxonomy.js";
 
 let passed = 0, failed = 0;
@@ -57,7 +58,29 @@ ok(isLeaf(["Clínicas", "Ortopedia", "Brackets"]) === false || childrenAt(["Clí
    "Brackets desaparece tras removePath");
 ok(childrenAt(["Clínicas", "Ortopedia"]).map((n) => n.name).join() === "Dermatólogo", "queda solo Dermatólogo");
 
-// 6) Vaciar.
+// 6) pathNodes: ruta → sub-árbol encadenado (para fusionar).
+const pn = pathNodes(["a", "b", "c"]);
+ok(pn.length === 1 && pn[0].name === "a", "pathNodes: una raíz");
+ok(pn[0].children[0].name === "b" && pn[0].children[0].children[0].name === "c", "pathNodes: encadena en profundidad");
+ok(pathNodes([]).length === 0, "pathNodes vacío → []");
+
+// 7) Etiquetas multidimensión: agregado y filtro.
+const tagged = [
+  { company: "A", tags: { entorno: "urbano", clase: "premium" } },
+  { company: "B", tags: { entorno: "urbano", clase: "lujo" } },
+  { company: "C", tags: { entorno: "costa" } },
+  { company: "D", tags: null },
+];
+const groups = allTags(tagged);
+const entorno = groups.find((g) => g.dim === "entorno");
+ok(entorno && entorno.values[0].value === "urbano" && entorno.values[0].count === 2, "allTags agrupa y cuenta (urbano ×2 primero)");
+ok(groups.find((g) => g.dim === "clase").values.length === 2, "dimensión clase tiene 2 valores");
+ok(leadMatchesFacet(tagged[0], { dim: "clase", value: "Premium" }) === true, "leadMatchesFacet casa sin distinguir mayúsculas");
+ok(leadMatchesFacet(tagged[2], { dim: "clase", value: "premium" }) === false, "lead sin esa etiqueta no casa");
+ok(leadMatchesFacet(tagged[3], { dim: "entorno", value: "urbano" }) === false, "lead sin tags no casa");
+ok(leadMatchesFacet(tagged[0], null) === true, "sin filtro, todo casa");
+
+// 8) Vaciar.
 clearForest();
 ok(getForest().length === 0, "clearForest deja el bosque vacío");
 

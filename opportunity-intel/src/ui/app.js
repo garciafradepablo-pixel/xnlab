@@ -33,6 +33,7 @@ import { allSectors, sectorByKey, addCustomSector, getCustomSectors, removeCusto
 import {
   generateTaxonomy, getForest, mergeForest, clearForest, removePath,
   childrenAt, isLeaf, leavesUnder, leadsUnder, pathQuery, countUnder,
+  classifyLeads, pathNodes, allTags, leadMatchesFacet,
 } from "../taxonomy.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
@@ -1829,16 +1830,58 @@ function captureMap() {
     render();
   }
 
+  // Auto-archivado: coge los leads que han ido apareciendo (piloto, búsquedas,
+  // alta a mano) y Gemini los mete SOLO en la carpeta correcta del árbol —
+  // creando subcarpetas si hace falta— y los etiqueta por dimensiones.
+  async function organizeLeads() {
+    if (ui.busy) return;
+    const all = store.getUserLeads();
+    let pool = all.filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length);
+    const reorg = !pool.length;
+    if (reorg) pool = all; // si ya están todos archivados, reorganiza todo
+    if (!pool.length) { ui.status = "No hay leads que organizar — capta empresas primero (🔍 o piloto)."; patchCaptureMap(); return; }
+    ui.busy = true;
+    const BATCH = 40, MAX = 120;
+    pool = pool.slice(0, MAX);
+    let filed = 0;
+    for (let off = 0; off < pool.length; off += BATCH) {
+      const slice = pool.slice(off, off + BATCH);
+      ui.status = `🧠 Organizando ${off + 1}–${Math.min(off + BATCH, pool.length)} de ${pool.length}…`; patchCaptureMap();
+      const items = slice.map((l) => ({ company: l.company, subsector: l.subsector || sectorByKey(l.sector)?.label || "", city: l.city || "" }));
+      let assigns = [];
+      try { assigns = await classifyLeads(items, getForest(), auth.getToken()); } catch { assigns = []; }
+      for (const a of assigns) {
+        const lead = slice[a.i];
+        if (!lead || !Array.isArray(a.path) || !a.path.length) continue;
+        mergeForest(pathNodes(a.path));
+        lead.categoryPath = a.path;
+        if (a.tags && Object.keys(a.tags).length) lead.tags = { ...(lead.tags || {}), ...a.tags };
+        store.saveUserLead(lead);
+        ui.expanded.add(pk([a.path[0]]));
+        filed++;
+      }
+    }
+    await recompute();
+    ui.busy = false;
+    ui.status = filed
+      ? `✓ ${filed} empresas auto-archivadas en el mapa, con etiquetas. El árbol creció solo.`
+      : "No pude organizar ahora (sin IA o sin red). Reinténtalo en un momento.";
+    render();
+  }
+
   function leadRow(l) {
+    const tagVals = l.tags && typeof l.tags === "object" ? Object.values(l.tags).filter(Boolean) : [];
     return el("button", { class: "cat-lead", title: "Abrir en el ranking", onClick: () => { state.filters.search = l.company; goView("cards"); } }, [
       el("span", { class: "cat-lead-name", text: l.company }),
+      ...tagVals.slice(0, 3).map((v) => el("span", { class: "cat-tag", text: v })),
       el("span", { class: "cat-lead-city", text: l.city || "" }),
     ]);
   }
   function leadList(path, depth) {
-    const leads = leadsUnder(path, store.getUserLeads());
+    let leads = leadsUnder(path, store.getUserLeads());
+    if (ui.facet) leads = leads.filter((l) => leadMatchesFacet(l, ui.facet));
     const pad = `padding-left:${10 + depth * 16}px`;
-    if (!leads.length) return el("div", { class: "cat-leads-empty", style: pad, text: "Sin empresas aún — pulsa 🔍 para buscar." });
+    if (!leads.length) return el("div", { class: "cat-leads-empty", style: pad, text: ui.facet ? "Nada con ese filtro aquí." : "Sin empresas aún — pulsa 🔍 para buscar." });
     return el("div", { class: "cat-leads", style: pad }, leads.slice(0, 60).map(leadRow));
   }
   function nodeRow(node, path, depth) {
@@ -1881,8 +1924,36 @@ function captureMap() {
     ]),
     el("p", { class: "hint", html: "Escribe <b>una idea</b> y Connect crea solo un árbol de <b>categorías anidadas</b> (carpetas dentro de carpetas). Luego pulsa <b>🔍</b> en cualquier carpeta para traer empresas reales y archivarlas dentro." }),
     el("div", { class: "cmap-bar" }, [promptInput, genBtn]),
-    ui.status ? el("p", { class: "cmap-status", text: ui.status }) : null,
   ];
+
+  // Auto-organizar: mete en el árbol los leads que han ido apareciendo.
+  const leadsAll = store.getUserLeads();
+  const unfiled = leadsAll.filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length).length;
+  if (leadsAll.length) {
+    blocks.push(el("div", { class: "cmap-actions" }, [
+      el("button", { class: "btn cmap-organize", text: ui.busy ? "…" : `🧠 Auto-organizar leads${unfiled ? ` (${unfiled} sin archivar)` : ""}`, onClick: organizeLeads }),
+      el("span", { class: "hint", text: "Gemini los reparte en carpetas y los etiqueta solo." }),
+    ]));
+  }
+  if (ui.status) blocks.push(el("p", { class: "cmap-status", text: ui.status }));
+
+  // Filtro por etiquetas (entorno · clase · estética), cruzable como en Apollo.
+  const tagGroups = allTags(leadsAll);
+  if (tagGroups.length) {
+    const chips = [el("span", { class: "facet-lbl", text: "Filtrar:" })];
+    for (const g of tagGroups) {
+      for (const v of g.values.slice(0, 6)) {
+        const active = ui.facet && ui.facet.dim === g.dim && (ui.facet.value || "").toLowerCase() === v.value.toLowerCase();
+        chips.push(el("button", {
+          class: `facet-chip ${active ? "on" : ""}`, text: `${v.value} · ${v.count}`,
+          onClick: () => { ui.facet = active ? null : { dim: g.dim, value: v.value }; patchCaptureMap(); },
+        }));
+      }
+    }
+    if (ui.facet) chips.push(el("button", { class: "facet-clear", text: "✕ quitar", onClick: () => { ui.facet = null; patchCaptureMap(); } }));
+    blocks.push(el("div", { class: "cat-facets" }, chips));
+  }
+
   if (forest.length) {
     blocks.push(el("div", { class: "cat-tree" }, forest.map((n) => renderNode(n, [n.name], 0))));
   } else {
