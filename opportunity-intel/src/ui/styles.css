@@ -1360,3 +1360,19 @@ button:disabled { cursor: not-allowed; }
   border: 1px solid var(--accent); border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600;
   box-shadow: var(--sh-3); z-index: 90; opacity: 0; transition: opacity .35s ease, transform .35s ease; max-width: 90vw; }
 .flash.show { opacity: 1; transform: translate(-50%, 0); }
+
+/* Novedades del piloto: lo captado solo, clicable. */
+.cron-new { background: linear-gradient(180deg, rgba(74,158,255,.08), transparent 70%), var(--panel);
+  border: 1px solid rgba(74,158,255,.35); border-radius: 16px; padding: 14px 16px; margin-bottom: 16px; box-shadow: var(--sh-1); }
+.cron-new-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.cron-new-t { font-size: 14px; font-weight: 800; letter-spacing: -.01em; }
+.cron-new-x { background: transparent; border: 0; color: var(--ink-dim); font-size: 14px; cursor: pointer; }
+.cron-new-x:hover { color: var(--ink); }
+.cron-new-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.cron-new-item { display: inline-flex; align-items: baseline; gap: 7px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 999px; padding: 7px 13px; cursor: pointer;
+  transition: border-color .14s ease, transform .08s ease; }
+.cron-new-item:hover { border-color: var(--o1); }
+.cron-new-item:active { transform: scale(.97); }
+.cron-new-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.cron-new-city { font-size: 11px; color: var(--ink-dim); }

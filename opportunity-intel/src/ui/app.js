@@ -324,7 +324,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v40 · captación 24/7" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v41 · novedades del piloto" }),
     ]),
   ]);
 }
@@ -1715,8 +1715,9 @@ async function absorbCronLeads() {
   try { pend = await pendingCronLeads(token); } catch { return; }
   if (!pend.length) return;
   const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
+  const byName = new Map((state.results?.all || []).map((o) => [`${o.company}`.toLowerCase(), o.id]));
   const claimed = [];
-  let added = 0;
+  const fresh = []; // novedades para el panel interactivo
   for (const c of pend) {
     claimed.push(c.id);
     const k = `${c.company || ""}`.toLowerCase();
@@ -1726,13 +1727,16 @@ async function absorbCronLeads() {
       city: c.city || "", website: c.website || null, phone: c.phone || null,
       googleMaps: c.google_maps || null,
     }));
-    existing.add(k); added++;
+    existing.add(k); fresh.push({ company: c.company, city: c.city || "", key: k });
   }
   await claimCronLeads(token, claimed);
-  if (added) {
+  if (fresh.length) {
     await recompute();
+    // Resuelve el id de cada novedad para poder abrir su caso de un toque.
+    const idx = new Map((state.results?.all || []).map((o) => [`${o.company}`.toLowerCase(), o.id]));
+    state._cronNew = fresh.map((f) => ({ ...f, id: idx.get(f.key) || byName.get(f.key) || null }));
     render();
-    flash(`🐋 ${added} empresa${added === 1 ? "" : "s"} captada${added === 1 ? "" : "s"} sola${added === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
+    flash(`🐋 ${fresh.length} empresa${fresh.length === 1 ? "" : "s"} captada${fresh.length === 1 ? "" : "s"} sola${fresh.length === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
   }
 }
 
@@ -2098,6 +2102,26 @@ function searchView() {
 
   // Piloto automático: lo que no para de meter empresas solo.
   blocks.push(autopilotPanel());
+
+  // Novedades del piloto: lo captado solo (servidor 24/7 + piloto), clicable.
+  if (state._cronNew && state._cronNew.length) {
+    blocks.push(el("div", { class: "cron-new" }, [
+      el("div", { class: "cron-new-head" }, [
+        el("span", { class: "cron-new-t", text: `🐋 Captado mientras no estabas · ${state._cronNew.length}` }),
+        el("button", { class: "cron-new-x", text: "✕", title: "Ocultar", onClick: () => { state._cronNew = []; render(); } }),
+      ]),
+      el("div", { class: "cron-new-list" }, state._cronNew.slice(0, 12).map((n) =>
+        el("button", {
+          class: "cron-new-item",
+          title: n.id ? "Abrir su caso" : "En el ranking",
+          onClick: n.id ? () => openCase(n.id) : undefined,
+        }, [
+          el("span", { class: "cron-new-name", text: n.company }),
+          n.city ? el("span", { class: "cron-new-city", text: n.city }) : null,
+        ])
+      )),
+    ]));
+  }
 
   blocks.push(el("h3", { class: "capt-h", text: "O capta a mano una búsqueda concreta" }));
   blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>." }));
