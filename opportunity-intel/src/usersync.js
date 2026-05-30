@@ -54,6 +54,11 @@ export function remoteSetPassword(token, password) {
   return call("setPassword", { token, password });
 }
 
+/** Fija el avatar (emoji) del propio usuario (requiere token de sesión válido). */
+export function remoteSetAvatar(token, avatar) {
+  return call("setAvatar", { token, avatar });
+}
+
 /** Lista de {name, color, role} de todas las cuentas. [] si falla. */
 export async function remoteList() {
   try { const r = await call("list", {}); return r.ok ? r.users : []; }

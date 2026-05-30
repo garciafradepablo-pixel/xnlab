@@ -62,6 +62,8 @@ let root;
 
 export async function mount(rootEl) {
   root = rootEl;
+  // Enlace de invitación: ?invite=Nombre → abre directo en "crear usuario".
+  try { const inv = new URLSearchParams(location.search).get("invite"); if (inv) { state._invite = inv; if (!auth.currentUser()) state._authTab = "create"; } } catch { /* */ }
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
   // su color fijo y firma su actividad.
   if (!auth.currentUser()) {
@@ -170,6 +172,7 @@ function renderAuth() {
 
   const card = el("div", { class: "auth-card" }, [
     el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+    state._invite ? el("p", { class: "auth-invite", text: `${state._invite} te invita a Connect — crea tu usuario.` }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
     nameI, passI,
     tab === "create" ? el("div", {}, [
@@ -303,7 +306,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v28 · la web sube más la nota" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v29 · perfil, avatar e invitación" }),
     ]),
   ]);
 }
@@ -324,16 +327,83 @@ function syncBadge() {
 function userChip() {
   const u = auth.currentUser();
   if (!u) return el("span");
-  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.name[0].toUpperCase() });
-  const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para cerrar sesión` }, [
+  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
     el("span", { class: `role-badge role-${u.role}`, text: roleLabel(u.role) }),
   ]);
-  chip.addEventListener("click", () => {
-    if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); mount(root); }
-  });
+  chip.addEventListener("click", openProfile);
   return chip;
+}
+
+// Notas privadas: SOLO en este dispositivo (localStorage), nunca al servidor.
+const notesKey = (name) => `oi:notes:${String(name || "").toLowerCase()}`;
+function getUserNotes(name) { try { return localStorage.getItem(notesKey(name)) || ""; } catch { return ""; } }
+function setUserNotes(name, v) { try { localStorage.setItem(notesKey(name), v); } catch { /* */ } }
+
+const PROFILE_EMOJIS = ["🐋", "🦊", "🦉", "🐺", "🦅", "🦈", "🐉", "🦁", "🐯", "🦄", "🤖", "👁", "⚡", "✦", "◆", "★"];
+
+// Perfil del usuario: avatar (emoji), notas privadas, contraseña e invitación.
+// Más personal y más privado, sin foto que suba a ningún sitio.
+function openProfile() {
+  const u = auth.currentUser();
+  if (!u) return;
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => overlay.remove();
+
+  const dot = el("span", { class: "prof-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const picker = el("div", { class: "prof-emojis" });
+  const mark = (val) => [...picker.children].forEach((c) => c.classList?.[c._val === val ? "add" : "remove"]?.("sel"));
+  PROFILE_EMOJIS.forEach((e) => {
+    const b = el("button", { class: `prof-emoji ${u.avatar === e ? "sel" : ""}`, text: e });
+    b._val = e;
+    b.addEventListener("click", async () => { await auth.setAvatar(e); dot.textContent = e; mark(e); render(); });
+    picker.appendChild(b);
+  });
+  const clearB = el("button", { class: "prof-emoji prof-clear", text: "∅", title: "Sin emoji (usa tu inicial)" });
+  clearB._val = null;
+  clearB.addEventListener("click", async () => { await auth.setAvatar(""); dot.textContent = u.name[0].toUpperCase(); mark(null); render(); });
+  picker.appendChild(clearB);
+
+  const notes = el("textarea", { class: "prof-notes", placeholder: "Tus notas privadas (solo en este dispositivo)…" });
+  notes.value = getUserNotes(u.name);
+  notes.addEventListener("input", () => setUserNotes(u.name, notes.value));
+
+  const base = String(location.href || "").split("?")[0].split("#")[0];
+  const link = `${base}?invite=${encodeURIComponent(u.name)}`;
+  const linkInput = el("input", { class: "prof-link", value: link, readonly: "" });
+  const copyL = el("button", { class: "btn", text: "Copiar enlace" });
+  copyL.addEventListener("click", () => {
+    const done = () => { copyL.textContent = "✓ Copiado"; setTimeout(() => (copyL.textContent = "Copiar enlace"), 1400); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
+  });
+
+  overlay.appendChild(el("div", { class: "pb-panel prof-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", { class: "prof-id" }, [dot, el("div", {}, [
+        el("div", { class: "prof-name", text: u.name }),
+        el("div", { class: "prof-role", text: roleLabel(u.role) }),
+      ])]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Tus notas privadas" }),
+      el("p", { class: "config-note", text: "Solo en este dispositivo. No se comparten ni suben al servidor." }),
+      notes,
+    ]),
+    el("div", { class: "prof-sec" }, [securitySection()]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Invitar a alguien" }),
+      el("p", { class: "config-note", text: "Comparte este enlace para que cree su propio usuario en Connect." }),
+      el("div", { class: "prof-linkrow" }, [linkInput, copyL]),
+    ]),
+    el("div", { class: "prof-foot" }, [
+      el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); close(); mount(root); } } }),
+    ]),
+  ]));
+  document.body.appendChild(overlay);
 }
 
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de

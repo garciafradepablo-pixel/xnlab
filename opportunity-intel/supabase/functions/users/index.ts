@@ -60,7 +60,7 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,color,role,token_at&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
   const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!u || tokenExpired(u.token_at)) return null; // sesión caducada → re-login
@@ -79,15 +79,27 @@ async function issueToken(id: string): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, name, password, color, token, targetName, role } = await req.json().catch(() => ({}));
+    const { action, name, password, color, token, targetName, role, avatar } = await req.json().catch(() => ({}));
     const nm = String(name || "").trim();
     const nameLower = nm.toLowerCase();
 
-    // list: nombres + colores + roles (no sensible).
+    // list: nombres + colores + roles + avatar (no sensible).
     if (action === "list") {
-      const res = await rest(`connect_users?select=name,color,role`);
+      const res = await rest(`connect_users?select=name,color,role,avatar`);
       const rows = await res.json();
       return json({ ok: true, users: Array.isArray(rows) ? rows : [] });
+    }
+
+    // setAvatar: el propio usuario (sesión válida) fija su emoji/avatar.
+    if (action === "setAvatar") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const av = String(avatar || "").trim().slice(0, 8); // emoji corto; nada de URLs largas
+      const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
+        method: "PATCH", body: JSON.stringify({ avatar: av || null }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo guardar el avatar." }, 500);
+      return json({ ok: true, avatar: av || null });
     }
 
     // register: crea cuenta, emite token, devuelve rol.
@@ -121,21 +133,21 @@ Deno.serve(async (req) => {
 
     // login: verifica, emite token, devuelve rol.
     if (action === "login") {
-      const res = await rest(`connect_users?select=id,name,color,role,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const rows = await res.json();
       const u = Array.isArray(rows) ? rows[0] : null;
       if (!u) return json({ ok: false, error: "Usuario no encontrado." });
       const h = await sha256(`${u.salt}::${password}`);
       if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
       const tok = await issueToken(u.id);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, token: tok } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, token: tok } });
     }
 
     // me: valida un token y devuelve el usuario+rol (fuente de verdad del rol).
     if (action === "me") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null } });
     }
 
     // setPassword: el propio usuario (sesión válida) cambia su contraseña. Sal
