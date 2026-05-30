@@ -380,6 +380,9 @@ export function renderCard(opp, record, handlers = {}) {
       el("blockquote", { text: opp.callOpening }),
       copyBtn(opp.callOpening),
     ]),
+    handlers.onPlaybook
+      ? el("button", { class: "pb-trigger", text: "📞 Guion + dossier", title: "Qué decir y qué mandar", onClick: () => handlers.onPlaybook(opp.id) })
+      : null,
     el("div", { class: "contact-line" }, [
       // Decisor: si hay LinkedIn personal, el nombre es el enlace.
       dm.linkedin

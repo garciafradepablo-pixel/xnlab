@@ -113,10 +113,14 @@ código.* **Enviado:** `src/customsectors.js` (53 checks), gestor de sectores en
 del bundle (carga diferida); auditoría Lighthouse. *Resultado: rápida, inclusiva,
 nivel producto serio.*
 
-### Fase 10 — Inteligencia generativa de guion y dossier
+### Fase 10 — Inteligencia generativa de guion y dossier ✅ HECHA (v13)
 Generar, por lead y con su evidencia, el guion de llamada y un mini-dossier
 listo para enviar — en la voz de 01/XN. *Resultado: de "a quién llamar" a "qué
-decir y qué mandar", cerrando el círculo de captación a conversión.*
+decir y qué mandar", cerrando el círculo de captación a conversión.* **Enviado:**
+`src/playbook.js` (16 checks). Botón "Guion" en "Hoy" y en cada ficha → apertura,
+observación, oferta (SIN precio), cierre que agenda diagnóstico, objeción con
+respuesta, mini-dossier y "huecos a confirmar". Prefiere la copia investigada del
+lead; donde falta señal, lo dice — no inventa. Texto copiable listo para enviar.
 
 ---
 
@@ -126,9 +130,9 @@ decir y qué mandar", cerrando el círculo de captación a conversión.*
 |---|---|
 | 5 — Vista "Hoy" | ✅ Enviada (v12) |
 | 8 — Sectores definibles | ✅ Enviada (v11) |
+| 10 — Guion + dossier por lead | ✅ Enviada (v13) |
 | 2 — Blindaje UI (partir `app.js` + tests de vista) | ⏳ Siguiente |
-| 3 — Enriquecimiento automático de leads | ⏳ Alta prioridad (sube leads a 70+ solos) |
-| 10 — Guion + dossier por lead | ⏳ Cierra el círculo captación→conversión |
+| 3 — Enriquecimiento automático de leads | ⏳ Bloqueada: requiere activar Places API + Edge Functions de scraping |
 | 6 — Secuencias de seguimiento | ⏳ |
 | 1 — Backend compartido (Pablo y Javi mismo estado) | ⏳ Requiere decisión de infra |
 | 4 — Señales de intención en vivo | ⏳ |

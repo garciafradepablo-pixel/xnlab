@@ -246,6 +246,39 @@ output { font-size: 12px; color: var(--accent); }
 .tc-call { background: var(--accent); color: #1a1306; text-decoration: none; border: 0; }
 .tc-open { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 .tc-open:hover { border-color: var(--accent); }
+.tc-script { background: transparent; color: var(--ink); border: 1px solid var(--accent); text-align: center; white-space: nowrap; border-radius: 8px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.tc-script:hover { background: rgba(212,175,90,.1); }
+
+/* ---- Guion + dossier (modal, Fase 10) ---- */
+.pb-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0,0,0,.6); backdrop-filter: blur(3px);
+  display: flex; align-items: flex-start; justify-content: center; padding: 4vh 16px; overflow-y: auto; }
+.pb-panel { width: 100%; max-width: 640px; background: var(--bg); border: 1px solid var(--line);
+  border-radius: 16px; padding: 22px 24px; box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.pb-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 16px; }
+.pb-title { font-size: 19px; font-weight: 700; letter-spacing: -0.01em; }
+.pb-sub { color: var(--ink-dim); font-size: 12px; margin-top: 3px; }
+.pb-x { background: transparent; border: 1px solid var(--line); color: var(--ink-dim); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; flex: 0 0 auto; }
+.pb-x:hover { color: var(--ink); border-color: var(--accent); }
+.pb-part { margin-bottom: 13px; }
+.pb-pk { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); margin-bottom: 4px; }
+.pb-pv { font-size: 15px; line-height: 1.45; }
+.pb-obj { border-left: 3px solid var(--line); padding-left: 12px; margin: 4px 0 14px; }
+.pb-obj .pb-pv { color: var(--ink-dim); font-size: 14px; }
+.pb-dossier { border-top: 1px solid var(--line); padding-top: 14px; margin-top: 4px; }
+.pb-d { display: flex; gap: 12px; justify-content: space-between; padding: 5px 0; font-size: 14px; }
+.pb-dk { color: var(--ink-dim); flex: 0 0 auto; }
+.pb-dv { text-align: right; }
+.pb-weak .pb-dv { color: #d98a5a; font-style: italic; }
+.pb-gaps { margin-top: 14px; background: rgba(217,138,90,.08); border: 1px solid rgba(217,138,90,.25); border-radius: 10px; padding: 12px 14px; }
+.pb-gaps ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink-dim); }
+.pb-gaps li { margin: 3px 0; }
+.pb-actions { margin-top: 18px; display: flex; justify-content: flex-end; }
+.pb-copy { background: var(--accent); color: #1a1306; border: 0; border-radius: 9px; padding: 10px 18px; font-weight: 700; font-size: 14px; cursor: pointer; }
+
+/* Disparador del guion en la ficha */
+.pb-trigger { width: 100%; background: transparent; color: var(--ink); border: 1px dashed var(--accent);
+  border-radius: 9px; padding: 9px; font-size: 13px; font-weight: 600; cursor: pointer; margin: 4px 0 2px; }
+.pb-trigger:hover { background: rgba(212,175,90,.1); }
 
 /* ---- Ranking table ---- */
 /* En pantallas medias la tabla puede no caber: scroll horizontal propio,

@@ -34,6 +34,7 @@ import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
+import { buildPlaybook, playbookToText } from "../playbook.js";
 
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
@@ -223,7 +224,7 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v12 · hoy" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v13 · guion" }),
     ]),
   ]);
 }
@@ -551,6 +552,7 @@ function todayCall(o, i, track) {
 
   const actions = [];
   if (o.phone) actions.push(el("a", { class: "tc-call", href: `tel:${o.phone}`, text: "Llamar", onClick: (e) => e.stopPropagation() }));
+  actions.push(el("button", { class: "tc-script", text: "Guion", onClick: (e) => { e.stopPropagation(); openPlaybook(o); } }));
   actions.push(el("button", { class: "tc-open", text: "Ver ficha", onClick: (e) => { e.stopPropagation(); open(); } }));
 
   return el("li", { class: `tc tc-${tone}`, onClick: open }, [
@@ -570,6 +572,66 @@ function todayCall(o, i, track) {
     ]),
     el("div", { class: "tc-actions" }, actions),
   ]);
+}
+
+// ---- Guion + dossier por lead (Fase 10) -------------------------------------
+
+// Abre el guion de llamada y el mini-dossier de un lead en una capa modal.
+// El servicio mejor encajado se incrusta en la oferta; el texto se puede copiar
+// listo para enviar. Sin precios: el cierre agenda diagnóstico.
+function openPlaybook(opp) {
+  if (!opp) return;
+  const top = matchServices(opp, { max: 1 })[0] || null;
+  const pb = buildPlaybook(opp, { topService: top });
+
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => overlay.remove();
+
+  const line = (label, value, weak) => el("div", { class: `pb-d ${weak ? "pb-weak" : ""}` }, [
+    el("span", { class: "pb-dk", text: label }),
+    el("span", { class: "pb-dv", text: value }),
+  ]);
+  const part = (label, value) => el("div", { class: "pb-part" }, [
+    el("div", { class: "pb-pk", text: label }),
+    el("div", { class: "pb-pv", text: value }),
+  ]);
+
+  const copyBtn = el("button", { class: "pb-copy", text: "Copiar guion", onClick: () => {
+    const txt = playbookToText(opp, pb);
+    const done = () => { copyBtn.textContent = "✓ Copiado"; setTimeout(() => (copyBtn.textContent = "Copiar guion"), 1400); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(done).catch(done);
+    else done();
+  } });
+
+  const panel = el("div", { class: "pb-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", {}, [
+        el("div", { class: "pb-title", text: `Guion — ${opp.company}` }),
+        el("div", { class: "pb-sub", text: "Qué decir y qué mandar. Sin precio: el cierre agenda diagnóstico." }),
+      ]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    part("Apertura", pb.script.opener),
+    part("Observación", pb.script.observation),
+    part("Oferta", pb.script.offer),
+    part("Cierre", pb.script.close),
+    el("div", { class: "pb-obj" }, [
+      el("div", { class: "pb-pk", text: `Si objeta «${pb.objection.line}»` }),
+      el("div", { class: "pb-pv", text: pb.objection.response }),
+    ]),
+    el("div", { class: "pb-dossier" }, [
+      el("div", { class: "pb-pk", text: "Mini-dossier" }),
+      ...pb.dossier.map((d) => line(d.k, d.v, d.weak)),
+    ]),
+    pb.gaps.length ? el("div", { class: "pb-gaps" }, [
+      el("div", { class: "pb-pk", text: "Antes de llamar, confirmar" }),
+      el("ul", {}, pb.gaps.map((g) => el("li", { text: g }))),
+    ]) : null,
+    el("div", { class: "pb-actions" }, [copyBtn]),
+  ]);
+
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
 }
 
 // ---- Ranking table ----------------------------------------------------------
@@ -779,6 +841,10 @@ function buildCards() {
       // El analista confirma un hueco → se vuelve evidencia citada y recalcula.
       store.addVerification(id, filter, level, note, url);
       recompute().then(render);
+    },
+    onPlaybook: (id) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      openPlaybook(lead);
     },
   };
   if (!rows.length) {
