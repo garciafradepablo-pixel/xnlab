@@ -1690,10 +1690,66 @@ async function autoTick() {
       if (r && r.ok && applyWebToScore(cand.id, r)) await recompute();
     }
   } catch { /* best-effort */ }
+
+  // ——— CEREBRO AUTOMÁTICO: archiva, etiqueta, explora y saca contactos solo ———
+  // 1) Auto-archivado + etiquetas de lo nuevo (un lote por tanda).
+  let organized = 0;
+  if (a.on) {
+    try {
+      const unfiled = store.getUserLeads().filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length).slice(0, 40);
+      if (unfiled.length) {
+        const items = unfiled.map((l) => ({ company: l.company, subsector: l.subsector || sectorByKey(l.sector)?.label || "", city: l.city || "" }));
+        const assigns = await classifyLeads(items, getForest(), auth.getToken());
+        for (const as of (assigns || [])) {
+          const lead = unfiled[as.i];
+          if (!lead || !Array.isArray(as.path) || !as.path.length) continue;
+          mergeForest(pathNodes(as.path));
+          lead.categoryPath = as.path;
+          if (as.tags && Object.keys(as.tags).length) lead.tags = { ...(lead.tags || {}), ...as.tags };
+          store.saveUserLead(lead);
+          organized++;
+        }
+      }
+    } catch { /* best-effort */ }
+  }
+  // 2) Cada ~6 tandas el radar abre nichos nuevos solos (entran a la rotación).
+  a._tick = (a._tick || 0) + 1;
+  let opened = 0;
+  if (a.on && a._tick % 6 === 0) {
+    try {
+      const interests = getInterests(10).map((i) => i.q).filter(Boolean);
+      const sug = await radarSuggest(getForest(), interests, [], auth.getToken());
+      for (const s of (sug || []).slice(0, 2)) {
+        if (!Array.isArray(s.path) || !s.path.length) continue;
+        mergeForest(pathNodes(s.path));
+        recordSearch(pathQuery(s.path), ensureRootSector(s.path[0]), s.path[0]);
+        opened++;
+      }
+    } catch { /* best-effort */ }
+  }
+  // 3) Un lead por tanda: rasca contactos de su web (gentil con sitios externos).
+  if (a.on) {
+    try {
+      const lead = store.getUserLeads().find((l) => l.website && !l.email && !l._contactsTried);
+      if (lead) {
+        lead._contactsTried = true;
+        const c = await fetchContacts(lead.website, auth.getToken());
+        if (c) {
+          if (!lead.email && c.email) lead.email = c.email;
+          if (!lead.phone && c.phone) lead.phone = c.phone;
+          if (!lead.instagram && c.instagram) lead.instagram = c.instagram;
+          if (!lead.linkedin && c.linkedin) lead.linkedin = c.linkedin;
+        }
+        store.saveUserLead(lead);
+      }
+    } catch { /* best-effort */ }
+  }
+
   a._ticking = false;
   if (!a.on) return;
 
-  a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}.`;
+  const extra = [organized ? `🧠 ${organized} archivadas` : "", opened ? `📡 ${opened} nichos nuevos` : ""].filter(Boolean).join(" · ");
+  a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}${extra ? ` · ${extra}` : ""}.`;
   patchAutoPanel();
   autoTimer = setTimeout(autoTick, 11000); // ~16 consultas/min, bajo el límite
 }
@@ -1766,7 +1822,7 @@ function autopilotPanel() {
       el("span", { class: "auto-title", text: "Piloto automático de captación" }),
       a.on ? el("span", { class: "auto-live", text: "● EN MARCHA" }) : null,
     ]),
-    el("p", { class: "hint", text: "Mete empresas cualificadas solo —guiado por tus intereses— hasta tener tu objetivo en 01 y en XN. Arráncalo y déjalo correr." }),
+    el("p", { class: "hint", text: "Arráncalo y déjalo correr: capta empresas cualificadas, las archiva y etiqueta solo en el mapa, abre nichos nuevos según el momento y va sacando contactos de sus webs. El cerebro entero, en automático." }),
     track("01", prog.q01, prog.pct01, "01"),
     track("XN", prog.qxn, prog.pctxn, "xn"),
     el("div", { class: "auto-ctl" }, [el("label", { class: "auto-tlbl", text: "Objetivo por marca:" }), targetInput, toggle]),
