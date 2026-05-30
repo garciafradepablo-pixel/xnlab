@@ -203,6 +203,8 @@ const QUICK_STATUS = [
   ["called", "Llamado"],
   ["interested", "Interesado"],
   ["meeting_booked", "Reunión"],
+  ["proposal_sent", "Propuesta"],
+  ["won", "Firmado"],
   ["rejected", "Rechazado"],
 ];
 function quickStatus(opp, current, handlers) {

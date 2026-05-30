@@ -299,7 +299,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v24 · aprende qué nichos cierran" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v25 · cierre del dinero" }),
     ]),
   ]);
 }
@@ -683,8 +683,31 @@ function pipelineView() {
     ]),
   ]);
 
+  // Camino al dinero: el cierre comercial atribuible a Connect.
+  const pulse = pipelinePulse(state.results.all, store.getTracking());
+  const closeStep = (n, label, value, tone) => el("div", { class: `close-step ${tone ? "close-" + tone : ""}` }, [
+    el("span", { class: "close-n", text: String(n) }),
+    el("span", { class: "close-l", text: label }),
+    value != null ? el("span", { class: "close-v", text: eurFmt(value) }) : null,
+  ]);
+  const closeStrip = el("div", { class: "close-strip" }, [
+    el("div", { class: "close-h" }, [
+      el("span", { text: "Camino al dinero" }),
+      el("span", { class: "close-attr", text: "atribuible a Connect" }),
+    ]),
+    el("div", { class: "close-steps" }, [
+      closeStep(pulse.meetings, "Diagnósticos", null),
+      el("span", { class: "close-arrow", text: "→" }),
+      closeStep(pulse.proposals, "Propuestas", pulse.proposalValue),
+      el("span", { class: "close-arrow", text: "→" }),
+      closeStep(pulse.won, "Firmado", pulse.wonValue, "won"),
+    ]),
+    el("p", { class: "hint", text: "Cada empresa captada por Connect que firmas suma a los ingresos atribuibles. El € usa el ticket estimado del lead — no hace falta escribir nada." }),
+  ]);
+
   return el("div", {}, [
     el("h2", { text: "Embudo de candidatos" }),
+    closeStrip,
     stages,
     summary,
     coverage,
@@ -781,6 +804,8 @@ function todayView() {
     pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
   ]));
   blocks.push(el("div", { class: "pulse-split" }, [
+    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
+    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
     el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
     el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
   ]));
@@ -1328,6 +1353,8 @@ const CRM_COLUMNS = [
   { key: "no_answer", fail: true },
   { key: "interested", fail: false },
   { key: "meeting_booked", fail: false },
+  { key: "proposal_sent", fail: false },
+  { key: "won", fail: false },
   { key: "follow_up", fail: true },
   { key: "rejected", fail: true },
   { key: "wrong_fit", fail: true },

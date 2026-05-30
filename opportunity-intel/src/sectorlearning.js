@@ -10,7 +10,7 @@
 // resultados (store.getLearning()), que ahora estampa el sector de cada llamada.
 // =============================================================================
 
-const SUCCESS = new Set(["interested", "meeting_booked"]);
+const SUCCESS = new Set(["interested", "meeting_booked", "won"]);
 const FAILURE = new Set(["rejected", "wrong_fit"]);
 
 /**

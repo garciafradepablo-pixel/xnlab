@@ -20,7 +20,7 @@ import { FILTER_KEYS } from "./models.js";
 // A call "succeeded" if it reached interest or a meeting; "failed" if rejected
 // or judged a wrong fit. Everything else (no answer, called, follow-up) is
 // neutral — it carries no signal about whether the lead was well-chosen.
-const SUCCESS = new Set(["interested", "meeting_booked"]);
+const SUCCESS = new Set(["interested", "meeting_booked", "won"]);
 const FAILURE = new Set(["rejected", "wrong_fit"]);
 
 // Guardrails. Vara de medición MÁS FINA (~20× la resolución previa) y que
@@ -137,7 +137,7 @@ function successRate(list) {
 }
 
 // Estados de "cierre real" (reunión = la conversión que de verdad importa).
-const CLOSED = new Set(["meeting_booked"]);
+const CLOSED = new Set(["meeting_booked", "won"]);
 
 /**
  * Calibración del ÍNDICE DE ÉXITO desde resultados reales.

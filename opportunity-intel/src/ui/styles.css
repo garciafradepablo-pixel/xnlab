@@ -309,6 +309,24 @@ output { font-size: 12px; color: var(--accent); }
 .ps b { font-weight: 700; margin-right: 4px; }
 .ps-01 { color: var(--o1); background: rgba(74,158,255,.08); }
 .ps-xn { color: var(--xn); background: rgba(139,123,216,.10); }
+.ps-won { color: var(--green); background: rgba(63,185,80,.12); border-color: rgba(63,185,80,.4); }
+.ps-prop { color: var(--accent); background: rgba(201,162,39,.08); border-color: rgba(201,162,39,.35); }
+
+/* ---- Camino al dinero (Embudo) ---- */
+.close-strip { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; margin-bottom: 18px; }
+.close-h { display: flex; align-items: baseline; gap: 10px; margin-bottom: 12px; }
+.close-h > span:first-child { font-size: 15px; font-weight: 700; }
+.close-attr { font-size: 11px; letter-spacing: .8px; text-transform: uppercase; color: var(--green); }
+.close-steps { display: flex; align-items: stretch; gap: 10px; flex-wrap: wrap; }
+.close-step { flex: 1 1 0; min-width: 90px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; }
+.close-step.close-won { border-color: rgba(63,185,80,.45); box-shadow: inset 0 0 0 1px rgba(63,185,80,.2); }
+.close-n { font-size: 24px; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; }
+.close-won .close-n { color: var(--green); }
+.close-l { font-size: 12px; color: var(--ink-dim); }
+.close-v { font-size: 12px; font-weight: 700; color: var(--accent); }
+.close-won .close-v { color: var(--green); }
+.close-arrow { align-self: center; color: var(--ink-dim); flex: 0 0 auto; }
+@media (max-width: 600px) { .close-arrow { display: none; } .close-step { flex: 1 1 40%; } }
 
 .today-h2 { font-size: 17px; font-weight: 700; margin: 0 0 12px; }
 .today-empty { color: var(--ink-dim); font-size: 14px; margin: 0 0 14px; }

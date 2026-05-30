@@ -13,7 +13,7 @@ const ticketOf = (o) => OFFER_LADDER[o?.suggestedOfferKey]?.price || 0;
 const statusOf = (o, tracking) => tracking[o?.id]?.status || "not_called";
 
 // Estados que ya están "resueltos" y salen del foco de hoy.
-const SETTLED = new Set(["rejected", "wrong_fit", "meeting_booked"]);
+const SETTLED = new Set(["rejected", "wrong_fit", "meeting_booked", "won"]);
 
 /**
  * Las mejores llamadas del día: oportunidades reales (01/XN) que aún piden
@@ -35,7 +35,8 @@ export function pickTodayCalls(opps = [], tracking = {}, { limit = 3 } = {}) {
     // fría. Por eso un hilo abierto va por tramos por encima de lo no llamado;
     // dentro de cada tramo desempata el Índice de Éxito (lo que de verdad
     // cierra) y la confianza.
-    const tier = st === "interested" || st === "follow_up" ? 1000
+    const tier = st === "proposal_sent" ? 1200 // propuesta enviada: a un paso de firmar
+      : st === "interested" || st === "follow_up" ? 1000
       : st === "no_answer" ? 500
       : st === "called" ? 200 : 0;
     const s = o.scores || {};
@@ -72,11 +73,15 @@ export function pipelinePulse(opps = [], tracking = {}) {
   const xn = real.filter((o) => o.scores.classification === "xn");
   const called = real.filter((o) => statusOf(o, tracking) !== "not_called").length;
   const meetings = real.filter((o) => statusOf(o, tracking) === "meeting_booked").length;
+  const proposals = real.filter((o) => statusOf(o, tracking) === "proposal_sent");
+  const wonLeads = real.filter((o) => statusOf(o, tracking) === "won");
   const sum = (arr) => arr.reduce((s, o) => s + ticketOf(o), 0);
   return {
     total: real.length,
     o1: o1.length, xn: xn.length,
     called, pending: real.length - called, meetings,
+    proposals: proposals.length, proposalValue: sum(proposals),
+    won: wonLeads.length, wonValue: sum(wonLeads), // € atribuible a Connect
     value01: sum(o1), valueXn: sum(xn), valueTotal: sum(real),
   };
 }

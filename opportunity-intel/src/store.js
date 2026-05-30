@@ -253,7 +253,7 @@ export function addOutcome(outcome) {
 }
 
 // Estados decisivos que enseñan al modelo (éxito o fallo claros).
-const DECISIVE = new Set(["interested", "meeting_booked", "rejected", "wrong_fit"]);
+const DECISIVE = new Set(["interested", "meeting_booked", "won", "rejected", "wrong_fit"]);
 
 /**
  * Aprende del CRM: registra (o actualiza) UN resultado automático por lead a
