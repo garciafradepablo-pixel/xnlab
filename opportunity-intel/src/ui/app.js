@@ -118,11 +118,12 @@ function renderAuth() {
   const swatches = el("div", { class: "swatches" }, auth.SIGNATURE_COLORS.map((c) => {
     const owner = owners.get(c);
     if (owner) {
-      // Cogido: bloqueado, atenuado, con candado y nombre del dueño.
+      // Cogido: bloqueado y atenuado, con la inicial del dueño dentro (se ve de
+      // quién es incluso en móvil, donde no hay tooltip).
       return el("button", {
         class: "swatch taken", style: `background:${c}`, disabled: "",
-        title: `Reservado para ${owner}`, html: "<span class='swatch-lock'>🔒</span>",
-      });
+        title: `Reservado para ${owner}`,
+      }, [el("span", { class: "swatch-owner", text: (owner[0] || "?").toUpperCase() })]);
     }
     const sw = el("button", { class: `swatch ${c === chosenColor ? "sel" : ""}`, style: `background:${c}`, title: c });
     sw.addEventListener("click", () => { chosenColor = c; [...swatches.children].forEach((x) => x.classList?.remove?.("sel")); sw.classList.add("sel"); });

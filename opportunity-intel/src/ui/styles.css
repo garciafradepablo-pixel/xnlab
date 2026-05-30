@@ -95,8 +95,8 @@ html, body { height: 100%; }
 .swatches { display: flex; gap: 8px; flex-wrap: wrap; }
 .swatch { width: 30px; height: 30px; border-radius: 50%; border: 2px solid transparent; cursor: pointer; }
 .swatch.sel { border-color: var(--ink); box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px currentColor; }
-.swatch.taken { cursor: not-allowed; opacity: 0.45; filter: grayscale(0.4); position: relative; display: flex; align-items: center; justify-content: center; }
-.swatch.taken .swatch-lock { font-size: 13px; line-height: 1; filter: drop-shadow(0 0 1px rgba(0,0,0,0.8)); }
+.swatch.taken { cursor: not-allowed; opacity: 0.5; filter: grayscale(0.35); display: flex; align-items: center; justify-content: center; }
+.swatch.taken .swatch-owner { font-size: 13px; font-weight: 800; line-height: 1; color: #0e0f12; }
 .auth-go { margin-top: 4px; }
 .auth-msg { color: var(--red); font-size: 12px; min-height: 14px; margin: 0; text-align: center; }
 .auth-switch { background: transparent; border: 0; color: var(--o1); font-size: 12px; cursor: pointer; }
@@ -852,4 +852,29 @@ button:disabled { cursor: not-allowed; }
     transition-duration: .001ms !important;
     scroll-behavior: auto !important;
   }
+}
+
+/* ====================== Sensación de interacción ======================
+   Coherencia de tacto en toda la herramienta:
+   1) Hover suave en botones, pestañas y chips (antes saltaban en seco mientras
+      tarjetas y anillos sí transicionaban).
+   2) Respuesta al pulsar: los botones de acción ceden 1px.
+   3) Foco de formulario coherente: el mismo realce de acento que ya tenían
+      login y el agente, ahora en TODOS los campos. El anillo de teclado del
+      bloque de accesibilidad sigue encima. El movimiento reducido lo desactiva. */
+.btn, .btn-ghost, .btn-primary, .btn-save, .btn-danger, .btn-learn, .btn-add-cand,
+.tab, .user-chip, .swatch, .pill, .ps, .agent-chip, .ct-link, .ct-call, .q, .q-link {
+  transition: border-color .14s ease, color .14s ease, background-color .14s ease,
+              filter .14s ease, box-shadow .14s ease, transform .08s ease;
+}
+.btn:active, .btn-ghost:active, .btn-primary:active, .btn-save:active,
+.btn-danger:active, .btn-learn:active, .btn-add-cand:active, .btn-agent:active {
+  transform: translateY(1px);
+}
+
+.field input[type="text"]:focus, .field input[type="number"]:focus,
+.filters select:focus, .filters input:focus, .minev input:focus,
+.lead-f:focus, .learn-f:focus, .notes:focus, .status-sel:focus,
+.search-city:focus, .sec-f:focus {
+  border-color: var(--accent);
 }
