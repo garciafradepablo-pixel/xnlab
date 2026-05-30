@@ -150,5 +150,13 @@ const rs = await auth.refreshSession();
 ok(rs.ok && rs.role === "analyst", "refreshSession trae el rol nuevo del servidor");
 ok(auth.currentRole() === "analyst", "currentRole() refleja el rol revalidado");
 
+// 12. availableColors: un color ya elegido desaparece del catálogo de firmas.
+const usedNow = new Set(auth.getUsers().map((u) => u.color));
+const free = auth.availableColors();
+ok(free.every((c) => !usedNow.has(c)), "availableColors() excluye todo color ya en uso");
+ok(!free.includes("#3fb950") && !free.includes("#f0883e"), "los colores tomados no se ofrecen a nuevos usuarios");
+ok(auth.SIGNATURE_COLORS.filter((c) => !usedNow.has(c)).length === free.length, "ofrece exactamente los colores libres");
+ok(!usedNow.has(auth.nextFreeColor()) || free.length === 0, "nextFreeColor() devuelve un color libre");
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

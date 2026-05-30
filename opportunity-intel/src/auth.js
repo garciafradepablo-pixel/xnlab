@@ -63,10 +63,16 @@ export const SIGNATURE_COLORS = [
 /** @returns {Array<{name,color,hash,createdAt}>} */
 export function getUsers() { return read(USERS_KEY, []); }
 
+/** Colores aún libres (ningún usuario los firma). Un color elegido desaparece
+ *  del catálogo para futuros usuarios. Vacío si ya están todos cogidos. */
+export function availableColors() {
+  const used = new Set(getUsers().map((u) => u.color));
+  return SIGNATURE_COLORS.filter((c) => !used.has(c));
+}
+
 /** Color libre que aún no usa nadie (o el primero si todos cogidos). */
 export function nextFreeColor() {
-  const used = new Set(getUsers().map((u) => u.color));
-  return SIGNATURE_COLORS.find((c) => !used.has(c)) || SIGNATURE_COLORS[0];
+  return availableColors()[0] || SIGNATURE_COLORS[0];
 }
 
 /**

@@ -58,7 +58,13 @@ export async function mount(rootEl) {
   root = rootEl;
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
   // su color fijo y firma su actividad.
-  if (!auth.currentUser()) { renderAuth(); return; }
+  if (!auth.currentUser()) {
+    renderAuth();
+    // Trae los colores ya en uso (otras cuentas / otros dispositivos) y repinta
+    // la paleta: un color elegido por alguien deja de ofrecerse a nuevos usuarios.
+    auth.syncRemoteColors().then(() => { if (!auth.currentUser()) renderAuth(); }).catch(() => {});
+    return;
+  }
   ensureSyncSubscription();
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
@@ -104,13 +110,16 @@ function renderAuth() {
   const nameI = el("input", { class: "auth-f", placeholder: "Usuario", autocomplete: "username" });
   const passI = el("input", { class: "auth-f", type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
 
-  // Selector de color (solo al crear).
-  let chosenColor = auth.nextFreeColor();
-  const swatches = el("div", { class: "swatches" }, auth.SIGNATURE_COLORS.map((c) => {
+  // Selector de color (solo al crear). Solo se ofrecen los colores aún libres:
+  // un color ya elegido por otra cuenta desaparece del catálogo.
+  const freeColors = auth.availableColors();
+  let chosenColor = freeColors[0] || null;
+  const swatches = el("div", { class: "swatches" }, freeColors.map((c) => {
     const sw = el("button", { class: `swatch ${c === chosenColor ? "sel" : ""}`, style: `background:${c}`, title: c });
     sw.addEventListener("click", () => { chosenColor = c; [...swatches.children].forEach((x) => x.classList?.remove?.("sel")); sw.classList.add("sel"); });
     return sw;
   }));
+  const noColors = freeColors.length === 0;
 
   const busy = (on, label) => { primary.disabled = on; primary.textContent = on ? "Conectando…" : label; };
 
@@ -124,6 +133,7 @@ function renderAuth() {
   };
   const doCreate = async () => {
     msg.textContent = "";
+    if (!chosenColor) { msg.textContent = "No quedan colores de firma libres. Pide a un admin que libere uno."; return; }
     busy(true);
     const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor);
     if (!r.ok) { busy(false, "Crear usuario y entrar"); msg.textContent = r.error; return; }
@@ -142,7 +152,10 @@ function renderAuth() {
     el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
     nameI, passI,
-    tab === "create" ? el("div", {}, [el("p", { class: "auth-color-label", text: "Tu color (firma tu trabajo):" }), swatches]) : null,
+    tab === "create" ? el("div", {}, [
+      el("p", { class: "auth-color-label", text: noColors ? "No quedan colores de firma libres." : "Tu color (firma tu trabajo):" }),
+      swatches,
+    ]) : null,
     primary, msg, switcher,
   ]);
   root.appendChild(el("div", { class: "auth-screen" }, [card]));
