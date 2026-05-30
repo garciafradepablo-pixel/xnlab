@@ -213,6 +213,27 @@ export async function classifyLeads(items, forest, token) {
 }
 
 /**
+ * Siembra los nichos del cerebro en la cola del cron 24/7, para que la captación
+ * desatendida cace lo que el mapa decide. queries = [{query, sector}]. Devuelve nº.
+ */
+export async function seedCron(queries, token) {
+  if (typeof fetch === "undefined" || !Array.isArray(queries) || !queries.length) return 0;
+  try {
+    const res = await fetch(ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", apikey: ANON, Authorization: `Bearer ${ANON}` },
+      body: JSON.stringify({ action: "seedcron", queries, token: token || null }),
+      signal: typeof AbortSignal !== "undefined" ? AbortSignal.timeout(12000) : undefined,
+    });
+    if (!res.ok) return 0;
+    const d = await res.json();
+    return d && d.ok ? (d.seeded || 0) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Radar de momentos: pide nichos nuevos a explorar según el momento + lo que el
  * equipo ya trabaja. Devuelve [{ path:[...], why:"..." }] o [].
  */

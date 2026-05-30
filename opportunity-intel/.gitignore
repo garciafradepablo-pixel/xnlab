@@ -1,5 +1,6 @@
 *.out
 _*.mjs
+!test/_dom.mjs
 _site/
 out/
 zsmoke*
