@@ -6,6 +6,7 @@
 
 import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
+import { ensureEco } from "./voice.js";
 import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
@@ -72,6 +73,7 @@ export async function mount(rootEl) {
   }
   ensureSyncSubscription();
   ensureHotkeys(); // ⌘K disponible en toda la app
+  ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
