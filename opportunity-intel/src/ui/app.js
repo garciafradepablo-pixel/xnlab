@@ -45,6 +45,7 @@ import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
 import { fetchWebFreshness, webSignalsToVerifications } from "../enrichweb.js";
+import { fetchMomentum, momentumToVerification, momentumLabel } from "../momentum.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
@@ -326,7 +327,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v43 · captación enriquecida 24/7" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v45 · momento en prensa" }),
     ]),
   ]);
 }
@@ -1353,9 +1354,11 @@ function openCase(id) {
 
   const body = el("div", { class: "case-body" });
   const synthWrap = el("div", {}); // síntesis inteligente (se refresca con la nota)
+  const momentumPanel = el("div", { class: "case-fresh" }); // momento en prensa (por qué ahora)
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
   body.appendChild(synthWrap);
+  body.appendChild(momentumPanel);
   body.appendChild(freshPanel);
   body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
@@ -1373,6 +1376,7 @@ function openCase(id) {
     cardWrap.appendChild(card);
   }
   rebuild();
+  loadMomentum(lead, momentumPanel, rebuild); // automático: detecta el momento en prensa
   loadFreshness(lead, freshPanel, rebuild); // automático: lee su web y sube la nota
 
   const bar = el("div", { class: "case-bar" }, [
@@ -1427,6 +1431,49 @@ function applyWebToScore(leadId, r) {
     changed = true;
   }
   return changed;
+}
+
+// Enchufa el MOMENTO detectado en prensa al scoring: una apertura/ronda/expansión
+// citada sube transitionSignal a verde (es prensa real). Idempotente.
+function applyMomentumToScore(leadId, r) {
+  const v = momentumToVerification(r);
+  if (!v) return false;
+  if (store.getLeadVerifications(leadId).some((x) => x.auto && x.filter === v.filter && x.level === "green")) return false;
+  store.addVerification(leadId, v.filter, v.level, v.note, v.url, { auto: true, srcLabel: "Prensa" });
+  return true;
+}
+
+// Carga AUTOMÁTICA del momento en prensa al abrir el caso. Honesto: si no hay
+// noticia relevante, lo dice (gris) — nunca inventa.
+async function loadMomentum(lead, panel, onScoreChange) {
+  clear(panel);
+  panel.appendChild(momentumCard(null, "loading"));
+  let r;
+  try { r = await fetchMomentum(lead.company, auth.getToken()); } catch { r = null; }
+  clear(panel);
+  if (r && r.ok && r.found) {
+    panel.appendChild(momentumCard(r, "ok"));
+    if (allow("write") && applyMomentumToScore(lead.id, r)) { await recompute(); onScoreChange?.(); }
+  } else {
+    panel.appendChild(momentumCard(r, "gray"));
+  }
+}
+
+function momentumCard(r, kind) {
+  const head = el("div", { class: "fresh-h" }, [
+    el("span", { class: "fresh-ic", text: "📡" }),
+    el("span", { class: "fresh-h-t", text: "Momento en prensa" }),
+    el("span", { class: "fresh-tag", text: "AUTOMÁTICO" }),
+  ]);
+  if (kind === "loading") return el("div", { class: "case-fresh-card loading" }, [head, el("p", { class: "fresh-note", text: "Buscando en prensa…" })]);
+  if (kind === "gray") return el("div", { class: "case-fresh-card gray" }, [head, el("p", { class: "fresh-note", text: "Sin momento reciente en prensa (no concluyente)." })]);
+  const children = [head,
+    el("div", { class: "mom-kind", text: momentumLabel(r.kind) }),
+    el("p", { class: "fresh-note", text: r.headline || "" }),
+  ];
+  if (r.url) children.push(el("a", { class: "mom-src", href: r.url, target: "_blank", rel: "noopener", text: `Ver en ${r.source || "prensa"} ↗` }));
+  children.push(el("div", { class: "fresh-lever", text: "⚡ Momento citado: el 'por qué ahora' está vivo — ángulo de llamada inmediato." }));
+  return el("div", { class: "case-fresh-card lever" }, children);
 }
 
 // Hero de SÍNTESIS inteligente: veredicto + temperatura + medidor animado +
