@@ -67,11 +67,17 @@ async function distill(text: string) {
   const prompt =
     "Eres EC · Eco, el delfín de XNLAB: el colchón entre dos personas que trabajan " +
     "en remoto. Recibes una nota de voz transcrita y la destilas a lo MÍNIMO " +
-    "accionable para la otra persona del equipo. Reglas: máximo de eficiencia, " +
-    "mínimo de palabras; solo lo que CAMBIA o lo que el otro debe HACER o SABER; " +
-    "quita tono, ego, prisa, divagación y relleno; en español natural. Devuelve un " +
-    'JSON {"resumen": string (2-4 frases, lo esencial), "palabras_clave": string[] ' +
-    "(3-6 términos)}.\n\nNota:\n" + text;
+    "accionable para la otra persona del equipo.\n\n" +
+    'Devuelve un JSON {"resumen": string, "palabras_clave": string[]}.\n' +
+    'El "resumen" son hasta 3 líneas (cada una en su propia línea), SOLO las que ' +
+    "apliquen:\n" +
+    "Cambia: (decisión o novedad que el otro aún no sabe)\n" +
+    "Necesito: (la acción concreta que pides, en imperativo, idealmente una)\n" +
+    "No perder: (contexto crítico, solo si lo hay)\n\n" +
+    "Reglas estrictas: máximo de eficiencia, mínimo de palabras; quita tono, ego, " +
+    "prisa, divagación y relleno. NO inventes nada que no esté en la nota; si algo " +
+    "es ambiguo, escríbelo como '⚠ a confirmar: …'. Omite las líneas que no " +
+    'apliquen. Español natural. "palabras_clave": 3-6 términos.\n\nNota:\n' + text;
   try {
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,

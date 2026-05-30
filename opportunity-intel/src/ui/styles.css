@@ -1138,7 +1138,7 @@ button:disabled { cursor: not-allowed; }
 .eco-dot { width: 8px; height: 8px; border-radius: 50%; flex: 0 0 auto; }
 .eco-from { font-size: 12px; color: var(--ink); font-weight: 600; }
 .eco-when { font-size: 11px; color: var(--ink-dim); margin-left: auto; }
-.eco-resumen { font-size: 13px; color: var(--ink); line-height: 1.45; margin: 0; }
+.eco-resumen { font-size: 13px; color: var(--ink); line-height: 1.45; margin: 0; white-space: pre-line; }
 .eco-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
 .eco-chip { font-size: 11px; color: var(--accent); border: 1px solid var(--line); border-radius: 20px; padding: 2px 8px; }
 .eco-raw { margin-top: 7px; }
