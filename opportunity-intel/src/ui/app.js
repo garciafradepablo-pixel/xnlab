@@ -59,6 +59,26 @@ import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 // de esto.
 const allow = (action) => can(auth.currentRole(), action);
 
+// — Iconos de línea (stroke), nivel ejecutivo: reemplazan a los emojis. —
+const _svg = (p, vb = "0 0 24 24") =>
+  `<svg viewBox="${vb}" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+const ICONS = {
+  folder: _svg('<path d="M3 7.5a2 2 0 0 1 2-2h3.6l1.8 2.2H19a2 2 0 0 1 2 2V18a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>'),
+  folderOpen: _svg('<path d="M3 7.5a2 2 0 0 1 2-2h3.6l1.8 2.2H19a2 2 0 0 1 2 2"/><path d="M3 9.5h17.2a1 1 0 0 1 .96 1.27l-1.5 6A1.5 1.5 0 0 1 18.2 18H4.5A1.5 1.5 0 0 1 3 16.5z"/>'),
+  dot: _svg('<circle cx="12" cy="12" r="2.6" fill="currentColor" stroke="none"/>'),
+  chevR: _svg('<path d="M9 6l6 6-6 6"/>'),
+  chevD: _svg('<path d="M6 9l6 6 6-6"/>'),
+  search: _svg('<circle cx="11" cy="11" r="6.5"/><path d="M20.5 20.5l-4-4"/>'),
+  radar: _svg('<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 12l6-3.4"/>'),
+  spark: _svg('<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>'),
+  mail: _svg('<rect x="3" y="5.5" width="18" height="13" rx="2.2"/><path d="M4 7l8 5.5L20 7"/>'),
+  phone: _svg('<path d="M6.5 4h3l1.4 4-2 1.4a12 12 0 0 0 5.7 5.7l1.4-2 4 1.4v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4z"/>'),
+  id: _svg('<rect x="3" y="5" width="18" height="14" rx="2.4"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16a2.6 2.6 0 0 1 5 0M14.5 10h4M14.5 13.5h4"/>'),
+  trash: _svg('<path d="M4 7h16M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7l1 12.5A1.5 1.5 0 0 0 9 21h6a1.5 1.5 0 0 0 1.5-1.4L17.5 7"/>'),
+};
+const icon = (name) => ICONS[name] || "";
+const iconEl = (name, cls = "") => el("span", { class: `ic ${cls}`.trim(), html: icon(name) });
+
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
@@ -363,7 +383,7 @@ const notesKey = (name) => `oi:notes:${String(name || "").toLowerCase()}`;
 function getUserNotes(name) { try { return localStorage.getItem(notesKey(name)) || ""; } catch { return ""; } }
 function setUserNotes(name, v) { try { localStorage.setItem(notesKey(name), v); } catch { /* */ } }
 
-const PROFILE_EMOJIS = ["🐋", "🦊", "🦉", "🐺", "🦅", "🦈", "🐉", "🦁", "🐯", "🦄", "🤖", "👁", "⚡", "✦", "◆", "★"];
+const PROFILE_EMOJIS = ["◆", "✦", "★", "▲", "●", "◇", "✧", "◈", "❖", "⬢", "⬡", "⚡", "△", "□", "○", "✕"];
 
 // Perfil del usuario: avatar (emoji), notas privadas, contraseña e invitación.
 // Más personal y más privado, sin foto que suba a ningún sitio.
@@ -1175,7 +1195,7 @@ function agentButton() {
     let totalSeen = 0, totalEval = 0, addedTotal = 0, best = 0;
     let lastQueries = [], belowSample = [];
     for (let round = 1; round <= MAX_ROUNDS; round++) {
-      btn.innerHTML = `🧠 Buscando… (ronda ${round})`;
+      btn.innerHTML = `Buscando… (ronda ${round})`;
       // cede el hilo para que el navegador pinte el progreso
       await new Promise((r) => setTimeout(r, 0));
       const res = await runBatch({
@@ -1217,7 +1237,7 @@ function agentButton() {
 function agentReport(res) {
   const box = el("div", { class: `agent-card ${res.added ? "ok" : "empty"}` });
   if (res.added) {
-    box.appendChild(el("p", { class: "agent-headline", html: `🐋 <b>${res.added} oportunidad${res.added === 1 ? "" : "es"} por encima de ${AGENT_MIN_SCORE}</b> añadida${res.added === 1 ? "" : "s"} al ranking · mejor <b>${res.best}</b>` }));
+    box.appendChild(el("p", { class: "agent-headline", html: `<b>${res.added} oportunidad${res.added === 1 ? "" : "es"} por encima de ${AGENT_MIN_SCORE}</b> añadida${res.added === 1 ? "" : "s"} al ranking · mejor <b>${res.best}</b>` }));
   } else if (res.deliveredBest) {
     // No se fue con las manos vacías: entrega el mejor candidato hallado, para
     // enriquecer hasta superar el listón.
@@ -1329,14 +1349,16 @@ function cardHandlers(afterMutate) {
 
 // Pequeña ballena azul: la marca de CONNECT. Entra una señal, sale un chorro
 // (de marca, dirección y valor). El soplo va en oro de acento.
+// Marca de CONNECT: nodo 01 (lleno) ↔ XN (contorno) conectados. Geométrica,
+// sobria, en oro. Sustituye a la antigua ballena azul.
 function whaleMark() {
-  return el("span", { class: "whale", html:
-    '<svg viewBox="0 0 64 40" width="34" height="21" aria-hidden="true">' +
-    '<defs><linearGradient id="whg" x1="0" y1="0" x2="1" y2="1">' +
-    '<stop offset="0" stop-color="#5aa9ff"/><stop offset="1" stop-color="#3a7fe0"/></linearGradient></defs>' +
-    '<path class="whale-spout" d="M25 10 q-2 -6 1 -9 M25 10 q3 -5 6 -8 M25 10 q-1 -8 -3 -10" fill="none" stroke="#c9a227" stroke-width="1.5" stroke-linecap="round"/>' +
-    '<path d="M5 27 C5 16 15 10 30 11 C39 11.5 44 15 47 19 L61 7 C56 15 55 17 53 20 C56 23 58 26 61 30 L46 23 C40 28 27 30 16 28 C9 27 6 27.4 5 27 Z" fill="url(#whg)"/>' +
-    '<circle cx="13" cy="22.5" r="1.1" fill="#0b1220"/></svg>' });
+  return el("span", { class: "whale brand-mark", html:
+    '<svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">' +
+    '<rect x="2.5" y="2.5" width="27" height="27" rx="8.5" fill="none" stroke="#cba24a" stroke-width="1.5" opacity="0.85"/>' +
+    '<circle cx="11.4" cy="16" r="2.8" fill="#cba24a"/>' +
+    '<circle cx="20.6" cy="16" r="2.8" fill="none" stroke="#cba24a" stroke-width="1.7"/>' +
+    '<path d="M14.3 16 H17.7" stroke="#cba24a" stroke-width="1.7" stroke-linecap="round"/>' +
+    '</svg>' });
 }
 
 // Vista de CASO a pantalla completa: al entrar en una oportunidad se ve SOLO ese
@@ -1381,12 +1403,12 @@ function openCase(id) {
 
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
-    el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al chorro</i>' })]),
+    el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al valor</i>' })]),
     el("span", { class: "case-rank", text: `#${lead.ranking ?? "—"}` }),
   ]);
   const foot = el("div", { class: "case-foot" }, [
     whaleMark(),
-    el("p", { html: 'Entra una señal, sale un chorro de <b>marca</b>, <b>dirección</b> y <b>valor</b>. — la ballena azul de XN&nbsp;LAB.' }),
+    el("p", { html: 'Entra una señal, sale <b>marca</b>, <b>dirección</b> y <b>valor</b>. El sistema de captación de XN&nbsp;LAB.' }),
   ]);
 
   overlay.appendChild(bar);
@@ -1461,7 +1483,7 @@ async function loadMomentum(lead, panel, onScoreChange) {
 
 function momentumCard(r, kind) {
   const head = el("div", { class: "fresh-h" }, [
-    el("span", { class: "fresh-ic", text: "📡" }),
+    el("span", { class: "fresh-ic ic", html: icon("radar") }),
     el("span", { class: "fresh-h-t", text: "Momento en prensa" }),
     el("span", { class: "fresh-tag", text: "AUTOMÁTICO" }),
   ]);
@@ -1711,7 +1733,7 @@ async function autoTick() {
   a._ticking = true;
   clearTimeout(autoTimer);
   const prog = autoProgress(state.results?.all || [], { target: a.target, bar: AUTO_BAR });
-  if (prog.done) { a.on = false; a._ticking = false; a._msg = `🐋 Objetivo alcanzado: ${a.target} en 01 y ${a.target} en XN.`; saveAuto(); patchAutoPanel(); render(); return; }
+  if (prog.done) { a.on = false; a._ticking = false; a._msg = `Objetivo alcanzado: ${a.target} en 01 y ${a.target} en XN.`; saveAuto(); patchAutoPanel(); render(); return; }
   // Foco guiado por tus intereses la mitad de las veces; si no, barrido base.
   const ints = getInterests(6).map((i) => i.q).filter(Boolean);
   const focus = ints.length && Math.random() < 0.5 ? ints[Math.floor(Math.random() * ints.length)] : "";
@@ -1785,7 +1807,7 @@ async function autoTick() {
   a._ticking = false;
   if (!a.on) return;
 
-  const extra = [organized ? `🧠 ${organized} archivadas` : "", opened ? `📡 ${opened} nichos nuevos` : ""].filter(Boolean).join(" · ");
+  const extra = [organized ? `${organized} archivadas` : "", opened ? `${opened} nichos nuevos` : ""].filter(Boolean).join(" · ");
   a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}${extra ? ` · ${extra}` : ""}.`;
   patchAutoPanel();
   autoTimer = setTimeout(autoTick, 11000); // ~16 consultas/min, bajo el límite
@@ -1839,7 +1861,7 @@ async function absorbCronLeads() {
     }
     if (lifted) await recompute();
     render();
-    flash(`🐋 ${fresh.length} empresa${fresh.length === 1 ? "" : "s"} captada${fresh.length === 1 ? "" : "s"} sola${fresh.length === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
+    flash(`${fresh.length} empresa${fresh.length === 1 ? "" : "s"} captada${fresh.length === 1 ? "" : "s"} sola${fresh.length === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
     // El cerebro las archiva y etiqueta solo en el mapa (lo del cron, organizado).
     try {
       const filed = await autoClassifyUnfiled(40);
@@ -1867,7 +1889,7 @@ function autopilotPanel() {
   const targetInput = el("input", { type: "number", min: "1", max: "1000", value: String(a.target), class: "auto-target",
     onChange: (e) => { a.target = Math.max(1, +e.target.value || 100); saveAuto(); patchAutoPanel(); } });
   const toggle = el("button", { class: `btn-agent ${a.on ? "auto-on" : ""}`,
-    html: a.on ? "⏸ Detener piloto" : "🐋 Arrancar piloto automático",
+    html: a.on ? "Detener piloto" : "Arrancar piloto automático",
     onClick: () => (a.on ? stopAuto() : startAuto()) });
   return el("div", { class: "auto-panel" }, [
     el("div", { class: "auto-head" }, [
@@ -1898,7 +1920,7 @@ function ensureSector(query) {
 
 // ---- MAPA DE CAPTACIÓN: una idea → árbol de categorías anidadas -------------
 // El usuario escribe una sola línea; Gemini (Edge Function `taxonomy`) devuelve
-// un árbol de carpetas dentro de carpetas. Cada carpeta tiene un 🔍 que trae
+// un árbol de carpetas dentro de carpetas. Cada carpeta tiene un buscador que trae
 // empresas reales del mapa y las archiva dentro (taggeadas con su ruta).
 const pk = (path) => (path || []).join("");
 
@@ -1966,7 +1988,7 @@ function captureMap() {
   async function gen() {
     const p = promptInput.value.trim();
     if (!p || ui.busy) return;
-    ui.lastPrompt = p; ui.busy = true; ui.status = "🧠 Generando categorías…"; patchCaptureMap();
+    ui.lastPrompt = p; ui.busy = true; ui.status = "Generando categorías…"; patchCaptureMap();
     let r = { tree: [] };
     try { r = await generateTaxonomy(p, auth.getToken()); } catch { r = { tree: [] }; }
     ui.busy = false;
@@ -1975,8 +1997,8 @@ function captureMap() {
       seedCronFromMap(); // el cron 24/7 empieza a cazar estos nichos solos
       for (const rootNode of r.tree) ui.expanded.add(pk([rootNode.name]));
       ui.status = r.ai
-        ? "✓ Mapa generado con IA. Pulsa 🔍 en una categoría para traer empresas reales."
-        : "✓ Mapa creado a partir de tu ruta. Pulsa 🔍 en una categoría para buscar empresas.";
+        ? "✓ Mapa generado con IA. Pulsa buscar en una categoría para traer empresas reales."
+        : "✓ Mapa creado a partir de tu ruta. Pulsa buscar en una categoría para buscar empresas.";
     } else {
       ui.status = "No pude generar categorías. Prueba a describirlo de otra forma.";
     }
@@ -1997,7 +2019,7 @@ function captureMap() {
     for (const leaf of leaves.slice(0, cap)) {
       const rootKey = ensureRootSector(leaf.path[0]);
       const discKey = BASE_KEYS.has(rootKey) ? rootKey : "all";
-      ui.status = `🗺️ Buscando «${leaf.name}»… (${swept + 1}/${cap})`; patchCaptureMap();
+      ui.status = `Buscando «${leaf.name}»… (${swept + 1}/${cap})`; patchCaptureMap();
       let found = [];
       try { found = await discover({ sector: discKey, query: pathQuery(leaf.path), token: auth.getToken() }); }
       catch { found = []; }
@@ -2031,14 +2053,14 @@ function captureMap() {
     let pool = all.filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length);
     const reorg = !pool.length;
     if (reorg) pool = all; // si ya están todos archivados, reorganiza todo
-    if (!pool.length) { ui.status = "No hay leads que organizar — capta empresas primero (🔍 o piloto)."; patchCaptureMap(); return; }
+    if (!pool.length) { ui.status = "No hay leads que organizar — capta empresas primero (buscar o piloto)."; patchCaptureMap(); return; }
     ui.busy = true;
     const BATCH = 40, MAX = 120;
     pool = pool.slice(0, MAX);
     let filed = 0;
     for (let off = 0; off < pool.length; off += BATCH) {
       const slice = pool.slice(off, off + BATCH);
-      ui.status = `🧠 Organizando ${off + 1}–${Math.min(off + BATCH, pool.length)} de ${pool.length}…`; patchCaptureMap();
+      ui.status = `Organizando ${off + 1}–${Math.min(off + BATCH, pool.length)} de ${pool.length}…`; patchCaptureMap();
       const items = slice.map((l) => ({ company: l.company, subsector: l.subsector || sectorByKey(l.sector)?.label || "", city: l.city || "" }));
       let assigns = [];
       try { assigns = await classifyLeads(items, getForest(), auth.getToken()); } catch { assigns = []; }
@@ -2064,14 +2086,14 @@ function captureMap() {
   // Radar de momentos: pide nichos nuevos a explorar (Gemini) y los muestra.
   async function runRadar() {
     if (ui.busy) return;
-    ui.busy = true; ui.status = "📡 Buscando nichos del momento…"; patchCaptureMap();
+    ui.busy = true; ui.status = "Buscando nichos del momento…"; patchCaptureMap();
     const interests = (getInterests(10) || []).map((i) => i.q).filter(Boolean);
     let sug = [];
     try { sug = await radarSuggest(getForest(), interests, [], auth.getToken()); } catch { sug = []; }
     ui.busy = false;
     ui.radar = sug;
     ui.status = sug.length
-      ? `📡 ${sug.length} nichos propuestos — añade al mapa los que te interesen.`
+      ? `${sug.length} nichos propuestos — añade al mapa los que te interesen.`
       : "El radar no propuso nada ahora. Reinténtalo en un momento.";
     patchCaptureMap();
   }
@@ -2080,11 +2102,11 @@ function captureMap() {
     const tagVals = l.tags && typeof l.tags === "object" ? Object.values(l.tags).filter(Boolean) : [];
     const stop = (e) => e.stopPropagation();
     const contacts = [];
-    if (l.email) contacts.push(el("a", { class: "cat-contact", href: `mailto:${l.email}`, title: l.email, text: "✉", onClick: stop }));
-    if (l.phone) contacts.push(el("a", { class: "cat-contact", href: `tel:${l.phone}`, title: l.phone, text: "☎", onClick: stop }));
+    if (l.email) contacts.push(el("a", { class: "cat-contact", href: `mailto:${l.email}`, title: l.email, html: icon("mail"), onClick: stop }));
+    if (l.phone) contacts.push(el("a", { class: "cat-contact", href: `tel:${l.phone}`, title: l.phone, html: icon("phone"), onClick: stop }));
     if (l.instagram) contacts.push(el("a", { class: "cat-contact", href: l.instagram, target: "_blank", rel: "noopener", title: "Instagram", text: "IG", onClick: stop }));
     if (l.linkedin) contacts.push(el("a", { class: "cat-contact", href: l.linkedin, target: "_blank", rel: "noopener", title: "LinkedIn", text: "in", onClick: stop }));
-    const findBtn = el("button", { class: "cat-contact-btn", title: "Buscar contactos en su web", text: "📇" });
+    const findBtn = el("button", { class: "cat-contact-btn", title: "Buscar contactos en su web", html: icon("id") });
     findBtn.addEventListener("click", async (e) => {
       e.stopPropagation();
       if (!l.website) { ui.status = `«${l.company}» no tiene web guardada para rascar contactos.`; patchCaptureMap(); return; }
@@ -2119,7 +2141,7 @@ function captureMap() {
     let leads = leadsUnder(path, store.getUserLeads());
     if (ui.facet) leads = leads.filter((l) => leadMatchesFacet(l, ui.facet));
     const pad = `padding-left:${10 + depth * 16}px`;
-    if (!leads.length) return el("div", { class: "cat-leads-empty", style: pad, text: ui.facet ? "Nada con ese filtro aquí." : "Sin empresas aún — pulsa 🔍 para buscar." });
+    if (!leads.length) return el("div", { class: "cat-leads-empty", style: pad, text: ui.facet ? "Nada con ese filtro aquí." : "Sin empresas aún — pulsa buscar para buscar." });
     return el("div", { class: "cat-leads", style: pad }, leads.slice(0, 60).map(leadRow));
   }
   function nodeRow(node, path, depth) {
@@ -2129,13 +2151,13 @@ function captureMap() {
     const toggle = () => { if (expanded) ui.expanded.delete(pk(path)); else ui.expanded.add(pk(path)); patchCaptureMap(); };
     return el("div", { class: `cat-row ${leaf ? "is-leaf" : "is-folder"}`, style: `padding-left:${8 + depth * 16}px` }, [
       el("button", { class: "cat-name", onClick: toggle }, [
-        el("span", { class: "cat-caret", text: leaf ? "·" : (expanded ? "▾" : "▸") }),
-        el("span", { class: "cat-ico", text: leaf ? "◦" : (expanded ? "📂" : "📁") }),
+        el("span", { class: "cat-caret", html: leaf ? "" : icon(expanded ? "chevD" : "chevR") }),
+        el("span", { class: "cat-ico", html: leaf ? icon("dot") : icon(expanded ? "folderOpen" : "folder") }),
         el("span", { class: "cat-label", text: node.name }),
         count ? el("span", { class: "cat-count", text: String(count) }) : null,
       ]),
       el("div", { class: "cat-tools" }, [
-        el("button", { class: "cat-find", title: "Buscar empresas reales en esta categoría", text: "🔍", onClick: () => discoverNode(path) }),
+        el("button", { class: "cat-find", title: "Buscar empresas reales en esta categoría", html: icon("search"), onClick: () => discoverNode(path) }),
         el("button", { class: "cat-del", title: "Quitar esta categoría", text: "✕", onClick: () => { removePath(path); patchCaptureMap(); } }),
       ]),
     ]);
@@ -2154,13 +2176,13 @@ function captureMap() {
 
   const blocks = [
     el("div", { class: "cmap-head" }, [
-      el("span", { class: "cmap-title", text: "🗂️ Mapa de captación" }),
+      el("span", { class: "cmap-title", html: '<span class="ic">' + icon("folderOpen") + '</span>Mapa de captación' }),
       forest.length ? el("button", {
         class: "cmap-clear", text: "Vaciar mapa", title: "Borrar todas las categorías (no borra los leads ya captados)",
         onClick: () => { if (confirm("¿Borrar todo el mapa de categorías? Los leads ya captados se quedan en el ranking.")) { clearForest(); ui.status = ""; render(); } },
       }) : null,
     ]),
-    el("p", { class: "hint", html: "Escribe <b>una idea</b> y Connect crea solo un árbol de <b>categorías anidadas</b> (carpetas dentro de carpetas). Luego pulsa <b>🔍</b> en cualquier carpeta para traer empresas reales y archivarlas dentro." }),
+    el("p", { class: "hint", html: "Escribe <b>una idea</b> y Connect crea solo un árbol de <b>categorías anidadas</b> (carpetas dentro de carpetas). Luego pulsa <b>buscar</b> en cualquier carpeta para traer empresas reales y archivarlas dentro." }),
     el("div", { class: "cmap-bar" }, [promptInput, genBtn]),
   ];
 
@@ -2168,10 +2190,10 @@ function captureMap() {
   const leadsAll = store.getUserLeads();
   const unfiled = leadsAll.filter((l) => !Array.isArray(l.categoryPath) || !l.categoryPath.length).length;
   const actions = [
-    el("button", { class: "btn cmap-radar", text: ui.busy ? "…" : "📡 Radar de momentos", title: "Sugiere nichos nuevos a explorar según el momento", onClick: runRadar }),
+    el("button", { class: "btn cmap-radar", html: ui.busy ? "…" : icon("radar") + " Radar de momentos", title: "Sugiere nichos nuevos a explorar según el momento", onClick: runRadar }),
   ];
   if (leadsAll.length) {
-    actions.push(el("button", { class: "btn cmap-organize", text: ui.busy ? "…" : `🧠 Auto-organizar leads${unfiled ? ` (${unfiled} sin archivar)` : ""}`, onClick: organizeLeads }));
+    actions.push(el("button", { class: "btn cmap-organize", html: ui.busy ? "…" : icon("spark") + ` Auto-organizar leads${unfiled ? ` (${unfiled} sin archivar)` : ""}`, onClick: organizeLeads }));
   }
   blocks.push(el("div", { class: "cmap-actions" }, actions));
   if (ui.status) blocks.push(el("p", { class: "cmap-status", text: ui.status }));
@@ -2179,7 +2201,7 @@ function captureMap() {
   // Radar: nichos propuestos a explorar (añadir al mapa o descartar).
   if (ui.radar && ui.radar.length) {
     const cards = [el("div", { class: "radar-head" }, [
-      el("span", { class: "radar-title", text: "📡 Nichos a explorar" }),
+      el("span", { class: "radar-title", html: icon("radar") + " Nichos a explorar" }),
       el("button", { class: "facet-clear", text: "✕ ocultar", onClick: () => { ui.radar = null; patchCaptureMap(); } }),
     ])];
     ui.radar.forEach((s, idx) => {
@@ -2245,7 +2267,7 @@ function searchView() {
   if (state._cronNew && state._cronNew.length) {
     blocks.push(el("div", { class: "cron-new" }, [
       el("div", { class: "cron-new-head" }, [
-        el("span", { class: "cron-new-t", text: `🐋 Captado mientras no estabas · ${state._cronNew.length}` }),
+        el("span", { class: "cron-new-t", text: `Captado mientras no estabas · ${state._cronNew.length}` }),
         el("button", { class: "cron-new-x", text: "✕", title: "Ocultar", onClick: () => { state._cronNew = []; render(); } }),
       ]),
       el("div", { class: "cron-new-list" }, state._cronNew.slice(0, 12).map((n) =>
@@ -2293,7 +2315,7 @@ function searchView() {
 
     // 2) Descubrir empresas reales.
     captBtn.disabled = true; captBtn.textContent = "Captando…";
-    statusBox.appendChild(el("p", { class: "hint", text: "🗺️ Buscando empresas reales en el mapa…" }));
+    statusBox.appendChild(el("p", { class: "hint", text: "Buscando empresas reales en el mapa…" }));
     let found = [];
     try { found = await discover({ sector: sectorKey, query: q, token: auth.getToken() }); } catch { found = []; }
 

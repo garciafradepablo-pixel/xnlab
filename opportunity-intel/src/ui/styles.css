@@ -3,31 +3,44 @@
    legible, fast. Cold-strategist palette: near-black, paper, one accent.
    ============================================================================= */
 :root {
-  --bg: #0e0f12;
-  --panel: #16181d;
-  --panel-2: #1c1f26;
-  --line: #2a2e37;
-  --ink: #e9ecf1;
-  --ink-dim: #9aa3b0;
-  --accent: #c9a227;        /* restrained gold */
-  --green: #3fb950;
+  /* Superficies en capas (graphite premium, no plano) */
+  --bg: #0a0c0f;
+  --bg-2: #0d1014;
+  --panel: #14161c;
+  --panel-2: #1b1e26;
+  --panel-3: #22262f;       /* elevado */
+  --line: #262b34;          /* hairline */
+  --line-2: #333944;
+  --ink: #f3f5f9;
+  --ink-dim: #949cab;
+  --ink-faint: #69727f;
+  /* Acento e identidades por posición (balance) */
+  --accent: #cba24a;        /* oro afinado, más rico */
+  --accent-2: #b1872f;      /* oro profundo para degradados */
+  --o1: #5c7cfa;            /* 01 — índigo sobrio */
+  --xn: #9b80f0;            /* XN — violeta */
+  --ok: #3a9d6e;            /* verificado/éxito — esmeralda apagado (adiós verde chillón) */
+  --green: #3a9d6e;         /* alias legado → esmeralda */
   --yellow: #d4a72c;
-  --red: #f04747;
+  --red: #e35b5b;
   --grey: #6b7280;
-  --xn: #8b7bd8;
-  --o1: #4a9eff;
   --radius: 12px;
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Inter, system-ui, sans-serif;
-  --sh-1: 0 1px 2px rgba(0,0,0,.3);
-  --sh-2: 0 6px 20px rgba(0,0,0,.35);
-  --sh-3: 0 18px 50px rgba(0,0,0,.45);
+  /* Profundidad */
+  --sh-1: 0 1px 2px rgba(0,0,0,.45);
+  --sh-2: 0 10px 30px rgba(0,0,0,.45);
+  --sh-3: 0 28px 70px rgba(0,0,0,.55);
+  --hl: inset 0 1px 0 rgba(255,255,255,.05);  /* brillo superior, da relieve */
 }
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1100px 640px at 50% -10%, #15181f 0%, rgba(21,24,31,0) 60%),
+    linear-gradient(180deg, var(--bg-2) 0%, var(--bg) 55%);
+  background-attachment: fixed;
   color: var(--ink);
   font-family: var(--sans);
   font-size: 14px;
@@ -1384,3 +1397,89 @@ button:disabled { cursor: not-allowed; }
 .mom-kind { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase;
   color: var(--green); background: rgba(63,185,80,.14); border-radius: 999px; padding: 3px 11px; margin-bottom: 8px; }
 .mom-src { display: inline-block; margin-top: 8px; font-size: 12px; color: var(--o1); }
+
+/* =============================================================================
+   PASE EJECUTIVO — profundidad, relieve y color por posición. Pensado para que
+   no parezca plano ni infantil: superficies en capas, hairlines, sombra suave
+   y un solo acento dorado con identidades 01/XN/verificado bien medidas.
+   ============================================================================= */
+
+/* — Tarjetas y paneles: relieve real (sombra + brillo superior + degradado) — */
+.capture-map, .auto-panel, .config, .cmd-panel, .case-card, .crm-card,
+.sector-add, .agent-result, .conn-card, .cron-new {
+  background-image: linear-gradient(180deg, rgba(255,255,255,.022), rgba(255,255,255,0) 38%);
+  box-shadow: var(--sh-1), var(--hl);
+}
+.capture-map { box-shadow: var(--sh-2), var(--hl); }
+
+/* — Botón primario: degradado dorado con cuerpo, no un bloque plano — */
+.btn-primary {
+  background: linear-gradient(180deg, #d8b25a, var(--accent-2));
+  color: #1b1503; border: 1px solid rgba(0,0,0,.25);
+  box-shadow: 0 1px 0 rgba(255,255,255,.25) inset, var(--sh-1);
+}
+.btn-primary:hover { filter: brightness(1.05); box-shadow: 0 1px 0 rgba(255,255,255,.3) inset, var(--sh-2); }
+
+/* — Botones secundarios: vidrio sutil con hairline — */
+.btn, .btn-agent {
+  background: linear-gradient(180deg, var(--panel-3), var(--panel-2));
+  border: 1px solid var(--line-2); box-shadow: var(--hl);
+}
+.btn:hover { border-color: var(--ink-faint); }
+.btn-agent { color: var(--accent); border-color: rgba(203,162,74,.4); }
+
+/* — Inputs: hundidos, con anillo de foco dorado — */
+.cmap-input, .search-city, .lead-f, .cmd-input {
+  background: #0f1116; border: 1px solid var(--line); box-shadow: inset 0 1px 2px rgba(0,0,0,.35);
+}
+.search-city:focus, .lead-f:focus, .cmd-input:focus {
+  outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(203,162,74,.16), inset 0 1px 2px rgba(0,0,0,.35);
+}
+
+/* — Verificado: esmeralda apagado con tinte, no verde de guardería — */
+.researched-badge {
+  color: #79c9a3 !important; border-color: rgba(58,157,110,.45) !important;
+  background: rgba(58,157,110,.10);
+}
+.mom-kind { color: #79c9a3 !important; background: rgba(58,157,110,.12) !important; }
+
+/* — Navegación: pestaña/zona activa con acento y profundidad — */
+.tab.active { color: var(--ink); }
+.zone.active { background: linear-gradient(180deg, var(--panel-3), var(--panel-2)); border-color: var(--line-2); box-shadow: var(--hl); }
+
+/* — Marca de cabecera (icono refinado, sustituye a la ballena) — */
+.brand-mark svg, .auth-mark svg { display: block; }
+.auth-mark { display: flex; justify-content: center; margin-bottom: 4px; }
+
+/* — Iconos de línea refinados (reemplazan emojis) — */
+.ic { display: inline-flex; align-items: center; justify-content: center; vertical-align: -2px; color: currentColor; }
+.ic svg { display: block; }
+.cmap-title { display: flex; align-items: center; }
+.cmap-title .ic { color: var(--accent); margin-right: 9px; }
+.cmap-title .ic svg { width: 19px; height: 19px; }
+
+/* Árbol: chevron sutil, carpeta dorada, hoja apagada */
+.cat-caret svg { width: 13px; height: 13px; }
+.cat-caret { color: var(--ink-faint); display: inline-flex; align-items: center; }
+.cat-ico { display: inline-flex; align-items: center; }
+.cat-ico svg { width: 16px; height: 16px; }
+.cat-row.is-folder .cat-ico { color: var(--accent); }
+.cat-row.is-leaf .cat-ico { color: var(--ink-faint); }
+.cat-find { display: inline-flex; align-items: center; }
+.cat-find svg, .cat-contact-btn svg { width: 16px; height: 16px; }
+
+/* Contactos: chips de icono, tamaño consistente */
+.cat-contact { display: inline-flex; align-items: center; padding: 3px 5px; }
+.cat-contact svg { width: 14px; height: 14px; }
+
+/* Botones con icono + texto (radar / auto-organizar / radar-title) */
+.cmap-radar, .cmap-organize { display: inline-flex; align-items: center; }
+.cmap-radar svg, .cmap-organize svg { width: 15px; height: 15px; margin-right: 7px; }
+.radar-title { display: inline-flex; align-items: center; }
+.radar-title svg { width: 15px; height: 15px; margin-right: 7px; }
+.fresh-ic svg { width: 15px; height: 15px; }
+
+/* Marca de cabecera/acceso (sustituta de la ballena), tamaños por contexto */
+.brand-lock .whale svg, .auth-whale .whale svg { width: auto; }
+.brand-lock .brand-mark svg { width: 30px; height: 30px; }
+.auth-whale .brand-mark svg, .auth-mark .brand-mark svg { width: 52px; height: 52px; }
