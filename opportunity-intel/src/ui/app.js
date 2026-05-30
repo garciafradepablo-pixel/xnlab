@@ -37,7 +37,7 @@ import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
-import { fetchWebFreshness } from "../enrichweb.js";
+import { fetchWebFreshness, webLeverFromFreshness } from "../enrichweb.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
@@ -303,7 +303,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v26 · piloto automático" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v27 · la web sube la nota" }),
     ]),
   ]);
 }
@@ -1260,7 +1260,7 @@ function openCase(id) {
     cardWrap.appendChild(card);
   }
   rebuild();
-  loadFreshness(lead, freshPanel); // automático: lee su web al abrir el caso
+  loadFreshness(lead, freshPanel, rebuild); // automático: lee su web y sube la nota
 
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
@@ -1281,7 +1281,7 @@ function openCase(id) {
 // Medición AUTOMÁTICA de la web del lead: ¿desde cuándo no la mejoran? Se lee al
 // abrir el caso (cacheada en servidor), sin que el usuario pida nada. Honesta:
 // si no se puede leer, lo dice (gris) — nunca inventa.
-async function loadFreshness(lead, panel) {
+async function loadFreshness(lead, panel, onScoreChange) {
   clear(panel);
   if (!lead.website) {
     panel.appendChild(freshCard({ note: "Este lead no tiene web registrada — no podemos medir su frescura." }, "gray"));
@@ -1293,6 +1293,23 @@ async function loadFreshness(lead, panel) {
   clear(panel);
   const kind = r && r.ok && r.readable ? "ok" : "gray";
   panel.appendChild(freshCard(r, kind));
+  // La lectura de la web alimenta el motor: una web obsoleta sube la nota
+  // (indicio citado) por la misma vía que una verificación del analista.
+  if (kind === "ok" && allow("write") && applyWebToScore(lead.id, r)) {
+    await recompute();
+    onScoreChange?.();
+  }
+}
+
+// Enchufa la lectura de la web al scoring vía el sistema de verificación
+// (auto). Idempotente (upsert por filtro). @returns {boolean} si cambió algo.
+function applyWebToScore(leadId, r) {
+  const lever = webLeverFromFreshness(r);
+  if (!lever) return false;
+  const already = store.getLeadVerifications(leadId).some((v) => v.auto && v.filter === lever.filter);
+  if (already) return false;
+  store.addVerification(leadId, lever.filter, lever.level, lever.note, r.url || null, { auto: true, srcLabel: "Lectura de su web" });
+  return true;
 }
 
 function freshMetric(big, label, tone) {
@@ -1519,6 +1536,20 @@ async function autoTick() {
     a.on = false; a._msg = "Pausado: sin novedades o límite diario del mapa alcanzado. Reanúdalo cuando quieras."; saveAuto();
     patchAutoPanel(); render(); return;
   }
+  // Mejora por el camino: lee la web del mejor lead aún sin enriquecer y sube
+  // su nota (indicio citado). Una por tanda, best-effort.
+  try {
+    const cand = (state.results?.all || [])
+      .filter((o) => o && o.website && o.scores && o.scores.classification !== "discard"
+        && !store.getLeadVerifications(o.id).some((v) => v.auto))
+      .sort((a2, b2) => (b2.scores.confidence || 0) - (a2.scores.confidence || 0))[0];
+    if (cand) {
+      const r = await fetchWebFreshness(cand.website, auth.getToken());
+      if (r && r.ok && applyWebToScore(cand.id, r)) await recompute();
+    }
+  } catch { /* best-effort */ }
+  if (!a.on) return;
+
   a._msg = `Capturando… +${res.added || 0} esta tanda${focus ? ` · foco: ${focus}` : ""}.`;
   patchAutoPanel();
   autoTimer = setTimeout(autoTick, 11000); // ~16 consultas/min, bajo el límite

@@ -10,6 +10,24 @@
 const ENDPOINT = "https://fecfncfkkgzazuetcllx.supabase.co/functions/v1/enrich-web";
 const KEY = "sb_publishable_GtToYg33N8bT7T6O3OEmQw_Wu_hEvkS";
 
+/**
+ * Convierte la lectura de la web en un INDICIO citado para el motor: una web
+ * obsoleta o no responsive es una palanca de rediseño clara → sube `actionableLever`
+ * a AMARILLO (indicio citado, no verde: el pie de copyright no es prueba férrea).
+ * Honesto: si la web está al día, NO inventa indicio. @returns {object|null}
+ */
+export function webLeverFromFreshness(r, year = new Date().getFullYear()) {
+  if (!r || !r.readable) return null;
+  const age = r.copyright_year ? year - r.copyright_year : null;
+  const stale = age != null && age >= 3;
+  const noMobile = r.has_viewport === false;
+  if (!stale && !noMobile) return null;
+  const bits = [];
+  if (stale) bits.push(`web sin actualizar desde ${r.copyright_year} (${age} años)`);
+  if (noMobile) bits.push("sin viewport móvil (no responsive)");
+  return { filter: "actionableLever", level: "yellow", note: `Palanca de rediseño: ${bits.join("; ")}.` };
+}
+
 /** @returns {Promise<{ok,readable,copyright_year?,has_viewport?,generator?,title?,note?,cached?,error?}>} */
 export async function fetchWebFreshness(website, token, force = false) {
   if (!website) return { ok: false, readable: false, error: "Este lead no tiene web registrada." };
