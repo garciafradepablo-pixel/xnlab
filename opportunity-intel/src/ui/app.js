@@ -312,7 +312,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v33 · deploy arreglado" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v34 · logo refinado" }),
     ]),
   ]);
 }
