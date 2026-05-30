@@ -37,7 +37,7 @@ import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
-import { fetchWebFreshness, webLeverFromFreshness } from "../enrichweb.js";
+import { fetchWebFreshness, webSignalsToVerifications } from "../enrichweb.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
@@ -303,7 +303,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v27 · la web sube la nota" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v28 · la web sube más la nota" }),
     ]),
   ]);
 }
@@ -1304,12 +1304,16 @@ async function loadFreshness(lead, panel, onScoreChange) {
 // Enchufa la lectura de la web al scoring vía el sistema de verificación
 // (auto). Idempotente (upsert por filtro). @returns {boolean} si cambió algo.
 function applyWebToScore(leadId, r) {
-  const lever = webLeverFromFreshness(r);
-  if (!lever) return false;
-  const already = store.getLeadVerifications(leadId).some((v) => v.auto && v.filter === lever.filter);
-  if (already) return false;
-  store.addVerification(leadId, lever.filter, lever.level, lever.note, r.url || null, { auto: true, srcLabel: "Lectura de su web" });
-  return true;
+  const vs = webSignalsToVerifications(r);
+  if (!vs.length) return false;
+  const existing = store.getLeadVerifications(leadId);
+  let changed = false;
+  for (const v of vs) {
+    if (existing.some((x) => x.auto && x.filter === v.filter)) continue;
+    store.addVerification(leadId, v.filter, v.level, v.note, r.url || null, { auto: true, srcLabel: "Lectura de su web" });
+    changed = true;
+  }
+  return changed;
 }
 
 function freshMetric(big, label, tone) {
