@@ -832,3 +832,24 @@ output { font-size: 12px; color: var(--accent); }
   .rank-table .num.strong { font-size: 16px; }
   .rank-table .td-reco { font-size: 13px; }
 }
+
+/* ====================== Accesibilidad ======================
+   Tres mejoras transversales, sin tocar la estética:
+   1) Foco visible SOLO con teclado (no con ratón): quien navega con Tab ve
+      siempre dónde está. Antes el foco era invisible fuera de los inputs.
+   2) Cursor "no permitido" coherente en cualquier botón deshabilitado.
+   3) Respeto a quien pide menos movimiento: corta animaciones en bucle
+      (la cabecera "neuronal", el pulso del agente) y transiciones largas. */
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+.swatch:focus-visible { outline-offset: 3px; }
+.tab:focus-visible { outline-offset: -2px; }
+button:disabled { cursor: not-allowed; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
