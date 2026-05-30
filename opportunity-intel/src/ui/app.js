@@ -36,6 +36,7 @@ import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { dueFollowups, dueLabel } from "../followups.js";
+import { fetchWebFreshness } from "../enrichweb.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -293,7 +294,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v19 · aprendizaje automático" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v20 · radar de web automático" }),
     ]),
   ]);
 }
@@ -1085,19 +1086,24 @@ function openCase(id) {
   document.addEventListener("keydown", onKey);
 
   const body = el("div", { class: "case-body" });
+  const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
+  const cardWrap = el("div", {});
+  body.appendChild(freshPanel);
+  body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
   // título no apile overlays. El resto de handlers mutan y repintan el caso.
   const handlers = { ...cardHandlers(rebuild), onOpen: undefined };
   function rebuild() {
     lead = (state.results?.all || []).find((o) => o.id === id) || lead;
-    clear(body);
+    clear(cardWrap);
     const card = renderCard(lead, store.getTracking()[lead.id], handlers);
     card.classList.add("case-card");
     const det = card.querySelector(".c-detail");
     if (det) det.open = true; // en pantalla completa el análisis va siempre abierto
-    body.appendChild(card);
+    cardWrap.appendChild(card);
   }
   rebuild();
+  loadFreshness(lead, freshPanel); // automático: lee su web al abrir el caso
 
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
@@ -1113,6 +1119,58 @@ function openCase(id) {
   overlay.appendChild(body);
   overlay.appendChild(foot);
   document.body.appendChild(overlay);
+}
+
+// Medición AUTOMÁTICA de la web del lead: ¿desde cuándo no la mejoran? Se lee al
+// abrir el caso (cacheada en servidor), sin que el usuario pida nada. Honesta:
+// si no se puede leer, lo dice (gris) — nunca inventa.
+async function loadFreshness(lead, panel) {
+  clear(panel);
+  if (!lead.website) {
+    panel.appendChild(freshCard({ note: "Este lead no tiene web registrada — no podemos medir su frescura." }, "gray"));
+    return;
+  }
+  panel.appendChild(freshCard(null, "loading"));
+  let r;
+  try { r = await fetchWebFreshness(lead.website, auth.getToken()); } catch { r = null; }
+  clear(panel);
+  const kind = r && r.ok && r.readable ? "ok" : "gray";
+  panel.appendChild(freshCard(r, kind));
+}
+
+function freshMetric(big, label, tone) {
+  return el("div", { class: `fresh-m fresh-m-${tone}` }, [
+    el("span", { class: "fresh-m-n", text: big }),
+    el("span", { class: "fresh-m-l", text: label }),
+  ]);
+}
+
+function freshCard(r, kind) {
+  const year = new Date().getFullYear();
+  const head = el("div", { class: "fresh-h" }, [
+    el("span", { class: "fresh-ic", text: "◷" }),
+    el("span", { class: "fresh-h-t", text: "Frescura de su web" }),
+    el("span", { class: "fresh-tag", text: "AUTOMÁTICO" }),
+  ]);
+  if (kind === "loading") {
+    return el("div", { class: "case-fresh-card loading" }, [head, el("p", { class: "fresh-note", text: "Leyendo su web…" })]);
+  }
+  if (kind === "gray") {
+    return el("div", { class: "case-fresh-card gray" }, [head, el("p", { class: "fresh-note", text: (r && (r.note || r.error)) || "No pudimos leer su web." })]);
+  }
+  const age = r.copyright_year ? year - r.copyright_year : null;
+  const stale = age != null && age >= 3;
+  const lever = stale || r.has_viewport === false;
+  const metrics = el("div", { class: "fresh-metrics" }, [
+    freshMetric(r.copyright_year ? String(r.copyright_year) : "—",
+      r.copyright_year ? `última señal · ${age} año${age === 1 ? "" : "s"}` : "sin año legible",
+      stale ? "bad" : "ok"),
+    freshMetric(r.has_viewport === false ? "No" : "Sí", "responsive (móvil)", r.has_viewport === false ? "bad" : "ok"),
+    freshMetric(r.generator || "—", "tecnología", "neutral"),
+  ]);
+  const children = [head, metrics, el("p", { class: "fresh-note", text: r.note || "" })];
+  if (lever) children.push(el("div", { class: "fresh-lever", text: "⚡ Palanca de venta: su presencia digital no acompaña a su momento — entrada natural para 01/XN." }));
+  return el("div", { class: `case-fresh-card ${lever ? "lever" : "fresh-ok"}` }, children);
 }
 
 function buildCards() {

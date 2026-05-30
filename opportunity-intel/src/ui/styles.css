@@ -933,6 +933,25 @@ button:disabled { cursor: not-allowed; }
 
 .case-body { flex: 1 1 auto; width: 100%; max-width: 1320px; margin: 0 auto; padding: 22px; }
 
+/* Medición automática de la web del lead (frescura / antigüedad). */
+.case-fresh { margin-bottom: 16px; }
+.case-fresh-card { background: var(--panel); border: 1px solid var(--line); border-radius: 16px; padding: 16px 18px; }
+.case-fresh-card.lever { border-color: rgba(201,162,39,.5); box-shadow: 0 0 0 1px rgba(201,162,39,.25); }
+.case-fresh-card.gray, .case-fresh-card.loading { opacity: .8; }
+.fresh-h { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.fresh-ic { color: var(--accent); font-size: 16px; }
+.fresh-h-t { font-weight: 700; font-size: 15px; }
+.fresh-tag { margin-left: auto; font-size: 10px; letter-spacing: 1px; color: var(--green); border: 1px solid rgba(63,185,80,.4); border-radius: 999px; padding: 2px 9px; }
+.fresh-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 10px; }
+.fresh-m { background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; display: flex; flex-direction: column; gap: 4px; }
+.fresh-m-n { font-size: 20px; font-weight: 800; line-height: 1.1; word-break: break-word; }
+.fresh-m-l { font-size: 11px; color: var(--ink-dim); }
+.fresh-m-bad .fresh-m-n { color: var(--red); }
+.fresh-m-ok .fresh-m-n { color: var(--green); }
+.fresh-note { margin: 0; font-size: 13px; color: var(--ink); line-height: 1.5; }
+.fresh-lever { margin-top: 12px; background: rgba(201,162,39,.10); border: 1px solid rgba(201,162,39,.3); border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600; color: var(--accent); }
+@media (max-width: 600px) { .fresh-metrics { grid-template-columns: 1fr; } }
+
 /* La tarjeta, ancha y elevada; el análisis SIEMPRE abierto y repartido en
    paneles que llenan el ancho (un panel de mando, no una columna estrecha). */
 .case-card.card { max-width: none; width: 100%; padding: 22px 24px; border-radius: 18px;
