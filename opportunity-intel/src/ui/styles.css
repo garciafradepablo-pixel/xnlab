@@ -1335,3 +1335,10 @@ button:disabled { cursor: not-allowed; }
 /* Pressable: todo lo clicable cede al pulsar (tacto físico tipo iOS). */
 .card, .tc, .crm-card, .conn-lead, .zone, .tab, .q, .kpi, .idea-chip { will-change: transform; }
 .card:active, .tc:active, .crm-card:active, .conn-lead:active { transform: scale(.992); }
+
+/* Aviso efímero (toast) — captación nocturna, sincronización, etc. */
+.flash { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 16px);
+  background: linear-gradient(180deg, var(--panel-2), var(--panel)); color: var(--ink);
+  border: 1px solid var(--accent); border-radius: 999px; padding: 11px 20px; font-size: 13px; font-weight: 600;
+  box-shadow: var(--sh-3); z-index: 90; opacity: 0; transition: opacity .35s ease, transform .35s ease; max-width: 90vw; }
+.flash.show { opacity: 1; transform: translate(-50%, 0); }

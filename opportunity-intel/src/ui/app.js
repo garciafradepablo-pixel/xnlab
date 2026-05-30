@@ -49,6 +49,7 @@ import { recordSearch, getInterests } from "../interests.js";
 import { sectorPerformance, sectorRate } from "../sectorlearning.js";
 import { autoProgress, AUTO_BAR } from "../autopilot.js";
 import { synthesize } from "../synthesis.js";
+import { pendingCronLeads, claimCronLeads } from "../cronleads.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
@@ -90,6 +91,9 @@ export async function mount(rootEl) {
 
   // Reanuda el piloto automático si quedó en marcha (no para entre sesiones).
   if (autopilotState().on) { autoEmpty = 0; clearTimeout(autoTimer); autoTimer = setTimeout(autoTick, 1500); }
+
+  // Absorbe lo que el cron capturó solo (de noche, sin la app abierta).
+  absorbCronLeads();
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
@@ -319,7 +323,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v39 · pulido y velocidad" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v40 · captación 24/7" }),
     ]),
   ]);
 }
@@ -1697,6 +1701,47 @@ function patchAutoPanel() {
   if (!root) return;
   const node = root.querySelector(".auto-panel");
   if (node && node.parentNode) node.parentNode.replaceChild(autopilotPanel(), node);
+}
+
+// Absorbe los candidatos que el cron del servidor capturó solo (24/7). Los mete
+// como leads de usuario (el motor los puntúa) y los reclama para no repetir.
+// Best-effort y silencioso si no hay red o sesión.
+async function absorbCronLeads() {
+  if (!allow("write") && !allow("discover")) return;
+  const token = auth.getToken();
+  if (!token) return;
+  let pend = [];
+  try { pend = await pendingCronLeads(token); } catch { return; }
+  if (!pend.length) return;
+  const existing = new Set(store.getUserLeads().map((l) => `${l.company}`.toLowerCase()));
+  const claimed = [];
+  let added = 0;
+  for (const c of pend) {
+    claimed.push(c.id);
+    const k = `${c.company || ""}`.toLowerCase();
+    if (!k || existing.has(k)) continue;
+    store.saveUserLead(buildLead({
+      company: c.company, sector: c.sector || "growth", subsector: "",
+      city: c.city || "", website: c.website || null, phone: c.phone || null,
+      googleMaps: c.google_maps || null,
+    }));
+    existing.add(k); added++;
+  }
+  await claimCronLeads(token, claimed);
+  if (added) {
+    await recompute();
+    render();
+    flash(`🐋 ${added} empresa${added === 1 ? "" : "s"} captada${added === 1 ? "" : "s"} sola${added === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
+  }
+}
+
+// Aviso efímero (toast) no intrusivo.
+function flash(msg) {
+  if (!root) return;
+  const t = el("div", { class: "flash", text: msg });
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add("show"), 20);
+  setTimeout(() => { t.classList.remove("show"); setTimeout(() => t.remove(), 400); }, 5000);
 }
 
 function autopilotPanel() {
