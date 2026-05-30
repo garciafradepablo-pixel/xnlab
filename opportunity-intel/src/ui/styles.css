@@ -182,21 +182,23 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 @media (max-width: 600px) { .capt-bar { flex-direction: column; } .capt-bar .capt-go { width: 100%; } }
 
 /* ---- Mapa de captación (árbol de categorías desde un prompt) ---- */
-.capture-map { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 18px;
+.capture-map { border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin-bottom: 20px;
   background: linear-gradient(180deg, rgba(201,162,39,.05), transparent 60%), var(--panel); }
 .cmap-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
-.cmap-title { font-size: 15px; font-weight: 600; color: var(--ink); }
+.cmap-title { font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: .2px; }
 .cmap-clear { background: transparent; border: 1px solid var(--line); color: var(--ink-dim);
   border-radius: 7px; padding: 4px 10px; font-size: 12px; cursor: pointer; }
 .cmap-clear:hover { color: var(--ink); border-color: var(--ink-dim); }
 .cmap-bar { display: flex; gap: 8px; margin: 10px 0 4px; align-items: stretch; }
-.cmap-input { flex: 1; max-width: none; margin-bottom: 0; padding: 11px 14px; font-size: 15px;
+.cmap-input { flex: 1; max-width: none; margin-bottom: 0; padding: 12px 15px; font-size: 15px;
   background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; color: var(--ink); }
-.cmap-input:focus { outline: none; border-color: var(--accent); }
+.cmap-input::placeholder { color: var(--ink-dim); }
+.cmap-input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(201,162,39,.15); }
 /* Específico para ganar a .btn-primary { width:100% } y no acaparar la fila. */
 .cmap-bar .cmap-go { width: auto; flex: 0 0 auto; padding: 9px 22px; margin-top: 0; }
 .cmap-status { font-size: 13px; color: var(--accent); margin: 8px 0 2px; }
-.cmap-examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 8px; }
+.cmap-examples { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 12px; }
+.cmap-examples .idea-chip { color: var(--ink-dim); }
 
 .cat-tree { margin-top: 12px; border-top: 1px solid var(--line); padding-top: 8px; }
 .cat-node { display: block; }
@@ -237,7 +239,7 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
   padding: 3px 5px; border-radius: 6px; color: var(--ink-dim); }
 .cat-contact-btn:hover { background: rgba(201,162,39,.15); }
 
-.cmap-actions { display: flex; align-items: center; gap: 8px; margin: 4px 0 2px; flex-wrap: wrap; }
+.cmap-actions { display: flex; align-items: center; gap: 8px; margin: 12px 0 2px; flex-wrap: wrap; }
 .cmap-organize, .cmap-radar { width: auto; padding: 7px 14px; font-size: 13px; }
 
 /* Radar de momentos */
