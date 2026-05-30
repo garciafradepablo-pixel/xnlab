@@ -326,7 +326,7 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v42 · red de seguridad UI" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v43 · captación enriquecida 24/7" }),
     ]),
   ]);
 }
@@ -1781,6 +1781,16 @@ async function absorbCronLeads() {
     // Resuelve el id de cada novedad para poder abrir su caso de un toque.
     const idx = new Map((state.results?.all || []).map((o) => [`${o.company}`.toLowerCase(), o.id]));
     state._cronNew = fresh.map((f) => ({ ...f, id: idx.get(f.key) || byName.get(f.key) || null }));
+    // El cron ya leyó su web de noche: aplica esas señales a la nota AHORA, para
+    // que lleguen puntuadas (no en gris). web_signals viene plano del servidor.
+    let lifted = 0;
+    for (const f of state._cronNew) {
+      if (!f.id || !f.web || !f.web.readable) continue;
+      const r = { readable: true, copyright_year: f.web.copyright_year, has_viewport: f.web.has_viewport,
+        signals: { opening: !!f.web.opening, hiring: !!f.web.hiring } };
+      if (applyWebToScore(f.id, r)) lifted++;
+    }
+    if (lifted) await recompute();
     render();
     flash(`🐋 ${fresh.length} empresa${fresh.length === 1 ? "" : "s"} captada${fresh.length === 1 ? "" : "s"} sola${fresh.length === 1 ? "" : "s"} mientras no estabas — ya en el ranking.`);
     // El cerebro las archiva y etiqueta solo en el mapa (lo del cron, organizado).
