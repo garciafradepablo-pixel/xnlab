@@ -93,6 +93,29 @@ await (async function run() {
   ok(notified === "synced", "onSyncState notifica el estado 'synced'");
   unsub();
 
+  // —— Latido en vivo: pollSharedState baja lo del otro sin recargar ————————
+  // Sincroniza B con el servidor para alinear revs, luego un tercero escribe.
+  await store.pullSharedState();
+  let remoteFired = 0;
+  const unsubRemote = store.onRemoteChange(() => { remoteFired++; });
+
+  // Sin cambios en el servidor → el latido no fusiona ni dispara evento.
+  const quiet = await store.pollSharedState();
+  ok(quiet.ok && !quiet.changed, "poll sin novedades: ok y changed=false");
+  ok(remoteFired === 0, "poll sin novedades no avisa a la UI");
+
+  // Un tercero añade un lead directamente en el servidor y sube el rev.
+  const tercero = JSON.parse(JSON.stringify(server.srv.data));
+  tercero.tracking["lead-9"] = { status: "meeting", notes: "", updatedAt: new Date().toISOString(), by: "Pablo" };
+  server.srv.data = tercero;
+  server.srv.rev += 1;
+
+  const beat = await store.pollSharedState();
+  ok(beat.ok && beat.changed, "poll con novedad: ok y changed=true");
+  ok(store.getRecord("lead-9").status === "meeting", "el latido fusiona el cambio del otro en local");
+  ok(remoteFired === 1, "el latido avisa a la UI exactamente una vez");
+  unsubRemote();
+
   // —— RBAC en cliente: un VIEWER no empuja cambios al servidor ——————————————
   // (defensa de cortesía; el servidor además devuelve 403 — eso se cubre en
   // roles.test.mjs y en la verificación E2E.)

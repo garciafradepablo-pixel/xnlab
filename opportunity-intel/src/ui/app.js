@@ -7,10 +7,12 @@
 import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
 import { ensureEco } from "./voice.js";
+import * as posits from "./posits.js";
 import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
 import RESEARCHED from "../data/researched.js";
+import MALLORCA from "../data/mallorca.js";
 import {
   SECTORS,
   SECTOR_BY_KEY,
@@ -36,11 +38,13 @@ import {
   classifyLeads, pathNodes, allTags, leadMatchesFacet, radarSuggest, seedCron,
 } from "../taxonomy.js";
 import { fetchContacts } from "../contacts.js";
+import { startAutoUpdate } from "../autoupdate.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
+import { planRounds, groupByDate, groupByRound, planSummary, orderByPriority, DEFAULT_SCHEDULE, ymd } from "../agenda.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
@@ -121,6 +125,7 @@ export async function mount(rootEl) {
     return;
   }
   ensureSyncSubscription();
+  ensureRemoteRefresh(); // el latido del muelle: lo del otro entra sin recargar
   ensureHotkeys(); // ⌘K disponible en toda la app
   ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
@@ -136,10 +141,16 @@ export async function mount(rootEl) {
   absorbCronLeads();
   seedCronFromMap();
 
+  // Auto-actualización: cada ventana recarga sola cuando hay un deploy nuevo,
+  // y muestra la versión real publicada en la cabecera.
+  startAutoUpdate({ onVersion: setPublishedVersion });
+
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
   auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
-  store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
+  store.startSharedSync().then(async (r) => {
+    if (r && r.ok) { await recompute(); await maybeSeedStarterPlan(); render(); }
+  }).catch(() => {});
 
   // Latido de presencia: anuncia que estás y en qué andas. Best-effort; si no
   // hay red, simplemente no late (nadie te ve como presente, que es lo honesto).
@@ -196,13 +207,50 @@ function ensureSyncSubscription() {
   syncSubscribed = true;
   store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
 }
+
+// Refresco en vivo: cuando el latido baja cambios del otro, repintamos. Pero con
+// cuidado — no arrancarle el teclado a quien escribe ni repintar a lo loco. Se
+// agrupa con un respiro y se aplaza si hay un campo de texto enfocado. Los
+// modales viven en document.body, así que render() (que limpia root) no los toca.
+let remoteSubscribed = false;
+let remoteRenderPending = false;
+function ensureRemoteRefresh() {
+  if (remoteSubscribed) return;
+  remoteSubscribed = true;
+  store.onRemoteChange(scheduleRemoteRender);
+}
+function scheduleRemoteRender() {
+  if (remoteRenderPending) return;
+  remoteRenderPending = true;
+  setTimeout(flushRemoteRender, 400);
+}
+function flushRemoteRender() {
+  const a = typeof document !== "undefined" ? document.activeElement : null;
+  const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
+  if (typing) { setTimeout(flushRemoteRender, 1500); return; } // espera a que termine
+  remoteRenderPending = false;
+  recompute().then(render).catch(() => render());
+}
+// Cuando hay sesión local/sin sincronizar, el badge invita a reconectar.
+const syncClickable = (s) => s === "local" || s === "offline";
+function syncText(s) {
+  const label = SYNC_LABEL[s] || "";
+  return syncClickable(s) && label ? `${label} · reconectar` : label;
+}
+// Reconecta: re-login para coger un token estable (arregla "Solo local"). Con la
+// corrección del servidor, volver a entrar ya no rota el token de nadie.
+function reconnectSession() {
+  if (!syncClickable(store.getSyncState())) return;
+  auth.logout();
+  mount(root);
+}
 function updateSyncBadge(s) {
   if (!root) return;
   const node = root.querySelector(".sync-badge");
   if (!node) return;
-  const label = SYNC_LABEL[s] || "";
+  const label = syncText(s);
   node.textContent = label;
-  node.className = `sync-badge sync-${s}`;
+  node.className = `sync-badge sync-${s}${syncClickable(s) ? " sync-click" : ""}`;
   node.style.display = label ? "" : "none";
 }
 
@@ -342,8 +390,9 @@ function purgeWeakUserLeads() {
 }
 
 function activeCandidates() {
-  // Dataset base + leads añadidos por el usuario (siempre presentes, son suyos).
-  const base = (state.dataset === "researched" ? RESEARCHED : SEED).concat(store.getUserLeads());
+  // Dataset base + tanda real de Mallorca (investigada, siempre presente) +
+  // leads añadidos por el usuario (siempre presentes, son suyos).
+  const base = (state.dataset === "researched" ? RESEARCHED : SEED).concat(MALLORCA).concat(store.getUserLeads());
   // Aplica las verificaciones manuales del analista antes de puntuar: los
   // huecos confirmados se vuelven evidencia citada y suben la puntuación.
   const verifications = store.getVerifications();
@@ -415,14 +464,19 @@ function render() {
   // Configuración como BARRA plegable arriba del contenido (a todo el ancho),
   // no como columna lateral — así no deja hueco vacío y va igual en móvil y
   // escritorio. Cerrada por defecto.
-  const cfg = el("details", { class: "config-wrap" }, [
-    el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda y datos" }),
-    configPanel(),
-  ]);
-  cfg.open = state._cfgOpen ?? false;
-  cfg.addEventListener("toggle", () => { state._cfgOpen = cfg.open; });
-  if (previewMode) main.appendChild(previewBanner()); // aviso "solo lectura"
-  else main.appendChild(cfg);
+  // Configuración técnica (dataset, país, conservadurismo…): solo para ADMIN y
+  // fuera de la vista diaria del trabajador. En modo prueba, solo el aviso.
+  if (previewMode) {
+    main.appendChild(previewBanner()); // aviso "solo lectura"
+  } else if (allow("manage_roles")) {
+    const cfg = el("details", { class: "config-wrap" }, [
+      el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda y datos" }),
+      configPanel(),
+    ]);
+    cfg.open = state._cfgOpen ?? false;
+    cfg.addEventListener("toggle", () => { state._cfgOpen = cfg.open; });
+    main.appendChild(cfg);
+  }
   main.appendChild(viewArea());
   scroller.appendChild(main);
   root.appendChild(scroller);
@@ -441,6 +495,24 @@ function goView(view) {
   presence.beatNow(); // tu "en qué andas" se actualiza al instante al cambiar de vista
 }
 
+// Pulso del muelle: el gadget de cabecera que engancha. La llama es tu racha de
+// días trabajando en la app; el punto se enciende si tienes posits sin ver. Un
+// toque te lleva al Muelle. Glanceable — un número y un punto, sin texto.
+function muellePulse() {
+  const me = auth.currentUser()?.name || "";
+  const n = posits.unread(me);
+  const days = posits.streak(me);
+  return el("button", {
+    class: `muelle-pulse${n ? " has-unread" : ""}`,
+    title: `${n ? `${n} posit${n === 1 ? "" : "s"} sin ver · ` : ""}Racha: ${days} día${days === 1 ? "" : "s"} seguidos en la app`,
+    onClick: () => goView("muelle"),
+  }, [
+    el("span", { class: "pulse-flame", text: "🔥" }),
+    el("span", { class: "pulse-streak", text: String(days) }),
+    n ? el("span", { class: "pulse-dot", text: String(n) }) : null,
+  ]);
+}
+
 function header() {
   return el("header", { class: "app-head" }, [
     el("div", { class: "brand" }, [
@@ -451,25 +523,41 @@ function header() {
       el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
     ]),
     el("div", { class: "head-actions" }, [
-      state.dataset === "researched"
-        ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
-        : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
+      state.dataset !== "researched"
+        ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Conecta fuentes reales (ver README)." })
+        : null,
+      muellePulse(),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v45 · momento en prensa" }),
     ]),
   ]);
 }
 
+// Versión publicada real (hora del último deploy, de VERSION.txt). Sustituye a
+// la etiqueta fija: así la cabecera dice siempre la verdad de qué versión corre.
+let pubLabel = "";
+function setPublishedVersion(v) {
+  if (!v) return;
+  const d = new Date(v);
+  pubLabel = isNaN(d.getTime())
+    ? `v · ${String(v).slice(0, 16)}`
+    : `actualizado ${d.toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`;
+  // La versión vive ahora en el menú de perfil (cabecera más calmada): si está
+  // abierto, refréscalo en sitio.
+  if (typeof document !== "undefined") { const n = document.body.querySelector?.(".prof-ver"); if (n) n.textContent = pubLabel; }
+}
+
 // Indicador discreto del estado de sincronización con el servidor compartido.
+// Es un botón: si la sesión está en local, un toque reconecta (re-login).
 function syncBadge() {
   const s = store.getSyncState();
-  const label = SYNC_LABEL[s] || "";
-  return el("span", {
-    class: `sync-badge sync-${s}`,
+  const label = syncText(s);
+  return el("button", {
+    class: `sync-badge sync-${s}${syncClickable(s) ? " sync-click" : ""}`,
     text: label,
     style: label ? "" : "display:none",
-    title: "Estado de sincronización con el servidor compartido",
+    title: syncClickable(s) ? "Reconectar: vuelve a entrar para sincronizar con el equipo" : "Estado de sincronización con el servidor compartido",
+    onClick: reconnectSession,
   });
 }
 
@@ -545,7 +633,7 @@ function openProfile() {
 
   const base = String(location.href || "").split("?")[0].split("#")[0];
   const inviteBox = el("div", { class: "prof-invitebox" });
-  const renderInviteLink = (code) => {
+  const renderInviteLink = (code, role) => {
     clear(inviteBox);
     const link = `${base}?invite=${encodeURIComponent(code)}`;
     const linkInput = el("input", { class: "prof-link", value: link, readonly: "" });
@@ -554,18 +642,26 @@ function openProfile() {
       const done = () => { copyL.textContent = "✓ Copiado"; setTimeout(() => (copyL.textContent = "Copiar enlace"), 1400); };
       if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
     });
-    inviteBox.appendChild(el("p", { class: "config-note", text: "Enlace de un solo uso · caduca en 14 días." }));
+    const typeLabel = role === "analyst" ? "Analista" : role === "viewer" ? "Solo lectura" : "Vendedor";
+    inviteBox.appendChild(el("p", { class: "config-note", html: `Da acceso como <b>${typeLabel}</b> · enlace de un solo uso · caduca en 14 días.` }));
     inviteBox.appendChild(el("div", { class: "prof-linkrow" }, [linkInput, copyL]));
   };
-  // Posición de la invitación: Pablo decide ANTES de copiar el enlace qué rol
-  // de acceso abre (el código generado lleva ese rol incrustado).
-  const inviteRole = el("select", { class: "lead-f invite-role" }, ROLES.map((r) =>
-    el("option", { value: r, selected: r === "editor", text: ROLE_LABEL[r] })));
+  // Tipo de cuenta que se concede con la invitación. "Vendedor" es el perfil de
+  // trabajo (Dani): bajo el capó es el rol "editor" (escribe, CRM, seguimiento,
+  // cierre, agenda) — exactamente lo que necesita quien llama. No se ofrece admin
+  // por enlace (un admin se promueve a mano, no con un link que puede reenviarse).
+  const ACCOUNT_TYPES = [
+    { role: "editor", label: "Vendedor — llama y gestiona sus leads, CRM y agenda" },
+    { role: "analyst", label: "Analista — lee, analiza y exporta (no edita el CRM)" },
+    { role: "viewer", label: "Solo lectura — ve ranking y dossiers, sin tocar" },
+  ];
+  const roleSel = el("select", { class: "prof-rolesel" },
+    ACCOUNT_TYPES.map((t) => el("option", { value: t.role, text: t.label })));
   const genBtn = el("button", { class: "btn-primary", text: "Generar invitación", onClick: async () => {
     genBtn.disabled = true; genBtn.textContent = "Generando…";
-    const r = await auth.createInvite(inviteRole.value);
+    const r = await auth.createInvite(roleSel.value || "editor");
     genBtn.disabled = false; genBtn.textContent = "Generar otra invitación";
-    if (r.ok && r.code) renderInviteLink(r.code);
+    if (r.ok && r.code) renderInviteLink(r.code, roleSel.value);
     else inviteBox.appendChild(el("p", { class: "sec-msg err", text: r.error || "No se pudo." }));
   } });
 
@@ -622,13 +718,14 @@ function openProfile() {
       el("h4", { text: "Invitar a alguien" }),
       allow("manage_roles")
         ? el("div", {}, [
-            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga tu invitación. Elige qué podrá hacer y genera el enlace — el código ya lleva ese rol. Su nivel y etiquetas los ajustas luego en El equipo." }),
-            el("div", { class: "invite-row" }, [el("label", { class: "invite-lbl", text: "Podrá:" }), inviteRole]),
+            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Elige el tipo de cuenta y genera un enlace de un solo uso. Su nivel y etiquetas los ajustas luego en El equipo." }),
+            el("label", { class: "prof-rolewrap" }, [el("span", { text: "Tipo de cuenta" }), roleSel]),
             genBtn, inviteBox,
           ])
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
     ]),
     el("div", { class: "prof-foot" }, [
+      el("span", { class: "prof-ver", title: "Versión publicada que estás usando", text: pubLabel || "comprobando versión…" }),
       el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { presence.stopHeartbeat(); auth.logout(); close(); mount(root); } } }),
     ]),
   ]));
@@ -638,23 +735,40 @@ function openProfile() {
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
 // "en qué estoy") y las vistas de cada zona debajo. Menos superficie, más
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
+// Navegación en dos niveles: ZONAS (verbo dominante del trabajo) y, dentro,
+// sub-vistas. Sigue el bucle diario: trabajar → captar → cerrar → hablar (muelle)
+// → saber. «Saber» reúne lo que el equipo aprende y lo que estudia (antes dos
+// zonas sueltas, Memoria y Formación): menos botones arriba, mismo contenido.
+// Cada sub-vista es [clave, etiqueta, capacidad?]. La capacidad opcional la
+// esconde a quien no la tiene: un viewer/analyst (solo lectura) no ve «Buscar»
+// (descubrir) ni el tablero «CRM» (mover) — entra a su mundo sin botones que no
+// puede pulsar. El editor (Javi) las ve todas; el admin (Pablo), además «Equipo».
 const ZONES = [
-  { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["tasks", "Tareas"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
-  { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
+  { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["tasks", "Tareas"], ["agenda", "Agenda"]] },
+  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar", "discover"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"]] },
+  { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
+  { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
 function zonesForUser() {
-  // En modo prueba (solo lectura, sin sesión): solo mirar oportunidades y ranking.
+  // En modo prueba (solo lectura, sin sesión): solo mirar oportunidades.
   if (previewMode) {
-    return [{ key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["table", "Ranking"]] }];
+    return [{ key: "capture", label: "Captar", views: [["cards", "Oportunidades"]] }];
   }
-  const z = ZONES.map((zz) => ({ ...zz }));
-  // Zona de equipo: quién está ahora, chat general, apuntes de mejora, privados
-  // y el marcador de productividad para todos; gestión de personas solo admin.
-  const teamViews = [["presence", "Ahora"], ["feed", "Feed"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
-  if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
-  z.push({ key: "team", label: "Equipo", views: teamViews });
+  // Filtra las sub-vistas que el rol no puede usar; si una zona se queda sin
+  // ninguna, desaparece de la barra (nada de zonas vacías).
+  const z = ZONES
+    .map((zz) => ({ ...zz, views: zz.views.filter(([, , cap]) => !cap || allow(cap)) }))
+    .filter((zz) => zz.views.length);
+  // Zona de equipo: quién está ahora, feed de actividad, chat, mejoras, privados,
+  // drive y productividad. Es para quien OPERA (editor/admin); un rol de solo
+  // lectura no gobierna ni colabora, así que no ve «Equipo». La gestión de
+  // personas, solo admin.
+  if (allow("write")) {
+    const teamViews = [["presence", "Ahora"], ["feed", "Feed"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
+    if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
+    z.push({ key: "team", label: "Equipo", views: teamViews });
+  }
   return z;
 }
 function zoneOfView(view) {
@@ -863,6 +977,7 @@ function viewArea() {
   const area = el("section", { class: "view" });
   if (state.view === "today") area.appendChild(todayView());
   else if (state.view === "tasks") area.appendChild(tasksView());
+  else if (state.view === "agenda") area.appendChild(agendaView());
   else if (state.view === "pipeline") area.appendChild(pipelineView());
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
@@ -877,6 +992,8 @@ function viewArea() {
   else if (state.view === "presence") area.appendChild(presenceView());
   else if (state.view === "feed") area.appendChild(activityView());
   else if (state.view === "leaderboard") area.appendChild(leaderboardView());
+  else if (state.view === "training") area.appendChild(trainingView());
+  else if (state.view === "muelle") area.appendChild(muelleView());
   else area.appendChild(learningView());
   return area;
 }
@@ -910,6 +1027,58 @@ function openTagEditor(user, onSaved) {
     chips,
   ]));
   document.body.appendChild(overlay);
+}
+
+// El Muelle: posits del equipo. Resuelve el nombre del lead desde el pipeline en
+// memoria para que el gadget muestre "sobre Tal" sin guardar texto en el posit.
+function leadNameById(id) {
+  const o = (state.results?.all || []).find((x) => x.id === id);
+  return o ? o.company : null;
+}
+// Tira de pulso personal en Hoy. Cuatro señales de un vistazo; las dos primeras
+// premian trabajar en la app, la tercera te tira del muelle, la cuarta es la
+// huella del CEO. Cada una es tocable y lleva a la acción, nunca es texto muerto.
+function todayPulseStrip(me) {
+  const days = posits.streak(me);
+  const done = posits.actionsToday(me);
+  const unread = posits.unread(me);
+  const rec = posits.lastRecognition(me);
+
+  const cell = (cls, glyph, big, label, onClick) =>
+    el("button", { class: `tp-cell ${cls}`, onClick }, [
+      el("span", { class: "tp-glyph", text: glyph }),
+      el("div", { class: "tp-text" }, [
+        el("span", { class: "tp-big", text: String(big) }),
+        el("span", { class: "tp-label", text: label }),
+      ]),
+    ]);
+
+  const cells = [
+    cell("tp-streak", "🔥", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today")),
+    cell("tp-done", "⚡", done, "acciones hoy", () => goView("cards")),
+    cell(`tp-inbox${unread ? " on" : ""}`, "📌", unread, "posits sin ver", () => goView("muelle")),
+  ];
+  if (rec) {
+    cells.push(el("button", { class: "tp-cell tp-rec", title: `${rec.from} te potenció`, onClick: () => goView("muelle") }, [
+      el("span", { class: "tp-glyph", text: rec.glyph || "🚀" }),
+      el("div", { class: "tp-text" }, [
+        el("span", { class: "tp-big tp-rec-from", text: rec.from }),
+        el("span", { class: "tp-label", text: "te potencia" }),
+      ]),
+    ]));
+  }
+  return el("div", { class: "today-pulse" }, cells);
+}
+
+function muelleView() {
+  const me = auth.currentUser()?.name || "";
+  return posits.positsView({
+    me,
+    isCeo: allow("manage_roles"),
+    openLead: (id) => openCase(id),
+    rerender: render,
+    leadName: leadNameById,
+  });
 }
 
 // ---- El equipo: personas, organigrama, roles y etiquetas (solo admin) -------
@@ -1671,11 +1840,48 @@ function rerenderResults() {
 
 const eurFmt = (n) => `${Number(n || 0).toLocaleString("es-ES")} €`;
 
+// Centro de mando del día: UNA acción ahora (lo más directo) + la ruta del día
+// clicable (te lleva de la mano). Las cifras de motivación las da el pulso debajo.
+function commandCenter(calls) {
+  const top = calls[0];
+  const now = top
+    ? el("div", { class: "cc-now" }, [
+        el("span", { class: "cc-now-lbl", text: "Ahora" }),
+        el("div", { class: "cc-now-main" }, [
+          el("div", { class: "cc-now-co", text: `Llama a ${top.company}` }),
+          el("div", { class: "cc-now-why", text: top.firstLever || top.whyNow || [sectorByKey(top.sector)?.label, top.city].filter(Boolean).join(" · ") || "Tu mejor oportunidad ahora." }),
+        ]),
+        el("button", { class: "btn-primary cc-go", html: icon("phone") + " Abrir y llamar", onClick: () => { state.filters.search = top.company; goView("cards"); } }),
+      ])
+    : el("div", { class: "cc-now cc-now-empty" }, [
+        el("span", { class: "cc-now-lbl", text: "Ahora" }),
+        el("div", { class: "cc-now-main" }, [
+          el("div", { class: "cc-now-co", text: "Nada en cola para llamar" }),
+          el("div", { class: "cc-now-why", text: "Capta empresas y llena el día." }),
+        ]),
+        el("button", { class: "btn-primary cc-go", html: icon("search") + " Captar", onClick: () => goView("search") }),
+      ]);
+  // Ruta del día: el orden natural de trabajo, a un clic cada paso.
+  const steps = [["Llama", "cards", !!top], ["Registra", "crm", false], ["Capta", "search", !top], ["Forma", "training", false]];
+  const route = el("div", { class: "cc-route" }, steps.map(([lbl, view, on], i) =>
+    el("button", { class: `cc-step ${on ? "on" : ""}`, onClick: () => goView(view) }, [
+      el("span", { class: "cc-step-n", text: String(i + 1) }),
+      el("span", { class: "cc-step-l", text: lbl }),
+    ])));
+  return el("section", { class: "command-center" }, [now, route]);
+}
+
 function todayView() {
   const tracking = store.getTracking();
   const opps = state.results ? state.results.all : [];
   const pulse = pipelinePulse(opps, tracking);
-  const calls = pickTodayCalls(opps, tracking, { limit: 3 });
+  // Si el usuario en sesión tiene llamadas asignadas (su agenda), Hoy muestra
+  // LAS SUYAS que tocan hoy; si no, el foco global de siempre.
+  const meNow = auth.currentUser();
+  const hasMine = meNow && opps.some((o) => tracking[o.id]?.assignedTo === meNow.name);
+  const calls = hasMine
+    ? pickTodayCalls(opps, tracking, { owner: meNow.name, today: ymd(new Date()), limit: 3 })
+    : pickTodayCalls(opps, tracking, { limit: 3 });
   const u = auth.currentUser();
   const h = new Date().getHours();
   const greet = h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
@@ -1686,19 +1892,24 @@ function todayView() {
     el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
   ]));
 
-  // Pulso del pipeline: cuatro cifras que mandan.
-  blocks.push(el("div", { class: "pulse" }, [
-    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
-    pulseKpi(pulse.total, "oportunidades vivas"),
-    pulseKpi(pulse.pending, "por llamar"),
-    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
-  ]));
-  blocks.push(el("div", { class: "pulse-split" }, [
-    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
-    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
-    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
-    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
-  ]));
+  // Pulso personal: la obsesión hecha tira glanceable. Racha, lo hecho hoy, lo que
+  // te espera en el muelle y la última palmada del CEO. Sin texto: cifras y gestos.
+  if (u) blocks.push(todayPulseStrip(u.name));
+
+  // Estado de arranque: si aún no hay NADA movido (cero llamadas, cero cierres),
+  // un onboarding claro en vez de un muro de KPIs a cero compitiendo.
+  const movedAnything = pulse.called > 0 || pulse.meetings > 0 || pulse.won > 0 || pulse.proposals > 0;
+  if (!movedAnything) {
+    blocks.push(el("div", { class: "today-onboard" }, [
+      el("div", { class: "ob-step" }, [el("span", { class: "ob-n", text: "1" }), el("span", { text: calls.length ? `Llama a ${calls[0].company} — es tu mejor oportunidad ahora.` : "Capta tus primeras oportunidades." })]),
+      el("div", { class: "ob-step" }, [el("span", { class: "ob-n", text: "2" }), el("span", { text: "Marca el resultado con un toque (Interesado · Reunión · Rechazado)." })]),
+      el("div", { class: "ob-step" }, [el("span", { class: "ob-n", text: "3" }), el("span", { text: "El sistema aprende solo y la app cobra vida." })]),
+      el("button", { class: "btn-primary ob-cta", text: calls.length ? `📞 Empezar por ${calls[0].company}` : "⚡ Captar oportunidades", onClick: () => calls.length ? openCase(calls[0].id) : goView("search") }),
+    ]));
+  }
+
+  // Centro de mando: la acción de ahora + la ruta del día.
+  blocks.push(commandCenter(calls));
 
   // Las llamadas de hoy.
   blocks.push(el("h2", { class: "today-h2", text: "Las 3 llamadas de hoy" }));
@@ -1715,6 +1926,23 @@ function todayView() {
     blocks.push(el("h2", { class: "today-h2", text: `Seguimientos para hoy · ${due.length}` }));
     blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
   }
+
+  // El marcador, al final: primero el trabajo del día, luego cómo va todo. Las
+  // cifras son referencia (sirven sobre todo a la dirección), no el titular —
+  // la acción manda arriba, el pulso del pipeline acompaña abajo.
+  blocks.push(el("h2", { class: "today-h2 today-h2-quiet", text: "El marcador" }));
+  blocks.push(el("div", { class: "pulse" }, [
+    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
+    pulseKpi(pulse.total, "oportunidades vivas"),
+    pulseKpi(pulse.pending, "por llamar"),
+    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
+  ]));
+  blocks.push(el("div", { class: "pulse-split" }, [
+    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
+    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
+    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
+    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
+  ]));
 
   return el("div", { class: "today" }, blocks);
 }
@@ -2234,6 +2462,15 @@ function cardHandlers(afterMutate) {
       openProposal(lead);
     },
     onOpen: (id) => openCase(id),
+    // Un toque para lanzar un sello sobre este lead al compañero. No es escritura
+    // de negocio (lo puede hacer cualquiera con sesión), así que va fuera de RBAC.
+    onSello: (id) => posits.openSelloPicker({
+      leadId: id,
+      leadName: leadNameById(id),
+      me: auth.currentUser()?.name || "",
+      isCeo: allow("manage_roles"),
+      onSent: render,
+    }),
   };
 }
 
@@ -2255,6 +2492,213 @@ function whaleMark() {
 // caso, ocupando la pantalla, con todo el análisis desplegado en paneles. Cierra
 // con ← Volver, Esc o clic en el fondo. Reutiliza la tarjeta (toda la
 // inteligencia ya vive ahí) y la presenta ancha, con cabecera y firma de marca.
+// ---- Agenda: reparto de llamadas por persona (horario · rondas · días) ------
+const ISO_DAYS = [["1", "L"], ["2", "M"], ["3", "X"], ["4", "J"], ["5", "V"], ["6", "S"], ["7", "D"]];
+const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const WDAYS_ES = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+function fmtDay(ymdStr) {
+  const [y, m, d] = String(ymdStr).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${WDAYS_ES[dt.getDay()]} ${d} ${MONTHS_ES[m - 1]}`;
+}
+const scoreOf = (o) => Math.round(o?.scores?.confidence || 0);
+
+// Una llamada dentro del desglose de la agenda.
+function agendaRow(o, tracking) {
+  const t = tracking[o.id] || {};
+  const st = STATUS_LABELS[t.status || "not_called"] || "Sin llamar";
+  return el("div", { class: "ag-row", onClick: () => openCase(o.id) }, [
+    el("span", { class: `ag-score s-${scoreOf(o) >= 80 ? "hi" : scoreOf(o) >= 65 ? "mid" : "lo"}`, text: String(scoreOf(o)) }),
+    el("div", { class: "ag-row-main" }, [
+      el("div", { class: "ag-row-co", text: o.company }),
+      el("div", { class: "ag-row-sub", text: `${o.subsector || sectorByKey(o.sector)?.label || o.sector} · ${o.city}` }),
+    ]),
+    o.phone ? el("a", { class: "ag-tel", href: `tel:${o.phone.replace(/\s/g, "")}`, text: o.phone, onClick: (e) => e.stopPropagation() }) : el("span", { class: "ag-tel ag-tel-none", text: "sin teléfono" }),
+    el("span", { class: "ag-status", text: st }),
+  ]);
+}
+
+function agendaView() {
+  const me = auth.currentUser();
+  const team = auth.getUsers().map((u) => u.name).filter(Boolean);
+  if (!state.agendaUser || (!team.includes(state.agendaUser) && state.agendaUser !== me?.name)) {
+    state.agendaUser = me?.name || team[0] || "";
+  }
+  const subject = state.agendaUser;
+  const canWrite = allow("write");
+  const sched = { ...DEFAULT_SCHEDULE, ...(store.getSchedule(subject) || {}) };
+  const tracking = store.getTracking();
+  const all = state.results?.all || [];
+  const mine = all.filter((o) => (tracking[o.id]?.assignedTo || null) === subject);
+
+  const wrap = el("div", { class: "agenda view" });
+
+  // — Cabecera —
+  const head = el("div", { class: "ag-head" }, [
+    el("div", {}, [
+      el("h2", { text: "Agenda de llamadas" }),
+      el("p", { class: "ag-sub", text: "A quién llama cada persona, en qué orden y qué día. El plan respeta su capacidad diaria." }),
+    ]),
+  ]);
+  if (team.length > 1) {
+    const sel = el("select", { class: "ag-userpick", onChange: (e) => { state.agendaUser = e.target.value; render(); } },
+      team.map((n) => el("option", { value: n, text: n, selected: n === subject ? "" : undefined })));
+    head.appendChild(el("label", { class: "ag-userwrap" }, [el("span", { text: "Persona:" }), sel]));
+  }
+  wrap.appendChild(head);
+
+  if (!subject) {
+    wrap.appendChild(el("p", { class: "ag-empty", text: "No hay usuarios todavía. Crea tu usuario para empezar a repartir llamadas." }));
+    return wrap;
+  }
+
+  // — Editor de horario (capacidad real) —
+  const schedBox = el("div", { class: "ag-card" });
+  schedBox.appendChild(el("h4", { text: `Horario de ${subject}` }));
+  const dayToggles = ISO_DAYS.map(([iso, lbl]) => {
+    const on = (sched.workdays || DEFAULT_SCHEDULE.workdays).map(String).includes(iso);
+    return el("button", { class: `ag-day ${on ? "on" : ""}`, text: lbl, "data-iso": iso, disabled: canWrite ? undefined : "" });
+  });
+  const startI = el("input", { class: "ag-time", type: "time", value: sched.start || "09:00", disabled: canWrite ? undefined : "" });
+  const endI = el("input", { class: "ag-time", type: "time", value: sched.end || "18:00", disabled: canWrite ? undefined : "" });
+  const perI = el("input", { class: "ag-num", type: "number", min: "1", max: "40", value: String(sched.perDay || 8), disabled: canWrite ? undefined : "" });
+  dayToggles.forEach((b) => b.addEventListener("click", () => { if (canWrite) b.classList.toggle("on"); }));
+  schedBox.appendChild(el("div", { class: "ag-sched" }, [
+    el("label", {}, [el("span", { text: "Días laborables" }), el("div", { class: "ag-days" }, dayToggles)]),
+    el("label", {}, [el("span", { text: "Jornada" }), el("div", { class: "ag-times" }, [startI, el("span", { text: "–" }), endI])]),
+    el("label", {}, [el("span", { text: "Llamadas / día (capacidad)" }), perI]),
+  ]));
+  if (canWrite) {
+    const saveMsg = el("span", { class: "ag-msg" });
+    const saveBtn = el("button", { class: "btn", text: "Guardar horario", onClick: () => {
+      const workdays = dayToggles.filter((b) => b.classList.contains("on")).map((b) => Number(b.dataset.iso));
+      store.setSchedule(subject, { workdays: workdays.length ? workdays : DEFAULT_SCHEDULE.workdays, start: startI.value, end: endI.value, perDay: Math.max(1, Number(perI.value) || 8) });
+      saveMsg.textContent = "✓ Guardado";
+      setTimeout(() => (saveMsg.textContent = ""), 1600);
+    } });
+    schedBox.appendChild(el("div", { class: "ag-actions" }, [saveBtn, saveMsg]));
+  }
+  wrap.appendChild(schedBox);
+
+  // — Acciones de reparto —
+  if (canWrite) {
+    const acts = el("div", { class: "ag-card ag-plan" });
+    acts.appendChild(el("h4", { text: "Plan de rondas" }));
+    acts.appendChild(el("p", { class: "ag-hint", text: `Reparte las ${mine.length} llamadas de ${subject} en días laborables (${sched.perDay}/día), las mejores primero.` }));
+    const planBtn = el("button", { class: "btn-primary", text: mine.length ? "⚡ Generar / regenerar plan" : "Sin llamadas asignadas todavía", disabled: mine.length ? undefined : "" });
+    planBtn.addEventListener("click", () => {
+      const live = orderByPriority(mine.filter((o) => ["01", "xn"].includes(o.scores?.classification)));
+      const plan = planRounds(live, store.getSchedule(subject) || sched, {});
+      for (const a of plan) store.assignLead(a.id, { scheduledFor: a.date, round: a.round });
+      render();
+    });
+    acts.appendChild(planBtn);
+
+    // Sembrar la tanda real de Mallorca a esta persona (one-click setup).
+    const mallIds = new Set(MALLORCA.map((m) => m.id));
+    const mallInResults = all.filter((o) => mallIds.has(o.id));
+    const unassignedMall = mallInResults.filter((o) => (tracking[o.id]?.assignedTo || null) !== subject).length;
+    const seedBtn = el("button", { class: "btn", text: `📍 Asignar la tanda de Mallorca a ${subject} (${mallInResults.length})` });
+    seedBtn.addEventListener("click", () => {
+      if (!confirm(`Asignar ${mallInResults.length} oportunidades de Mallorca a ${subject} y generar su plan de rondas?`)) return;
+      for (const o of mallInResults) store.assignLead(o.id, { assignedTo: subject });
+      const live = orderByPriority(mallInResults.filter((o) => ["01", "xn"].includes(o.scores?.classification)));
+      const plan = planRounds(live, store.getSchedule(subject) || sched, {});
+      for (const a of plan) store.assignLead(a.id, { scheduledFor: a.date, round: a.round });
+      render();
+    });
+    acts.appendChild(seedBtn);
+    if (unassignedMall > 0 && mine.length) acts.appendChild(el("p", { class: "ag-hint", text: `${unassignedMall} de Mallorca aún sin asignar a ${subject}.` }));
+    wrap.appendChild(acts);
+  }
+
+  // — Desglose por ronda / día —
+  if (!mine.length) {
+    wrap.appendChild(el("p", { class: "ag-empty", text: canWrite ? `Aún no hay llamadas asignadas a ${subject}. Usa "Asignar la tanda de Mallorca" para montar su semana, o asigna leads desde cada ficha.` : `${subject} no tiene llamadas asignadas todavía.` }));
+    return wrap;
+  }
+  const scheduled = mine.filter((o) => tracking[o.id]?.scheduledFor);
+  const unscheduled = mine.filter((o) => !tracking[o.id]?.scheduledFor);
+  const assignments = scheduled.map((o) => ({ id: o.id, date: tracking[o.id].scheduledFor, round: tracking[o.id].round || 1 }));
+  const sum = planSummary(assignments);
+
+  if (scheduled.length) {
+    wrap.appendChild(el("div", { class: "ag-summary" }, [
+      el("span", { class: "ag-stat", html: `<b>${sum.calls}</b> llamadas` }),
+      el("span", { class: "ag-stat", html: `<b>${sum.days}</b> días` }),
+      el("span", { class: "ag-stat", html: `<b>${sum.rounds}</b> ronda${sum.rounds === 1 ? "" : "s"}` }),
+      el("span", { class: "ag-stat", html: `del <b>${fmtDay(sum.from)}</b> al <b>${fmtDay(sum.to)}</b>` }),
+    ]));
+    const byRound = groupByRound(assignments);
+    const oppById = new Map(mine.map((o) => [o.id, o]));
+    for (const r of byRound) {
+      const block = el("div", { class: "ag-round" });
+      block.appendChild(el("div", { class: "ag-round-h", text: `Ronda ${r.round}` }));
+      const byDate = groupByDate(r.items);
+      for (const d of byDate) {
+        block.appendChild(el("div", { class: "ag-date-h", text: `${fmtDay(d.date)} · ${d.items.length} llamada${d.items.length === 1 ? "" : "s"}` }));
+        for (const a of d.items) { const o = oppById.get(a.id); if (o) block.appendChild(agendaRow(o, tracking)); }
+      }
+      wrap.appendChild(block);
+    }
+  }
+  if (unscheduled.length) {
+    const block = el("div", { class: "ag-round" });
+    block.appendChild(el("div", { class: "ag-round-h", text: `Sin agendar · ${unscheduled.length}` }));
+    for (const o of orderByPriority(unscheduled)) block.appendChild(agendaRow(o, tracking));
+    wrap.appendChild(block);
+  }
+  return wrap;
+}
+
+// Control de asignación en la ficha: responsable · día · ronda. Solo escritura.
+function assignmentBar(id, rebuild) {
+  const t = store.getTracking()[id] || {};
+  const team = auth.getUsers().map((u) => u.name).filter(Boolean);
+  const canWrite = allow("write");
+  const box = el("div", { class: "case-assign" });
+  box.appendChild(el("span", { class: "ca-label", text: "Responsable" }));
+  const owner = el("select", { class: "ca-owner", disabled: canWrite ? undefined : "" }, [
+    el("option", { value: "", text: "— sin asignar —", selected: !t.assignedTo ? "" : undefined }),
+    ...team.map((n) => el("option", { value: n, text: n, selected: n === t.assignedTo ? "" : undefined })),
+  ]);
+  owner.addEventListener("change", () => { store.assignLead(id, { assignedTo: owner.value || null }); rebuild && rebuild(); });
+  const date = el("input", { class: "ca-date", type: "date", value: t.scheduledFor || "", disabled: canWrite ? undefined : "" });
+  date.addEventListener("change", () => { store.assignLead(id, { scheduledFor: date.value || null }); });
+  box.appendChild(owner);
+  box.appendChild(el("span", { class: "ca-label", text: "Día" }));
+  box.appendChild(date);
+  if (t.round) box.appendChild(el("span", { class: "ca-round", text: `Ronda ${t.round}` }));
+  return box;
+}
+
+// Arranque "déjalo cerrado": la primera vez que la cuenta de Dani existe y aún
+// no tiene horario, se le asigna la tanda de Mallorca, se fija un horario de
+// mañanas y se generan sus rondas (empezando mañana). Idempotente — en cuanto
+// Dani tiene horario guardado no se repite. Solo lo dispara quien puede escribir
+// (admin/editor); un viewer ni lo intenta. Si Dani aún no se ha registrado, no
+// hace nada y se reintentará en el próximo arranque (se auto-completa solo).
+const STARTER_SCHEDULE = { workdays: [1, 2, 3, 4, 5], start: "09:30", end: "14:30", perDay: 8 };
+async function maybeSeedStarterPlan() {
+  try {
+    if (!allow("write")) return;
+    const dani = auth.getUsers().find((u) => /dani/i.test(u.name || ""));
+    if (!dani) return; // su cuenta aún no está creada/sincronizada
+    if (store.getSchedule(dani.name)) return; // ya sembrado → nunca repetir
+    const all = state.results?.all || [];
+    const ids = new Set(MALLORCA.map((m) => m.id));
+    const tanda = all.filter((o) => ids.has(o.id));
+    if (!tanda.length) return; // resultados aún sin la tanda: se reintenta en otro arranque
+    store.setSchedule(dani.name, STARTER_SCHEDULE);
+    for (const o of tanda) store.assignLead(o.id, { assignedTo: dani.name });
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const live = orderByPriority(tanda.filter((o) => ["01", "xn"].includes(o.scores?.classification)));
+    const plan = planRounds(live, STARTER_SCHEDULE, { from: tomorrow });
+    for (const a of plan) store.assignLead(a.id, { scheduledFor: a.date, round: a.round });
+  } catch { /* nunca bloquea el arranque */ }
+}
+
 function openCase(id) {
   let lead = (state.results?.all || []).find((o) => o.id === id);
   if (!lead) return;
@@ -2270,8 +2714,9 @@ function openCase(id) {
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
   body.appendChild(synthWrap);
-  body.appendChild(momentumPanel);
-  body.appendChild(freshPanel);
+  body.appendChild(assignmentBar(id, rebuild)); // responsable · día · ronda
+  // Momento + web lado a lado en ancho: la ficha llega antes al guion y la acción.
+  body.appendChild(el("div", { class: "case-signals" }, [momentumPanel, freshPanel]));
   body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
   // título no apile overlays. El resto de handlers mutan y repintan el caso.
@@ -2283,8 +2728,10 @@ function openCase(id) {
     clear(cardWrap);
     const card = renderCard(lead, store.getTracking()[lead.id], handlers);
     card.classList.add("case-card");
+    // Jerarquía: el caso abre al veredicto (síntesis) → señales → esenciales del
+    // lead. El análisis profundo queda plegado, a un clic — disponible, no encima.
     const det = card.querySelector(".c-detail");
-    if (det) det.open = true; // en pantalla completa el análisis va siempre abierto
+    if (det) det.open = false;
     cardWrap.appendChild(card);
   }
   rebuild();
@@ -2294,6 +2741,7 @@ function openCase(id) {
   // Compartir esta ficha en solo-lectura (sin registro). Solo roles con escritura
   // y fuera del modo prueba.
   let shareBtn = null;
+  // (la barra titula la EMPRESA como sujeto; el botón Compartir vive a su lado)
   if (!previewMode && isWriter(auth.currentRole())) {
     shareBtn = el("button", { class: "case-share", title: "Compartir esta empresa en solo lectura (sin registro)", text: "Compartir" });
     shareBtn.addEventListener("click", async () => {
@@ -2313,9 +2761,14 @@ function openCase(id) {
     });
   }
 
+  // Jerarquía: la barra titula la EMPRESA (el sujeto de esta pantalla), no la
+  // marca CONNECT — que ya firma en el pie. Abres un caso y lees a quién llamas.
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
-    el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al valor</i>' })]),
+    el("div", { class: "case-subject" }, [
+      el("span", { class: "case-co", text: lead.company }),
+      el("span", { class: "case-co-sub", text: `${lead.subsector || lead.sector || ""}${lead.city ? " · " + lead.city : ""}` }),
+    ]),
     shareBtn,
     el("span", { class: "case-rank", text: `#${lead.ranking ?? "—"}` }),
   ]);
@@ -2711,6 +3164,7 @@ async function autoTick() {
           if (!lead.phone && c.phone) lead.phone = c.phone;
           if (!lead.instagram && c.instagram) lead.instagram = c.instagram;
           if (!lead.linkedin && c.linkedin) lead.linkedin = c.linkedin;
+          if (Array.isArray(c.images) && c.images.length) lead.images = c.images;
         }
         store.saveUserLead(lead);
       }
@@ -2809,12 +3263,12 @@ function autopilotPanel() {
       el("span", { class: "auto-title", text: "Piloto automático de captación" }),
       a.on ? el("span", { class: "auto-live", text: "● EN MARCHA" }) : null,
     ]),
-    el("p", { class: "hint", text: "Arráncalo y déjalo correr: capta empresas cualificadas, las archiva y etiqueta solo en el mapa, abre nichos nuevos según el momento y va sacando contactos de sus webs. El cerebro entero, en automático." }),
+    el("p", { class: "hint", text: "Arráncalo y trabaja solo: capta, ordena, etiqueta y busca contactos." }),
     track("01", prog.q01, prog.pct01, "01"),
     track("XN", prog.qxn, prog.pctxn, "xn"),
     el("div", { class: "auto-ctl" }, [el("label", { class: "auto-tlbl", text: "Objetivo por marca:" }), targetInput, toggle]),
     a._msg ? el("p", { class: "auto-msg", text: a._msg }) : null,
-    el("p", { class: "auto-foot", text: "Corre mientras la pestaña esté abierta y dentro del presupuesto diario del mapa (se pausa y reanuda solo). Cuenta empresas con nota ≥70; llegar a 100 de nota exige enriquecimiento (en construcción)." }),
+    el("p", { class: "auto-foot", text: "Corre con la pestaña abierta; se pausa y reanuda solo." }),
   ]);
 }
 
@@ -2887,6 +3341,49 @@ async function seedCronFromMap() {
     const leaves = leavesUnder([]).slice(0, 40).map((lf) => ({ query: pathQuery(lf.path), sector: ensureRootSector(lf.path[0]) }));
     if (leaves.length) await seedCron(leaves, auth.getToken());
   } catch { /* best-effort */ }
+}
+
+// ---- FORMACIÓN INTERNA: dossiers del equipo, claros y a mano --------------
+// Un sitio tranquilo para guías y procesos. Los admin/editores publican; todo
+// el equipo los lee. Se sincroniza, así que lo que pongas lo ve todo el mundo.
+function trainingView() {
+  const docs = store.getTraining().slice().sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  const canEdit = allow("write");
+  const blocks = [
+    el("h2", { text: "Formación interna" }),
+    el("p", { class: "hint", text: "Guías y dossiers del equipo. Lo esencial, claro y a mano." }),
+  ];
+
+  if (canEdit) {
+    const title = el("input", { class: "lead-f train-title", placeholder: "Título — ej. Cómo abrir una llamada" });
+    const tag = el("input", { class: "lead-f train-tag", placeholder: "Etiqueta (opcional) — Ventas, Marca…" });
+    const body = el("textarea", { class: "lead-f train-body", placeholder: "El contenido, en claro. Pasos, no párrafos." });
+    const msg = el("span", { class: "add-msg" });
+    const pub = el("button", {
+      class: "btn-primary", text: "Publicar dossier", onClick: () => {
+        const t = title.value.trim(); const b = body.value.trim();
+        if (t.length < 2 || !b) { msg.textContent = "Pon título y contenido."; return; }
+        store.saveTraining({ id: `t-${Date.now().toString(36)}`, title: t, body: b, tag: tag.value.trim() || null, by: auth.currentUser()?.name || "", updatedAt: new Date().toISOString() });
+        render();
+      },
+    });
+    blocks.push(el("div", { class: "train-form" }, [title, tag, body, el("div", { class: "train-form-foot" }, [pub, msg])]));
+  }
+
+  if (!docs.length) {
+    blocks.push(el("p", { class: "empty", text: canEdit ? "Aún no hay dossiers. Publica el primero arriba." : "Aún no hay formación publicada. Pídele a un admin que añada dossiers." }));
+  } else {
+    blocks.push(el("div", { class: "train-list" }, docs.map((d) => el("article", { class: "train-card" }, [
+      el("div", { class: "train-card-h" }, [
+        d.tag ? el("span", { class: "train-tag-chip", text: d.tag }) : null,
+        el("h3", { class: "train-card-t", text: d.title }),
+        canEdit ? el("button", { class: "train-del", title: "Eliminar", html: icon("trash"), onClick: () => { if (confirm(`¿Eliminar «${d.title}»?`)) { store.removeTraining(d.id); render(); } } }) : null,
+      ]),
+      el("p", { class: "train-card-b", text: d.body }),
+      el("div", { class: "train-card-f", text: `${d.by ? d.by + " · " : ""}${d.updatedAt ? new Date(d.updatedAt).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : ""}` }),
+    ]))));
+  }
+  return el("div", {}, blocks);
 }
 
 function captureMap() {
@@ -3031,9 +3528,11 @@ function captureMap() {
         if (!l.phone && c.phone) l.phone = c.phone;
         if (!l.instagram && c.instagram) l.instagram = c.instagram;
         if (!l.linkedin && c.linkedin) l.linkedin = c.linkedin;
+        if (Array.isArray(c.images) && c.images.length) l.images = c.images;
         store.saveUserLead(l);
-        ui.status = (c.email || c.phone || c.instagram || c.linkedin)
-          ? `✓ Contactos de «${l.company}» añadidos desde su web.`
+        const got = c.email || c.phone || c.instagram || c.linkedin || (l.images && l.images.length);
+        ui.status = got
+          ? `✓ «${l.company}»: contactos${l.images && l.images.length ? " e imágenes" : ""} desde su web.`
           : `Sin contactos visibles en la web de «${l.company}».`;
       } else {
         ui.status = `No pude leer la web de «${l.company}» (bloqueada o sin contactos).`;
@@ -3042,13 +3541,22 @@ function captureMap() {
     });
     const name = el("span", { class: "cat-lead-name", title: "Abrir en el ranking", text: l.company,
       onClick: () => { state.filters.search = l.company; goView("cards"); } });
-    return el("div", { class: "cat-lead" }, [
+    const row = el("div", { class: "cat-lead" }, [
       name,
       ...tagVals.slice(0, 2).map((v) => el("span", { class: "cat-tag", text: v })),
       ...contacts,
       el("span", { class: "cat-lead-city", text: l.city || "" }),
       findBtn,
     ]);
+    // Moodboard: miniaturas de la web (remotas, lazy → cero peso al bundle).
+    if (Array.isArray(l.images) && l.images.length) {
+      const mb = el("div", { class: "cat-mood" }, l.images.slice(0, 5).map((src) =>
+        el("a", { class: "cat-mood-i", href: src, target: "_blank", rel: "noopener" }, [
+          el("img", { src, loading: "lazy", alt: "", referrerpolicy: "no-referrer" }),
+        ])));
+      return el("div", { class: "cat-lead-wrap" }, [row, mb]);
+    }
+    return row;
   }
   function leadList(path, depth) {
     let leads = leadsUnder(path, store.getUserLeads());
@@ -3095,7 +3603,7 @@ function captureMap() {
         onClick: () => { if (confirm("¿Borrar todo el mapa de categorías? Los leads ya captados se quedan en el ranking.")) { clearForest(); ui.status = ""; render(); } },
       }) : null,
     ]),
-    el("p", { class: "hint", html: "Escribe <b>una idea</b> y Connect crea solo un árbol de <b>categorías anidadas</b> (carpetas dentro de carpetas). Luego pulsa <b>buscar</b> en cualquier carpeta para traer empresas reales y archivarlas dentro." }),
+    el("p", { class: "hint", html: "Escribe <b>una idea</b>. Se crea el árbol de carpetas; pulsa <b>buscar</b> y entran empresas reales." }),
     el("div", { class: "cmap-bar" }, [promptInput, genBtn]),
   ];
 
@@ -3196,10 +3704,7 @@ function searchView() {
     ]));
   }
 
-  blocks.push(el("h3", { class: "capt-h", text: "O capta a mano una búsqueda concreta" }));
-  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>." }));
-
-  // --- CAPTADOR AUTOMÁTICO ---
+  // --- CAPTAR A MANO (avanzado): se pliega al final; el Mapa + piloto mandan ---
   const qInput = el("input", { type: "search", class: "search-city capt-input", placeholder: "¿A quién quieres captar?", autocomplete: "off" });
   const sectorChip = el("div", { class: "capt-sector" });
   const statusBox = el("div", { class: "capt-status" });
@@ -3274,32 +3779,30 @@ function searchView() {
 
   const captBtn = el("button", { class: "btn-primary capt-go", text: "Captar", onClick: captar });
   qInput.addEventListener("keydown", (e) => { if (e.key === "Enter") captar(); });
-  blocks.push(el("div", { class: "capt-bar" }, [qInput, captBtn]));
-  blocks.push(sectorChip);
 
-  // Tus intereses: lo que más buscas, a un clic. Si aún no hay historial, ideas.
   const interests = getInterests(8);
   const chips = interests.length
     ? interests.map((it) => [it.q, it.q])
     : [["clínicas dentales Madrid"], ["restaurante premium Marbella"], ["promotora branded residences"], ["estudios de tatuaje Barcelona"]].map(([q]) => [q, q]);
-  blocks.push(el("div", { class: "idea-chips" }, [
-    el("span", { class: "idea-lbl", text: interests.length ? "Tus intereses:" : "Ideas:" }),
-    ...chips.map(([label, q]) => el("button", { class: "idea-chip", text: label, onClick: () => { qInput.value = q; captar(); } })),
-  ]));
 
-  blocks.push(statusBox);
-  blocks.push(resultsBox);
-
-  // Sectores personalizados (Fase 8): crear nichos nuevos sin tocar código.
-  blocks.push(sectorManager());
-
-  // Formulario de alta.
-  blocks.push(el("h3", { text: "Añadir lead", class: "add-h" }));
-  blocks.push(addLeadForm());
-
-  // Leads ya añadidos.
+  // Todo lo manual/avanzado, plegado. El Mapa y el piloto de arriba son la vía
+  // normal; esto queda para casos puntuales, sin ensuciar la pantalla.
+  const manual = [
+    el("p", { class: "hint", text: "Para casos puntuales. La vía normal es el Mapa y el piloto de arriba." }),
+    el("div", { class: "capt-bar" }, [qInput, captBtn]),
+    sectorChip,
+    el("div", { class: "idea-chips" }, [
+      el("span", { class: "idea-lbl", text: interests.length ? "Tus intereses:" : "Ideas:" }),
+      ...chips.map(([label, q]) => el("button", { class: "idea-chip", text: label, onClick: () => { qInput.value = q; captar(); } })),
+    ]),
+    statusBox,
+    resultsBox,
+    sectorManager(),
+    el("h3", { text: "Añadir lead a mano", class: "add-h" }),
+    addLeadForm(),
+  ];
   if (userLeads.length) {
-    blocks.push(el("div", { class: "sec" }, [
+    manual.push(el("div", { class: "sec" }, [
       el("h4", { text: `Tus leads añadidos (${userLeads.length})` }),
       el("ul", { class: "user-leads" }, userLeads.map((l) =>
         el("li", {}, [
@@ -3309,6 +3812,10 @@ function searchView() {
       )),
     ]));
   }
+  blocks.push(el("details", { class: "legacy-tools" }, [
+    el("summary", { text: "Captar a mano · herramientas avanzadas" }),
+    el("div", { class: "legacy-body" }, manual),
+  ]));
 
   return el("div", {}, blocks);
 }

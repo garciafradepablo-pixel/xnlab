@@ -22,7 +22,10 @@ const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const TASKS_KEY = `${NS}tasks`; // tareas del equipo (quién hace qué), compartidas
+const TRAIN_KEY = `${NS}training`; // dossiers de formación interna (compartidos)
+const SCHED_KEY = `${NS}schedules`; // horarios de trabajo por persona (compartidos)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
+const POSITS_KEY = `${NS}posits`; // muelle de posits (gadgets async entre el equipo)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
@@ -94,11 +97,14 @@ function snapshot() { return JSON.parse(exportState()); }
  */
 export async function startSharedSync() {
   syncEnabled = true;
-  return pullSharedState();
+  const r = await pullSharedState();
+  startPolling(); // a partir de aquí, el latido trae lo del otro sin recargar
+  return r;
 }
 export function stopSharedSync() {
   syncEnabled = false;
   if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
 }
 export function isSyncEnabled() { return syncEnabled; }
 
@@ -175,6 +181,71 @@ async function runScheduledPush() {
   finally {
     pushInFlight = false;
     if (pushAgain) { pushAgain = false; scheduleSync(); }
+  }
+}
+
+// ---- Refresco en vivo (polling) ---------------------------------------------
+// El problema "lo veo todo muy atrasado": cada cambio se SUBE, pero la app
+// abierta nunca BAJA lo del otro tras el primer pull. Resultado: un posit de Javi
+// solo le aparece a Pablo al recargar. El latido lo arregla — trae y fusiona los
+// cambios del servidor cada pocos segundos, y al instante al volver a la pestaña.
+// Es deliberadamente ligero: solo fusiona si el servidor avanzó de `rev`, nunca
+// empuja, y se aparta si hay una subida en curso para no competir con ella.
+
+let pollTimer = null;
+let pollVisBound = false;
+const POLL_MS = 12000;
+
+const remoteListeners = new Set();
+/** Avisa a la UI de que ha llegado y se ha fusionado estado nuevo del otro. */
+export function onRemoteChange(cb) { remoteListeners.add(cb); return () => remoteListeners.delete(cb); }
+function emitRemoteChange() { for (const cb of remoteListeners) { try { cb(); } catch { /* */ } } }
+
+/** Pull ligero: trae y fusiona SOLO si el servidor avanzó de rev. No empuja.
+ *  @returns {Promise<{ok:boolean, changed?:boolean, busy?:boolean}>} */
+export async function pollSharedState() {
+  // No competir con una subida en curso o pendiente: evita pisar/duplicar.
+  if (pushInFlight || pushTimer) return { ok: false, busy: true };
+  try {
+    const r = await remote.remoteLoadState(getToken());
+    if (!r || !r.ok) return { ok: false };
+    const incoming = Number(r.rev || 0);
+    const changed = incoming !== getRev();
+    if (changed) {
+      if (r.data) importState(r.data, { replace: false }); // newest-per-entity wins
+      setRev(incoming);
+      setSync("synced");
+      emitRemoteChange();
+    }
+    return { ok: true, changed };
+  } catch {
+    // Fallo de un latido de fondo: silencioso, sin marear el badge. El próximo
+    // latido (o la reconexión manual) lo reintenta.
+    return { ok: false };
+  }
+}
+
+function scheduleNextPoll() {
+  if (!syncEnabled || typeof setTimeout === "undefined") return; // off en tests/CLI
+  clearTimeout(pollTimer);
+  // Pestaña oculta → late más lento: no gastes red/batería mirando a nada.
+  const hidden = typeof document !== "undefined" && document.hidden;
+  pollTimer = setTimeout(pollTick, hidden ? POLL_MS * 5 : POLL_MS);
+  if (pollTimer && typeof pollTimer.unref === "function") pollTimer.unref();
+}
+async function pollTick() {
+  pollTimer = null;
+  if (!syncEnabled) return;
+  try { await pollSharedState(); } finally { scheduleNextPoll(); }
+}
+function startPolling() {
+  scheduleNextPoll();
+  if (typeof document !== "undefined" && typeof document.addEventListener === "function" && !pollVisBound) {
+    pollVisBound = true;
+    // Al volver a la pestaña, refresca al instante: lo primero que ves está al día.
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && syncEnabled) { clearTimeout(pollTimer); pollTimer = null; pollTick(); }
+    });
   }
 }
 
@@ -267,6 +338,42 @@ export function removeTask(id) {
   write(TASKS_KEY, next);
   scheduleSync();
   return true;
+}
+
+// ---- Asignación + agenda por persona (reparto de llamadas) ------------------
+//
+// Una llamada puede tener dueño (assignedTo), día agendado (scheduledFor,
+// "YYYY-MM-DD") y ronda (round). Viven en el MISMO registro de tracking, así que
+// viajan gratis por el mismo sync que el estado/nota (newest-updatedAt gana). Se
+// preservan al cambiar estado/nota porque getRecord se difunde con spread.
+export function assignLead(id, fields = {}) {
+  const all = getTracking();
+  const rec = { ...getRecord(id) };
+  if ("assignedTo" in fields) rec.assignedTo = fields.assignedTo || null;
+  if ("scheduledFor" in fields) rec.scheduledFor = fields.scheduledFor || null;
+  if ("round" in fields) rec.round = fields.round || null;
+  rec.updatedAt = new Date().toISOString();
+  rec.by = getWho() || null;
+  all[id] = rec;
+  write(TRACK_KEY, all);
+  scheduleSync();
+  return rec;
+}
+
+// ---- Horarios de trabajo por persona (capacidad real) -----------------------
+//
+// Cada miembro del equipo guarda su jornada: días laborables (ISO 1=lun..7=dom),
+// hora de inicio/fin y llamadas/día (capacidad). Mapa compartido (se sincroniza
+// como los dossiers de formación). El planificador (agenda.js) lo usa para
+// repartir las rondas; la vista Hoy lo usa para no pedirle más de lo que cabe.
+export function getSchedules() { return read(SCHED_KEY, {}); }
+export function getSchedule(name) { return getSchedules()[name] || null; }
+export function setSchedule(name, sched) {
+  const all = getSchedules();
+  all[name] = { ...sched, updatedAt: new Date().toISOString() };
+  write(SCHED_KEY, all);
+  scheduleSync();
+  return all[name];
 }
 
 // ---- The learning loop ------------------------------------------------------
@@ -432,6 +539,9 @@ export function exportState() {
       verifications: getVerifications(),
       userLeads: getUserLeads(),
       tasks: getTasks(),
+      training: getTraining(),
+      schedules: getSchedules(),
+      posits: read(POSITS_KEY, []),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -546,7 +656,52 @@ export function importState(json, { replace = false } = {}) {
     write(TASKS_KEY, [...byId.values()]);
   }
 
+  // --- training (dossiers de formación; merge por id, gana updatedAt) ---
+  const incomingTrain = Array.isArray(data.training) ? data.training : [];
+  if (replace) {
+    write(TRAIN_KEY, incomingTrain);
+  } else if (incomingTrain.length) {
+    const byId = new Map(getTraining().map((d) => [d.id, d]));
+    for (const d of incomingTrain) {
+      const cur = byId.get(d.id);
+      if (!cur || String(d.updatedAt || "") > String(cur.updatedAt || "")) byId.set(d.id, d);
+    }
+    write(TRAIN_KEY, [...byId.values()]);
+  }
+
+  // --- schedules (horarios por persona; merge por nombre, gana updatedAt) ---
+  const incomingSched = data.schedules && typeof data.schedules === "object" ? data.schedules : {};
+  if (replace) {
+    write(SCHED_KEY, incomingSched);
+  } else if (Object.keys(incomingSched).length) {
+    const cur = getSchedules();
+    for (const [name, sched] of Object.entries(incomingSched)) {
+      const ex = cur[name];
+      if (!ex || String(sched.updatedAt || "") > String(ex.updatedAt || "")) cur[name] = sched;
+    }
+    write(SCHED_KEY, cur);
+  }
+
+  // --- posits (merge por id; gana la mutación más reciente: seenAt/archivedAt) --
+  const incomingPosits = Array.isArray(data.posits) ? data.posits : [];
+  if (replace) {
+    write(POSITS_KEY, incomingPosits);
+  } else if (incomingPosits.length) {
+    const byId = new Map(read(POSITS_KEY, []).map((p) => [p.id, p]));
+    for (const p of incomingPosits) {
+      const cur = byId.get(p.id);
+      if (!cur || positStamp(p) > positStamp(cur)) byId.set(p.id, p);
+    }
+    write(POSITS_KEY, [...byId.values()]);
+  }
+
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
+}
+
+// La "frescura" de un posit es su mutación más reciente: así un "visto" o un
+// "archivado" hecho en otro dispositivo gana al original sin conflictos.
+function positStamp(p) {
+  return String(p.archivedAt || p.seenAt || p.createdAt || "");
 }
 
 function outcomeKey(o) {
@@ -661,6 +816,49 @@ export function saveUserLead(lead) {
 
 export function removeUserLead(id) {
   write(USER_LEADS_KEY, getUserLeads().filter((l) => l.id !== id));
+  scheduleSync();
+}
+
+// ---- Formación interna: dossiers compartidos (se sincronizan a todo el equipo) -
+/** @returns {Array<{id,title,body,tag,updatedAt,by}>} */
+export function getTraining() { return read(TRAIN_KEY, []); }
+export function saveTraining(doc) {
+  const all = getTraining().filter((d) => d.id !== doc.id);
+  all.push(doc);
+  write(TRAIN_KEY, all);
+  scheduleSync();
+  return all;
+}
+export function removeTraining(id) {
+  write(TRAIN_KEY, getTraining().filter((d) => d.id !== id));
+  scheduleSync();
+}
+
+// ---- Muelle de posits: gadgets asíncronos entre el equipo ---------------------
+// Un posit NO es texto libre: es un gadget con tipo (sello, relevo, potencia, eco)
+// anclado a un contexto (un lead, un día, una persona). Rueda sobre el mismo sync
+// compartido — sin servidor de tiempo real, sin coste, sin estar en directo.
+//   { id, kind, from, to, glyph, label, leadId?, audio?, createdAt, seenAt?, archivedAt? }
+/** @returns {Array} todos los posits compartidos, del más reciente al más antiguo. */
+export function getPosits() {
+  return read(POSITS_KEY, []).slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+/** Lanza (o actualiza por id) un posit y programa la sincronización. */
+export function savePosit(posit) {
+  const p = { seenAt: null, archivedAt: null, ...posit };
+  const all = read(POSITS_KEY, []).filter((x) => x.id !== p.id);
+  all.push(p);
+  write(POSITS_KEY, all);
+  scheduleSync();
+  return p;
+}
+/** Marca un posit con un sello de tiempo (seenAt / archivedAt) y sincroniza. */
+export function markPosit(id, patch) {
+  const all = read(POSITS_KEY, []);
+  const p = all.find((x) => x.id === id);
+  if (!p) return;
+  Object.assign(p, patch);
+  write(POSITS_KEY, all);
   scheduleSync();
 }
 

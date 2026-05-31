@@ -81,7 +81,7 @@ function contactLink(html: string, base: string): string | null {
 
 const uniq = (arr: string[], n: number) => [...new Set(arr)].slice(0, n);
 
-function extract(html: string) {
+function extract(html: string, base: string) {
   // Emails: mailto: primero, luego patrón general; fuera imágenes y ruido típico.
   const emails: string[] = [];
   for (const m of html.matchAll(/mailto:([^"'?>\s]+)/gi)) emails.push(m[1]);
@@ -108,6 +108,29 @@ function extract(html: string) {
   const linkedin = first(/https?:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/[A-Za-z0-9_.\-][A-Za-z0-9_.\-\/]*/i);
   const facebook = first(/https?:\/\/(?:www\.)?facebook\.com\/[A-Za-z0-9_.\-][A-Za-z0-9_.\-\/]*/i);
 
+  // Imágenes de marca (moodboard): og:image / twitter:image / apple-touch-icon
+  // primero (es su mejor imagen), luego algunas <img> grandes. Solo URLs (cero
+  // peso: el cliente las carga remotas y lazy). Se resuelven a absolutas y se
+  // filtra ruido (sprites, iconos, tracking, data:).
+  const abs = (u: string): string | null => { try { return new URL(u.trim(), base).href; } catch { return null; } };
+  const imgs: string[] = [];
+  const metaImg = (prop: string) => {
+    const re = new RegExp(`<meta[^>]+(?:property|name)=["']${prop}["'][^>]+content=["']([^"']+)["']`, "i");
+    const m = html.match(re); return m ? m[1] : null;
+  };
+  for (const p of ["og:image:secure_url", "og:image", "twitter:image", "twitter:image:src"]) {
+    const v = metaImg(p); if (v) { const a = abs(v); if (a) imgs.push(a); }
+  }
+  const apple = html.match(/<link[^>]+rel=["'][^"']*apple-touch-icon[^"']*["'][^>]+href=["']([^"']+)["']/i);
+  if (apple) { const a = abs(apple[1]); if (a) imgs.push(a); }
+  for (const m of html.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) {
+    const src = m[1];
+    if (/^data:|sprite|icon|logo-?\w*\.svg|pixel|1x1|blank|spacer|loader|\.svg(\?|$)/i.test(src)) continue;
+    const a = abs(src); if (a && /^https?:\/\//i.test(a)) imgs.push(a);
+    if (imgs.length > 14) break;
+  }
+  const images = uniq(imgs, 6);
+
   return {
     email: cleanEmails[0] || null,
     phone: cleanPhones[0] || null,
@@ -116,6 +139,7 @@ function extract(html: string) {
     facebook: facebook || null,
     emails: cleanEmails,
     phones: cleanPhones,
+    images,
   };
 }
 
@@ -140,5 +164,5 @@ Deno.serve(async (req: Request) => {
     if (more) html = (html + "\n" + more).slice(0, MAX_HTML * 2);
   }
 
-  return json({ ok: true, readable: true, ...extract(html) });
+  return json({ ok: true, readable: true, ...extract(html, url) });
 });
