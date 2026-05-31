@@ -4,3 +4,4 @@ _*.mjs
 _site/
 out/
 zsmoke*
+app.html
