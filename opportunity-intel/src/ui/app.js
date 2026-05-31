@@ -2223,13 +2223,14 @@ function fmtAgo(iso) {
   try { return new Date(t).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }); } catch { return ""; }
 }
 
-const ACT_LABEL = { eng_new: "Proyecto", log: "Bitácora", ms: "Hito", crm: "CRM" };
+const ACT_LABEL = { eng_new: "Proyecto", log: "Bitácora", ms: "Hito", crm: "CRM", critical: "Crítica" };
 
 function activityView() {
   const byId = new Map((state.results?.all || []).map((o) => [o.id, o.company]));
   const feed = buildActivity({
     engagements: store.getEngagements(),
     tracking: store.getTracking(),
+    growth: store.getAllGrowth(),
     leadName: (id) => byId.get(id) || "",
   });
 
@@ -2407,7 +2408,10 @@ function criticalCard(profile, canEdit) {
       ]),
       dots,
     ]),
-    el("blockquote", { class: "crit-prompt", text: `“${growth.criticalPrompt()}”` }),
+    el("div", { class: "crit-weekly" }, [
+      el("span", { class: "crit-weekly-tag", text: "Reto de la semana · en común con el equipo" }),
+      el("blockquote", { class: "crit-prompt", text: `“${growth.weeklyCriticalPrompt()}”` }),
+    ]),
   ];
   if (canEdit) children.push(criticalLogger(profile));
   children.push(recent.length ? el("div", { class: "crit-log" }, recent) : el("p", { class: "empty", text: "Aún sin retos registrados. Responde a la provocación de arriba y regístralo." }));

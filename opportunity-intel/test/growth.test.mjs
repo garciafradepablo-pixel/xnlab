@@ -4,7 +4,7 @@ import {
   emptyProfile, addStrength, setStrengthLevel, removeStrength,
   addFriction, setFrictionStatus, advanceFriction, removeFriction,
   closeFrictionToStrength, summary, FRICTION_STATUS,
-  logCritical, setCriticalLevel, removeCritical, criticalSummary, criticalPrompt, CRITICAL_PROMPTS,
+  logCritical, setCriticalLevel, removeCritical, criticalSummary, criticalPrompt, weeklyCriticalPrompt, CRITICAL_PROMPTS,
 } from "../src/growth.js";
 
 let passed = 0, failed = 0;
@@ -113,6 +113,15 @@ function eq(a, b, m) { ok(a === b, `${m} (got ${JSON.stringify(a)}, want ${JSON.
   // provocación estable por día e index válido
   ok(CRITICAL_PROMPTS.includes(criticalPrompt(new Date("2026-06-01"))), "la provocación sale del set");
   eq(criticalPrompt(new Date("2026-06-01")), criticalPrompt(new Date("2026-06-01")), "misma fecha → misma provocación");
+
+  // reto SEMANAL: igual toda la semana (compartido), distinto a la siguiente.
+  ok(CRITICAL_PROMPTS.includes(weeklyCriticalPrompt(new Date("2026-06-01"))), "el reto semanal sale del set");
+  let mon = new Date("2026-06-01T12:00:00Z");
+  while (mon.getUTCDay() !== 1) mon = new Date(mon.getTime() + 86400000); // localiza un lunes
+  const sun = new Date(mon.getTime() + 6 * 86400000);
+  const nextMon = new Date(mon.getTime() + 7 * 86400000);
+  eq(weeklyCriticalPrompt(mon), weeklyCriticalPrompt(sun), "lunes→domingo de la misma semana → mismo reto");
+  ok(weeklyCriticalPrompt(mon) !== weeklyCriticalPrompt(nextMon), "la semana siguiente → reto distinto");
 }
 
 console.log(`growth.test: ${passed} passed, ${failed} failed`);

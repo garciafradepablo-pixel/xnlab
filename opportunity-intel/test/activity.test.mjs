@@ -48,6 +48,23 @@ const leadName = (id) => ({ L1: "La Casa del Limonero" }[id] || "");
   eq(feed.length, 2, "respeta el límite");
 }
 
+// ---- retos de pensamiento crítico en el feed --------------------------------
+{
+  const growth = {
+    Pablo: { owner: "Pablo", critical: { level: 2, log: [
+      { id: "c1", at: "2026-05-07T10:00:00Z", kind: "assumption", note: "Asumí el alcance sin confirmarlo" },
+      { id: "c2", at: "2026-05-08T10:00:00Z", kind: "contrarian", note: "" },
+    ] } },
+    Javi: { owner: "Javi", critical: { log: [{ id: "c3", at: "2026-05-09T10:00:00Z", kind: "evidence", note: "Pedí datos antes de decidir" }] } },
+  };
+  const feed = buildActivity({ engagements: [], tracking: {}, growth });
+  eq(feed.length, 3, "incluye los retos de crítica de todo el equipo");
+  ok(feed.every((x) => x.kind === "critical"), "todos marcados como crítica");
+  ok(feed[0].by === "Javi", "firmado por quien lo ejercitó, más reciente primero");
+  ok(feed[0].text.includes("pensamiento crítico"), "texto reconocible");
+  ok(feed.some((x) => x.text.includes("Supuesto cuestionado")), "traduce el tipo de reto");
+}
+
 {
   eq(buildActivity({}).length, 0, "sin datos → feed vacío");
 }

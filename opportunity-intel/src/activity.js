@@ -6,15 +6,17 @@
 // =============================================================================
 
 import { STATUS_LABELS } from "./models.js";
+import { CRITICAL_KINDS } from "./growth.js";
 
 /**
  * Construye el feed (lo más reciente primero).
  * @param {object[]} engagements
  * @param {object}   tracking      mapa id→{status, by, updatedAt}
+ * @param {object}   growth        mapa dueño→perfil (para los retos de crítica)
  * @param {function} leadName      id → nombre de empresa (para el CRM)
  * @param {number}   limit
  */
-export function buildActivity({ engagements = [], tracking = {}, leadName = () => "", limit = 50 } = {}) {
+export function buildActivity({ engagements = [], tracking = {}, growth = {}, leadName = () => "", limit = 50 } = {}) {
   const items = [];
 
   for (const e of engagements) {
@@ -34,6 +36,15 @@ export function buildActivity({ engagements = [], tracking = {}, leadName = () =
     if (rec && rec.updatedAt && rec.status && rec.status !== "not_called") {
       const label = STATUS_LABELS[rec.status] || rec.status;
       items.push({ at: rec.updatedAt, by: rec.by || "", kind: "crm", text: `movió ${leadName(id) || "un lead"} → «${label}»` });
+    }
+  }
+
+  // Pensamiento crítico: que se VEA y se reconozca en el equipo. Cada reto
+  // registrado entra en el pulso común.
+  for (const [owner, prof] of Object.entries(growth || {})) {
+    for (const c of (prof && prof.critical && prof.critical.log) || []) {
+      if (!c || !c.at) continue;
+      items.push({ at: c.at, by: owner, kind: "critical", text: `ejercitó pensamiento crítico · ${CRITICAL_KINDS[c.kind] || "reto"}`, note: c.note || "" });
     }
   }
 

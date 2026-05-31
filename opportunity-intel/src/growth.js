@@ -154,6 +154,15 @@ export function criticalPrompt(seed = new Date()) {
   return CRITICAL_PROMPTS[((day % CRITICAL_PROMPTS.length) + CRITICAL_PROMPTS.length) % CRITICAL_PROMPTS.length];
 }
 
+// Reto SEMANAL del equipo: la misma provocación para todos durante la semana
+// (índice por semana, ALINEADO A LUNES), para pensar críticamente sobre lo
+// mismo en común. (Día 0 de la época es jueves; −4 mueve el corte al lunes.)
+export function weeklyCriticalPrompt(seed = new Date()) {
+  const days = Math.floor((seed instanceof Date ? seed.getTime() : Number(seed) || 0) / 86400000);
+  const week = Math.floor((days - 4) / 7);
+  return CRITICAL_PROMPTS[((week % CRITICAL_PROMPTS.length) + CRITICAL_PROMPTS.length) % CRITICAL_PROMPTS.length];
+}
+
 // ---- Resumen / visualización ------------------------------------------------
 
 export function summary(profile) {

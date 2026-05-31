@@ -1801,3 +1801,11 @@ a.commit-chip:hover { text-decoration: none; filter: brightness(1.15); }
 .crit-note { flex: 1; color: var(--ink); }
 .crit-note.crit-faint { color: var(--ink-faint); }
 .crit-when { flex: none; font-size: 11px; color: var(--ink-faint); }
+
+/* Pensamiento crítico — reto semanal del equipo + etiqueta en el feed -------- */
+.crit-weekly-tag {
+  display: inline-block; font-size: 10px; text-transform: uppercase; letter-spacing: .6px;
+  font-weight: 700; color: var(--accent); margin: 14px 0 6px;
+}
+.crit-weekly .crit-prompt { margin-top: 0; }
+.act-tag.tag-critical { color: var(--accent); border-color: rgba(203,162,74,.35); }
