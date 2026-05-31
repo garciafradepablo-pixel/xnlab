@@ -55,7 +55,9 @@ import { pendingCronLeads, claimCronLeads } from "../cronleads.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
 import { getCatalog, cacheCatalog, labelMap, teamByTag, teamGaps } from "../teamtags.js";
 import * as chat from "../messaging.js";
+import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
+import * as tasks from "../tasks.js";
 import { remoteCreateShare, remoteLoadShare } from "../statesync.js";
 
 // Modo PRUEBA (solo lectura, sin sesión): cuando se abre un enlace ?preview=…
@@ -630,7 +632,7 @@ function openProfile() {
 // "en qué estoy") y las vistas de cada zona debajo. Menos superficie, más
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
 const ZONES = [
-  { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
+  { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["tasks", "Tareas"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
@@ -643,7 +645,7 @@ function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
   // Zona de equipo: chat general, apuntes de mejora, privados y el marcador de
   // productividad para todos; la gestión de personas/roles/etiquetas solo admin.
-  const teamViews = [["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["leaderboard", "Productividad"]];
+  const teamViews = [["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
   if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
   z.push({ key: "team", label: "Equipo", views: teamViews });
   return z;
@@ -853,6 +855,7 @@ function securitySection() {
 function viewArea() {
   const area = el("section", { class: "view" });
   if (state.view === "today") area.appendChild(todayView());
+  else if (state.view === "tasks") area.appendChild(tasksView());
   else if (state.view === "pipeline") area.appendChild(pipelineView());
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
@@ -863,6 +866,7 @@ function viewArea() {
   else if (state.view === "chat") area.appendChild(chatView("general"));
   else if (state.view === "board") area.appendChild(chatView("mejoras"));
   else if (state.view === "dms") area.appendChild(dmsView());
+  else if (state.view === "drive") area.appendChild(driveView());
   else if (state.view === "leaderboard") area.appendChild(leaderboardView());
   else area.appendChild(learningView());
   return area;
@@ -1156,6 +1160,110 @@ function chatView(channel) {
   ));
   load();
   return wrap;
+}
+
+// Drive: material del equipo para vender, en tres carpetas. Pestañas de carpeta,
+// subida directa (URL firmada) y lista con descargar/eliminar. Limpio y a mano.
+function driveView() {
+  const wrap = el("section", { class: "drive-view" });
+  wrap.appendChild(el("div", { class: "view-head" }, [
+    el("h2", { text: "Drive" }),
+    el("p", { class: "hint", text: "Material del equipo para vender: imágenes de marketing, propuestas y recursos. Limpio y a mano." }),
+  ]));
+
+  const token = auth.getToken();
+  if (!token) {
+    wrap.appendChild(el("p", { class: "hint", text: "Entra con tu usuario para ver el Drive." }));
+    return wrap;
+  }
+
+  if (!state._driveFolder) state._driveFolder = FOLDERS[0].slug;
+
+  // Pestañas de carpeta: cambian la carpeta activa y recargan la lista.
+  const tabsRow = el("div", { class: "drive-tabs" }, FOLDERS.map((f) =>
+    el("button", {
+      class: `drive-tab ${state._driveFolder === f.slug ? "active" : ""}`,
+      text: f.label,
+      onClick: () => { state._driveFolder = f.slug; render(); },
+    })));
+
+  const status = el("p", { class: "drive-status" });
+  const list = el("div", { class: "drive-list" });
+
+  const load = async () => {
+    clear(list);
+    list.appendChild(el("p", { class: "hint", text: "Cargando…" }));
+    const r = await listFiles(token, state._driveFolder);
+    clear(list);
+    if (!r || !r.ok) { list.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la carpeta." })); return; }
+    const files = r.files || [];
+    if (!files.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay archivos en esta carpeta." })); return; }
+    for (const f of files) list.appendChild(driveRow(f, token, load));
+  };
+
+  // Subida: input oculto → URL firmada → PUT directo a Storage → recarga.
+  const fileInput = el("input", { type: "file", class: "drive-file", style: "display:none" });
+  const upBtn = el("button", { class: "btn-primary", text: "Subir archivo", onClick: () => fileInput.click() });
+  fileInput.addEventListener("change", async () => {
+    const file = fileInput.files && fileInput.files[0];
+    if (!file) return;
+    upBtn.disabled = true;
+    status.textContent = `Subiendo ${file.name}…`; status.className = "drive-status";
+    try {
+      const sign = await requestUpload(token, state._driveFolder, file.name, file.type);
+      if (!sign || !sign.ok || !sign.url) throw new Error((sign && sign.error) || "No se pudo preparar la subida.");
+      const put = await fetch(sign.url, { method: "PUT", headers: { "Content-Type": sign.contentType || file.type || "application/octet-stream" }, body: file });
+      if (!put.ok) throw new Error("La subida falló.");
+      status.textContent = `✓ ${file.name} subido.`; status.classList.add("ok");
+      await load();
+    } catch (e) {
+      status.textContent = String(e.message || e); status.classList.add("err");
+    } finally {
+      upBtn.disabled = false;
+      fileInput.value = "";
+    }
+  });
+
+  wrap.appendChild(tabsRow);
+  wrap.appendChild(el("div", { class: "drive-bar" }, [upBtn, fileInput, status]));
+  wrap.appendChild(list);
+  load();
+  return wrap;
+}
+
+// Fila de archivo: icono por tipo, nombre, tamaño/fecha y acciones.
+function driveRow(f, token, reload) {
+  const dl = el("button", { class: "btn-ghost btn-xs", text: "Descargar", onClick: async () => {
+    dl.disabled = true;
+    const r = await requestDownload(token, f.path);
+    dl.disabled = false;
+    if (r && r.ok && r.url) globalThis.open?.(r.url, "_blank");
+    else alert((r && r.error) || "No se pudo descargar.");
+  } });
+  const del = el("button", { class: "btn-ghost btn-xs drive-del", text: "Eliminar", onClick: async () => {
+    if (!confirm(`¿Eliminar "${f.name}"? No se puede deshacer.`)) return;
+    del.disabled = true;
+    const r = await removeFile(token, f.path);
+    if (r && r.ok) reload();
+    else { del.disabled = false; alert((r && r.error) || "No se pudo eliminar."); }
+  } });
+  const date = f.updated_at ? new Date(f.updated_at).toLocaleDateString("es-ES", { day: "2-digit", month: "short", year: "numeric" }) : "";
+  return el("div", { class: "drive-row" }, [
+    el("span", { class: `drive-kind kind-${f.kind}`, html: driveKindIcon(f.kind) }),
+    el("div", { class: "drive-meta" }, [
+      el("span", { class: "drive-name", text: f.name }),
+      el("span", { class: "drive-sub", text: [formatSize(f.size), date].filter(Boolean).join(" · ") }),
+    ]),
+    el("div", { class: "drive-acts" }, [dl, del]),
+  ]);
+}
+
+// Icono de línea por tipo de archivo (mismo lenguaje visual que ICONS).
+function driveKindIcon(kind) {
+  if (kind === "image") return _svg('<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.6"/><path d="M21 16l-5-5-6 6"/>');
+  if (kind === "video") return _svg('<rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3z"/>');
+  if (kind === "doc") return _svg('<path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4M8 13h8M8 17h8"/>');
+  return _svg('<path d="M6 3h8l4 4v14a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z"/><path d="M14 3v4h4"/>');
 }
 
 function dmsView() {
@@ -1475,6 +1583,130 @@ function todayView() {
   }
 
   return el("div", { class: "today" }, blocks);
+}
+
+// ---- Tareas: quién hace qué (Fase 12) ---------------------------------------
+//
+// La mesa de tareas del equipo. Arriba, el briefing del que mira: su foco y lo
+// que tiene abierto, para embestir sin pensar. Debajo, el reparto real por
+// persona — cada uno marca el avance de lo suyo (por hacer → haciendo → hecho).
+// Todo viaja por el documento compartido: lo que marca uno, lo ve el resto.
+function tasksView() {
+  const me = auth.currentUser();
+  const canWrite = isWriter(auth.currentRole());
+  const team = auth.getUsers().filter((u) => !u.colorOnly || u.role);
+  team.sort((a, b) => (a.tier ?? 2) - (b.tier ?? 2) || a.name.localeCompare(b.name));
+
+  const wrap = el("div", { class: "tasks" });
+  const board = el("div", { class: "task-board" });
+
+  const paint = () => {
+    clear(board);
+    const all = store.getTasks();
+
+    // — Briefing del que mira: su foco y su carga abierta —
+    if (me) {
+      const mine = tasks.openFor(all, me.name);
+      const brief = el("div", { class: "brief" }, [
+        el("div", { class: "brief-head" }, [
+          el("span", { class: "brief-greet", text: `Tu foco, ${me.name}` }),
+          el("span", { class: "brief-count", text: mine.length ? `${mine.length} abierta${mine.length === 1 ? "" : "s"}` : "al día" }),
+        ]),
+        el("p", { class: "brief-line", text: mine.length
+          ? "Embiste lo tuyo de arriba abajo. Marca el avance en cuanto lo muevas — el equipo lo ve al momento."
+          : "Sin tareas abiertas. Coge una sin asignar o crea la siguiente jugada." }),
+      ]);
+      if (mine.length) {
+        brief.appendChild(el("ul", { class: "brief-list" }, mine.slice(0, 5).map((t) =>
+          el("li", { class: "brief-item" }, [
+            el("button", {
+              class: `task-chip st-${t.status}`,
+              title: "Cambiar estado",
+              text: tasks.STATUS_LABELS[t.status],
+              onClick: canWrite ? () => { store.setTaskStatus(t.id, tasks.nextStatus(t.status)); paint(); } : null,
+            }),
+            el("span", { class: "brief-task", text: t.title }),
+          ]))));
+      }
+      board.appendChild(brief);
+    }
+
+    // — Reparto del equipo, por responsable (organigrama) —
+    const groups = tasks.groupByAssignee(all, team);
+    const counts = tasks.countByStatus(all);
+    board.appendChild(el("h2", { class: "today-h2", text: `El reparto · ${counts.open} abiertas` }));
+
+    if (!all.length) {
+      board.appendChild(el("p", { class: "today-empty", text: "Aún no hay tareas. Crea la primera arriba y asígnala a quien la lleva." }));
+      return;
+    }
+
+    for (const g of groups) {
+      const name = g.name || "Sin asignar";
+      const head = el("div", { class: "task-grp-head" }, [
+        el("span", { class: "task-grp-name", text: name }),
+        el("span", { class: "task-grp-n", text: g.counts.open ? `${g.counts.open} viva${g.counts.open === 1 ? "" : "s"}` : (g.counts.total ? "todo hecho" : "libre") }),
+      ]);
+      const rows = g.tasks.map((t) => taskRow(t, canWrite, paint));
+      board.appendChild(el("div", { class: "task-grp" }, [head, el("ul", { class: "task-list" }, rows.length ? rows : [
+        el("li", { class: "task-empty", text: "—" }),
+      ])]));
+    }
+  };
+
+  wrap.appendChild(el("h2", { text: "Tareas del equipo" }));
+  wrap.appendChild(el("p", { class: "hint", text: "Quién hace qué, sin ruido. Asigna, marca el avance y embiste. Lo que mueve uno, lo ve el equipo." }));
+
+  // — Crear tarea: título + responsable (solo roles con escritura) —
+  if (canWrite) {
+    const input = el("input", { class: "lead-f task-new-title", type: "text", placeholder: "Nueva tarea — qué hay que hacer…", maxlength: "280" });
+    const who = el("select", { class: "lead-f task-new-who", title: "Para quién" }, [
+      el("option", { value: "", text: "Sin asignar" }),
+      ...team.map((u) => el("option", { value: u.name, selected: me && norm(u.name) === norm(me.name), text: u.name })),
+    ]);
+    const add = () => {
+      const t = tasks.makeTask({ title: input.value, assignee: who.value, by: me ? me.name : null });
+      if (!t) { input.focus(); return; }
+      store.upsertTask(t);
+      input.value = "";
+      paint();
+      input.focus();
+    };
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
+    wrap.appendChild(el("div", { class: "task-new" }, [
+      input, who,
+      el("button", { class: "btn-primary task-new-add", text: "Añadir", onClick: add }),
+    ]));
+  } else {
+    wrap.appendChild(el("p", { class: "ro-notice", text: "Tu rol mira el reparto pero no edita tareas." }));
+  }
+
+  wrap.appendChild(board);
+  paint();
+  return wrap;
+}
+
+// Una fila de tarea: estado (clic para avanzar), título, responsable y borrar.
+function taskRow(t, canWrite, repaint) {
+  const statusBtn = el("button", {
+    class: `task-chip st-${t.status}`,
+    title: canWrite ? "Cambiar estado" : tasks.STATUS_LABELS[t.status],
+    text: tasks.STATUS_LABELS[t.status],
+    onClick: canWrite ? () => { store.setTaskStatus(t.id, tasks.nextStatus(t.status)); repaint(); } : null,
+  });
+  const kids = [
+    statusBtn,
+    el("span", { class: `task-title ${t.status === "done" ? "is-done" : ""}`, text: t.title }),
+  ];
+  if (t.by && t.by !== t.assignee) kids.push(el("span", { class: "task-by", text: `de ${t.by}` }));
+  if (canWrite) {
+    kids.push(el("button", {
+      class: "task-del", title: "Eliminar tarea",
+      html: icon("trash"),
+      onClick: () => { if (confirm(`¿Eliminar “${t.title}”?`)) { store.removeTask(t.id); repaint(); } },
+    }));
+  }
+  return el("li", { class: "task-row" }, kids);
 }
 
 function followupRow(opp, fu) {

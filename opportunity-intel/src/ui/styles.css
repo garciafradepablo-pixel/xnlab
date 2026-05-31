@@ -1618,3 +1618,48 @@ button:disabled { cursor: not-allowed; }
 .user-row-tags { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
 .btn-xs { font-size: 11px; padding: 3px 9px; }
 .prof-role { display: flex; gap: 6px; align-items: center; }
+
+/* —— Tareas: quién hace qué ——————————————————————————————————————————————————— */
+/* Briefing del que mira: su foco y su carga abierta, antes del reparto. */
+.brief { background: linear-gradient(180deg, rgba(203,162,74,.08), rgba(203,162,74,.02));
+  border: 1px solid rgba(203,162,74,.28); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 18px; }
+.brief-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.brief-greet { font-size: 15px; font-weight: 600; color: var(--ink); }
+.brief-count { font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--accent); }
+.brief-line { font-size: 13px; color: var(--ink-dim); margin: 4px 0 0; }
+.brief-list { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.brief-item { display: flex; align-items: center; gap: 9px; }
+.brief-task { font-size: 13px; color: var(--ink); }
+
+/* Crear tarea: título + responsable + añadir. */
+.task-new { display: flex; gap: 8px; align-items: center; margin: 4px 0 18px; }
+.task-new-title { flex: 1 1 auto; }
+.task-new-who { flex: 0 0 auto; max-width: 160px; }
+.task-new-add { flex: 0 0 auto; width: auto; margin-top: 0; padding: 9px 16px; }
+
+/* Reparto por persona. */
+.task-grp { margin: 0 0 16px; }
+.task-grp-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+  margin: 0 0 8px; padding-bottom: 6px; border-bottom: 1px solid var(--line); }
+.task-grp-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.task-grp-n { font-size: 11px; color: var(--ink-faint); letter-spacing: .03em; }
+.task-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.task-empty { font-size: 12px; color: var(--ink-faint); padding: 2px 4px; }
+
+.task-row { display: flex; align-items: center; gap: 10px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 9px; padding: 8px 12px; }
+.task-title { flex: 1 1 auto; font-size: 14px; color: var(--ink); }
+.task-title.is-done { color: var(--ink-faint); text-decoration: line-through; }
+.task-by { flex: 0 0 auto; font-size: 11px; color: var(--ink-faint); }
+.task-del { flex: 0 0 auto; background: transparent; border: 0; color: var(--ink-faint);
+  cursor: pointer; display: inline-flex; padding: 2px; border-radius: 6px; }
+.task-del:hover { color: var(--red); }
+
+/* Chip de estado: clic para avanzar por hacer → haciendo → hecho. */
+.task-chip { flex: 0 0 auto; font-size: 11px; font-weight: 600; letter-spacing: .02em;
+  border-radius: 999px; padding: 3px 11px; cursor: pointer; border: 1px solid var(--line-2);
+  background: var(--panel-3); color: var(--ink-dim); white-space: nowrap; }
+.task-chip[disabled], .task-chip:not([onclick]) { cursor: default; }
+.task-chip.st-todo { color: var(--ink-dim); border-color: var(--line-2); }
+.task-chip.st-doing { color: #0a0c0f; background: linear-gradient(180deg, var(--accent), var(--accent-2)); border-color: var(--accent); }
+.task-chip.st-done { color: var(--ok); border-color: rgba(58,157,110,.5); background: rgba(58,157,110,.12); }

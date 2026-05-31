@@ -21,6 +21,7 @@ const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
+const TASKS_KEY = `${NS}tasks`; // tareas del equipo (quién hace qué), compartidas
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -225,6 +226,49 @@ export function setNotes(id, notes) {
   return all[id];
 }
 
+// ---- Tareas del equipo (quién hace qué) -------------------------------------
+// Colección compartida más: lista de tareas con autor y responsable. Mutar
+// cualquiera dispara la subida con rebote (scheduleSync), igual que el tracking.
+
+/** @returns {Array} todas las tareas del equipo. */
+export function getTasks() {
+  const list = read(TASKS_KEY, []);
+  return Array.isArray(list) ? list : [];
+}
+
+/** Inserta o reemplaza una tarea por id (sella `updatedAt`). */
+export function upsertTask(task) {
+  if (!task || !task.id) return null;
+  const list = getTasks().filter((t) => t.id !== task.id);
+  const sealed = { ...task, updatedAt: new Date().toISOString() };
+  list.push(sealed);
+  write(TASKS_KEY, list);
+  scheduleSync();
+  return sealed;
+}
+
+/** Cambia el estado de una tarea (por hacer / haciendo / hecho). */
+export function setTaskStatus(id, status) {
+  const list = getTasks();
+  const t = list.find((x) => x.id === id);
+  if (!t) return null;
+  t.status = status;
+  t.updatedAt = new Date().toISOString();
+  write(TASKS_KEY, list);
+  scheduleSync();
+  return t;
+}
+
+/** Borra una tarea por id. */
+export function removeTask(id) {
+  const list = getTasks();
+  const next = list.filter((t) => t.id !== id);
+  if (next.length === list.length) return false;
+  write(TASKS_KEY, next);
+  scheduleSync();
+  return true;
+}
+
 // ---- The learning loop ------------------------------------------------------
 
 /**
@@ -387,6 +431,7 @@ export function exportState() {
       learning: getLearning(),
       verifications: getVerifications(),
       userLeads: getUserLeads(),
+      tasks: getTasks(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -485,6 +530,20 @@ export function importState(json, { replace = false } = {}) {
       byId.set(l.id, l);
     }
     write(USER_LEADS_KEY, [...byId.values()]);
+  }
+
+  // --- tasks (merge por id, lo más reciente por updatedAt gana) ---
+  const incomingTasks = Array.isArray(data.tasks) ? data.tasks : [];
+  if (replace) {
+    write(TASKS_KEY, incomingTasks);
+  } else {
+    const byId = new Map(getTasks().map((t) => [t.id, t]));
+    for (const t of incomingTasks) {
+      if (!t || !t.id) continue;
+      const ex = byId.get(t.id);
+      if (!ex || (t.updatedAt || "") > (ex.updatedAt || "")) byId.set(t.id, t);
+    }
+    write(TASKS_KEY, [...byId.values()]);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
