@@ -565,6 +565,39 @@ function syncBadge() {
 }
 
 // Chip del usuario en sesión: inicial sobre su color de firma + cerrar sesión.
+// Avatar de un usuario: FOTO de su galería si la puso; si no, su emoji; y si no,
+// la inicial sobre su color de firma. `cls` reusa el estilo en cabecera, perfil
+// y lista de equipo. El backend ya guarda y entrega `photo`.
+function avatarDot(u, cls = "user-dot") {
+  const initial = (u.aka || u.name || "?")[0].toUpperCase();
+  if (u.photo) return el("span", { class: `${cls} has-photo`, style: `background-image:url(${u.photo})` });
+  return el("span", { class: cls, style: `background:${u.color || "#4a9eff"}`, text: u.avatar || initial });
+}
+
+// Reduce una imagen de la galería a un cuadrado pequeño (data URL JPEG) en el
+// navegador: recorte centrado + lado `size`. Así la foto viaja ligera y no sube
+// el original pesado.
+function downscaleImage(file, size = 256, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        canvas.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 function userChip() {
   if (previewMode) {
     return el("span", { class: "user-chip preview-chip", title: "Estás viendo una vista de prueba en solo lectura. Para operar, pide acceso a un admin." }, [
@@ -574,7 +607,7 @@ function userChip() {
   }
   const u = auth.currentUser();
   if (!u) return el("span");
-  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const dot = avatarDot(u, "user-dot");
   const chip = el("button", { class: "user-chip", title: `${u.name} · ${tierLabel(u.tier)} · ${roleLabel(u.role)} — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
@@ -616,19 +649,56 @@ function openProfile() {
   const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
   const close = () => overlay.remove();
 
-  const dot = el("span", { class: "prof-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const view = { avatar: u.avatar, photo: u.photo };
+  let dot = avatarDot({ ...u, ...view }, "prof-dot");
+  const refreshDot = () => { const nd = avatarDot({ ...u, ...view }, "prof-dot"); dot.replaceWith(nd); dot = nd; };
   const picker = el("div", { class: "prof-emojis" });
   const mark = (val) => [...picker.children].forEach((c) => c.classList?.[c._val === val ? "add" : "remove"]?.("sel"));
   PROFILE_EMOJIS.forEach((e) => {
     const b = el("button", { class: `prof-emoji ${u.avatar === e ? "sel" : ""}`, text: e });
     b._val = e;
-    b.addEventListener("click", async () => { await auth.setAvatar(e); dot.textContent = e; mark(e); render(); });
+    b.addEventListener("click", async () => { await auth.setAvatar(e); view.avatar = e; view.photo = null; refreshDot(); mark(e); render(); });
     picker.appendChild(b);
   });
   const clearB = el("button", { class: "prof-emoji prof-clear", text: "∅", title: "Sin emoji (usa tu inicial)" });
   clearB._val = null;
-  clearB.addEventListener("click", async () => { await auth.setAvatar(""); dot.textContent = u.name[0].toUpperCase(); mark(null); render(); });
+  clearB.addEventListener("click", async () => { await auth.setAvatar(""); view.avatar = null; refreshDot(); mark(null); render(); });
   picker.appendChild(clearB);
+
+  // Foto de avatar: galería → cuadrado pequeño (data URL) en el navegador.
+  const photoInput = el("input", { type: "file", accept: "image/*", style: "display:none" });
+  const photoMsg = el("p", { class: "sec-msg" });
+  const photoBtn = el("button", { class: "btn", text: "Subir foto", onClick: () => photoInput.click() });
+  const photoDel = el("button", { class: "btn-ghost", text: "Quitar foto", onClick: async () => {
+    photoMsg.className = "sec-msg"; photoMsg.textContent = "Quitando…";
+    const r = await auth.setProfile({ photo: "" });
+    if (r.ok) { view.photo = null; refreshDot(); render(); photoMsg.textContent = "✓ Foto quitada."; photoMsg.classList.add("ok"); }
+    else { photoMsg.textContent = r.error || "No se pudo."; photoMsg.classList.add("err"); }
+  } });
+  photoInput.addEventListener("change", async () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+    photoMsg.className = "sec-msg"; photoMsg.textContent = "Procesando…";
+    try {
+      const dataUrl = await downscaleImage(file, 256, 0.82);
+      const r = await auth.setProfile({ photo: dataUrl });
+      if (r.ok) { view.photo = dataUrl; refreshDot(); render(); photoMsg.textContent = "✓ Foto actualizada."; photoMsg.classList.add("ok"); }
+      else { photoMsg.textContent = r.error || "No se pudo."; photoMsg.classList.add("err"); }
+    } catch { photoMsg.textContent = "No se pudo leer la imagen."; photoMsg.classList.add("err"); }
+    photoInput.value = "";
+  });
+
+  // Identidad: apodo (lo ve el equipo) + email (solo lo ve el admin).
+  const akaI = el("input", { class: "sec-f", value: u.aka || "", placeholder: "Tu apodo (lo ve el equipo)", maxlength: "24" });
+  const emailI = el("input", { class: "sec-f", type: "email", value: u.email || "", placeholder: "Tu email (lo ve el admin)", autocomplete: "email" });
+  const idMsg = el("p", { class: "sec-msg" });
+  const idBtn = el("button", { class: "btn-primary", text: "Guardar apodo y email", onClick: async () => {
+    idMsg.className = "sec-msg"; idBtn.disabled = true; idMsg.textContent = "Guardando…";
+    const r = await auth.setProfile({ aka: akaI.value, email: emailI.value });
+    idBtn.disabled = false;
+    if (r.ok) { idMsg.textContent = "✓ Guardado."; idMsg.classList.add("ok"); render(); }
+    else { idMsg.textContent = r.error || "No se pudo."; idMsg.classList.add("err"); }
+  } });
 
   const notes = el("textarea", { class: "prof-notes", placeholder: "Tus notas privadas (solo en este dispositivo)…" });
   notes.value = getUserNotes(u.name);
@@ -700,7 +770,21 @@ function openProfile() {
       ])]),
       el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
     ]),
-    el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Tu identidad" }),
+      el("p", { class: "config-note", text: "El equipo te ve por tu apodo. Tu email es para que el admin te tenga localizado — no lo ve el resto del equipo." }),
+      el("label", { class: "prof-fieldlabel", text: "Apodo (visible para el equipo)" }), akaI,
+      el("label", { class: "prof-fieldlabel", text: "Email (solo lo ve el admin)" }), emailI,
+      idBtn, idMsg,
+    ]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Tu avatar" }),
+      el("p", { class: "config-note", text: "Una foto de tu galería o un símbolo. Es tu cara para el equipo." }),
+      el("div", { class: "prof-photorow" }, [photoBtn, (u.photo || view.photo ? photoDel : null), photoInput]),
+      photoMsg,
+      el("p", { class: "config-note", text: "…o elige un símbolo:" }),
+      picker,
+    ]),
     el("div", { class: "prof-sec" }, [
       el("h4", {}, [el("span", { text: "Quién eres en el equipo " }), tagStatus]),
       el("p", { class: "config-note", text: "Las etiquetas que te definen. Puedes llevar varias — el equipo sabrá a quién acudir." }),

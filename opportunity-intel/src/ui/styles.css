@@ -137,6 +137,10 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .prof-panel { max-width: 460px; }
 .prof-id { display: flex; align-items: center; gap: 12px; }
 .prof-dot { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; font-weight: 800; color: #0e0f12; flex: 0 0 auto; }
+/* Foto de avatar (galería): el dot pasa a ser la imagen, recortada en círculo. */
+.user-dot.has-photo, .prof-dot.has-photo { background-size: cover; background-position: center; color: transparent; }
+.prof-photorow { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 4px; }
+.prof-fieldlabel { display: block; font-size: 11px; color: var(--ink-faint); margin: 8px 0 3px; }
 .prof-name { font-size: 16px; font-weight: 700; }
 .prof-role { font-size: 12px; color: var(--ink-dim); }
 .prof-sec { padding: 14px 0; border-top: 1px solid var(--line); }
