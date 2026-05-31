@@ -332,6 +332,33 @@ capas, todas sobre el canal de sync existente (cero infra nueva, cero deps):
 
 ---
 
+## Crecer — agenda y desarrollo personal
+
+Más allá de captar y entregar, Connect cuida a quién hace el trabajo. La zona
+**Crecer** tiene dos caras, ambas sincronizadas con el equipo:
+
+**Agenda** (`src/agenda.js`). Cada persona tiene su **agenda personal** y existe
+una **agenda común** del equipo. Una entrada puede **vincularse a una tarea del
+Estudio** (la tarea de un proyecto entra en la agenda de quien la hará un día
+concreto) y una entrada común puede **“tomarse”** para pasarla a tu agenda — así
+se vinculan las agendas entre sí. Vista por días: Atrasado · Hoy · Mañana · …
+
+**Desarrollo personal** (`src/growth.js`). Para cada trabajador (y el CEO):
+
+- **Fortalezas** (pros / habilidades) con nivel 1–5 que sube según creces.
+- **Frenos** (“perezas” / negativas) con recorrido *Detectado → En ello →
+  Superado*. **Cerrar un freno puede convertirlo en una nueva potencia**: nace
+  una fortaleza con la traza de su origen. Limando negativas aparecen fuerzas.
+- **Pensamiento crítico** como pilar **acentuado y medible**: nivel propio, una
+  provocación del día rotatoria, y un registro de *retos* (supuesto cuestionado,
+  postura contraria defendida, evidencia exigida, decisión re-examinada). Cada
+  tres retos sube el nivel — se valora y se potencia, no se da por hecho.
+
+Un selector de persona permite ver el desarrollo del equipo (cada uno edita el
+suyo; el CEO puede ver/editar todos). Todo es lógica pura y testeada
+(`test/agenda.test.mjs`, `test/growth.test.mjs`) y viaja por el mismo canal de
+sync compartido.
+
 ## Configuration
 
 The search-config panel (and `DEFAULT_CONFIG` in `models.js`) controls:

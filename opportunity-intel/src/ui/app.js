@@ -54,6 +54,8 @@ import * as presence from "../presence.js";
 import * as realtime from "../realtime.js";
 import { PROJECT_REF, PUBLISHABLE_KEY } from "../statesync.js";
 import { buildActivity } from "../activity.js";
+import * as agenda from "../agenda.js";
+import * as growth from "../growth.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
@@ -253,7 +255,7 @@ function ensureLiveRefresh() {
 const VIEW_LABEL = {
   today: "Hoy", cards: "Oportunidades", search: "Buscar", table: "Ranking",
   connector: "01 ↔ XN", crm: "CRM", pipeline: "Embudo", studio: "Estudio",
-  learning: "Aprendizaje", activity: "Actividad", users: "Usuarios",
+  learning: "Aprendizaje", activity: "Actividad", agenda: "Agenda", growth: "Desarrollo", users: "Usuarios",
 };
 const viewLabel = (v) => VIEW_LABEL[v] || "Connect";
 let presenceTimer = null;
@@ -721,6 +723,7 @@ const ZONES = [
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
   { key: "deliver", label: "Entregar", views: [["studio", "Estudio"]] },
+  { key: "grow", label: "Crecer", views: [["agenda", "Agenda"], ["growth", "Desarrollo"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"], ["activity", "Actividad"]] },
 ];
 function zonesForUser() {
@@ -939,6 +942,8 @@ function viewArea() {
   else if (state.view === "crm") area.appendChild(crmView());
   else if (state.view === "studio") area.appendChild(studioView());
   else if (state.view === "activity") area.appendChild(activityView());
+  else if (state.view === "agenda") area.appendChild(agendaView());
+  else if (state.view === "growth") area.appendChild(growthView());
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
@@ -2252,6 +2257,210 @@ function activityView() {
   ]));
 
   return el("div", {}, [head, el("div", { class: "act-feed" }, rows)]);
+}
+
+// ---- Agenda (personal + común, con vinculación) -----------------------------
+
+function agendaView() {
+  const me = meName();
+  const tab = state.agendaTab || "mine";
+  const owner = tab === "common" ? agenda.COMMON : me;
+  const all = store.getAgenda();
+  const mineOpen = agenda.itemsFor(all, me).filter((i) => !i.done).length;
+  const commonOpen = agenda.itemsFor(all, agenda.COMMON).filter((i) => !i.done).length;
+  const canW = allow("write");
+
+  const head = el("div", {}, [
+    el("h2", { text: "Agenda" }),
+    el("p", { class: "hint", text: "Tu agenda personal y la común del equipo. Vincula tareas del Estudio, ponles fecha y mira lo que vence. Lo común se puede “tomar” para pasarlo a tu agenda." }),
+  ]);
+  const tabs = el("div", { class: "agenda-tabs" }, [
+    el("button", { class: `agenda-tab ${tab === "mine" ? "active" : ""}`, onClick: () => { state.agendaTab = "mine"; render(); } },
+      ["Mi agenda", mineOpen ? el("span", { class: "agenda-n", text: String(mineOpen) }) : null]),
+    el("button", { class: `agenda-tab ${tab === "common" ? "active" : ""}`, onClick: () => { state.agendaTab = "common"; render(); } },
+      ["Común", commonOpen ? el("span", { class: "agenda-n", text: String(commonOpen) }) : null]),
+  ]);
+
+  const items = agenda.itemsFor(all, owner);
+  const groups = agenda.groupByDay(items);
+  const body = groups.length
+    ? el("div", { class: "agenda-groups" }, groups.map((g) => agendaGroup(g, tab, canW)))
+    : el("p", { class: "empty", text: "Nada en esta agenda todavía." });
+
+  return el("div", {}, [head, tabs, canW ? el("div", { class: "agenda-bar" }, [agendaAdder(owner), agendaTaskLinker(owner)]) : null, body]);
+}
+
+function agendaAdder(owner) {
+  const t = el("input", { class: "studio-input", placeholder: "Nueva entrada…", onkeydown: (e) => { if (e.key === "Enter") add(); } });
+  const d = el("input", { type: "date", class: "studio-date" });
+  function add() { const v = (t.value || "").trim(); if (!v) return; store.saveAgendaItem(agenda.createAgendaItem({ title: v, owner, date: d.value || null, by: meName() })); heartbeat(); render(); }
+  return el("div", { class: "studio-add" }, [t, d, el("button", { class: "btn", text: "Añadir", onClick: add })]);
+}
+
+function agendaTaskLinker(owner) {
+  const opts = [];
+  for (const e of store.getEngagements()) for (const t of e.tasks) if (t.state !== "done") opts.push({ eng: e, task: t });
+  if (!opts.length) return null;
+  const sel = el("select", { class: "studio-depsel" }, [
+    el("option", { value: "", text: "Vincular tarea del Estudio…" }),
+    ...opts.map((o, i) => el("option", { value: String(i), text: `${o.task.title} · ${o.eng.title}` })),
+  ]);
+  const d = el("input", { type: "date", class: "studio-date" });
+  function add() {
+    if (sel.value === "") return;
+    const { eng, task } = opts[Number(sel.value)];
+    store.saveAgendaItem(agenda.fromEngagementTask(eng, task, { owner, date: d.value || agenda.today(), by: meName() }));
+    render();
+  }
+  return el("div", { class: "studio-add" }, [sel, d, el("button", { class: "btn", text: "Vincular", onClick: add })]);
+}
+
+function agendaGroup(g, tab, canW) {
+  return el("div", { class: "agenda-group" }, [
+    el("h4", { class: `agenda-day ${g.key === "overdue" ? "overdue" : ""}`, text: g.label }),
+    ...g.items.map((it) => agendaItemRow(it, tab, canW)),
+  ]);
+}
+
+function agendaItemRow(it, tab, canW) {
+  const eng = it.link ? store.getEngagement(it.link.engagementId) : null;
+  return el("div", { class: `agenda-item ${it.done ? "done" : ""}` }, [
+    el("button", { class: `ag-check ${it.done ? "on" : ""}`, text: it.done ? "✓" : "○", title: "Hecho",
+      onClick: canW ? () => { store.saveAgendaItem(agenda.toggleDone(it)); render(); } : null }),
+    el("span", { class: "agenda-title", text: it.title }),
+    eng ? el("span", { class: "agenda-link", title: `En el Estudio: ${eng.title}`, text: `↳ ${eng.title}`,
+      onClick: () => { state.studioSel = eng.id; goView("studio"); } }) : null,
+    it.by ? el("span", { class: "studio-task-who", text: it.by }) : null,
+    (canW && tab === "common") ? el("button", { class: "btn-ghost ag-claim", text: "Tomar →", title: "Pasar a mi agenda",
+      onClick: () => { store.saveAgendaItem(agenda.claim(it, meName())); render(); } }) : null,
+    canW ? el("button", { class: "studio-task-x", text: "×", title: "Eliminar", onClick: () => { store.removeAgendaItem(it.id); render(); } }) : null,
+  ]);
+}
+
+// ---- Desarrollo personal ----------------------------------------------------
+
+function growthView() {
+  const me = meName();
+  const profiles = store.getAllGrowth();
+  const people = new Set([me, ...Object.keys(profiles)]);
+  for (const o of presence.activePresence(store.getPresence(), {})) people.add(o.name);
+  const person = (state.growthPerson && people.has(state.growthPerson)) ? state.growthPerson : me;
+  const canEdit = (person === me) || allow("manage_roles"); // tú, o el CEO (admin)
+  const profile = store.getGrowth(person) || growth.emptyProfile(person);
+  const s = growth.summary(profile);
+
+  const head = el("div", {}, [
+    el("h2", { text: "Desarrollo personal" }),
+    el("p", { class: "hint", text: "Lima tus frenos y haz crecer tus fortalezas. Cada freno superado puede volverse una nueva potencia. El progreso, a la vista — para ti y para crecer juntos." }),
+  ]);
+
+  const picker = people.size > 1 ? el("div", { class: "growth-people" }, [...people].sort().map((n) =>
+    el("button", { class: `growth-person ${n === person ? "active" : ""}`, onClick: () => { state.growthPerson = n; render(); } }, [
+      el("span", { class: "by-dot", style: `background:${auth.colorOf(n)}` }),
+      n === me ? `${n} (tú)` : n,
+    ]))) : null;
+
+  const kpis = el("div", { class: "crm-kpis" }, [
+    crmKpi("Pens. crítico", `${s.critical.level}/5`, s.critical.total ? `${s.critical.total} retos` : "valóralo y crécelo", "hot"),
+    crmKpi("Fortalezas", s.strengths, s.avgLevel ? `nivel medio ${s.avgLevel}` : ""),
+    crmKpi("Frenos activos", s.open + s.working, s.working ? `${s.working} en ello` : ""),
+    crmKpi("Superados", s.closed, s.momentum ? `impulso ${s.momentum}%` : "", s.closed ? "hot" : null),
+  ]);
+
+  const strengths = el("div", { class: "growth-sec" }, [
+    el("h4", { text: "Fortalezas · pros y habilidades" }),
+    (profile.strengths || []).length
+      ? el("div", { class: "growth-list" }, profile.strengths.map((st) => strengthRow(profile, st, canEdit)))
+      : el("p", { class: "empty", text: "Aún sin fortalezas registradas." }),
+    canEdit ? growthAdder("Nueva fortaleza…", "Añadir", (v) => growth.addStrength(profile, v, 3), profile) : null,
+  ]);
+
+  const frictions = el("div", { class: "growth-sec" }, [
+    el("h4", { text: "Frenos · perezas y negativas" }),
+    (profile.frictions || []).length
+      ? el("div", { class: "growth-list" }, profile.frictions.map((f) => frictionRow(profile, f, canEdit)))
+      : el("p", { class: "empty", text: "Sin frenos detectados. Detecta uno para empezar a limarlo." }),
+    canEdit ? growthAdder("Detectar un freno / pereza…", "Detectar", (v) => growth.addFriction(profile, v), profile) : null,
+  ]);
+
+  return el("div", {}, [head, picker, kpis, criticalCard(profile, canEdit), strengths, frictions]);
+}
+
+// Pensamiento crítico — pilar acentuado: nivel, provocación del día y retos.
+function criticalCard(profile, canEdit) {
+  const c = profile.critical || { level: 1, log: [] };
+  const dots = el("div", { class: "lvl" }, Array.from({ length: growth.MAX_LEVEL }, (_, i) =>
+    el("span", { class: `lvl-dot ${i < (c.level || 1) ? "on" : ""}` })));
+
+  const recent = (c.log || []).slice(0, 5).map((e) => el("div", { class: "crit-row" }, [
+    el("span", { class: "crit-kind", text: growth.CRITICAL_KINDS[e.kind] || "Reto" }),
+    e.note ? el("span", { class: "crit-note", text: e.note }) : el("span", { class: "crit-note crit-faint", text: "—" }),
+    el("span", { class: "crit-when", text: fmtAgo(e.at) }),
+    canEdit ? el("button", { class: "studio-task-x", text: "×", title: "Eliminar", onClick: () => { store.saveGrowth(growth.removeCritical(profile, e.id)); render(); } }) : null,
+  ]));
+
+  const children = [
+    el("div", { class: "crit-top" }, [
+      el("div", {}, [
+        el("h4", { class: "crit-h", text: "Pensamiento crítico" }),
+        el("p", { class: "crit-sub", text: "Se valora y se potencia: cada reto es un acto concreto de pensar mejor." }),
+      ]),
+      dots,
+    ]),
+    el("blockquote", { class: "crit-prompt", text: `“${growth.criticalPrompt()}”` }),
+  ];
+  if (canEdit) children.push(criticalLogger(profile));
+  children.push(recent.length ? el("div", { class: "crit-log" }, recent) : el("p", { class: "empty", text: "Aún sin retos registrados. Responde a la provocación de arriba y regístralo." }));
+
+  return el("div", { class: "crit-card" }, children);
+}
+
+function criticalLogger(profile) {
+  const kind = el("select", { class: "studio-depsel" }, growth.CRITICAL_KIND_KEYS.map((k) =>
+    el("option", { value: k, text: growth.CRITICAL_KINDS[k] })));
+  const note = el("input", { class: "studio-input", placeholder: "Qué cuestionaste, en una línea…", onkeydown: (e) => { if (e.key === "Enter") add(); } });
+  function add() { store.saveGrowth(growth.logCritical(profile, { kind: kind.value, note: note.value || "" })); render(); }
+  return el("div", { class: "studio-add" }, [kind, note, el("button", { class: "btn", text: "Registrar reto", onClick: add })]);
+}
+
+function growthAdder(placeholder, btn, build) {
+  const t = el("input", { class: "studio-input", placeholder, onkeydown: (e) => { if (e.key === "Enter") add(); } });
+  function add() { const v = (t.value || "").trim(); if (!v) return; store.saveGrowth(build(v)); render(); }
+  return el("div", { class: "studio-add" }, [t, el("button", { class: "btn", text: btn, onClick: add })]);
+}
+
+function strengthRow(profile, st, canEdit) {
+  const dots = el("div", { class: "lvl" }, Array.from({ length: growth.MAX_LEVEL }, (_, i) =>
+    el("span", { class: `lvl-dot ${i < st.level ? "on" : ""}` })));
+  return el("div", { class: "growth-str" }, [
+    el("div", { class: "growth-str-main" }, [
+      el("span", { class: "growth-str-label", text: st.label }),
+      st.bornFrom ? el("span", { class: "growth-born", title: `Nació de superar: ${st.bornFrom}`, text: "✦ nueva potencia" }) : null,
+    ]),
+    dots,
+    canEdit ? el("div", { class: "lvl-ctrl" }, [
+      el("button", { class: "lvl-btn", text: "−", title: "Bajar nivel", onClick: () => { store.saveGrowth(growth.setStrengthLevel(profile, st.id, st.level - 1)); render(); } }),
+      el("button", { class: "lvl-btn", text: "+", title: "Subir nivel", onClick: () => { store.saveGrowth(growth.setStrengthLevel(profile, st.id, st.level + 1)); render(); } }),
+      el("button", { class: "studio-task-x", text: "×", title: "Eliminar", onClick: () => { store.saveGrowth(growth.removeStrength(profile, st.id)); render(); } }),
+    ]) : null,
+  ]);
+}
+
+function frictionRow(profile, f, canEdit) {
+  const children = [el("div", { class: "growth-fri-main" }, [
+    el("button", { class: `fri-status fs-${f.status}`, text: growth.FRICTION_LABELS[f.status], title: canEdit ? "Avanzar: detectado → en ello → superado" : "",
+      onClick: canEdit ? () => { store.saveGrowth(growth.advanceFriction(profile, f.id)); render(); } : null }),
+    el("span", { class: `growth-fri-label ${f.status === "closed" ? "done" : ""}`, text: f.label }),
+  ])];
+  if (f.note) children.push(el("p", { class: "growth-fri-note", text: f.note }));
+  if (canEdit) {
+    children.push(el("div", { class: "growth-fri-ctrl" }, [
+      f.status !== "closed" ? el("button", { class: "btn-ghost", text: "Cerrar → potencia", title: "Superar el freno y convertirlo en fortaleza",
+        onClick: () => { const label = (prompt(`Has superado «${f.label}». ¿Qué nueva potencia nace de esto?`, "") || "").trim(); store.saveGrowth(growth.closeFrictionToStrength(profile, f.id, label)); render(); } }) : null,
+      el("button", { class: "studio-task-x", text: "×", title: "Eliminar", onClick: () => { store.saveGrowth(growth.removeFriction(profile, f.id)); render(); } }),
+    ]));
+  }
+  return el("div", { class: `growth-fri st-${f.status}` }, children);
 }
 
 // ---- Buscar / añadir leads --------------------------------------------------

@@ -24,6 +24,8 @@ const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const ENGAGE_KEY = `${NS}engagements`; // fase Entregar: clientes activos + proyectos internos
 const PRESENCE_KEY = `${NS}presence`; // presencia en vivo del equipo (efímera, podada por TTL)
+const AGENDA_KEY = `${NS}agenda`;     // agendas personales + común (items con dueño)
+const GROWTH_KEY = `${NS}growth`;     // desarrollo personal por dueño (perfil)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -399,6 +401,8 @@ export function exportState() {
       userLeads: getUserLeads(),
       engagements: getEngagements(),
       presence: getPresence(),
+      agenda: getAgenda(),
+      growth: getAllGrowth(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -518,6 +522,31 @@ export function importState(json, { replace = false } = {}) {
     write(PRESENCE_KEY, prunePresence(incomingPresence));
   } else {
     write(PRESENCE_KEY, mergePresence(getPresence(), incomingPresence));
+  }
+
+  // --- agenda (merge por id, lo más reciente `updatedAt` gana) ---
+  const incomingAgenda = Array.isArray(data.agenda) ? data.agenda : [];
+  if (replace) {
+    write(AGENDA_KEY, incomingAgenda);
+  } else {
+    const byId = new Map(getAgenda().map((i) => [i.id, i]));
+    for (const i of incomingAgenda) {
+      const ex = byId.get(i.id);
+      if (!ex || (i.updatedAt || "") > (ex.updatedAt || "")) byId.set(i.id, i);
+    }
+    write(AGENDA_KEY, [...byId.values()]);
+  }
+
+  // --- desarrollo (merge por dueño, lo más reciente `updatedAt` gana) ---
+  const incomingGrowth = data.growth && typeof data.growth === "object" ? data.growth : {};
+  if (replace) {
+    write(GROWTH_KEY, incomingGrowth);
+  } else {
+    const cur = getAllGrowth();
+    for (const [owner, prof] of Object.entries(incomingGrowth)) {
+      if (!cur[owner] || (prof.updatedAt || "") > (cur[owner].updatedAt || "")) cur[owner] = prof;
+    }
+    write(GROWTH_KEY, cur);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
@@ -687,10 +716,44 @@ export function clearPresence(name) {
   scheduleSync();
 }
 
+// ---- Agenda (personal + común) ---------------------------------------------
+
+export function getAgenda() { return read(AGENDA_KEY, []); }
+
+/** Añade o actualiza (por id) un item de agenda. Sella `updatedAt` para el merge. */
+export function saveAgendaItem(item) {
+  const stamped = { ...item, updatedAt: new Date().toISOString() };
+  const all = getAgenda().filter((i) => i.id !== stamped.id);
+  all.push(stamped);
+  write(AGENDA_KEY, all);
+  scheduleSync();
+  return stamped;
+}
+
+export function removeAgendaItem(id) {
+  write(AGENDA_KEY, getAgenda().filter((i) => i.id !== id));
+  scheduleSync();
+}
+
+// ---- Desarrollo personal (perfil por dueño) --------------------------------
+
+export function getAllGrowth() { return read(GROWTH_KEY, {}); }
+export function getGrowth(owner) { return getAllGrowth()[owner] || null; }
+
+/** Guarda el perfil de desarrollo de un dueño. Sella `updatedAt` para el merge. */
+export function saveGrowth(profile) {
+  if (!profile || !profile.owner) return profile;
+  const all = getAllGrowth();
+  all[profile.owner] = { ...profile, updatedAt: new Date().toISOString() };
+  write(GROWTH_KEY, all);
+  scheduleSync();
+  return all[profile.owner];
+}
+
 /** Hard reset de la caché LOCAL (control "borrar" de la UI). No borra el estado
  *  compartido del servidor: al recargar/iniciar sesión se vuelve a traer desde
  *  Supabase. Es deliberado — evita que un borrado local destruya el trabajo
  *  compartido del equipo. */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, PRESENCE_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, PRESENCE_KEY, AGENDA_KEY, GROWTH_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
 }
