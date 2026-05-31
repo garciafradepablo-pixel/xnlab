@@ -131,7 +131,9 @@ export async function mount(rootEl) {
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
   auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
-  store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
+  store.startSharedSync().then(async (r) => {
+    if (r && r.ok) { await recompute(); await maybeSeedStarterPlan(); render(); }
+  }).catch(() => {});
 }
 
 // —— Indicador discreto de sincronización ————————————————————————————————————
@@ -1765,6 +1767,33 @@ function assignmentBar(id, rebuild) {
   box.appendChild(date);
   if (t.round) box.appendChild(el("span", { class: "ca-round", text: `Ronda ${t.round}` }));
   return box;
+}
+
+// Arranque "déjalo cerrado": la primera vez que la cuenta de Dani existe y aún
+// no tiene horario, se le asigna la tanda de Mallorca, se fija un horario de
+// mañanas y se generan sus rondas (empezando mañana). Idempotente — en cuanto
+// Dani tiene horario guardado no se repite. Solo lo dispara quien puede escribir
+// (admin/editor); un viewer ni lo intenta. Si Dani aún no se ha registrado, no
+// hace nada y se reintentará en el próximo arranque (se auto-completa solo).
+const STARTER_SCHEDULE = { workdays: [1, 2, 3, 4, 5], start: "09:30", end: "14:30", perDay: 8 };
+async function maybeSeedStarterPlan() {
+  try {
+    if (!allow("write")) return;
+    const dani = auth.getUsers().find((u) => /dani/i.test(u.name || ""));
+    if (!dani) return; // su cuenta aún no está creada/sincronizada
+    if (store.getSchedule(dani.name)) return; // ya sembrado → nunca repetir
+    const all = state.results?.all || [];
+    const ids = new Set(MALLORCA.map((m) => m.id));
+    const tanda = all.filter((o) => ids.has(o.id));
+    if (!tanda.length) return; // resultados aún sin la tanda: se reintenta en otro arranque
+    store.setSchedule(dani.name, STARTER_SCHEDULE);
+    for (const o of tanda) store.assignLead(o.id, { assignedTo: dani.name });
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const live = orderByPriority(tanda.filter((o) => ["01", "xn"].includes(o.scores?.classification)));
+    const plan = planRounds(live, STARTER_SCHEDULE, { from: tomorrow });
+    for (const a of plan) store.assignLead(a.id, { scheduledFor: a.date, round: a.round });
+  } catch { /* nunca bloquea el arranque */ }
 }
 
 function openCase(id) {
