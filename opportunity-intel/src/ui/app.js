@@ -500,7 +500,7 @@ function openProfile() {
 
   const base = String(location.href || "").split("?")[0].split("#")[0];
   const inviteBox = el("div", { class: "prof-invitebox" });
-  const renderInviteLink = (code) => {
+  const renderInviteLink = (code, role) => {
     clear(inviteBox);
     const link = `${base}?invite=${encodeURIComponent(code)}`;
     const linkInput = el("input", { class: "prof-link", value: link, readonly: "" });
@@ -509,14 +509,26 @@ function openProfile() {
       const done = () => { copyL.textContent = "✓ Copiado"; setTimeout(() => (copyL.textContent = "Copiar enlace"), 1400); };
       if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
     });
-    inviteBox.appendChild(el("p", { class: "config-note", text: "Enlace de un solo uso · caduca en 14 días." }));
+    const typeLabel = role === "analyst" ? "Analista" : role === "viewer" ? "Solo lectura" : "Vendedor";
+    inviteBox.appendChild(el("p", { class: "config-note", html: `Da acceso como <b>${typeLabel}</b> · enlace de un solo uso · caduca en 14 días.` }));
     inviteBox.appendChild(el("div", { class: "prof-linkrow" }, [linkInput, copyL]));
   };
+  // Tipo de cuenta que se concede con la invitación. "Vendedor" es el perfil de
+  // trabajo (Dani): bajo el capó es el rol "editor" (escribe, CRM, seguimiento,
+  // cierre, agenda) — exactamente lo que necesita quien llama. No se ofrece admin
+  // por enlace (un admin se promueve a mano, no con un link que puede reenviarse).
+  const ACCOUNT_TYPES = [
+    { role: "editor", label: "Vendedor — llama y gestiona sus leads, CRM y agenda" },
+    { role: "analyst", label: "Analista — lee, analiza y exporta (no edita el CRM)" },
+    { role: "viewer", label: "Solo lectura — ve ranking y dossiers, sin tocar" },
+  ];
+  const roleSel = el("select", { class: "prof-rolesel" },
+    ACCOUNT_TYPES.map((t) => el("option", { value: t.role, text: t.label })));
   const genBtn = el("button", { class: "btn-primary", text: "Generar invitación", onClick: async () => {
     genBtn.disabled = true; genBtn.textContent = "Generando…";
-    const r = await auth.createInvite("editor");
+    const r = await auth.createInvite(roleSel.value || "editor");
     genBtn.disabled = false; genBtn.textContent = "Generar otra invitación";
-    if (r.ok && r.code) renderInviteLink(r.code);
+    if (r.ok && r.code) renderInviteLink(r.code, roleSel.value);
     else inviteBox.appendChild(el("p", { class: "sec-msg err", text: r.error || "No se pudo." }));
   } });
 
@@ -539,7 +551,8 @@ function openProfile() {
       el("h4", { text: "Invitar a alguien" }),
       allow("manage_roles")
         ? el("div", {}, [
-            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Genera un enlace de un solo uso." }),
+            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Elige el tipo de cuenta y genera un enlace de un solo uso." }),
+            el("label", { class: "prof-rolewrap" }, [el("span", { text: "Tipo de cuenta" }), roleSel]),
             genBtn, inviteBox,
           ])
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
