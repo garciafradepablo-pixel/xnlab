@@ -120,8 +120,9 @@ export async function mount(rootEl) {
   absorbCronLeads();
   seedCronFromMap();
 
-  // Auto-actualización: cada ventana recarga sola cuando hay un deploy nuevo.
-  startAutoUpdate();
+  // Auto-actualización: cada ventana recarga sola cuando hay un deploy nuevo,
+  // y muestra la versión real publicada en la cabecera.
+  startAutoUpdate({ onVersion: setPublishedVersion });
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
@@ -364,9 +365,21 @@ function header() {
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v45 · momento en prensa" }),
+      el("span", { class: "ver-tag", title: "Versión publicada (última actualización)", text: pubLabel || "actualizando…" }),
     ]),
   ]);
+}
+
+// Versión publicada real (hora del último deploy, de VERSION.txt). Sustituye a
+// la etiqueta fija: así la cabecera dice siempre la verdad de qué versión corre.
+let pubLabel = "";
+function setPublishedVersion(v) {
+  if (!v) return;
+  const d = new Date(v);
+  pubLabel = isNaN(d.getTime())
+    ? `v · ${String(v).slice(0, 16)}`
+    : `actualizado ${d.toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`;
+  if (root) { const n = root.querySelector(".ver-tag"); if (n) n.textContent = pubLabel; }
 }
 
 // Indicador discreto del estado de sincronización con el servidor compartido.

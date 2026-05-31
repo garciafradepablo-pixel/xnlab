@@ -35,12 +35,15 @@ function busyTyping() {
 
 let started = false;
 
-/** Arranca la vigilancia de versión. Idempotente. */
-export async function startAutoUpdate() {
+/** Arranca la vigilancia de versión. Idempotente. `onVersion(v)` recibe la
+ *  versión publicada actual (para mostrarla en la cabecera, p.ej.). */
+export async function startAutoUpdate(opts = {}) {
+  const { onVersion } = opts;
   if (started || typeof window === "undefined") return;
   started = true;
   const booted = await fetchVersion();
   if (!booted) return; // sin VERSION.txt → nada que vigilar (local/dev)
+  if (typeof onVersion === "function") { try { onVersion(booted); } catch { /* */ } }
   setInterval(async () => {
     const v = await fetchVersion();
     if (!v || v === booted) return;
