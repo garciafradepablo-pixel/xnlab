@@ -2,7 +2,7 @@
 // roles.test.mjs — Matriz de permisos RBAC (pura). Cubre los 4 casos exigidos.
 // =============================================================================
 
-import { can, isWriter, normalizeRole, roleLabel, ROLES, DEFAULT_ROLE } from "../src/roles.js";
+import { can, isWriter, normalizeRole, roleLabel, roleRank, ROLES, DEFAULT_ROLE } from "../src/roles.js";
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -57,10 +57,43 @@ ok(!can("superuser", "write"), "rol inventado no puede escribir");
 ok(!can(undefined, "write"), "rol indefinido no puede escribir");
 ok(can(undefined, "read"), "rol indefinido aún puede leer (viewer)");
 
-// 6. Etiquetas y catálogo.
+// 6. SALES (vendedor): opera y cierra, mete proyectos, invita; NO define reparto.
+ok(can("sales", "write") && can("sales", "crm") && can("sales", "close"), "sales SÍ opera y cierra");
+ok(can("sales", "projects") && can("sales", "projects_view"), "sales SÍ crea/ve proyectos");
+ok(can("sales", "invite"), "sales SÍ invita");
+ok(!can("sales", "reparto"), "sales NO define el reparto");
+ok(!can("sales", "manage_talent"), "sales NO gestiona talento");
+ok(!can("sales", "manage_roles"), "sales NO cambia roles");
+ok(isWriter("sales"), "isWriter(sales) = true");
+
+// 7. HR (recursos humanos): personas, talento y reparto; NO opera el pipeline.
+ok(can("hr", "reparto"), "hr SÍ define el reparto");
+ok(can("hr", "manage_talent"), "hr SÍ gestiona el talento");
+ok(can("hr", "invite"), "hr SÍ invita");
+ok(can("hr", "projects_view"), "hr SÍ ve la economía");
+ok(can("hr", "stats") && can("hr", "export"), "hr SÍ estadísticas y export");
+ok(!can("hr", "write") && !can("hr", "crm"), "hr NO opera la mesa/CRM");
+ok(!can("hr", "projects"), "hr NO fija importes (eso es de ventas/admin)");
+ok(!can("hr", "manage_roles"), "hr NO concede roles (evita escalada)");
+ok(!isWriter("hr"), "isWriter(hr) = false");
+
+// 8. Capa de agencia y restricciones cruzadas.
+ok(can("admin", "reparto") && can("admin", "manage_talent") && can("admin", "projects"), "admin SÍ toda la capa de agencia");
+ok(!can("editor", "projects_view"), "editor NO ve la economía (foco en producir)");
+ok(can("analyst", "projects_view") && !can("analyst", "projects"), "analyst VE economía pero NO la edita");
+ok(!can("viewer", "projects_view"), "viewer NO ve la economía");
+
+// 9. Jerarquía por importancia (admin manda; viewer al fondo).
+ok(roleRank("admin") > roleRank("hr"), "admin por encima de hr");
+ok(roleRank("hr") >= roleRank("editor") && roleRank("sales") >= roleRank("editor"), "hr/sales por encima de editor");
+ok(roleRank("editor") > roleRank("analyst") && roleRank("analyst") > roleRank("viewer"), "editor > analyst > viewer");
+ok(roleRank("desconocido") === roleRank("viewer"), "rol desconocido pesa como viewer");
+
+// 10. Etiquetas y catálogo.
 ok(roleLabel("admin") === "ADMIN" && roleLabel("analyst") === "ANALYST", "etiquetas correctas");
+ok(roleLabel("hr") === "RR. HH." && roleLabel("sales") === "VENTAS", "etiquetas de los roles nuevos");
 ok(roleLabel("xxx") === "VIEWER", "etiqueta de rol desconocido = VIEWER");
-ok(ROLES.length === 4 && DEFAULT_ROLE === "editor", "catálogo de 4 roles, default editor");
+ok(ROLES.length === 6 && DEFAULT_ROLE === "editor", "catálogo de 6 roles, default editor");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

@@ -35,7 +35,7 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 // Capacidad de escritura por rol (copia de roles.js; el servidor manda).
-const CAN_WRITE = new Set(["admin", "editor"]);
+const CAN_WRITE = new Set(["admin", "editor", "sales"]);
 // Caducidad de sesión (igual que en `users`): token viejo → re-login.
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
 

@@ -52,8 +52,9 @@ import { sectorPerformance, sectorRate } from "../sectorlearning.js";
 import { autoProgress, AUTO_BAR } from "../autopilot.js";
 import { synthesize } from "../synthesis.js";
 import { pendingCronLeads, claimCronLeads } from "../cronleads.js";
-import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
+import { can, isWriter, roleLabel, roleRank, ROLES, ROLE_LABEL, ROLE_DESC } from "../roles.js";
 import * as avatar from "./avatar.js";
+import * as reparto from "../reparto.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
 // (UX); la seguridad real la imponen las Edge Functions (403). No te fíes solo
@@ -767,6 +768,14 @@ const ZONES = [
 ];
 function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
+  // Estudio: la economía de la agencia (proyectos + reparto) y el talento.
+  // Lo ve quien puede ver la economía o gestionar talento (admin/hr/sales/analyst).
+  if (allow("projects_view") || allow("manage_talent")) {
+    const views = [];
+    if (allow("projects_view")) views.push(["projects", "Proyectos"]);
+    if (allow("manage_talent") || allow("projects_view")) views.push(["talent", "Talento"]);
+    z.push({ key: "estudio", label: "Estudio", views });
+  }
   if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", views: [["users", "Usuarios"]] });
   return z;
 }
@@ -982,6 +991,8 @@ function viewArea() {
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
+  else if (state.view === "projects") area.appendChild(projectsView());
+  else if (state.view === "talent") area.appendChild(talentView());
   else area.appendChild(learningView());
   return area;
 }
@@ -1017,11 +1028,12 @@ function usersView() {
       const isMe = me && norm(u.name) === norm(me.name);
       const dot = avatar.avatarNode(avatar.avatarSpec(u, { self: isMe }), 30, "user-dot");
 
-      // — Editar rol —
-      const sel = el("select", { class: "lead-f role-select" }, ROLES.map((r) =>
-        el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })
+      // — Editar rol (cada rol diferencia su alcance; el título lo explica) —
+      const sel = el("select", { class: "lead-f role-select", title: ROLE_DESC[role] || "" }, ROLES.map((r) =>
+        el("option", { value: r, selected: r === role, text: ROLE_LABEL[r], title: ROLE_DESC[r] || "" })
       ));
       sel.disabled = isMe; // no te cambias el rol a ti mismo (evita autobloqueo)
+      sel.addEventListener("change", () => { sel.title = ROLE_DESC[sel.value] || ""; });
       const status = el("span", { class: "role-status" });
       sel.addEventListener("change", async () => {
         const newRole = sel.value;
@@ -1096,6 +1108,254 @@ function usersView() {
 
 // Helper local de normalización de nombres (igual criterio que auth.js).
 const norm = (s) => String(s || "").trim().toLowerCase();
+
+// Aviso de acceso restringido coherente.
+function notAllowed(title, msg) {
+  return el("div", {}, [el("h2", { text: title }), el("p", { class: "ro-notice", text: msg })]);
+}
+const pctTxt = (x) => `${Math.round((x || 0) * 100)}%`;
+
+// =============================================================================
+// ESTUDIO · Proyectos — economía de cada empresa que la agencia acoge y el
+// reparto del beneficio por contribución (aportación × habilidad × importancia).
+// Ver: capacidad projects_view. Editar importes: projects. Definir reparto: reparto.
+// =============================================================================
+function projectsView() {
+  if (!allow("projects_view")) return notAllowed("Proyectos", "Tu rol no ve la economía. Habla con dirección o RR. HH.");
+  const canEdit = allow("projects");      // importes, cliente, costes, pool, borrar
+  const canReparto = allow("reparto");    // participaciones y compensación
+  const wrap = el("div", {}, [
+    el("h2", { text: "Proyectos · economía y reparto" }),
+    el("p", { class: "hint", text: "Cada empresa que acogemos entra con su importe y sus costes; de ahí sale el margen. Una parte (el pool) se reparte entre quienes lo hicieron, proporcional a su contribución: aportación × encaje de habilidad × importancia." }),
+  ]);
+  const totals = el("div", { class: "pf-totals" });
+  const list = el("div", { class: "proj-list" });
+
+  const renderAll = () => {
+    // Cartera (totales).
+    clear(totals);
+    const t = reparto.portfolioTotals(store.getProjects());
+    totals.appendChild(pfStat(String(t.count), "proyectos"));
+    totals.appendChild(pfStat(eurFmt(t.revenue), "facturación"));
+    totals.appendChild(pfStat(eurFmt(t.margin), `margen · ${pctTxt(t.marginPct)}`, t.margin >= 0 ? "ok" : "bad"));
+    totals.appendChild(pfStat(eurFmt(t.distributable), "bolsa a repartir"));
+    // Lista de proyectos.
+    clear(list);
+    const projects = store.getProjects().sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+    if (!projects.length) list.appendChild(el("p", { class: "hint", text: "Aún no hay proyectos. Crea el primero para ver su margen y su reparto." }));
+    for (const p of projects) list.appendChild(projectCard(p, canEdit, canReparto, renderAll));
+  };
+
+  wrap.appendChild(totals);
+  if (canEdit) {
+    const nameI = el("input", { class: "task-input", placeholder: "Nombre del proyecto / empresa…" });
+    const add = () => { const name = (nameI.value || "").trim(); if (!name) return; store.saveProject({ name, status: "activo" }); nameI.value = ""; renderAll(); };
+    nameI.addEventListener("keydown", (e) => { if (e.key === "Enter") add(); });
+    wrap.appendChild(el("div", { class: "proj-new" }, [nameI, el("button", { class: "btn-primary btn-sm", text: "Nuevo proyecto", onClick: add })]));
+  }
+  wrap.appendChild(list);
+  renderAll();
+  return wrap;
+}
+
+function pfStat(n, label, tone) {
+  return el("div", { class: `pf-stat ${tone ? "pf-" + tone : ""}` }, [
+    el("div", { class: "pf-n", text: n }),
+    el("div", { class: "pf-l", text: label }),
+  ]);
+}
+
+// Una tarjeta de proyecto: economía editable + tabla de reparto en vivo.
+function projectCard(p, canEdit, canReparto, onChange) {
+  const card = el("div", { class: "proj-card" });
+  const paint = () => {
+    clear(card);
+    const d = reparto.distributeProject(p);
+    // — Cabecera —
+    const head = el("div", { class: "proj-head" }, [
+      el("div", { class: "proj-title" }, [
+        el("span", { class: "proj-name", text: p.name || "Proyecto" }),
+        p.client ? el("span", { class: "proj-client", text: p.client }) : null,
+      ]),
+      el("span", { class: `proj-margin ${d.margin >= 0 ? "ok" : "bad"}`, text: `${pctTxt(d.marginPct)} margen` }),
+    ]);
+    if (canEdit) {
+      const del = el("button", { class: "task-rm", text: "✕", title: "Eliminar proyecto",
+        onClick: () => { if (confirm(`¿Eliminar el proyecto ${p.name}?`)) { store.removeProject(p.id); onChange?.(); } } });
+      head.appendChild(del);
+    }
+    card.appendChild(head);
+
+    // — Economía (importe / costes / pool) —
+    const money = (label, val, key) => {
+      const inp = el("input", { class: "proj-money", type: "number", min: "0", step: "100", value: String(val ?? 0) });
+      inp.disabled = !canEdit;
+      inp.addEventListener("change", () => { store.saveProject({ id: p.id, [key]: reparto.num(inp.value, 0) }); Object.assign(p, { [key]: reparto.num(inp.value, 0) }); paint(); onChange?.(); });
+      return el("label", { class: "proj-field" }, [el("span", { text: label }), inp]);
+    };
+    const poolInp = el("input", { class: "proj-money", type: "number", min: "0", max: "100", step: "5", value: String(Math.round((p.poolPct ?? 0.4) * 100)) });
+    poolInp.disabled = !canEdit;
+    poolInp.addEventListener("change", () => { const v = Math.max(0, Math.min(100, reparto.num(poolInp.value, 40))) / 100; store.saveProject({ id: p.id, poolPct: v }); p.poolPct = v; paint(); onChange?.(); });
+    const clientInp = el("input", { class: "proj-client-in", placeholder: "Cliente", value: p.client || "" });
+    clientInp.disabled = !canEdit;
+    clientInp.addEventListener("change", () => { store.saveProject({ id: p.id, client: clientInp.value }); p.client = clientInp.value; });
+    card.appendChild(el("div", { class: "proj-econ" }, [
+      canEdit ? el("label", { class: "proj-field" }, [el("span", { text: "Cliente" }), clientInp]) : null,
+      money("Importe", p.revenue, "revenue"),
+      money("Costes", p.costs, "costs"),
+      el("label", { class: "proj-field" }, [el("span", { text: "Pool %" }), poolInp]),
+    ]));
+    card.appendChild(el("div", { class: "proj-summary" }, [
+      el("span", { html: `Margen <b>${esc(eurFmt(d.margin))}</b>` }),
+      el("span", { html: `A repartir <b>${esc(eurFmt(d.distributable))}</b>` }),
+      el("span", { class: "dim", html: `Agencia <b>${esc(eurFmt(d.agencyKeep))}</b>` }),
+    ]));
+
+    // — Reparto por contribución —
+    card.appendChild(el("h5", { class: "proj-rep-h", text: "Reparto por contribución" }));
+    const table = el("div", { class: "rep-table" });
+    table.appendChild(el("div", { class: "rep-row rep-head" }, [
+      el("span", { text: "Quién" }), el("span", { text: "Aport." }), el("span", { text: "Hab. ×" }),
+      el("span", { text: "Imp. ×" }), el("span", { text: "%" }), el("span", { text: "Beneficio" }), el("span", {}),
+    ]));
+    const parts = Array.isArray(p.participants) ? p.participants : [];
+    d.shares.forEach((sh, i) => {
+      const part = parts[i];
+      const u = auth.getUsers().find((x) => norm(x.name) === norm(sh.name)) || { name: sh.name, color: "#5b6472" };
+      const numInp = (key, val, step, max) => {
+        const inp = el("input", { class: "rep-in", type: "number", min: "0", step, value: String(val) });
+        if (max) inp.max = max;
+        inp.disabled = !canReparto;
+        inp.addEventListener("change", () => { part[key] = reparto.num(inp.value, key === "aportacion" ? 0 : 1); store.saveProject({ id: p.id, participants: parts }); paint(); onChange?.(); });
+        return inp;
+      };
+      const rm = el("button", { class: "task-rm", text: "✕", title: "Quitar del reparto" });
+      rm.disabled = !canReparto;
+      rm.addEventListener("click", () => { parts.splice(i, 1); store.saveProject({ id: p.id, participants: parts }); paint(); onChange?.(); });
+      table.appendChild(el("div", { class: "rep-row" }, [
+        el("span", { class: "rep-who" }, [avatar.avatarNode(avatar.avatarSpec(u), 22), el("span", { text: sh.name })]),
+        numInp("aportacion", part.aportacion ?? 0, "1"),
+        numInp("skill", part.skill ?? 1, "0.1"),
+        numInp("importance", part.importance ?? 1, "0.1"),
+        el("span", { class: "rep-pct", text: pctTxt(sh.sharePct) }),
+        el("span", { class: "rep-pay", text: eurFmt(sh.payout) }),
+        rm,
+      ]));
+    });
+    card.appendChild(table);
+
+    // — Añadir participante (del equipo) —
+    if (canReparto) {
+      const present = new Set(parts.map((x) => norm(x.name)));
+      const candidates = auth.getUsers().filter((x) => x.name && !present.has(norm(x.name)) && (!x.colorOnly || x.role));
+      if (candidates.length) {
+        const sel = el("select", { class: "lead-f" }, [
+          el("option", { value: "", text: "Añadir al reparto…" }),
+          ...candidates.sort((a, b) => a.name.localeCompare(b.name)).map((x) => el("option", { value: x.name, text: x.name })),
+        ]);
+        sel.addEventListener("change", () => {
+          if (!sel.value) return;
+          const cr = store.getCreative(sel.value);
+          parts.push({ name: sel.value, aportacion: 1, skill: 1, importance: cr?.importance ?? 1 });
+          store.saveProject({ id: p.id, participants: parts }); paint(); onChange?.();
+        });
+        card.appendChild(el("div", { class: "rep-add" }, [sel]));
+      }
+    }
+  };
+  paint();
+  return card;
+}
+
+// =============================================================================
+// ESTUDIO · Talento — el canal que acoge creativos y sus perfiles (disciplina,
+// habilidades, importancia) que alimentan el reparto. Ver: projects_view.
+// Gestionar perfiles: manage_talent. Invitar: invite.
+// =============================================================================
+function talentView() {
+  if (!allow("projects_view") && !allow("manage_talent")) return notAllowed("Talento", "Tu rol no accede al talento.");
+  const me = auth.currentUser();
+  const canManage = allow("manage_talent");
+  const canInvite = allow("invite");
+  const wrap = el("div", {}, [
+    el("h2", { text: "Talento · creativos de la casa" }),
+    el("p", { class: "hint", text: "El equipo que produce. Su disciplina, sus habilidades y su importancia alimentan el reparto de cada proyecto." }),
+  ]);
+
+  // — Canal de captación: enlace de invitación (acoger gente nueva) —
+  if (canInvite) {
+    const box = el("div", { class: "talent-channel" });
+    const roleSel = el("select", { class: "lead-f" }, ROLES
+      .filter((r) => roleRank(r) <= roleRank(me?.role)) // no invitas por encima de ti
+      .map((r) => el("option", { value: r, selected: r === "editor", text: ROLE_LABEL[r] })));
+    const out = el("div", { class: "talent-invite-out" });
+    const gen = el("button", { class: "btn-primary btn-sm", text: "Generar enlace", onClick: async () => {
+      gen.disabled = true; gen.textContent = "Generando…";
+      const r = await auth.createInvite(roleSel.value || "editor");
+      gen.disabled = false; gen.textContent = "Generar otro enlace";
+      clear(out);
+      if (r.ok && r.code) {
+        const base = String(location.href || "").split("?")[0].split("#")[0];
+        const link = `${base}?invite=${encodeURIComponent(r.code)}`;
+        const inp = el("input", { class: "prof-link", value: link, readonly: "" });
+        const copy = el("button", { class: "btn btn-sm", text: "Copiar", onClick: () => { navigator.clipboard?.writeText?.(link); copy.textContent = "✓"; setTimeout(() => (copy.textContent = "Copiar"), 1200); } });
+        out.appendChild(el("p", { class: "config-note", text: "Enlace de un solo uso · caduca en 14 días." }));
+        out.appendChild(el("div", { class: "prof-linkrow" }, [inp, copy]));
+      } else out.appendChild(el("p", { class: "sec-msg err", text: r.error || "No se pudo." }));
+    } });
+    box.appendChild(el("h5", { text: "Acoger a alguien nuevo" }));
+    box.appendChild(el("p", { class: "config-note", text: "Genera un enlace de invitación con el rol que tendrá al entrar (no puedes invitar por encima de tu propio rango)." }));
+    box.appendChild(el("div", { class: "talent-channel-row" }, [roleSel, gen]));
+    box.appendChild(out);
+    wrap.appendChild(box);
+  }
+
+  // — Roster de creativos —
+  const list = el("div", { class: "talent-list" });
+  const renderList = () => {
+    clear(list);
+    const users = auth.getUsers().filter((u) => u.name && (!u.colorOnly || u.role)).sort((a, b) => roleRank(b.role) - roleRank(a.role) || a.name.localeCompare(b.name));
+    if (!users.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay creativos. Acoge al primero con un enlace." })); return; }
+    for (const u of users) list.appendChild(talentCard(u, me, canManage));
+  };
+  renderList();
+  wrap.appendChild(list);
+  auth.syncRemoteColors().then(renderList).catch(() => {});
+  return wrap;
+}
+
+function talentCard(u, me, canManage) {
+  const isMe = me && norm(u.name) === norm(me.name);
+  const cr = store.getCreative(u.name) || {};
+  const dot = avatar.avatarNode(avatar.avatarSpec(u, { self: isMe }), 34, "user-dot");
+  const save = (patch) => store.saveCreative({ name: u.name, ...cr, ...patch });
+
+  const disc = el("input", { class: "talent-in", placeholder: "Disciplina (p. ej. dirección de arte)", value: cr.discipline || "" });
+  disc.disabled = !canManage;
+  disc.addEventListener("change", () => save({ discipline: disc.value }));
+
+  const skills = el("input", { class: "talent-in", placeholder: "Habilidades (coma: 3D, branding, IA)", value: (cr.skills || []).join(", ") });
+  skills.disabled = !canManage;
+  skills.addEventListener("change", () => save({ skills: skills.value.split(",").map((s) => s.trim()).filter(Boolean) }));
+
+  const imp = el("input", { class: "rep-in", type: "number", min: "0", step: "0.1", value: String(cr.importance ?? 1), title: "Importancia (peso por defecto en el reparto)" });
+  imp.disabled = !canManage;
+  imp.addEventListener("change", () => save({ importance: reparto.num(imp.value, 1) }));
+
+  return el("div", { class: "talent-card" }, [
+    el("div", { class: "talent-head" }, [
+      dot,
+      el("div", { class: "talent-id" }, [
+        el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
+        el("span", { class: `role-badge role-${u.role || "editor"}`, text: roleLabel(u.role || "editor") }),
+      ]),
+    ]),
+    el("div", { class: "talent-fields" }, [
+      disc, skills,
+      el("label", { class: "talent-imp" }, [el("span", { text: "Importancia ×" }), imp]),
+    ]),
+  ]);
+}
 
 function pipelineView() {
   const counts = state.results.counts;
@@ -1253,7 +1513,41 @@ function rerenderResults() {
 
 // ---- Vista "Hoy" (claridad ejecutiva) ---------------------------------------
 
-const eurFmt = (n) => `${Number(n || 0).toLocaleString("es-ES")} €`;
+const eurFmt = (n) => `${Math.round(Number(n || 0)).toLocaleString("es-ES")} €`;
+
+// Titular personal según el rol: cada quien ve SU foco, no un genérico.
+function roleFocus(u, pulse) {
+  const role = u.role;
+  if (role === "admin") return "Dirección: equipo, cartera y reparto bajo control.";
+  if (role === "sales") return `Tu foco: cerrar. ${pulse.pending} por llamar · cartera ${eurFmt(pulse.valueTotal)}.`;
+  if (role === "hr") {
+    const n = store.getCreatives().length || auth.getUsers().filter((x) => x.role).length;
+    const bolsa = reparto.portfolioTotals(store.getProjects()).distributable;
+    return `Personas y reparto: ${n} en el equipo · bolsa ${eurFmt(bolsa)}.`;
+  }
+  if (role === "analyst") return "Lectura y análisis: el estado de la mesa, sin tocarla.";
+  if (role === "viewer") return "Solo lectura: ranking y estadísticas del equipo.";
+  return "Tu día en Connect — a quién llamar y qué producir, de un vistazo."; // editor
+}
+
+// Panel "Tus beneficios" — la parte del reparto del usuario en cada proyecto.
+function myEarningsPanel(name) {
+  const e = reparto.earningsByWorker(store.getProjects()).get(norm(name));
+  if (!e || !e.projects.length) return null;
+  const panel = el("div", { class: "myearn" });
+  panel.appendChild(el("div", { class: "myearn-head" }, [
+    el("span", { class: "myearn-title", text: "Tus beneficios" }),
+    el("span", { class: "myearn-total", text: eurFmt(e.total) }),
+  ]));
+  for (const row of e.projects.sort((a, b) => b.payout - a.payout)) {
+    panel.appendChild(el("div", { class: "myearn-row" }, [
+      el("span", { class: "myearn-proj", text: row.project }),
+      el("span", { class: "myearn-pct", text: pctTxt(row.sharePct) }),
+      el("span", { class: "myearn-pay", text: eurFmt(row.payout) }),
+    ]));
+  }
+  return panel;
+}
 
 // Panel "Tus tareas" — lo que un admin asignó al usuario en sesión. El propio
 // trabajador puede marcarlas hechas; se sincroniza en la mesa compartida.
@@ -1295,11 +1589,16 @@ function todayView() {
   const blocks = [];
   blocks.push(el("div", { class: "today-hero" }, [
     el("div", { class: "today-greet", text: `${greet}${u ? `, ${u.name}` : ""}` }),
-    el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
+    // Ventana de trabajo PERSONAL: el foco cambia según el rol (no todos hacen
+    // lo mismo). Cada uno ve su titular, no un genérico para todos.
+    el("div", { class: "today-sub", text: u ? roleFocus(u, pulse) : "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
+    u ? el("span", { class: `role-badge role-${u.role}`, text: roleLabel(u.role) }) : null,
   ]));
 
   // Tus tareas: lo que un admin te ha asignado (mesa compartida del equipo).
   if (u) { const mt = myTasksPanel(u.name); if (mt) blocks.push(mt); }
+  // Tus beneficios: tu parte del reparto en los proyectos (todos ven la suya).
+  if (u) { const me = myEarningsPanel(u.name); if (me) blocks.push(me); }
 
   // Pulso del pipeline: cuatro cifras que mandan.
   blocks.push(el("div", { class: "pulse" }, [

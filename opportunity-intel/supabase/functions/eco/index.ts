@@ -30,7 +30,8 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const CAN_WRITE = new Set(["admin", "editor"]);
+// Espejo de la capacidad "write" en roles.js.
+const CAN_WRITE = new Set(["admin", "editor", "sales"]);
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días, igual que users/connect-state
 const tokenExpired = (tokenAt: string | null) =>
   !!tokenAt && Date.now() - new Date(tokenAt).getTime() > TOKEN_TTL_MS;

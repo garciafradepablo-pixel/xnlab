@@ -22,6 +22,8 @@ const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const TASKS_KEY = `${NS}tasks`; // tareas que un admin asigna a cada trabajador
+const PROJECTS_KEY = `${NS}projects`; // empresas que la agencia acoge (con su economía)
+const CREATIVES_KEY = `${NS}creatives`; // talento: perfiles de los creativos
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -389,6 +391,8 @@ export function exportState() {
       verifications: getVerifications(),
       userLeads: getUserLeads(),
       tasks: rawTasks(), // incluye lápidas: el borrado debe propagarse al merge
+      projects: rawProjects(),
+      creatives: rawCreatives(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -503,7 +507,25 @@ export function importState(json, { replace = false } = {}) {
     write(TASKS_KEY, [...byId.values()]);
   }
 
+  // --- proyectos y talento (merge por id, lo más reciente por updatedAt gana) ---
+  mergeById(data.projects, rawProjects, PROJECTS_KEY, replace);
+  mergeById(data.creatives, rawCreatives, CREATIVES_KEY, replace);
+
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
+}
+
+// Merge genérico "lo más reciente por id gana", con lápidas incluidas.
+function mergeById(incoming, readRaw, key, replace) {
+  const list = Array.isArray(incoming) ? incoming : [];
+  if (replace) { write(key, list); return; }
+  if (!list.length) return;
+  const byId = new Map(readRaw().map((x) => [x.id, x]));
+  for (const x of list) {
+    if (!x || !x.id) continue;
+    const ex = byId.get(x.id);
+    if (!ex || (x.updatedAt || "") > (ex.updatedAt || "")) byId.set(x.id, x);
+  }
+  write(key, [...byId.values()]);
 }
 
 function outcomeKey(o) {
@@ -682,6 +704,97 @@ export function removeTask(id) {
   if (!t) return;
   t.deleted = true; t.updatedAt = new Date().toISOString();
   write(TASKS_KEY, all);
+  scheduleSync();
+}
+
+// ---- Proyectos y talento (el sistema de la agencia) -------------------------
+//
+// La agencia acoge empresas (proyectos) y creativos (talento). Ambos viven en
+// la mesa compartida (mismo merge "lo más reciente por id gana"), así todo el
+// equipo ve la misma economía y el mismo reparto desde cualquier dispositivo.
+//   - Proyecto: { id, name, client, revenue, costs, poolPct, status,
+//                 participants:[{name, aportacion, skill, importance, note}],
+//                 createdAt, updatedAt, by, deleted? }
+//   - Creativo: { id (=nombre en minúsculas), name, discipline, skills:[],
+//                 importance, rate, status, updatedAt, deleted? }
+
+function rawProjects() { return read(PROJECTS_KEY, []); }
+/** @returns {Array} proyectos vivos (sin lápidas). */
+export function getProjects() { return rawProjects().filter((p) => p && !p.deleted); }
+
+/** Crea o actualiza (por id) un proyecto. Devuelve el proyecto guardado. */
+export function saveProject(project) {
+  const now = new Date().toISOString();
+  const all = rawProjects();
+  const id = project.id || `proj_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 6)}`;
+  const prev = all.find((p) => p.id === id);
+  const merged = {
+    id,
+    name: String(project.name ?? prev?.name ?? "").trim(),
+    client: String(project.client ?? prev?.client ?? "").trim(),
+    revenue: project.revenue != null ? project.revenue : (prev?.revenue ?? 0),
+    costs: project.costs != null ? project.costs : (prev?.costs ?? 0),
+    poolPct: project.poolPct != null ? project.poolPct : (prev?.poolPct ?? 0.4),
+    status: project.status ?? prev?.status ?? "activo",
+    participants: Array.isArray(project.participants) ? project.participants : (prev?.participants ?? []),
+    createdAt: prev?.createdAt || now,
+    updatedAt: now,
+    by: prev?.by || getWho() || null,
+    deleted: false,
+  };
+  write(PROJECTS_KEY, [...all.filter((p) => p.id !== id), merged]);
+  scheduleSync();
+  return merged;
+}
+
+/** Elimina un proyecto (lápida para propagar el borrado). */
+export function removeProject(id) {
+  const all = rawProjects();
+  const p = all.find((x) => x.id === id);
+  if (!p) return;
+  p.deleted = true; p.updatedAt = new Date().toISOString();
+  write(PROJECTS_KEY, all);
+  scheduleSync();
+}
+
+function rawCreatives() { return read(CREATIVES_KEY, []); }
+/** @returns {Array} perfiles de talento vivos (sin lápidas). */
+export function getCreatives() { return rawCreatives().filter((c) => c && !c.deleted); }
+/** Perfil de talento de un trabajador por nombre (o null). */
+export function getCreative(name) {
+  const id = lower(name);
+  return getCreatives().find((c) => c.id === id) || null;
+}
+
+/** Crea o actualiza (por nombre) un perfil de talento/creativo. */
+export function saveCreative(profile) {
+  const id = lower(profile.name);
+  if (!id) return null;
+  const now = new Date().toISOString();
+  const all = rawCreatives();
+  const prev = all.find((c) => c.id === id);
+  const merged = {
+    id, name: String(profile.name).trim(),
+    discipline: String(profile.discipline ?? prev?.discipline ?? "").trim(),
+    skills: Array.isArray(profile.skills) ? profile.skills : (prev?.skills ?? []),
+    importance: profile.importance != null ? profile.importance : (prev?.importance ?? 1),
+    rate: profile.rate != null ? profile.rate : (prev?.rate ?? null),
+    status: profile.status ?? prev?.status ?? "activo",
+    updatedAt: now, deleted: false,
+  };
+  write(CREATIVES_KEY, [...all.filter((c) => c.id !== id), merged]);
+  scheduleSync();
+  return merged;
+}
+
+/** Elimina un perfil de talento (lápida). */
+export function removeCreative(name) {
+  const id = lower(name);
+  const all = rawCreatives();
+  const c = all.find((x) => x.id === id);
+  if (!c) return;
+  c.deleted = true; c.updatedAt = new Date().toISOString();
+  write(CREATIVES_KEY, all);
   scheduleSync();
 }
 

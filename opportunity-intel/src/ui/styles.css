@@ -999,6 +999,8 @@ output { font-size: 12px; color: var(--accent); }
 .role-badge.role-editor { color: #3fb950; border-color: rgba(63, 185, 80, 0.5); }
 .role-badge.role-viewer { color: #9aa3b0; }
 .role-badge.role-analyst { color: #4a9eff; border-color: rgba(74, 158, 255, 0.5); }
+.role-badge.role-hr { color: #ec6cb9; border-color: rgba(236, 108, 185, 0.5); }
+.role-badge.role-sales { color: #2dd4bf; border-color: rgba(45, 212, 191, 0.5); }
 
 /* Aviso de solo lectura para roles sin permiso de mutación. */
 .ro-notice { background: var(--panel); border: 1px solid var(--line); border-left: 3px solid #f0883e; border-radius: var(--radius); padding: 12px 14px; color: var(--ink-dim); font-size: 13px; }
@@ -1673,3 +1675,78 @@ html { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
 }
 @keyframes bootIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes bootSlide { from { transform: translateX(-130%); } to { transform: translateX(340%); } }
+
+/* =============================================================================
+   ESTUDIO — economía de proyectos, reparto por contribución y talento.
+   El acabado de una agencia que opera con cifras, no con intuición.
+   ============================================================================= */
+/* Totales de cartera */
+.pf-totals { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 14px 0 18px; }
+.pf-stat { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--hl); }
+.pf-n { font-size: 22px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.pf-l { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: .6px; margin-top: 2px; }
+.pf-ok .pf-n { color: var(--ok); } .pf-bad .pf-n { color: var(--red); }
+
+/* Alta de proyecto */
+.proj-new { display: flex; gap: 8px; margin-bottom: 14px; }
+.proj-list { display: flex; flex-direction: column; gap: 12px; }
+
+/* Tarjeta de proyecto */
+.proj-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; box-shadow: var(--sh-1), var(--hl); }
+.proj-head { display: flex; align-items: center; gap: 10px; }
+.proj-title { display: flex; flex-direction: column; gap: 1px; flex: 1; min-width: 0; }
+.proj-name { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+.proj-client { font-size: 12px; color: var(--ink-dim); }
+.proj-margin { font-size: 11px; font-weight: 800; font-variant-numeric: tabular-nums; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--line); white-space: nowrap; }
+.proj-margin.ok { color: var(--ok); border-color: rgba(58,157,110,.5); }
+.proj-margin.bad { color: var(--red); border-color: rgba(227,91,91,.5); }
+.proj-econ { display: flex; flex-wrap: wrap; gap: 12px; margin: 12px 0; }
+.proj-field { display: flex; flex-direction: column; gap: 4px; font-size: 11px; color: var(--ink-dim); }
+.proj-money, .proj-client-in { background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 7px 9px; font-size: 13px; font-variant-numeric: tabular-nums; width: 120px; font-family: inherit; }
+.proj-money:focus, .proj-client-in:focus { outline: none; border-color: var(--accent); }
+.proj-money:disabled, .proj-client-in:disabled { opacity: .7; }
+.proj-summary { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; padding: 8px 0; border-top: 1px dashed var(--line); }
+.proj-summary b { font-variant-numeric: tabular-nums; }
+.proj-summary .dim { color: var(--ink-faint); }
+.proj-rep-h { margin: 12px 0 6px; }
+
+/* Tabla de reparto */
+.rep-table { display: flex; flex-direction: column; gap: 2px; }
+.rep-row { display: grid; grid-template-columns: 1.6fr .8fr .8fr .8fr .6fr 1fr 28px; gap: 8px; align-items: center; padding: 5px 0; font-size: 13px; }
+.rep-head { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-faint); border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+.rep-who { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rep-who > span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rep-in { width: 100%; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 7px; padding: 5px 7px; font-size: 12px; font-variant-numeric: tabular-nums; font-family: inherit; }
+.rep-in:focus { outline: none; border-color: var(--accent); }
+.rep-in:disabled { opacity: .7; }
+.rep-pct { font-variant-numeric: tabular-nums; color: var(--ink-dim); text-align: right; }
+.rep-pay { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--accent); text-align: right; }
+.rep-add { margin-top: 8px; }
+
+/* Talento */
+.talent-channel { background: linear-gradient(180deg, rgba(45,212,191,.06), transparent 70%), var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin: 14px 0; }
+.talent-channel-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.talent-invite-out { margin-top: 8px; }
+.talent-list { display: flex; flex-direction: column; gap: 10px; }
+.talent-card { content-visibility: auto; contain-intrinsic-size: auto 120px; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; box-shadow: var(--hl); }
+.talent-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+.talent-id { display: flex; align-items: center; gap: 8px; flex: 1; }
+.talent-fields { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.talent-in { flex: 1; min-width: 180px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink); border-radius: 8px; padding: 7px 10px; font-size: 13px; font-family: inherit; }
+.talent-in:focus { outline: none; border-color: var(--accent); }
+.talent-in:disabled { opacity: .7; }
+.talent-imp { display: flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-dim); white-space: nowrap; }
+.talent-imp .rep-in { width: 64px; }
+
+/* Beneficios del trabajador (en Hoy) */
+.myearn { background: linear-gradient(180deg, rgba(45,212,191,.06), transparent 70%), var(--panel); border: 1px solid rgba(45,212,191,.3); border-radius: 14px; padding: 12px 14px; margin: 14px 0; }
+.myearn-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 6px; }
+.myearn-title { font-size: 14px; font-weight: 800; }
+.myearn-total { font-size: 16px; font-weight: 800; color: #2dd4bf; font-variant-numeric: tabular-nums; }
+.myearn-row { display: grid; grid-template-columns: 1fr auto auto; gap: 12px; font-size: 13px; padding: 3px 0; }
+.myearn-proj { color: var(--ink-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.myearn-pct { color: var(--ink-faint); font-variant-numeric: tabular-nums; }
+.myearn-pay { font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* La barra de foco personal en Hoy admite su badge de rol */
+.today-hero .role-badge { margin-top: 6px; display: inline-block; }

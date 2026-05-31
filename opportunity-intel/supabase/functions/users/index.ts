@@ -27,8 +27,11 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const ROLES = ["admin", "editor", "viewer", "analyst"];
+// Espejo de roles.js (cliente). Mantener en paralelo.
+const ROLES = ["admin", "hr", "sales", "editor", "analyst", "viewer"];
 const normRole = (r: string) => (ROLES.includes(r) ? r : "viewer");
+// Quién puede generar invitaciones (capacidad "invite" en la matriz).
+const CAN_INVITE = new Set(["admin", "hr", "sales"]);
 
 // Caducidad de sesión: un token más viejo que esto deja de valer y exige
 // re-login. Limita la ventana de un token filtrado.
@@ -106,7 +109,7 @@ Deno.serve(async (req) => {
     if (action === "createInvite") {
       const caller = await userByToken(String(token || ""));
       if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
-      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN puede invitar." }, 403);
+      if (!CAN_INVITE.has(caller.role)) return json({ ok: false, error: "Tu rol no puede generar invitaciones." }, 403);
       const code = randHex(10);
       const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
       const inv = await rest(`connect_invites`, {
