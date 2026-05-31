@@ -1483,3 +1483,93 @@ button:disabled { cursor: not-allowed; }
 .brand-lock .whale svg, .auth-whale .whale svg { width: auto; }
 .brand-lock .brand-mark svg { width: 30px; height: 30px; }
 .auth-whale .brand-mark svg, .auth-mark .brand-mark svg { width: 52px; height: 52px; }
+
+/* =============================================================================
+   Estudio (fase Entregar) — del trato firmado al trabajo. Reutiliza tokens y el
+   lenguaje visual del CRM; función sobre decoración.
+   ============================================================================= */
+.crm-to-studio {
+  margin-top: 8px; width: 100%; padding: 6px 8px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #1a1407; border: 0; border-radius: 8px; font-weight: 600; font-size: 12px;
+  box-shadow: var(--sh-1);
+}
+.crm-to-studio:hover { filter: brightness(1.06); }
+
+.studio-bar { margin: 4px 0 14px; }
+.studio-new {
+  background: var(--panel-2); color: var(--ink); border: 1px solid var(--line-2);
+  border-radius: 9px; padding: 8px 12px; font-weight: 600; font-size: 13px;
+}
+.studio-new:hover { background: var(--panel-3); }
+
+.studio-wrap { display: grid; grid-template-columns: 300px 1fr; gap: 16px; align-items: start; }
+@media (max-width: 760px) { .studio-wrap { grid-template-columns: 1fr; } }
+
+.studio-list { display: flex; flex-direction: column; gap: 8px; }
+.studio-item {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 10px 12px; cursor: pointer; box-shadow: var(--hl); transition: border-color .12s, background .12s;
+}
+.studio-item:hover { border-color: var(--line-2); }
+.studio-item.active { border-color: var(--accent); background: var(--panel-2); }
+.studio-item.st-done { opacity: .62; }
+.studio-item-top { display: flex; align-items: center; gap: 7px; }
+.studio-item-name { font-weight: 600; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.studio-item-meta { color: var(--ink-dim); font-size: 11.5px; margin-top: 4px; }
+.studio-kind {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .6px; font-weight: 700;
+  padding: 2px 6px; border-radius: 5px; flex: none;
+}
+.studio-kind.k-client { background: rgba(92,124,250,.16); color: #9db0fb; }
+.studio-kind.k-internal { background: rgba(155,128,240,.16); color: #c0aef7; }
+.studio-track { height: 4px; background: var(--panel-3); border-radius: 3px; margin-top: 8px; overflow: hidden; }
+.studio-track-fill { height: 100%; background: var(--accent); border-radius: 3px; }
+
+.studio-detail {
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 16px 18px; box-shadow: var(--sh-1), var(--hl);
+}
+.studio-d-titlerow { display: flex; align-items: center; gap: 9px; }
+.studio-d-sub { color: var(--ink-dim); font-size: 12px; margin-top: 6px; display: flex; gap: 12px; flex-wrap: wrap; }
+.studio-lead-link { cursor: pointer; }
+.studio-status-row { display: flex; gap: 6px; margin: 14px 0 4px; flex-wrap: wrap; }
+.studio-status-btn {
+  background: var(--panel-2); color: var(--ink-dim); border: 1px solid var(--line);
+  border-radius: 7px; padding: 5px 10px; font-size: 12px; font-weight: 600;
+}
+.studio-status-btn.active { background: var(--panel-3); color: var(--ink); border-color: var(--line-2); }
+.studio-ready { color: var(--accent); font-size: 12.5px; margin: 8px 0 0; }
+
+.studio-sec { margin-top: 18px; }
+.studio-task {
+  display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid var(--line);
+}
+.studio-task-title { flex: 1; font-size: 13px; }
+.studio-task-title.done { color: var(--ink-faint); text-decoration: line-through; }
+.studio-task-who { font-size: 11px; color: var(--ink-dim); }
+.studio-task-x { background: none; border: 0; color: var(--ink-faint); font-size: 16px; line-height: 1; padding: 0 4px; }
+.studio-task-x:hover { color: var(--red); }
+.task-state {
+  flex: none; min-width: 74px; text-align: center; border: 1px solid var(--line-2);
+  border-radius: 6px; padding: 3px 7px; font-size: 11px; font-weight: 700; color: var(--ink); background: var(--panel-2);
+}
+.task-state.ts-todo { color: var(--ink-dim); }
+.task-state.ts-doing { color: var(--o1); border-color: rgba(92,124,250,.45); }
+.task-state.ts-blocked { color: var(--red); border-color: rgba(227,91,91,.45); }
+.task-state.ts-done { color: var(--ok); border-color: rgba(58,157,110,.45); }
+
+.studio-add { display: flex; gap: 8px; margin-top: 10px; }
+.studio-add-log { align-items: flex-start; }
+.studio-input, .studio-textarea {
+  flex: 1; background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 8px;
+  padding: 8px 10px; color: var(--ink); font-family: inherit; font-size: 13px;
+}
+.studio-textarea { resize: vertical; min-height: 40px; }
+.studio-input:focus, .studio-textarea:focus { outline: none; border-color: var(--accent); }
+
+.studio-log { padding: 8px 0; border-bottom: 1px solid var(--line); }
+.studio-log-meta { display: flex; align-items: center; gap: 7px; color: var(--ink-dim); font-size: 11px; }
+.studio-log-note { margin: 4px 0 0; font-size: 13px; white-space: pre-wrap; }
+
+.studio-danger { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }

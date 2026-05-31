@@ -24,7 +24,15 @@ import {
   CALL_STATUSES,
   OFFER_LADDER,
   TENSION_TYPES,
+  TASK_STATES,
+  TASK_STATE_LABELS,
+  ENGAGEMENT_STATUS_LABELS,
+  ENGAGEMENT_KIND_LABELS,
 } from "../models.js";
+import {
+  createEngagement, engagementFromLead, addTask, setTaskState, removeTask,
+  addLog as engAddLog, setStatus as setEngStatus, progress as engProgress, isComplete as engComplete,
+} from "../engagements.js";
 import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
@@ -84,7 +92,8 @@ const state = {
   results: null,
   dataset: "researched", // researched (empresas reales) | demo (sintético de prueba)
   // Arranca en "Hoy": abrir la app y saber al instante a quién llamar y por qué.
-  view: "today", // today | cards | pipeline | table | crm | learning
+  view: "today", // today | cards | pipeline | table | crm | studio | learning
+  studioSel: null, // id del engagement abierto en el Estudio
   filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" },
 };
 
@@ -471,6 +480,7 @@ const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
+  { key: "deliver", label: "Entregar", views: [["studio", "Estudio"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
 ];
 function zonesForUser() {
@@ -687,6 +697,7 @@ function viewArea() {
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
+  else if (state.view === "studio") area.appendChild(studioView());
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
@@ -1668,7 +1679,178 @@ function crmCard(o, isFail) {
       children.push(el("p", { class: "crm-card-fail", text: `⚠ ${fr.causes[0].cause}` }));
     }
   }
+  // Lead firmado: puente a la fase Entregar. Si ya tiene engagement, abre el
+  // Estudio en él; si no, lo crea desde el lead. Solo quien puede escribir.
+  const st = store.getTracking()[o.id]?.status;
+  if (st === "won" && allow("write")) {
+    const existing = engagementForLead(o.id);
+    children.push(el("button", {
+      class: "crm-to-studio",
+      text: existing ? "Abrir en Estudio →" : "Llevar a Estudio →",
+      onClick: (e) => { e.stopPropagation(); promoteLeadToStudio(o); },
+    }));
+  }
   return el("div", { class: "crm-card", onClick: () => { state.filters.search = o.company; goView("cards"); } }, children);
+}
+
+// ---- Estudio (fase Entregar) ------------------------------------------------
+// La mesa de trabajo después de firmar: cada lead ganado se vuelve un proyecto
+// de cliente, y los proyectos internos (el software propio de la empresa) viven
+// aquí también. Tareas + bitácora por proyecto, compartido con el equipo.
+
+const meName = () => (auth.currentUser()?.name) || store.getWho() || "";
+function engagementForLead(leadId) {
+  return store.getEngagements().find((e) => e.leadId === leadId) || null;
+}
+function leadById(id) {
+  return (state.results?.all || []).find((o) => o.id === id) || null;
+}
+function engStatusRank(e) { return e.status === "active" ? 0 : e.status === "paused" ? 1 : 2; }
+function nextTaskState(s) {
+  const i = TASK_STATES.indexOf(s);
+  return TASK_STATES[(i + 1) % TASK_STATES.length];
+}
+function fmtStudioDate(iso) {
+  try { return new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
+  catch { return iso || ""; }
+}
+
+// Lead firmado → Estudio. Reutiliza el engagement si ya existe.
+function promoteLeadToStudio(o) {
+  let eng = engagementForLead(o.id);
+  if (!eng) {
+    const svc = matchServices(o, { max: 1 })[0];
+    eng = store.saveEngagement(engagementFromLead(o, { by: meName(), serviceLabel: svc?.name || "" }));
+  }
+  state.studioSel = eng.id;
+  goView("studio");
+}
+
+// Persistir una mutación pura del engagement y repintar.
+function updateEngagement(next) {
+  const saved = store.saveEngagement(next);
+  state.studioSel = saved.id;
+  render();
+  return saved;
+}
+
+function studioView() {
+  const engs = store.getEngagements().slice().sort((a, b) =>
+    (engStatusRank(a) - engStatusRank(b)) || (b.updatedAt || "").localeCompare(a.updatedAt || ""));
+
+  const active = engs.filter((e) => e.status === "active");
+  const openCount = engs.reduce((s, e) => s + e.tasks.filter((t) => t.state !== "done").length, 0);
+  const avg = active.length ? Math.round(active.reduce((s, e) => s + engProgress(e).pct, 0) / active.length) : 0;
+
+  const header = el("div", {}, [
+    el("h2", { text: "Estudio — del trato firmado al trabajo" }),
+    el("p", { class: "hint", text: "Donde un lead firmado se vuelve trabajo real, y donde vive el desarrollo de software propio de la empresa. Tareas y bitácora por proyecto; el equipo ve la misma mesa (se sincroniza con el CRM)." }),
+  ]);
+
+  const kpis = el("div", { class: "crm-kpis" }, [
+    crmKpi("Activos", active.length, ""),
+    crmKpi("Tareas abiertas", openCount, ""),
+    crmKpi("Avance medio", `${avg}%`, "de proyectos activos", "hot"),
+  ]);
+
+  const newBtn = allow("write") ? el("button", { class: "btn studio-new", text: "+ Proyecto interno", onClick: () => {
+    const title = (prompt("Nombre del proyecto interno (software propio):") || "").trim();
+    if (!title) return;
+    const eng = store.saveEngagement(createEngagement({ title, kind: "internal", sector: "software", by: meName() }));
+    state.studioSel = eng.id; render();
+  } }) : null;
+
+  if (!engs.length) {
+    return el("div", {}, [header, el("div", { class: "studio-bar" }, [newBtn]),
+      el("p", { class: "empty", text: "Aún no hay proyectos. Firma un lead en el CRM y pulsa “Llevar a Estudio”, o crea un proyecto interno." })]);
+  }
+
+  const sel = engs.find((e) => e.id === state.studioSel) || engs[0];
+  const list = el("div", { class: "studio-list" }, engs.map((e) => studioListItem(e, e.id === sel.id)));
+  const detail = el("div", { class: "studio-detail" }, [studioDetail(sel)]);
+
+  return el("div", {}, [header, kpis, el("div", { class: "studio-bar" }, [newBtn]),
+    el("div", { class: "studio-wrap" }, [list, detail])]);
+}
+
+function studioListItem(e, isActive) {
+  const p = engProgress(e);
+  return el("div", { class: `studio-item ${isActive ? "active" : ""} st-${e.status}`, onClick: () => { state.studioSel = e.id; render(); } }, [
+    el("div", { class: "studio-item-top" }, [
+      el("span", { class: `studio-kind k-${e.kind}`, text: ENGAGEMENT_KIND_LABELS[e.kind] }),
+      el("span", { class: "studio-item-name", text: e.title }),
+    ]),
+    el("div", { class: "studio-item-meta", text: `${ENGAGEMENT_STATUS_LABELS[e.status]} · ${p.done}/${p.total} tareas` }),
+    el("div", { class: "studio-track" }, [el("div", { class: "studio-track-fill", style: `width:${p.pct}%` })]),
+  ]);
+}
+
+function studioDetail(e) {
+  const p = engProgress(e);
+  const lead = e.leadId ? leadById(e.leadId) : null;
+  const canW = allow("write");
+
+  const head = el("div", { class: "studio-d-head" }, [
+    el("div", { class: "studio-d-titlerow" }, [
+      el("span", { class: `studio-kind k-${e.kind}`, text: ENGAGEMENT_KIND_LABELS[e.kind] }),
+      el("h3", { text: e.title }),
+    ]),
+    el("div", { class: "studio-d-sub" }, [
+      el("span", { text: `${ENGAGEMENT_STATUS_LABELS[e.status]} · ${p.done}/${p.total} tareas · ${p.pct}%` }),
+      lead ? el("a", { class: "studio-lead-link", text: `Ver lead: ${lead.company}`, onClick: () => { state.filters.search = lead.company; goView("cards"); } }) : null,
+    ]),
+  ]);
+
+  const controls = canW ? el("div", { class: "studio-status-row" }, Object.keys(ENGAGEMENT_STATUS_LABELS).map((s) =>
+    el("button", { class: `studio-status-btn ${e.status === s ? "active" : ""}`, text: ENGAGEMENT_STATUS_LABELS[s],
+      onClick: () => updateEngagement(setEngStatus(e, s)) }))) : null;
+
+  const readyHint = (canW && e.status === "active" && engComplete(e))
+    ? el("p", { class: "studio-ready", text: "Todas las tareas hechas — ¿marcar como entregado?" }) : null;
+
+  // Tareas
+  const taskRows = e.tasks.length ? e.tasks.map((t) => el("div", { class: "studio-task" }, [
+    el("button", { class: `task-state ts-${t.state}`, text: TASK_STATE_LABELS[t.state], title: canW ? "Cambiar estado" : "",
+      onClick: canW ? () => updateEngagement(setTaskState(e, t.id, nextTaskState(t.state))) : null }),
+    el("span", { class: `studio-task-title ${t.state === "done" ? "done" : ""}`, text: t.title }),
+    t.assignee ? el("span", { class: "studio-task-who", text: t.assignee }) : null,
+    canW ? el("button", { class: "studio-task-x", text: "×", title: "Eliminar tarea", onClick: () => updateEngagement(removeTask(e, t.id)) }) : null,
+  ])) : [el("p", { class: "empty", text: "Sin tareas todavía." })];
+  const taskAdd = canW ? studioTaskAdder(e) : null;
+
+  // Bitácora
+  const logRows = e.log.length ? e.log.map((L) => el("div", { class: "studio-log" }, [
+    el("div", { class: "studio-log-meta" }, [
+      L.by ? el("span", { class: "by-dot", style: `background:${auth.colorOf(L.by)}` }) : null,
+      el("span", { text: `${L.by || "—"} · ${fmtStudioDate(L.at)}` }),
+    ]),
+    el("p", { class: "studio-log-note", text: L.note }),
+  ])) : [el("p", { class: "empty", text: "Bitácora vacía." })];
+  const logAdd = canW ? studioLogAdder(e) : null;
+
+  return el("div", {}, [
+    head, controls, readyHint,
+    el("div", { class: "studio-sec" }, [el("h4", { text: "Tareas" }), ...taskRows, taskAdd]),
+    el("div", { class: "studio-sec" }, [el("h4", { text: "Bitácora" }), logAdd, ...logRows]),
+    canW ? el("div", { class: "studio-danger" }, [
+      el("button", { class: "btn-danger", text: "Eliminar proyecto", onClick: () => {
+        if (!confirm(`¿Eliminar “${e.title}”? No se puede deshacer.`)) return;
+        store.removeEngagement(e.id); state.studioSel = null; render();
+      } }),
+    ]) : null,
+  ]);
+}
+
+function studioTaskAdder(e) {
+  const input = el("input", { class: "studio-input", placeholder: "Nueva tarea…", onkeydown: (ev) => { if (ev.key === "Enter") add(); } });
+  function add() { const v = (input.value || "").trim(); if (!v) return; updateEngagement(addTask(e, v, meName())); }
+  return el("div", { class: "studio-add" }, [input, el("button", { class: "btn", text: "Añadir", onClick: add })]);
+}
+
+function studioLogAdder(e) {
+  const ta = el("textarea", { class: "studio-textarea", placeholder: "Sesión de trabajo, decisión, nota…", rows: "2" });
+  function add() { const v = (ta.value || "").trim(); if (!v) return; updateEngagement(engAddLog(e, v, meName())); }
+  return el("div", { class: "studio-add studio-add-log" }, [ta, el("button", { class: "btn", text: "Anotar", onClick: add })]);
 }
 
 // ---- Buscar / añadir leads --------------------------------------------------

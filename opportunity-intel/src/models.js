@@ -218,6 +218,7 @@ export const SECTORS = [
   { key: "realestate", label: "Inmobiliario y Construcción" },
   { key: "growth", label: "Crecimiento / Financiadas / Expansión" },
   { key: "hospitality", label: "Hostelería Premium" },
+  { key: "software", label: "Software y Producto Digital" },
 ];
 export const SECTOR_BY_KEY = Object.fromEntries(SECTORS.map((s) => [s.key, s]));
 
@@ -301,6 +302,28 @@ export const PIPELINE_STAGES = [
   { key: "shortlisted", label: "Preseleccionado" },
   { key: "final", label: "Top final" },
 ];
+
+// ---- Entregar: del lead firmado al trabajo real ----------------------------
+// Connect no termina en "Firmado". Un lead ganado (kind:"client") o un proyecto
+// de software de la propia empresa (kind:"internal") se convierte en un
+// engagement con tareas y bitácora. Ver `engagements.js`.
+export const TASK_STATES = ["todo", "doing", "blocked", "done"];
+export const TASK_STATE_LABELS = {
+  todo: "Por hacer",
+  doing: "En curso",
+  blocked: "Bloqueado",
+  done: "Hecho",
+};
+export const ENGAGEMENT_STATUSES = ["active", "paused", "done"];
+export const ENGAGEMENT_STATUS_LABELS = {
+  active: "Activo",
+  paused: "En pausa",
+  done: "Entregado",
+};
+export const ENGAGEMENT_KIND_LABELS = {
+  client: "Cliente",
+  internal: "Interno",
+};
 
 // Default search configuration.
 export const DEFAULT_CONFIG = {

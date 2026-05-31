@@ -17,14 +17,14 @@ const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
 
 console.log("customsectors.test.mjs");
 
-// 1. De entrada, solo los 4 sectores base.
-ok(cs.allSectors().length === 4, "arranca con 4 sectores base");
+// 1. De entrada, solo los 5 sectores base.
+ok(cs.allSectors().length === 5, "arranca con 5 sectores base");
 ok(cs.getCustomSectors().length === 0, "sin sectores custom al inicio");
 
 // 2. Crear un sector custom.
 const r = cs.addCustomSector("Tatuaje", "estudio tatuaje, tattoo studio");
 ok(r.ok && r.key === "tatuaje", "crea el sector y genera su clave");
-ok(cs.allSectors().length === 5, "ahora hay 5 sectores");
+ok(cs.allSectors().length === 6, "ahora hay 6 sectores");
 ok(cs.sectorByKey("tatuaje").label === "Tatuaje", "se recupera por clave");
 ok(JSON.stringify(cs.queriesFor("tatuaje")) === JSON.stringify(["estudio tatuaje", "tattoo studio"]), "guarda las consultas");
 

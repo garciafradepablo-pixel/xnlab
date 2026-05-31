@@ -21,6 +21,7 @@ const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
+const ENGAGE_KEY = `${NS}engagements`; // fase Entregar: clientes activos + proyectos internos
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -387,6 +388,7 @@ export function exportState() {
       learning: getLearning(),
       verifications: getVerifications(),
       userLeads: getUserLeads(),
+      engagements: getEngagements(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -485,6 +487,19 @@ export function importState(json, { replace = false } = {}) {
       byId.set(l.id, l);
     }
     write(USER_LEADS_KEY, [...byId.values()]);
+  }
+
+  // --- engagements (merge por id, lo más reciente `updatedAt` gana) ---
+  const incomingEng = Array.isArray(data.engagements) ? data.engagements : [];
+  if (replace) {
+    write(ENGAGE_KEY, incomingEng);
+  } else {
+    const byId = new Map(getEngagements().map((e) => [e.id, e]));
+    for (const e of incomingEng) {
+      const ex = byId.get(e.id);
+      if (!ex || (e.updatedAt || "") > (ex.updatedAt || "")) byId.set(e.id, e);
+    }
+    write(ENGAGE_KEY, [...byId.values()]);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
@@ -605,10 +620,38 @@ export function removeUserLead(id) {
   scheduleSync();
 }
 
+// ---- Engagements (fase Entregar) -------------------------------------------
+// Misma mecánica que el resto del estado operativo: localStorage + sync por
+// export/importState. Se persisten enteros (con sus tareas y bitácora) y se
+// fusionan por id, lo más reciente (`updatedAt`) gana.
+
+export function getEngagements() {
+  return read(ENGAGE_KEY, []);
+}
+
+export function getEngagement(id) {
+  return getEngagements().find((e) => e.id === id) || null;
+}
+
+/** Añade o actualiza (por id) un engagement. Sella `updatedAt` para el merge. */
+export function saveEngagement(eng) {
+  const stamped = { ...eng, updatedAt: new Date().toISOString() };
+  const all = getEngagements().filter((e) => e.id !== stamped.id);
+  all.push(stamped);
+  write(ENGAGE_KEY, all);
+  scheduleSync();
+  return stamped;
+}
+
+export function removeEngagement(id) {
+  write(ENGAGE_KEY, getEngagements().filter((e) => e.id !== id));
+  scheduleSync();
+}
+
 /** Hard reset de la caché LOCAL (control "borrar" de la UI). No borra el estado
  *  compartido del servidor: al recargar/iniciar sesión se vuelve a traer desde
  *  Supabase. Es deliberado — evita que un borrado local destruya el trabajo
  *  compartido del equipo. */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
 }

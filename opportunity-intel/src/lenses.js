@@ -68,6 +68,18 @@ export const SECTOR_LENSES = {
     activePainSignal: 1.1,
     economicCapacity: 0.95,
   },
+
+  // SOFTWARE/PRODUCTO DIGITAL: manda el momento (lanzamiento/ronda/contratación
+  // técnica) y el encaje estratégico con lo que construimos; el decisor (CTO/
+  // fundador) suele ser alcanzable. La capacidad económica pesa algo menos.
+  software: {
+    ...flat(),
+    transitionSignal: 1.25,
+    strategicFit: 1.2,
+    whyNow: 1.15,
+    reachableDecisionMaker: 1.05,
+    economicCapacity: 0.9,
+  },
 };
 
 const PRETTY = {
@@ -75,6 +87,7 @@ const PRETTY = {
   realestate: "inmobiliario/lujo: pesa capacidad, percepción premium y momento",
   growth: "growth: pesa el momento (ronda/expansión) y la madurez de marca",
   hospitality: "hostelería: pesa la apertura y la captación/experiencia",
+  software: "software: pesa el momento técnico (lanzamiento/ronda) y el encaje",
 };
 
 /**

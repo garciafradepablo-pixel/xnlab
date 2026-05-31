@@ -244,6 +244,35 @@ status records merge with newest-wins). `store.exportState()` /
 
 ---
 
+## Entregar — del lead firmado al trabajo
+
+Connect no termina al firmar. El arco **Captar → Cerrar** tenía un precipicio:
+después de `Firmado` no había nada que gestionara el trabajo. La zona
+**Entregar → Estudio** lo cierra.
+
+- Un lead en estado `Firmado` muestra en el CRM un botón **«Llevar a Estudio»**
+  que lo convierte en un **engagement de cliente** (atado al lead, con una tarea
+  de kickoff sembrada). Si ya existe, el botón lo abre.
+- Los **proyectos internos** (el software propio de la empresa — el mismo
+  Connect, el site…) viven aquí también: botón **«+ Proyecto interno»**.
+- Cada engagement tiene **tareas** (estado `Por hacer → En curso → Bloqueado →
+  Hecho`, responsable, % de avance) y una **bitácora** de sesiones de trabajo,
+  decisiones y notas, firmada por el color del usuario.
+
+Una sola entidad (`kind: "client" | "internal"`) cubre las tres cosas:
+seguimiento de cliente, gestión de tareas y registro de trabajo. La lógica vive
+pura en [`src/engagements.js`](./src/engagements.js) (testeada en
+`test/engagements.test.mjs`); la persistencia es la misma del resto del estado
+operativo (`store.js`), así que **se sincroniza entre Pablo y Javi** vía
+`export/importState` sin código extra — la misma mesa de trabajo en cualquier
+dispositivo.
+
+> El sector **Software y Producto Digital** se añadió a la taxonomía interna
+> para que el funnel también detecte momentos en ese vertical. Es taxonomía del
+> instrumento interno, independiente de los seis mundos públicos de la marca.
+
+---
+
 ## Configuration
 
 The search-config panel (and `DEFAULT_CONFIG` in `models.js`) controls:
