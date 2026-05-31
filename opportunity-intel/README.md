@@ -276,12 +276,25 @@ como un JSON sincronizado) y una bitácora que puede **vincular un commit de
 git** (hash + URL), que se renderiza como un chip enlazado. Un KPI de
 *Vencidos* resume tareas e hitos pasados.
 
-**Refresco en vivo.** Mientras la app está abierta sondea la mesa compartida
-cada pocos segundos (y al volver a la pestaña) y repinta sola cuando el otro
-cambia algo. Es deliberadamente *polling*, no websockets: `pullSharedState`
-fusiona no-destructivo (lo más reciente por entidad gana), así que **no toca el
-modelo de sync optimista** ya probado ni abre la tabla a acceso directo —
-conserva la seguridad de la Edge Function. Nunca repinta mientras escribes.
+**Tiempo real, sin websockets.** La mesa compartida se siente viva con tres
+capas, todas sobre el canal de sync existente (cero infra nueva, cero deps):
+
+- **Sondeo adaptativo.** Mientras estás activo y mirando, sondea cada ~4 s; si
+  te quedas quieto, baja a ~15 s; con la pestaña oculta, se pausa; al volver a
+  ella, refresca al instante. `pullSharedState` fusiona no-destructivo (lo más
+  reciente por entidad gana), así que **no toca el modelo de sync optimista** ya
+  probado ni abre la tabla a acceso directo — conserva la seguridad de la Edge
+  Function. Nunca repinta mientras escribes (no te borra un input a medias).
+- **Presencia de equipo.** Un latido ligero (`presence.js`, podado por TTL, que
+  viaja por el mismo documento) muestra en la cabecera **quién está conectado y
+  en qué vista**, con su color de firma. Se va solo a los 45 s sin señal.
+- **Aviso de cambios.** Cuando entra un cambio del equipo, la tarjeta afectada
+  del Estudio **destella** y salta un aviso efímero («Connect interno» se
+  actualizó) — los cambios se sienten, no son silenciosos.
+
+> Sigue siendo *polling*, no websockets, a propósito: el cliente solo lleva la
+> clave publishable y todo escribe vía la Edge Function (service role). El salto
+> a Supabase Realtime (broadcast) es un paso aparte, documentado como opcional.
 
 > El sector **Software y Producto Digital** se añadió a la taxonomía interna
 > para que el funnel también detecte momentos en ese vertical. Es taxonomía del

@@ -13,6 +13,7 @@
 import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
 import { currentUser, currentRole, getToken } from "./auth.js";
 import { can } from "./roles.js";
+import { prunePresence, upsertPresence, mergePresence } from "./presence.js";
 import * as statesync from "./statesync.js";
 
 const NS = "oi:"; // namespace
@@ -22,6 +23,7 @@ const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const ENGAGE_KEY = `${NS}engagements`; // fase Entregar: clientes activos + proyectos internos
+const PRESENCE_KEY = `${NS}presence`; // presencia en vivo del equipo (efímera, podada por TTL)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -389,6 +391,7 @@ export function exportState() {
       verifications: getVerifications(),
       userLeads: getUserLeads(),
       engagements: getEngagements(),
+      presence: getPresence(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -500,6 +503,14 @@ export function importState(json, { replace = false } = {}) {
       if (!ex || (e.updatedAt || "") > (ex.updatedAt || "")) byId.set(e.id, e);
     }
     write(ENGAGE_KEY, [...byId.values()]);
+  }
+
+  // --- presencia (latido más reciente por nombre gana; se poda por TTL) ---
+  const incomingPresence = data.presence && typeof data.presence === "object" ? data.presence : {};
+  if (replace) {
+    write(PRESENCE_KEY, prunePresence(incomingPresence));
+  } else {
+    write(PRESENCE_KEY, mergePresence(getPresence(), incomingPresence));
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
@@ -648,10 +659,31 @@ export function removeEngagement(id) {
   scheduleSync();
 }
 
+// ---- Presencia en vivo ------------------------------------------------------
+// Efímera: se lee/escribe podada por TTL, así nunca crece. Viaja por el mismo
+// canal de sync (export/importState) que el resto del estado compartido.
+
+export function getPresence() {
+  return prunePresence(read(PRESENCE_KEY, {}));
+}
+
+/** Registra el latido del usuario (nombre, color, vista). Sube en la próxima sync. */
+export function setPresence(entry) {
+  write(PRESENCE_KEY, upsertPresence(getPresence(), entry));
+  scheduleSync();
+}
+
+export function clearPresence(name) {
+  const map = getPresence();
+  delete map[name];
+  write(PRESENCE_KEY, map);
+  scheduleSync();
+}
+
 /** Hard reset de la caché LOCAL (control "borrar" de la UI). No borra el estado
  *  compartido del servidor: al recargar/iniciar sesión se vuelve a traer desde
  *  Supabase. Es deliberado — evita que un borrado local destruya el trabajo
  *  compartido del equipo. */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, PRESENCE_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
 }

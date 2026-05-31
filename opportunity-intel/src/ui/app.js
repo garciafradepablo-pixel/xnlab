@@ -50,6 +50,7 @@ import { fetchContacts } from "../contacts.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
+import * as presence from "../presence.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
@@ -117,6 +118,7 @@ export async function mount(rootEl) {
   }
   ensureSyncSubscription();
   ensureLiveRefresh(); // refresco en vivo: la mesa del otro aparece sola
+  ensurePresence(); // latido de presencia: quién está conectado y en qué vista
   ensureHotkeys(); // ⌘K disponible en toda la app
   ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
@@ -153,13 +155,16 @@ function ensureSyncSubscription() {
   store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
 }
 
-// —— Refresco en vivo ————————————————————————————————————————————————————————
-// Sin websockets: sondeamos la mesa compartida cada pocos segundos (y al volver
-// a la pestaña). `pullSharedState` fusiona no-destructivo (lo más reciente por
-// entidad gana), así que esto NO toca el modelo de sync optimista — solo hace
-// que los cambios del otro aparezcan solos. Pausa con la pestaña oculta; nunca
-// repinta mientras escribes (no te borra un input a medias).
-let liveTimer = null, liveSig = null;
+// —— Refresco en vivo (adaptativo) ————————————————————————————————————————————
+// Sin websockets ni dependencias: sondeamos la mesa compartida con CADENCIA
+// ADAPTATIVA — rápido (4 s) cuando estás activo y mirando, lento (15 s) cuando
+// estás quieto, en pausa con la pestaña oculta, e instantáneo al volver a ella.
+// `pullSharedState` fusiona no-destructivo (lo más reciente por entidad gana),
+// así que NO tocamos el modelo de sync optimista ni abrimos la tabla: solo hace
+// que los cambios del equipo aparezcan solos. Nunca repinta mientras escribes.
+let liveTimer = null, liveSig = null, liveEngSnap = {};
+let lastPullAt = 0, lastActivity = Date.now();
+
 function sharedSignature() {
   const engs = store.getEngagements();
   const tr = store.getTracking();
@@ -167,30 +172,134 @@ function sharedSignature() {
   for (const e of engs) s += `|${e.id}:${e.updatedAt || ""}`;
   s += `;t${Object.keys(tr).length}`;
   for (const k of Object.keys(tr)) s += `|${k}:${tr[k].updatedAt || ""}`;
-  return s;
+  return s; // presencia NO entra aquí: sus latidos no deben forzar re-render
+}
+function engSnapshot() {
+  const m = {};
+  for (const e of store.getEngagements()) m[e.id] = e.updatedAt || "";
+  return m;
+}
+// Línea base de "lo último que YA pinté": tras cada render local no debe saltar
+// el aviso de cambio remoto (si no, te avisaría de tus propios cambios).
+function markLiveBaseline() {
+  liveSig = sharedSignature();
+  liveEngSnap = engSnapshot();
+}
+function noteActivity() { lastActivity = Date.now(); }
+function liveCadence() {
+  if (typeof document !== "undefined" && document.hidden) return Infinity;
+  return (Date.now() - lastActivity < 60000) ? 4000 : 15000; // activo vs quieto
+}
+function changedEngagements() {
+  const ids = [], titles = [];
+  for (const e of store.getEngagements()) {
+    if ((liveEngSnap[e.id] || "") !== (e.updatedAt || "")) { ids.push(e.id); titles.push(e.title); }
+  }
+  return { ids, titles };
 }
 async function liveTick() {
-  if (typeof document !== "undefined" && document.hidden) return;
   if (!store.isSyncEnabled()) return;
+  if (typeof document !== "undefined" && document.hidden) return;
+  if (Date.now() - lastPullAt < liveCadence()) return;
+  lastPullAt = Date.now();
   try {
     await store.pullSharedState();
+    updatePresenceBar(); // la presencia se refresca SIEMPRE, aunque no haya datos nuevos
     const sig = sharedSignature();
     if (sig === liveSig) return;
-    // No pises una edición en curso: repinta en el próximo tick tras desenfocar.
+    // No pises una edición en curso: reintenta en el próximo tick tras desenfocar.
     const ae = typeof document !== "undefined" ? document.activeElement : null;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName || "")) return;
-    liveSig = sig;
-    render();
+    const changed = changedEngagements();
+    render(); // re-marca la línea base
+    announceRemoteChange(changed);
   } catch { /* offline: el badge ya lo refleja */ }
 }
 function ensureLiveRefresh() {
   if (liveTimer || typeof setInterval !== "function") return;
-  liveSig = sharedSignature();
-  liveTimer = setInterval(liveTick, 12000);
+  markLiveBaseline();
+  lastPullAt = Date.now();
+  liveTimer = setInterval(liveTick, 3500);
   if (liveTimer && typeof liveTimer.unref === "function") liveTimer.unref();
   if (typeof document !== "undefined" && document.addEventListener) {
-    document.addEventListener("visibilitychange", () => { if (!document.hidden) liveTick(); });
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden) { lastPullAt = 0; lastActivity = Date.now(); liveTick(); }
+    });
+    for (const ev of ["mousemove", "keydown", "click", "focus"]) {
+      try { document.addEventListener(ev, noteActivity, { passive: true }); } catch { document.addEventListener(ev, noteActivity); }
+    }
   }
+}
+
+// —— Presencia en vivo del equipo —————————————————————————————————————————————
+const VIEW_LABEL = {
+  today: "Hoy", cards: "Oportunidades", search: "Buscar", table: "Ranking",
+  connector: "01 ↔ XN", crm: "CRM", pipeline: "Embudo", studio: "Estudio",
+  learning: "Aprendizaje", users: "Usuarios",
+};
+const viewLabel = (v) => VIEW_LABEL[v] || "Connect";
+let presenceTimer = null;
+function heartbeat() {
+  const u = auth.currentUser();
+  if (!u || !store.isSyncEnabled()) return;
+  store.setPresence({ name: u.name, color: u.color, view: state.view });
+  updatePresenceBar();
+}
+function ensurePresence() {
+  if (presenceTimer || typeof setInterval !== "function") return;
+  heartbeat();
+  presenceTimer = setInterval(heartbeat, presence.HEARTBEAT_MS);
+  if (presenceTimer && typeof presenceTimer.unref === "function") presenceTimer.unref();
+}
+function updatePresenceBar() {
+  if (!root) return;
+  const node = root.querySelector(".presence-bar");
+  if (!node) return;
+  const me = auth.currentUser()?.name || "";
+  const others = presence.activePresence(store.getPresence(), { exclude: me });
+  clear(node);
+  if (!others.length) { node.style.display = "none"; return; }
+  node.style.display = "";
+  node.appendChild(el("span", { class: "presence-live", title: "Equipo conectado, en vivo" }, [
+    el("span", { class: "presence-pulse" }), "En vivo",
+  ]));
+  for (const o of others.slice(0, 5)) {
+    node.appendChild(el("span", {
+      class: "presence-dot",
+      style: `background:${o.color || "#888"}`,
+      title: `${o.name} · ${viewLabel(o.view)}`,
+      text: (o.name[0] || "?").toUpperCase(),
+    }));
+  }
+  if (others.length > 5) node.appendChild(el("span", { class: "presence-more", text: `+${others.length - 5}` }));
+}
+
+function announceRemoteChange({ ids, titles }) {
+  // Destella las tarjetas del Estudio que cambiaron (si están a la vista).
+  if (root) {
+    for (const it of root.querySelectorAll(".studio-item")) {
+      if (ids.includes(it.getAttribute("data-eng"))) {
+        it.classList.add("studio-flash");
+        setTimeout(() => it.classList.remove("studio-flash"), 1500);
+      }
+    }
+  }
+  if (titles.length === 1) toast(`«${titles[0]}» se actualizó`, "live");
+  else if (titles.length > 1) toast(`${titles.length} proyectos actualizados`, "live");
+  else toast("La mesa del equipo se actualizó", "live");
+}
+
+// Aviso efímero, no bloqueante (no interrumpe lo que escribes).
+let toastHost = null;
+function toast(msg, kind = "info") {
+  if (typeof document === "undefined" || !document.body) return;
+  if (!toastHost || !toastHost.isConnected) {
+    toastHost = el("div", { class: "toast-host" });
+    document.body.appendChild(toastHost);
+  }
+  const t = el("div", { class: `toast toast-${kind}`, text: msg });
+  toastHost.appendChild(t);
+  setTimeout(() => { t.classList.add("out"); setTimeout(() => t.remove(), 320); }, 3200);
 }
 function updateSyncBadge(s) {
   if (!root) return;
@@ -376,6 +485,8 @@ function render() {
     requestAnimationFrame(() => { scroller.scrollTop = 0; });
     state._resetScroll = false;
   }
+  updatePresenceBar(); // pinta la presencia en la cabecera recién montada
+  markLiveBaseline(); // lo que acabo de pintar es mi nueva línea base (no me auto-avisa)
 }
 
 // Cambia de pestaña y pide reinicio de scroll (navegación limpia).
@@ -383,6 +494,7 @@ function goView(view) {
   state.view = view;
   state._resetScroll = true;
   render();
+  heartbeat(); // propaga al equipo en qué vista estoy ahora
 }
 
 function header() {
@@ -398,9 +510,10 @@ function header() {
       state.dataset === "researched"
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
+      el("span", { class: "presence-bar", style: "display:none", title: "Equipo conectado" }),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v45 · momento en prensa" }),
+      el("span", { class: "ver-tag", title: "Versión publicada", text: "v47 · estudio en vivo" }),
     ]),
   ]);
 }
@@ -1822,7 +1935,7 @@ function studioView() {
 function studioListItem(e, isActive) {
   const p = engProgress(e);
   const od = overdueCount(e);
-  return el("div", { class: `studio-item ${isActive ? "active" : ""} st-${e.status}`, onClick: () => { state.studioSel = e.id; render(); } }, [
+  return el("div", { class: `studio-item ${isActive ? "active" : ""} st-${e.status}`, "data-eng": e.id, onClick: () => { state.studioSel = e.id; render(); } }, [
     el("div", { class: "studio-item-top" }, [
       el("span", { class: `studio-kind k-${e.kind}`, text: ENGAGEMENT_KIND_LABELS[e.kind] }),
       el("span", { class: "studio-item-name", text: e.title }),

@@ -1628,3 +1628,49 @@ button:disabled { cursor: not-allowed; }
 }
 a.commit-chip:hover { text-decoration: none; filter: brightness(1.15); }
 .studio-od { color: var(--red); }
+
+/* Presencia en vivo + avisos + destello de cambios -------------------------- */
+.presence-bar { display: inline-flex; align-items: center; gap: 5px; }
+.presence-live {
+  display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .6px; color: var(--ok);
+  background: rgba(58,157,110,.12); border: 1px solid rgba(58,157,110,.3);
+  border-radius: 6px; padding: 2px 7px;
+}
+.presence-pulse {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--ok);
+  box-shadow: 0 0 0 0 rgba(58,157,110,.55); animation: presence-pulse 1.8s infinite;
+}
+@keyframes presence-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(58,157,110,.5); }
+  70% { box-shadow: 0 0 0 6px rgba(58,157,110,0); }
+  100% { box-shadow: 0 0 0 0 rgba(58,157,110,0); }
+}
+.presence-dot {
+  width: 22px; height: 22px; border-radius: 50%; display: inline-flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700; color: #0c0d10;
+  border: 1.5px solid var(--bg); margin-left: -6px; box-shadow: var(--sh-1);
+}
+.presence-dot:first-of-type { margin-left: 0; }
+.presence-more { font-size: 11px; color: var(--ink-dim); margin-left: 2px; }
+
+.toast-host {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  display: flex; flex-direction: column; gap: 8px; z-index: 9000; pointer-events: none;
+}
+.toast {
+  background: var(--panel-3); color: var(--ink); border: 1px solid var(--line-2);
+  border-radius: 10px; padding: 9px 14px; font-size: 13px; box-shadow: var(--sh-2), var(--hl);
+  opacity: 0; transform: translateY(8px); animation: toast-in .28s ease forwards;
+}
+.toast-live { border-color: rgba(58,157,110,.5); }
+.toast.out { animation: toast-out .3s ease forwards; }
+@keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
+@keyframes toast-out { to { opacity: 0; transform: translateY(8px); } }
+
+.studio-flash { animation: studio-flash 1.5s ease; }
+@keyframes studio-flash {
+  0% { box-shadow: 0 0 0 0 rgba(203,162,74,0); border-color: var(--accent); }
+  18% { box-shadow: 0 0 0 3px rgba(203,162,74,.35); border-color: var(--accent); }
+  100% { box-shadow: 0 0 0 0 rgba(203,162,74,0); }
+}
