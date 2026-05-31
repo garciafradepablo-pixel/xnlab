@@ -8,6 +8,7 @@ import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
 import { ensureEco } from "./voice.js";
 import * as posits from "./posits.js";
+import { macmaView as renderMacma } from "./macma.js";
 import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
@@ -564,6 +565,9 @@ const ZONES = [
   { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"]] },
   { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
   { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
+  // MACMA CORE — el sistema operativo humano: la sección privada del operador.
+  // No gestiona clientes; gestiona a quien decide. Visible para todos los roles.
+  { key: "macma", label: "MACMA", views: [["macma", "Core"]] },
 ];
 function zonesForUser() {
   // Filtra las sub-vistas que el rol no puede usar; si una zona se queda sin
@@ -788,6 +792,7 @@ function viewArea() {
   else if (state.view === "users") area.appendChild(usersView());
   else if (state.view === "training") area.appendChild(trainingView());
   else if (state.view === "muelle") area.appendChild(muelleView());
+  else if (state.view === "macma") area.appendChild(macmaView());
   else area.appendChild(learningView());
   return area;
 }
@@ -842,6 +847,14 @@ function muelleView() {
     rerender: render,
     leadName: leadNameById,
   });
+}
+
+// ---- MACMA CORE — el sistema operativo humano (privado, por usuario) --------
+// El reflejo del operador. Lo de fuera (quién eres, cómo repintar) entra por
+// parámetro; toda la lógica vive en macma.js / macma-engine.js / ui/macma.js.
+function macmaView() {
+  const me = auth.currentUser()?.name || "";
+  return renderMacma({ me, rerender: render });
 }
 
 // ---- Gestión de usuarios y roles (solo admin) -------------------------------

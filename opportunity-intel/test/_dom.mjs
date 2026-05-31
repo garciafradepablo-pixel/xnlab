@@ -180,6 +180,7 @@ export function installDOM() {
   const document = {
     documentElement, body, head,
     createElement: (t) => new El(t),
+    createElementNS: (_ns, t) => new El(t), // SVG (p. ej. el orbe de MACMA)
     createTextNode: (t) => new TextNode(t),
     createDocumentFragment: () => new El("fragment"),
     _listeners: {},
