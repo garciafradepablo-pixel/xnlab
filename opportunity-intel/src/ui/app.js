@@ -505,8 +505,8 @@ function openProfile() {
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
+  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["connector", "01 ↔ XN"], ["pipeline", "Embudo"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
   { key: "training", label: "Formación", views: [["training", "Dossiers"]] },
 ];
@@ -997,6 +997,18 @@ function todayView() {
     el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
   ]));
 
+  // Estado de arranque: si aún no hay NADA movido (cero llamadas, cero cierres),
+  // un onboarding claro en vez de un muro de KPIs a cero compitiendo.
+  const movedAnything = pulse.called > 0 || pulse.meetings > 0 || pulse.won > 0 || pulse.proposals > 0;
+  if (!movedAnything) {
+    blocks.push(el("div", { class: "today-onboard" }, [
+      el("div", { class: "ob-step" }, [el("span", { class: "ob-n", text: "1" }), el("span", { text: calls.length ? `Llama a ${calls[0].company} — es tu mejor oportunidad ahora.` : "Capta tus primeras oportunidades." })]),
+      el("div", { class: "ob-step" }, [el("span", { class: "ob-n", text: "2" }), el("span", { text: "Marca el resultado con un toque (Interesado · Reunión · Rechazado)." })]),
+      el("div", { class: "ob-step" }, [el("span", { class: "ob-n", text: "3" }), el("span", { text: "El sistema aprende solo y la app cobra vida." })]),
+      el("button", { class: "btn-primary ob-cta", text: calls.length ? `📞 Empezar por ${calls[0].company}` : "⚡ Captar oportunidades", onClick: () => calls.length ? openCase(calls[0].id) : goView("search") }),
+    ]));
+  }
+
   // Centro de mando: la acción de ahora + la ruta del día.
   blocks.push(commandCenter(calls));
 
@@ -1452,8 +1464,8 @@ function openCase(id) {
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
   body.appendChild(synthWrap);
-  body.appendChild(momentumPanel);
-  body.appendChild(freshPanel);
+  // Momento + web lado a lado en ancho: la ficha llega antes al guion y la acción.
+  body.appendChild(el("div", { class: "case-signals" }, [momentumPanel, freshPanel]));
   body.appendChild(cardWrap);
   // En la capa de caso no re-abrimos otra capa: onOpen se anula para que el
   // título no apile overlays. El resto de handlers mutan y repintan el caso.
