@@ -397,7 +397,7 @@ function focusBar() {
     el("span", { class: "fb-dot" }),
     el("span", { class: "fb-name", text: o.company }),
     o.city ? el("span", { class: "fb-city", text: o.city }) : null,
-    el("span", { class: "fb-track" }, [jump("cards", "Oportunidad"), jump("table", "Ranking")]),
+    el("span", { class: "fb-track" }, [jump("cards", "Oportunidad"), jump("table", "Ranking"), jump("crm", "CRM")]),
     el("button", { class: "fb-open", html: icon("id") + " Ver ficha", onClick: () => openCase(o.id) }),
     el("button", { class: "fb-x", title: "Quitar foco", text: "✕", onClick: () => { state.filters.search = ""; render(); } }),
   ]);
@@ -1948,7 +1948,8 @@ function crmCard(o, isFail) {
       children.push(el("p", { class: "crm-card-fail", text: `⚠ ${fr.causes[0].cause}` }));
     }
   }
-  return el("div", { class: "crm-card", onClick: () => { state.filters.search = o.company; goView("cards"); } }, children);
+  const focused = (state.filters.search || "").trim().toLowerCase() === (o.company || "").toLowerCase();
+  return el("div", { class: `crm-card${focused ? " focused" : ""}`, onClick: () => { state.filters.search = o.company; goView("cards"); } }, children);
 }
 
 // ---- Buscar / añadir leads --------------------------------------------------
