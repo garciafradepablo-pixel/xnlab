@@ -11,6 +11,7 @@ import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
 import RESEARCHED from "../data/researched.js";
+import MALLORCA from "../data/mallorca.js";
 import {
   SECTORS,
   SECTOR_BY_KEY,
@@ -42,6 +43,7 @@ import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
+import { planRounds, groupByDate, groupByRound, planSummary, orderByPriority, DEFAULT_SCHEDULE, ymd } from "../agenda.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
@@ -253,8 +255,9 @@ function purgeWeakUserLeads() {
 }
 
 function activeCandidates() {
-  // Dataset base + leads añadidos por el usuario (siempre presentes, son suyos).
-  const base = (state.dataset === "researched" ? RESEARCHED : SEED).concat(store.getUserLeads());
+  // Dataset base + tanda real de Mallorca (investigada, siempre presente) +
+  // leads añadidos por el usuario (siempre presentes, son suyos).
+  const base = (state.dataset === "researched" ? RESEARCHED : SEED).concat(MALLORCA).concat(store.getUserLeads());
   // Aplica las verificaciones manuales del analista antes de puntuar: los
   // huecos confirmados se vuelven evidencia citada y suben la puntuación.
   const verifications = store.getVerifications();
@@ -504,7 +507,7 @@ function openProfile() {
 // "en qué estoy") y las vistas de cada zona debajo. Menos superficie, más
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
 const ZONES = [
-  { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
+  { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["agenda", "Agenda"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["connector", "01 ↔ XN"], ["pipeline", "Embudo"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
@@ -720,6 +723,7 @@ function securitySection() {
 function viewArea() {
   const area = el("section", { class: "view" });
   if (state.view === "today") area.appendChild(todayView());
+  else if (state.view === "agenda") area.appendChild(agendaView());
   else if (state.view === "pipeline") area.appendChild(pipelineView());
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
@@ -986,7 +990,13 @@ function todayView() {
   const tracking = store.getTracking();
   const opps = state.results ? state.results.all : [];
   const pulse = pipelinePulse(opps, tracking);
-  const calls = pickTodayCalls(opps, tracking, { limit: 3 });
+  // Si el usuario en sesión tiene llamadas asignadas (su agenda), Hoy muestra
+  // LAS SUYAS que tocan hoy; si no, el foco global de siempre.
+  const meNow = auth.currentUser();
+  const hasMine = meNow && opps.some((o) => tracking[o.id]?.assignedTo === meNow.name);
+  const calls = hasMine
+    ? pickTodayCalls(opps, tracking, { owner: meNow.name, today: ymd(new Date()), limit: 3 })
+    : pickTodayCalls(opps, tracking, { limit: 3 });
   const u = auth.currentUser();
   const h = new Date().getHours();
   const greet = h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
@@ -1449,6 +1459,186 @@ function whaleMark() {
 // caso, ocupando la pantalla, con todo el análisis desplegado en paneles. Cierra
 // con ← Volver, Esc o clic en el fondo. Reutiliza la tarjeta (toda la
 // inteligencia ya vive ahí) y la presenta ancha, con cabecera y firma de marca.
+// ---- Agenda: reparto de llamadas por persona (horario · rondas · días) ------
+const ISO_DAYS = [["1", "L"], ["2", "M"], ["3", "X"], ["4", "J"], ["5", "V"], ["6", "S"], ["7", "D"]];
+const MONTHS_ES = ["ene", "feb", "mar", "abr", "may", "jun", "jul", "ago", "sep", "oct", "nov", "dic"];
+const WDAYS_ES = ["dom", "lun", "mar", "mié", "jue", "vie", "sáb"];
+function fmtDay(ymdStr) {
+  const [y, m, d] = String(ymdStr).split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return `${WDAYS_ES[dt.getDay()]} ${d} ${MONTHS_ES[m - 1]}`;
+}
+const scoreOf = (o) => Math.round(o?.scores?.confidence || 0);
+
+// Una llamada dentro del desglose de la agenda.
+function agendaRow(o, tracking) {
+  const t = tracking[o.id] || {};
+  const st = STATUS_LABELS[t.status || "not_called"] || "Sin llamar";
+  return el("div", { class: "ag-row", onClick: () => openCase(o.id) }, [
+    el("span", { class: `ag-score s-${scoreOf(o) >= 80 ? "hi" : scoreOf(o) >= 65 ? "mid" : "lo"}`, text: String(scoreOf(o)) }),
+    el("div", { class: "ag-row-main" }, [
+      el("div", { class: "ag-row-co", text: o.company }),
+      el("div", { class: "ag-row-sub", text: `${o.subsector || sectorByKey(o.sector)?.label || o.sector} · ${o.city}` }),
+    ]),
+    o.phone ? el("a", { class: "ag-tel", href: `tel:${o.phone.replace(/\s/g, "")}`, text: o.phone, onClick: (e) => e.stopPropagation() }) : el("span", { class: "ag-tel ag-tel-none", text: "sin teléfono" }),
+    el("span", { class: "ag-status", text: st }),
+  ]);
+}
+
+function agendaView() {
+  const me = auth.currentUser();
+  const team = auth.getUsers().map((u) => u.name).filter(Boolean);
+  if (!state.agendaUser || (!team.includes(state.agendaUser) && state.agendaUser !== me?.name)) {
+    state.agendaUser = me?.name || team[0] || "";
+  }
+  const subject = state.agendaUser;
+  const canWrite = allow("write");
+  const sched = { ...DEFAULT_SCHEDULE, ...(store.getSchedule(subject) || {}) };
+  const tracking = store.getTracking();
+  const all = state.results?.all || [];
+  const mine = all.filter((o) => (tracking[o.id]?.assignedTo || null) === subject);
+
+  const wrap = el("div", { class: "agenda view" });
+
+  // — Cabecera —
+  const head = el("div", { class: "ag-head" }, [
+    el("div", {}, [
+      el("h2", { text: "Agenda de llamadas" }),
+      el("p", { class: "ag-sub", text: "A quién llama cada persona, en qué orden y qué día. El plan respeta su capacidad diaria." }),
+    ]),
+  ]);
+  if (team.length > 1) {
+    const sel = el("select", { class: "ag-userpick", onChange: (e) => { state.agendaUser = e.target.value; render(); } },
+      team.map((n) => el("option", { value: n, text: n, selected: n === subject ? "" : undefined })));
+    head.appendChild(el("label", { class: "ag-userwrap" }, [el("span", { text: "Persona:" }), sel]));
+  }
+  wrap.appendChild(head);
+
+  if (!subject) {
+    wrap.appendChild(el("p", { class: "ag-empty", text: "No hay usuarios todavía. Crea tu usuario para empezar a repartir llamadas." }));
+    return wrap;
+  }
+
+  // — Editor de horario (capacidad real) —
+  const schedBox = el("div", { class: "ag-card" });
+  schedBox.appendChild(el("h4", { text: `Horario de ${subject}` }));
+  const dayToggles = ISO_DAYS.map(([iso, lbl]) => {
+    const on = (sched.workdays || DEFAULT_SCHEDULE.workdays).map(String).includes(iso);
+    return el("button", { class: `ag-day ${on ? "on" : ""}`, text: lbl, "data-iso": iso, disabled: canWrite ? undefined : "" });
+  });
+  const startI = el("input", { class: "ag-time", type: "time", value: sched.start || "09:00", disabled: canWrite ? undefined : "" });
+  const endI = el("input", { class: "ag-time", type: "time", value: sched.end || "18:00", disabled: canWrite ? undefined : "" });
+  const perI = el("input", { class: "ag-num", type: "number", min: "1", max: "40", value: String(sched.perDay || 8), disabled: canWrite ? undefined : "" });
+  dayToggles.forEach((b) => b.addEventListener("click", () => { if (canWrite) b.classList.toggle("on"); }));
+  schedBox.appendChild(el("div", { class: "ag-sched" }, [
+    el("label", {}, [el("span", { text: "Días laborables" }), el("div", { class: "ag-days" }, dayToggles)]),
+    el("label", {}, [el("span", { text: "Jornada" }), el("div", { class: "ag-times" }, [startI, el("span", { text: "–" }), endI])]),
+    el("label", {}, [el("span", { text: "Llamadas / día (capacidad)" }), perI]),
+  ]));
+  if (canWrite) {
+    const saveMsg = el("span", { class: "ag-msg" });
+    const saveBtn = el("button", { class: "btn", text: "Guardar horario", onClick: () => {
+      const workdays = dayToggles.filter((b) => b.classList.contains("on")).map((b) => Number(b.dataset.iso));
+      store.setSchedule(subject, { workdays: workdays.length ? workdays : DEFAULT_SCHEDULE.workdays, start: startI.value, end: endI.value, perDay: Math.max(1, Number(perI.value) || 8) });
+      saveMsg.textContent = "✓ Guardado";
+      setTimeout(() => (saveMsg.textContent = ""), 1600);
+    } });
+    schedBox.appendChild(el("div", { class: "ag-actions" }, [saveBtn, saveMsg]));
+  }
+  wrap.appendChild(schedBox);
+
+  // — Acciones de reparto —
+  if (canWrite) {
+    const acts = el("div", { class: "ag-card ag-plan" });
+    acts.appendChild(el("h4", { text: "Plan de rondas" }));
+    acts.appendChild(el("p", { class: "ag-hint", text: `Reparte las ${mine.length} llamadas de ${subject} en días laborables (${sched.perDay}/día), las mejores primero.` }));
+    const planBtn = el("button", { class: "btn-primary", text: mine.length ? "⚡ Generar / regenerar plan" : "Sin llamadas asignadas todavía", disabled: mine.length ? undefined : "" });
+    planBtn.addEventListener("click", () => {
+      const live = orderByPriority(mine.filter((o) => ["01", "xn"].includes(o.scores?.classification)));
+      const plan = planRounds(live, store.getSchedule(subject) || sched, {});
+      for (const a of plan) store.assignLead(a.id, { scheduledFor: a.date, round: a.round });
+      render();
+    });
+    acts.appendChild(planBtn);
+
+    // Sembrar la tanda real de Mallorca a esta persona (one-click setup).
+    const mallIds = new Set(MALLORCA.map((m) => m.id));
+    const mallInResults = all.filter((o) => mallIds.has(o.id));
+    const unassignedMall = mallInResults.filter((o) => (tracking[o.id]?.assignedTo || null) !== subject).length;
+    const seedBtn = el("button", { class: "btn", text: `📍 Asignar la tanda de Mallorca a ${subject} (${mallInResults.length})` });
+    seedBtn.addEventListener("click", () => {
+      if (!confirm(`Asignar ${mallInResults.length} oportunidades de Mallorca a ${subject} y generar su plan de rondas?`)) return;
+      for (const o of mallInResults) store.assignLead(o.id, { assignedTo: subject });
+      const live = orderByPriority(mallInResults.filter((o) => ["01", "xn"].includes(o.scores?.classification)));
+      const plan = planRounds(live, store.getSchedule(subject) || sched, {});
+      for (const a of plan) store.assignLead(a.id, { scheduledFor: a.date, round: a.round });
+      render();
+    });
+    acts.appendChild(seedBtn);
+    if (unassignedMall > 0 && mine.length) acts.appendChild(el("p", { class: "ag-hint", text: `${unassignedMall} de Mallorca aún sin asignar a ${subject}.` }));
+    wrap.appendChild(acts);
+  }
+
+  // — Desglose por ronda / día —
+  if (!mine.length) {
+    wrap.appendChild(el("p", { class: "ag-empty", text: canWrite ? `Aún no hay llamadas asignadas a ${subject}. Usa "Asignar la tanda de Mallorca" para montar su semana, o asigna leads desde cada ficha.` : `${subject} no tiene llamadas asignadas todavía.` }));
+    return wrap;
+  }
+  const scheduled = mine.filter((o) => tracking[o.id]?.scheduledFor);
+  const unscheduled = mine.filter((o) => !tracking[o.id]?.scheduledFor);
+  const assignments = scheduled.map((o) => ({ id: o.id, date: tracking[o.id].scheduledFor, round: tracking[o.id].round || 1 }));
+  const sum = planSummary(assignments);
+
+  if (scheduled.length) {
+    wrap.appendChild(el("div", { class: "ag-summary" }, [
+      el("span", { class: "ag-stat", html: `<b>${sum.calls}</b> llamadas` }),
+      el("span", { class: "ag-stat", html: `<b>${sum.days}</b> días` }),
+      el("span", { class: "ag-stat", html: `<b>${sum.rounds}</b> ronda${sum.rounds === 1 ? "" : "s"}` }),
+      el("span", { class: "ag-stat", html: `del <b>${fmtDay(sum.from)}</b> al <b>${fmtDay(sum.to)}</b>` }),
+    ]));
+    const byRound = groupByRound(assignments);
+    const oppById = new Map(mine.map((o) => [o.id, o]));
+    for (const r of byRound) {
+      const block = el("div", { class: "ag-round" });
+      block.appendChild(el("div", { class: "ag-round-h", text: `Ronda ${r.round}` }));
+      const byDate = groupByDate(r.items);
+      for (const d of byDate) {
+        block.appendChild(el("div", { class: "ag-date-h", text: `${fmtDay(d.date)} · ${d.items.length} llamada${d.items.length === 1 ? "" : "s"}` }));
+        for (const a of d.items) { const o = oppById.get(a.id); if (o) block.appendChild(agendaRow(o, tracking)); }
+      }
+      wrap.appendChild(block);
+    }
+  }
+  if (unscheduled.length) {
+    const block = el("div", { class: "ag-round" });
+    block.appendChild(el("div", { class: "ag-round-h", text: `Sin agendar · ${unscheduled.length}` }));
+    for (const o of orderByPriority(unscheduled)) block.appendChild(agendaRow(o, tracking));
+    wrap.appendChild(block);
+  }
+  return wrap;
+}
+
+// Control de asignación en la ficha: responsable · día · ronda. Solo escritura.
+function assignmentBar(id, rebuild) {
+  const t = store.getTracking()[id] || {};
+  const team = auth.getUsers().map((u) => u.name).filter(Boolean);
+  const canWrite = allow("write");
+  const box = el("div", { class: "case-assign" });
+  box.appendChild(el("span", { class: "ca-label", text: "Responsable" }));
+  const owner = el("select", { class: "ca-owner", disabled: canWrite ? undefined : "" }, [
+    el("option", { value: "", text: "— sin asignar —", selected: !t.assignedTo ? "" : undefined }),
+    ...team.map((n) => el("option", { value: n, text: n, selected: n === t.assignedTo ? "" : undefined })),
+  ]);
+  owner.addEventListener("change", () => { store.assignLead(id, { assignedTo: owner.value || null }); rebuild && rebuild(); });
+  const date = el("input", { class: "ca-date", type: "date", value: t.scheduledFor || "", disabled: canWrite ? undefined : "" });
+  date.addEventListener("change", () => { store.assignLead(id, { scheduledFor: date.value || null }); });
+  box.appendChild(owner);
+  box.appendChild(el("span", { class: "ca-label", text: "Día" }));
+  box.appendChild(date);
+  if (t.round) box.appendChild(el("span", { class: "ca-round", text: `Ronda ${t.round}` }));
+  return box;
+}
+
 function openCase(id) {
   let lead = (state.results?.all || []).find((o) => o.id === id);
   if (!lead) return;
@@ -1464,6 +1654,7 @@ function openCase(id) {
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
   body.appendChild(synthWrap);
+  body.appendChild(assignmentBar(id, rebuild)); // responsable · día · ronda
   // Momento + web lado a lado en ancho: la ficha llega antes al guion y la acción.
   body.appendChild(el("div", { class: "case-signals" }, [momentumPanel, freshPanel]));
   body.appendChild(cardWrap);

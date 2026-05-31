@@ -22,6 +22,7 @@ const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const TRAIN_KEY = `${NS}training`; // dossiers de formación interna (compartidos)
+const SCHED_KEY = `${NS}schedules`; // horarios de trabajo por persona (compartidos)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -226,6 +227,42 @@ export function setNotes(id, notes) {
   return all[id];
 }
 
+// ---- Asignación + agenda por persona (reparto de llamadas) ------------------
+//
+// Una llamada puede tener dueño (assignedTo), día agendado (scheduledFor,
+// "YYYY-MM-DD") y ronda (round). Viven en el MISMO registro de tracking, así que
+// viajan gratis por el mismo sync que el estado/nota (newest-updatedAt gana). Se
+// preservan al cambiar estado/nota porque getRecord se difunde con spread.
+export function assignLead(id, fields = {}) {
+  const all = getTracking();
+  const rec = { ...getRecord(id) };
+  if ("assignedTo" in fields) rec.assignedTo = fields.assignedTo || null;
+  if ("scheduledFor" in fields) rec.scheduledFor = fields.scheduledFor || null;
+  if ("round" in fields) rec.round = fields.round || null;
+  rec.updatedAt = new Date().toISOString();
+  rec.by = getWho() || null;
+  all[id] = rec;
+  write(TRACK_KEY, all);
+  scheduleSync();
+  return rec;
+}
+
+// ---- Horarios de trabajo por persona (capacidad real) -----------------------
+//
+// Cada miembro del equipo guarda su jornada: días laborables (ISO 1=lun..7=dom),
+// hora de inicio/fin y llamadas/día (capacidad). Mapa compartido (se sincroniza
+// como los dossiers de formación). El planificador (agenda.js) lo usa para
+// repartir las rondas; la vista Hoy lo usa para no pedirle más de lo que cabe.
+export function getSchedules() { return read(SCHED_KEY, {}); }
+export function getSchedule(name) { return getSchedules()[name] || null; }
+export function setSchedule(name, sched) {
+  const all = getSchedules();
+  all[name] = { ...sched, updatedAt: new Date().toISOString() };
+  write(SCHED_KEY, all);
+  scheduleSync();
+  return all[name];
+}
+
 // ---- The learning loop ------------------------------------------------------
 
 /**
@@ -389,6 +426,7 @@ export function exportState() {
       verifications: getVerifications(),
       userLeads: getUserLeads(),
       training: getTraining(),
+      schedules: getSchedules(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -500,6 +538,19 @@ export function importState(json, { replace = false } = {}) {
       if (!cur || String(d.updatedAt || "") > String(cur.updatedAt || "")) byId.set(d.id, d);
     }
     write(TRAIN_KEY, [...byId.values()]);
+  }
+
+  // --- schedules (horarios por persona; merge por nombre, gana updatedAt) ---
+  const incomingSched = data.schedules && typeof data.schedules === "object" ? data.schedules : {};
+  if (replace) {
+    write(SCHED_KEY, incomingSched);
+  } else if (Object.keys(incomingSched).length) {
+    const cur = getSchedules();
+    for (const [name, sched] of Object.entries(incomingSched)) {
+      const ex = cur[name];
+      if (!ex || String(sched.updatedAt || "") > String(ex.updatedAt || "")) cur[name] = sched;
+    }
+    write(SCHED_KEY, cur);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
