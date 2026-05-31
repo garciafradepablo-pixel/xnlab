@@ -53,6 +53,7 @@ import { autoProgress, AUTO_BAR } from "../autopilot.js";
 import { synthesize } from "../synthesis.js";
 import { pendingCronLeads, claimCronLeads } from "../cronleads.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
+import * as avatar from "./avatar.js";
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
 // (UX); la seguridad real la imponen las Edge Functions (403). No te fíes solo
@@ -149,6 +150,33 @@ function updateSyncBadge(s) {
   node.style.display = label ? "" : "none";
 }
 
+// El "mundo" de Connect en la entrada: en vez de iniciales sueltas, el censo
+// real de participantes — cuántos hay y con su avatar (emoji/símbolo + color de
+// firma que cada uno comparte). Refleja el equipo interno registrado.
+function participantsRoster() {
+  const seen = new Set();
+  const people = auth.getUsers()
+    .filter((u) => u && u.name && !seen.has(norm(u.name)) && (seen.add(norm(u.name)), true))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  const n = people.length;
+  const wrap = el("div", { class: "auth-roster" });
+  if (!n) {
+    wrap.appendChild(el("p", { class: "auth-roster-empty", text: "Sé el primero en Connect — crea tu usuario abajo." }));
+    return wrap;
+  }
+  const dots = el("div", { class: "auth-roster-dots" });
+  for (const p of people.slice(0, 14)) {
+    dots.appendChild(avatar.avatarNode(avatar.avatarSpec(p), 30, "auth-roster-dot"));
+  }
+  if (n > 14) dots.appendChild(el("span", { class: "auth-roster-more", text: `+${n - 14}` }));
+  wrap.appendChild(el("div", { class: "auth-roster-count" }, [
+    el("span", { class: "auth-roster-n", text: String(n) }),
+    el("span", { class: "auth-roster-label", text: n === 1 ? "participante en Connect" : "participantes en Connect" }),
+  ]));
+  wrap.appendChild(dots);
+  return wrap;
+}
+
 // ---- Puerta de acceso (login / crear usuario) ------------------------------
 function renderAuth() {
   clear(root);
@@ -210,6 +238,7 @@ function renderAuth() {
     el("div", { class: "auth-whale" }, [whaleMark()]),
     el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
     el("p", { class: "auth-kicker", text: "Inteligencia de oportunidades · de la señal al chorro" }),
+    participantsRoster(),
     state._invite ? el("p", { class: "auth-invite", text: "Tienes una invitación a Connect — crea tu usuario abajo." }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
     nameI, passI,
@@ -364,11 +393,11 @@ function syncBadge() {
   });
 }
 
-// Chip del usuario en sesión: inicial sobre su color de firma + cerrar sesión.
+// Chip del usuario en sesión: avatar personalizado + cerrar sesión.
 function userChip() {
   const u = auth.currentUser();
   if (!u) return el("span");
-  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const dot = avatar.selfAvatarNode(u, 22, "user-dot");
   const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
@@ -383,29 +412,30 @@ const notesKey = (name) => `oi:notes:${String(name || "").toLowerCase()}`;
 function getUserNotes(name) { try { return localStorage.getItem(notesKey(name)) || ""; } catch { return ""; } }
 function setUserNotes(name, v) { try { localStorage.setItem(notesKey(name), v); } catch { /* */ } }
 
-const PROFILE_EMOJIS = ["◆", "✦", "★", "▲", "●", "◇", "✧", "◈", "❖", "⬢", "⬡", "⚡", "△", "□", "○", "✕"];
-
-// Perfil del usuario: avatar (emoji), notas privadas, contraseña e invitación.
-// Más personal y más privado, sin foto que suba a ningún sitio.
+// Perfil del usuario: avatar personalizable (foto/emoji/símbolo, fondo, efecto),
+// notas privadas, contraseña e invitación. La foto se queda SOLO en este
+// dispositivo; el emoji/símbolo sí sincroniza para que el equipo te reconozca.
 function openProfile() {
   const u = auth.currentUser();
   if (!u) return;
   const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
   const close = () => overlay.remove();
 
-  const dot = el("span", { class: "prof-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
-  const picker = el("div", { class: "prof-emojis" });
-  const mark = (val) => [...picker.children].forEach((c) => c.classList?.[c._val === val ? "add" : "remove"]?.("sel"));
-  PROFILE_EMOJIS.forEach((e) => {
-    const b = el("button", { class: `prof-emoji ${u.avatar === e ? "sel" : ""}`, text: e });
-    b._val = e;
-    b.addEventListener("click", async () => { await auth.setAvatar(e); dot.textContent = e; mark(e); render(); });
-    picker.appendChild(b);
-  });
-  const clearB = el("button", { class: "prof-emoji prof-clear", text: "∅", title: "Sin emoji (usa tu inicial)" });
-  clearB._val = null;
-  clearB.addEventListener("click", async () => { await auth.setAvatar(""); dot.textContent = u.name[0].toUpperCase(); mark(null); render(); });
-  picker.appendChild(clearB);
+  // Avatar grande en la cabecera del panel; se repinta solo al personalizar.
+  const idBox = el("div", { class: "prof-id" });
+  const repaintHead = () => {
+    clear(idBox);
+    idBox.appendChild(avatar.selfAvatarNode(u, 52, "prof-dot"));
+    idBox.appendChild(el("div", {}, [
+      el("div", { class: "prof-name", text: u.name }),
+      el("div", { class: "prof-role", text: roleLabel(u.role) }),
+    ]));
+  };
+  repaintHead();
+
+  // Estudio de personalización (foto/emoji/símbolo/fondo/efecto). Cada cambio
+  // repinta la cabecera del panel y el chip de la barra superior.
+  const studio = buildAvatarStudio(u, () => { repaintHead(); render(); });
 
   const notes = el("textarea", { class: "prof-notes", placeholder: "Tus notas privadas (solo en este dispositivo)…" });
   notes.value = getUserNotes(u.name);
@@ -435,13 +465,10 @@ function openProfile() {
 
   overlay.appendChild(el("div", { class: "pb-panel prof-panel" }, [
     el("div", { class: "pb-head" }, [
-      el("div", { class: "prof-id" }, [dot, el("div", {}, [
-        el("div", { class: "prof-name", text: u.name }),
-        el("div", { class: "prof-role", text: roleLabel(u.role) }),
-      ])]),
+      idBox,
       el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
     ]),
-    el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
+    el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), studio]),
     el("div", { class: "prof-sec" }, [
       el("h4", { text: "Tus notas privadas" }),
       el("p", { class: "config-note", text: "Solo en este dispositivo. No se comparten ni suben al servidor." }),
@@ -462,6 +489,243 @@ function openProfile() {
     ]),
   ]));
   document.body.appendChild(overlay);
+}
+
+// =============================================================================
+// Estudio de avatar — foto (subida + centrada en este dispositivo), cualquier
+// emoji del teclado, símbolos geométricos, color de fondo, color del símbolo y
+// efectos. La parte pesada (foto/fondo/efecto/encuadre) es LOCAL; el emoji o
+// símbolo elegido sincroniza por el campo `avatar` para que el equipo te vea.
+// `onChange()` repinta las previsualizaciones de fuera (cabecera + chip).
+// =============================================================================
+function buildAvatarStudio(u, onChange) {
+  let prof = avatar.getProfile(u.name);
+
+  // Previsualización propia, grande. Se repinta tras cada cambio.
+  const preview = el("div", { class: "av-studio-preview" });
+  const paint = () => { clear(preview); preview.appendChild(avatar.selfAvatarNode(u, 76)); };
+
+  // Aplica un parche al perfil local; si toca el emoji/símbolo, lo sincroniza.
+  const set = async (patch, syncGlyph) => {
+    prof = avatar.saveProfile(u.name, patch);
+    if (syncGlyph !== undefined) { try { await auth.setAvatar(syncGlyph); } catch { /* sin red */ } }
+    paint(); onChange?.();
+  };
+
+  // — Sub-pestañas: Foto · Emoji · Símbolo —
+  const body = el("div", { class: "av-tabbody" });
+  const tabs = ["foto", "emoji", "simbolo"];
+  const TAB_LABEL = { foto: "Foto", emoji: "Emoji", simbolo: "Símbolo" };
+  let activeTab = prof.mode === "photo" ? "foto" : (prof.glyph && avatar.SYMBOLS.includes(prof.glyph) ? "simbolo" : "emoji");
+  const tabBar = el("div", { class: "av-tabs" });
+  const renderTabBar = () => {
+    clear(tabBar);
+    for (const t of tabs) {
+      tabBar.appendChild(el("button", {
+        class: `av-tab ${t === activeTab ? "on" : ""}`, text: TAB_LABEL[t],
+        onClick: () => { activeTab = t; renderTabBar(); renderTab(); },
+      }));
+    }
+  };
+
+  // — TAB Foto: subir, reescalar a 256px (eficiente), centrar arrastrando + zoom —
+  function downscale(dataUrl, max, cb) {
+    try {
+      const img = new Image();
+      img.onload = () => {
+        const s = Math.min(1, max / Math.max(img.width || max, img.height || max));
+        const w = Math.max(1, Math.round((img.width || max) * s));
+        const h = Math.max(1, Math.round((img.height || max) * s));
+        const c = document.createElement("canvas"); c.width = w; c.height = h;
+        c.getContext("2d").drawImage(img, 0, 0, w, h);
+        try { cb(c.toDataURL("image/jpeg", 0.85)); } catch { cb(dataUrl); }
+      };
+      img.onerror = () => cb(dataUrl);
+      img.src = dataUrl;
+    } catch { cb(dataUrl); }
+  }
+  function photoTab() {
+    const wrap = el("div", { class: "av-foto" });
+    const fileInput = el("input", { type: "file", accept: "image/*", style: "display:none" });
+    fileInput.addEventListener("change", () => {
+      const f = fileInput.files && fileInput.files[0];
+      if (!f) return;
+      const r = new FileReader();
+      r.onload = () => downscale(String(r.result), 256, (small) =>
+        set({ mode: "photo", photo: small, pos: { x: 50, y: 50, scale: 1 } }).then(() => renderTab()));
+      r.readAsDataURL(f);
+    });
+    const pick = el("button", { class: "btn-primary", text: prof.photo ? "Cambiar foto" : "Subir foto", onClick: () => fileInput.click() });
+    wrap.appendChild(el("div", { class: "av-row" }, [pick, fileInput]));
+
+    if (prof.photo) {
+      // Encuadre: arrastra la foto para centrarla + control de zoom.
+      const frame = el("div", { class: "av-crop" });
+      const applyCrop = () => {
+        const p = prof.pos || { x: 50, y: 50, scale: 1 };
+        frame.setAttribute("style",
+          `background-image:url(${prof.photo});background-size:${(p.scale || 1) * 100}%;` +
+          `background-position:${p.x}% ${p.y}%;background-repeat:no-repeat`);
+      };
+      applyCrop();
+      let drag = false, last = null;
+      const clamp = (v) => Math.max(0, Math.min(100, v));
+      frame.addEventListener("pointerdown", (e) => { drag = true; last = { x: e.clientX, y: e.clientY }; frame.setPointerCapture?.(e.pointerId); });
+      frame.addEventListener("pointermove", (e) => {
+        if (!drag || !last) return;
+        const p = prof.pos || { x: 50, y: 50, scale: 1 };
+        p.x = clamp(p.x - (e.clientX - last.x) * 0.35);
+        p.y = clamp(p.y - (e.clientY - last.y) * 0.35);
+        last = { x: e.clientX, y: e.clientY };
+        prof.pos = p; applyCrop();
+      });
+      const endDrag = () => { if (drag) { drag = false; set({ pos: prof.pos, mode: "photo" }); } };
+      frame.addEventListener("pointerup", endDrag);
+      frame.addEventListener("pointerleave", endDrag);
+
+      const zoom = el("input", { type: "range", min: "1", max: "3", step: "0.05", value: String((prof.pos?.scale) || 1), class: "av-zoom" });
+      zoom.addEventListener("input", () => { const p = prof.pos || { x: 50, y: 50, scale: 1 }; p.scale = parseFloat(zoom.value) || 1; prof.pos = p; applyCrop(); });
+      zoom.addEventListener("change", () => set({ pos: prof.pos, mode: "photo" }));
+
+      wrap.appendChild(el("p", { class: "av-hint", text: "Arrastra la foto para centrarla · usa el zoom para ajustar." }));
+      wrap.appendChild(frame);
+      wrap.appendChild(el("div", { class: "av-row" }, [
+        el("span", { class: "av-zoom-ic", text: "🔍" }), zoom,
+      ]));
+      wrap.appendChild(el("div", { class: "av-row" }, [
+        el("button", { class: "btn", text: "Centrar", onClick: () => set({ pos: { x: 50, y: 50, scale: 1 }, mode: "photo" }).then(renderTab) }),
+        el("button", { class: "btn", text: "Quitar foto", onClick: () => set({ photo: "", mode: prof.glyph ? "glyph" : "initial" }).then(renderTab) }),
+      ]));
+    }
+    wrap.appendChild(el("p", { class: "av-hint dim", text: "La foto se guarda solo en este dispositivo — no se sube a ningún servidor." }));
+    return wrap;
+  }
+
+  // — TAB Emoji: buscador + categorías (como WhatsApp) + pegar CUALQUIER emoji —
+  function emojiTab() {
+    const wrap = el("div", { class: "av-emoji" });
+    const search = el("input", { class: "av-search", placeholder: "Busca un emoji (feliz, fuego, delfín…)" });
+    let cat = avatar.EMOJI_CATEGORIES[0].key;
+    const cats = el("div", { class: "av-cats" });
+    const grid = el("div", { class: "av-grid" });
+
+    const paintGrid = () => {
+      clear(grid);
+      const q = search.value.trim().toLowerCase();
+      let items;
+      if (q) items = avatar.allEmojis().filter(([e, k]) => e.includes(q) || k.includes(q));
+      else items = (avatar.EMOJI_CATEGORIES.find((c) => c.key === cat) || avatar.EMOJI_CATEGORIES[0]).items;
+      if (!items.length) { grid.appendChild(el("p", { class: "av-hint dim", text: "Sin resultados — pega el emoji abajo." })); return; }
+      for (const [e] of items.slice(0, 120)) {
+        grid.appendChild(el("button", {
+          class: `av-em ${prof.glyph === e ? "sel" : ""}`, text: e, title: e,
+          onClick: () => set({ glyph: e, mode: "glyph" }, e).then(() => paintGridSel(e)),
+        }));
+      }
+    };
+    const paintGridSel = (e) => [...grid.children].forEach((c) => c.classList?.[c.textContent === e ? "add" : "remove"]?.("sel"));
+
+    for (const c of avatar.EMOJI_CATEGORIES) {
+      cats.appendChild(el("button", {
+        class: `av-cat ${c.key === cat ? "on" : ""}`, text: c.icon, title: c.label,
+        onClick: () => { cat = c.key; search.value = ""; renderCats(); paintGrid(); },
+      }));
+    }
+    const renderCats = () => [...cats.children].forEach((x, i) => x.classList?.[avatar.EMOJI_CATEGORIES[i].key === cat ? "add" : "remove"]?.("on"));
+    search.addEventListener("input", paintGrid);
+
+    // Campo libre: pega cualquier emoji de tu móvil (infinitos).
+    const free = el("input", { class: "av-free", placeholder: "Pega aquí cualquier emoji 👇", maxlength: "8" });
+    const useFree = el("button", { class: "btn", text: "Usar", onClick: () => {
+      const e = (free.value || "").trim(); if (!e) return;
+      set({ glyph: e, mode: "glyph" }, e).then(() => paintGridSel(e));
+    } });
+    const clearGlyph = el("button", { class: "btn", text: "∅ Inicial", title: "Sin emoji: usa tu inicial",
+      onClick: () => set({ glyph: "", mode: "initial" }, "").then(() => paintGridSel("")) });
+
+    wrap.appendChild(search);
+    wrap.appendChild(cats);
+    wrap.appendChild(grid);
+    wrap.appendChild(el("div", { class: "av-row" }, [free, useFree, clearGlyph]));
+    paintGrid();
+    return wrap;
+  }
+
+  // — TAB Símbolo: rejilla de glifos geométricos sobrios —
+  function symbolTab() {
+    const wrap = el("div", { class: "av-symbols" });
+    const grid = el("div", { class: "av-grid" });
+    for (const s of avatar.SYMBOLS) {
+      grid.appendChild(el("button", {
+        class: `av-em ${prof.glyph === s ? "sel" : ""}`, text: s, title: s,
+        onClick: () => set({ glyph: s, mode: "glyph" }, s)
+          .then(() => [...grid.children].forEach((c) => c.classList?.[c.textContent === s ? "add" : "remove"]?.("sel"))),
+      }));
+    }
+    wrap.appendChild(grid);
+    return wrap;
+  }
+
+  function renderTab() {
+    clear(body);
+    body.appendChild(activeTab === "foto" ? photoTab() : activeTab === "simbolo" ? symbolTab() : emojiTab());
+  }
+
+  // — Fondo: sólidos + degradados + color a medida —
+  const bgSec = el("div", { class: "av-sub" }, [el("h5", { text: "Fondo" })]);
+  const bgRow = el("div", { class: "av-swatches" });
+  const markBg = () => [...bgRow.children].forEach((c) => c.classList?.[c._bg === (prof.bg || u.color) ? "add" : "remove"]?.("sel"));
+  for (const c of avatar.SOLIDS) {
+    const sw = el("button", { class: "av-sw", title: c }); sw._bg = c;
+    sw.setAttribute("style", `background:${c}`);
+    sw.addEventListener("click", () => set({ bg: c, fg: avatar.autoFg(c) }).then(markBg));
+    bgRow.appendChild(sw);
+  }
+  for (const g of avatar.GRADIENTS) {
+    const sw = el("button", { class: "av-sw av-sw-grad", title: "Degradado" }); sw._bg = g;
+    sw.setAttribute("style", `background:${g}`);
+    sw.addEventListener("click", () => set({ bg: g, fg: "#ffffff" }).then(markBg));
+    bgRow.appendChild(sw);
+  }
+  const custom = el("input", { type: "color", class: "av-color", title: "Color a medida", value: /^#?[0-9a-f]{6}$/i.test(prof.bg || "") ? prof.bg : "#4a9eff" });
+  custom.addEventListener("input", () => set({ bg: custom.value, fg: avatar.autoFg(custom.value) }).then(markBg));
+  bgSec.appendChild(bgRow);
+  bgSec.appendChild(el("div", { class: "av-row" }, [el("span", { class: "av-hint dim", text: "A medida:" }), custom]));
+
+  // — Color del símbolo (no aplica a foto) —
+  const fgSec = el("div", { class: "av-sub" }, [el("h5", { text: "Color del símbolo" })]);
+  const fgRow = el("div", { class: "av-swatches" });
+  for (const c of ["#ffffff", "#0e0f12", u.color, "#c9a227", "#f04747"]) {
+    const sw = el("button", { class: "av-sw", title: c }); sw.setAttribute("style", `background:${c}`);
+    sw.addEventListener("click", () => set({ fg: c }));
+    fgRow.appendChild(sw);
+  }
+  const fgCustom = el("input", { type: "color", class: "av-color", title: "Color del símbolo a medida", value: /^#?[0-9a-f]{6}$/i.test(prof.fg || "") ? prof.fg : "#ffffff" });
+  fgCustom.addEventListener("input", () => set({ fg: fgCustom.value }));
+  fgSec.appendChild(fgRow);
+  fgSec.appendChild(el("div", { class: "av-row" }, [el("span", { class: "av-hint dim", text: "A medida:" }), fgCustom]));
+
+  // — Efecto —
+  const fxSec = el("div", { class: "av-sub" }, [el("h5", { text: "Efecto" })]);
+  const fxRow = el("div", { class: "av-fx-row" });
+  const markFx = () => [...fxRow.children].forEach((c) => c.classList?.[c._fx === (prof.effect || "none") ? "add" : "remove"]?.("on"));
+  for (const f of avatar.EFFECTS) {
+    const b = el("button", { class: "av-fxchip", text: f.label }); b._fx = f.key;
+    b.addEventListener("click", () => set({ effect: f.key }).then(markFx));
+    fxRow.appendChild(b);
+  }
+  fxSec.appendChild(fxRow);
+
+  renderTabBar();
+  renderTab();
+  paint();
+  markBg();
+  markFx();
+
+  return el("div", { class: "av-studio" }, [
+    el("div", { class: "av-studio-top" }, [preview, el("div", { class: "av-tabsbox" }, [tabBar, body])]),
+    bgSec, fgSec, fxSec,
+  ]);
 }
 
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
@@ -707,8 +971,8 @@ function usersView() {
   }
   const me = auth.currentUser();
   const wrap = el("div", {}, [
-    el("h2", { text: "Usuarios y roles" }),
-    el("p", { class: "hint", text: "Cambia el rol de cada miembro. El cambio se aplica en el servidor (no solo aquí): un VIEWER no podrá modificar la mesa aunque manipule su navegador. Los cambios se reflejan en la próxima carga del afectado." }),
+    el("h2", { text: "Equipo · roles y tareas" }),
+    el("p", { class: "hint", text: "Edita el rol de cada trabajador, asígnale tareas y, si hace falta, elimínalo. Todo se aplica en el servidor (no solo aquí): un VIEWER no podrá tocar la mesa aunque manipule su navegador. Las tareas se sincronizan en la mesa compartida del equipo." }),
   ]);
 
   const list = el("div", { class: "users-list" });
@@ -722,12 +986,14 @@ function usersView() {
     if (!users.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay otras cuentas." })); return; }
     for (const u of users) {
       const role = u.role || "editor";
-      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.name[0] || "?").toUpperCase() });
+      const isMe = me && norm(u.name) === norm(me.name);
+      const dot = avatar.avatarNode(avatar.avatarSpec(u, { self: isMe }), 30, "user-dot");
+
+      // — Editar rol —
       const sel = el("select", { class: "lead-f role-select" }, ROLES.map((r) =>
         el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })
       ));
-      const isMe = me && norm(u.name) === norm(me.name);
-      sel.disabled = isMe; // no te cambias el rol a ti mismo desde aquí (evita autobloqueo)
+      sel.disabled = isMe; // no te cambias el rol a ti mismo (evita autobloqueo)
       const status = el("span", { class: "role-status" });
       sel.addEventListener("change", async () => {
         const newRole = sel.value;
@@ -736,12 +1002,60 @@ function usersView() {
         if (r.ok) { status.textContent = "✓"; setTimeout(() => (status.textContent = ""), 1500); }
         else { status.textContent = r.error || "Error"; sel.value = role; }
       });
-      list.appendChild(el("div", { class: "user-row" }, [
-        dot,
-        el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
-        el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
-        sel,
-        status,
+
+      // — Eliminar trabajador (no a ti mismo) —
+      const delBtn = el("button", { class: "btn-danger btn-sm", text: "Eliminar", title: isMe ? "No puedes eliminar tu propia cuenta" : `Eliminar a ${u.name}` });
+      delBtn.disabled = !!isMe;
+      delBtn.addEventListener("click", async () => {
+        if (!confirm(`¿Eliminar la cuenta de ${u.name}? Esta acción no se puede deshacer.`)) return;
+        delBtn.disabled = true; delBtn.textContent = "Eliminando…";
+        const r = await auth.deleteUser(u.name);
+        if (r.ok) renderList();
+        else { delBtn.disabled = false; delBtn.textContent = "Eliminar"; status.textContent = r.error || "Error"; }
+      });
+
+      // — Tareas asignadas a este trabajador —
+      const tasksBox = el("div", { class: "worker-tasks" });
+      const renderTasks = () => {
+        clear(tasksBox);
+        const open = store.getTasksFor(u.name).sort((a, b) => (a.done - b.done) || (b.createdAt || "").localeCompare(a.createdAt || ""));
+        if (!open.length) { tasksBox.appendChild(el("p", { class: "worker-tasks-empty", text: "Sin tareas asignadas." })); return; }
+        for (const t of open) {
+          const chk = el("button", { class: `task-check ${t.done ? "done" : ""}`, text: t.done ? "✓" : "○", title: t.done ? "Marcar pendiente" : "Marcar hecha" });
+          chk.addEventListener("click", () => { store.setTaskDone(t.id, !t.done); renderTasks(); });
+          const rm = el("button", { class: "task-rm", text: "✕", title: "Quitar tarea", onClick: () => { store.removeTask(t.id); renderTasks(); } });
+          tasksBox.appendChild(el("div", { class: `task-row ${t.done ? "done" : ""}` }, [
+            chk,
+            el("span", { class: "task-title", text: t.title }),
+            t.by ? el("span", { class: "task-by", text: `· ${t.by}` }) : null,
+            rm,
+          ]));
+        }
+      };
+      renderTasks();
+
+      // — Asignar tarea nueva —
+      const taskInput = el("input", { class: "task-input", placeholder: `Asignar tarea a ${u.name}…` });
+      const assign = () => {
+        const title = (taskInput.value || "").trim();
+        if (!title) return;
+        store.setWho(me?.name || store.getWho());
+        store.addTask({ to: u.name, title });
+        taskInput.value = "";
+        renderTasks();
+      };
+      taskInput.addEventListener("keydown", (e) => { if (e.key === "Enter") assign(); });
+      const assignBtn = el("button", { class: "btn btn-sm", text: "Asignar", onClick: assign });
+
+      list.appendChild(el("div", { class: "worker-card" }, [
+        el("div", { class: "worker-head" }, [
+          dot,
+          el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
+          el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
+          sel, status, delBtn,
+        ]),
+        el("div", { class: "worker-assign" }, [taskInput, assignBtn]),
+        tasksBox,
       ]));
     }
   };
@@ -913,6 +1227,34 @@ function rerenderResults() {
 
 const eurFmt = (n) => `${Number(n || 0).toLocaleString("es-ES")} €`;
 
+// Panel "Tus tareas" — lo que un admin asignó al usuario en sesión. El propio
+// trabajador puede marcarlas hechas; se sincroniza en la mesa compartida.
+function myTasksPanel(name) {
+  const all = store.getTasksFor(name);
+  if (!all.length) return null;
+  const panel = el("div", { class: "mytasks" });
+  const render = () => {
+    clear(panel);
+    const mine = store.getTasksFor(name).sort((a, b) => (a.done - b.done) || (b.createdAt || "").localeCompare(a.createdAt || ""));
+    const pending = mine.filter((t) => !t.done).length;
+    panel.appendChild(el("div", { class: "mytasks-head" }, [
+      el("span", { class: "mytasks-title", text: "Tus tareas" }),
+      el("span", { class: "mytasks-count", text: pending ? `${pending} pendiente${pending === 1 ? "" : "s"}` : "todo hecho ✓" }),
+    ]));
+    for (const t of mine) {
+      const chk = el("button", { class: `task-check ${t.done ? "done" : ""}`, text: t.done ? "✓" : "○", title: t.done ? "Marcar pendiente" : "Marcar hecha" });
+      chk.addEventListener("click", () => { store.setTaskDone(t.id, !t.done); render(); });
+      panel.appendChild(el("div", { class: `task-row ${t.done ? "done" : ""}` }, [
+        chk,
+        el("span", { class: "task-title", text: t.title }),
+        t.by ? el("span", { class: "task-by", text: `· de ${t.by}` }) : null,
+      ]));
+    }
+  };
+  render();
+  return panel;
+}
+
 function todayView() {
   const tracking = store.getTracking();
   const opps = state.results ? state.results.all : [];
@@ -927,6 +1269,9 @@ function todayView() {
     el("div", { class: "today-greet", text: `${greet}${u ? `, ${u.name}` : ""}` }),
     el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
   ]));
+
+  // Tus tareas: lo que un admin te ha asignado (mesa compartida del equipo).
+  if (u) { const mt = myTasksPanel(u.name); if (mt) blocks.push(mt); }
 
   // Pulso del pipeline: cuatro cifras que mandan.
   blocks.push(el("div", { class: "pulse" }, [

@@ -54,6 +54,11 @@ export function remoteSetRole(token, targetName, role) {
   return call("setRole", { token, targetName, role });
 }
 
+/** Elimina la cuenta de un trabajador (solo admin; el servidor refuerza). */
+export function remoteDeleteUser(token, targetName) {
+  return call("deleteUser", { token, targetName });
+}
+
 /** Cambia la contraseña del propio usuario (requiere token de sesión válido). */
 export function remoteSetPassword(token, password) {
   return call("setPassword", { token, password });

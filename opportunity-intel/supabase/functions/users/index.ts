@@ -226,6 +226,34 @@ Deno.serve(async (req) => {
       return json({ ok: true, user: { name: updated[0].name, role: updated[0].role } });
     }
 
+    // deleteUser: SOLO admin. Elimina la cuenta de un trabajador. Protege al
+    // último admin y a ti mismo (no te borras y te quedas sin acceso).
+    if (action === "deleteUser") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN puede eliminar trabajadores." }, 403);
+      const tgt = String(targetName || "").trim().toLowerCase();
+      if (!tgt) return json({ ok: false, error: "Falta el usuario objetivo." }, 400);
+      if (tgt === String(caller.name_lower || caller.name || "").toLowerCase()) {
+        return json({ ok: false, error: "No puedes eliminar tu propia cuenta." }, 400);
+      }
+      // Carga el objetivo para comprobar si es admin (y proteger al último).
+      const tr = await (await rest(`connect_users?select=id,role&name_lower=eq.${encodeURIComponent(tgt)}`)).json();
+      const target = Array.isArray(tr) ? tr[0] : null;
+      if (!target) return json({ ok: false, error: "Usuario objetivo no encontrado." }, 404);
+      if (target.role === "admin") {
+        const admins = await (await rest(`connect_users?select=id&role=eq.admin`)).json();
+        if (Array.isArray(admins) && admins.length <= 1) {
+          return json({ ok: false, error: "No puedes eliminar al último ADMIN." }, 400);
+        }
+      }
+      const del = await rest(`connect_users?id=eq.${encodeURIComponent(target.id)}`, {
+        method: "DELETE", headers: { Prefer: "return=minimal" },
+      });
+      if (!del.ok) return json({ ok: false, error: "No se pudo eliminar al trabajador." }, 500);
+      return json({ ok: true });
+    }
+
     return json({ ok: false, error: "Acción no válida." }, 400);
   } catch (e) {
     return json({ ok: false, error: String(e) }, 500);

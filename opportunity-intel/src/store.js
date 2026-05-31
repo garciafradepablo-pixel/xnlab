@@ -21,6 +21,7 @@ const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
+const TASKS_KEY = `${NS}tasks`; // tareas que un admin asigna a cada trabajador
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -387,6 +388,7 @@ export function exportState() {
       learning: getLearning(),
       verifications: getVerifications(),
       userLeads: getUserLeads(),
+      tasks: rawTasks(), // incluye lápidas: el borrado debe propagarse al merge
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -485,6 +487,20 @@ export function importState(json, { replace = false } = {}) {
       byId.set(l.id, l);
     }
     write(USER_LEADS_KEY, [...byId.values()]);
+  }
+
+  // --- tareas (merge por id, lo más reciente por updatedAt gana; lápidas incl.) ---
+  const incomingTasks = Array.isArray(data.tasks) ? data.tasks : [];
+  if (replace) {
+    write(TASKS_KEY, incomingTasks);
+  } else if (incomingTasks.length) {
+    const byId = new Map(rawTasks().map((t) => [t.id, t]));
+    for (const t of incomingTasks) {
+      if (!t || !t.id) continue;
+      const ex = byId.get(t.id);
+      if (!ex || (t.updatedAt || "") > (ex.updatedAt || "")) byId.set(t.id, t);
+    }
+    write(TASKS_KEY, [...byId.values()]);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
@@ -602,6 +618,70 @@ export function saveUserLead(lead) {
 
 export function removeUserLead(id) {
   write(USER_LEADS_KEY, getUserLeads().filter((l) => l.id !== id));
+  scheduleSync();
+}
+
+// ---- Tareas (un admin asigna trabajo a cada trabajador) ---------------------
+//
+// Viven en el mismo documento compartido (mismo merge "lo más reciente por id
+// gana"), así Pablo y Javi ven la misma lista desde cualquier dispositivo sin
+// endpoint nuevo. Cada tarea: { id, to (trabajador), title, note, by (quién la
+// asigna), createdAt, updatedAt, done, doneAt }.
+
+const lower = (s) => String(s || "").trim().toLowerCase();
+
+// Lectura cruda CON lápidas (para operaciones internas y el merge compartido).
+function rawTasks() { return read(TASKS_KEY, []); }
+
+/** @returns {Array} tareas vivas de todo el equipo (sin lápidas de borrado). */
+export function getTasks() {
+  return rawTasks().filter((t) => t && !t.deleted);
+}
+
+/** Tareas asignadas a un trabajador (por nombre, sin distinguir mayúsculas). */
+export function getTasksFor(name) {
+  const n = lower(name);
+  return getTasks().filter((t) => lower(t.to) === n);
+}
+
+/** Crea una tarea para un trabajador. Devuelve la tarea creada (o null si falta). */
+export function addTask({ to, title, note = "" }) {
+  const now = new Date().toISOString();
+  const task = {
+    id: `task_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
+    to: String(to || "").trim(),
+    title: String(title || "").trim(),
+    note: String(note || "").trim(),
+    by: getWho() || null,
+    createdAt: now, updatedAt: now,
+    done: false, doneAt: null,
+  };
+  if (!task.to || !task.title) return null;
+  const all = rawTasks();
+  all.push(task);
+  write(TASKS_KEY, all);
+  scheduleSync();
+  return task;
+}
+
+/** Marca una tarea hecha/pendiente. */
+export function setTaskDone(id, done = true) {
+  const all = rawTasks();
+  const t = all.find((x) => x.id === id);
+  if (!t) return;
+  t.done = !!done; t.doneAt = done ? new Date().toISOString() : null;
+  t.updatedAt = new Date().toISOString();
+  write(TASKS_KEY, all);
+  scheduleSync();
+}
+
+/** Elimina una tarea (deja una lápida para que el borrado se propague al merge). */
+export function removeTask(id) {
+  const all = rawTasks();
+  const t = all.find((x) => x.id === id);
+  if (!t) return;
+  t.deleted = true; t.updatedAt = new Date().toISOString();
+  write(TASKS_KEY, all);
   scheduleSync();
 }
 

@@ -100,5 +100,41 @@ try {
   }
 } catch (e) { ok(false, "la paleta ⌘K no debe lanzar: " + e.message); }
 
+// ── 7. Perfil: estudio de avatar (foto/emoji/símbolo/fondo/efecto) ───────────
+try {
+  await mount(root); // vuelve al shell con sesión tras la navegación previa
+  const chip = root.querySelector(".user-chip");
+  ok(chip != null, "la cabecera muestra el chip de usuario");
+  if (chip) {
+    chip.click();
+    const panel = document.body.querySelector(".prof-panel");
+    ok(panel != null, "pulsar el chip abre el panel de perfil");
+    const studio = panel && panel.querySelector(".av-studio");
+    ok(studio != null, "el perfil incluye el estudio de avatar");
+    ok(studio && studio.querySelector(".av-tabs") != null, "el estudio tiene pestañas foto/emoji/símbolo");
+    // Personalizar (emoji + fondo + efecto) no debe lanzar.
+    const em = studio && studio.querySelector(".av-em");
+    ok(em != null, "el estudio ofrece emojis/símbolos elegibles");
+    if (em) em.click();
+    const sw = studio && studio.querySelector(".av-sw");
+    if (sw) sw.click();
+    const fx = studio && studio.querySelector(".av-fxchip");
+    if (fx) fx.click();
+    ok(true, "elegir emoji + fondo + efecto no lanza");
+    const x = document.body.querySelector(".prof-panel .pb-x");
+    if (x) { x.click(); ok(document.body.querySelector(".prof-panel") == null, "cerrar el perfil con ✕ funciona"); }
+  }
+} catch (e) { ok(false, "abrir/usar el estudio de avatar no debe lanzar: " + e.message); }
+
+// ── 8. La entrada muestra el censo de participantes (no iniciales sueltas) ───
+try {
+  // Drena cualquier re-render asíncrono pendiente de la personalización previa
+  // para que la pantalla de acceso sea lo último que se pinta.
+  await new Promise((r) => setTimeout(r, 0));
+  auth.logout();
+  await mount(root);
+  ok(root.querySelector(".auth-roster") != null, "la pantalla de acceso muestra el censo de participantes");
+} catch (e) { ok(false, "el censo de participantes no debe lanzar: " + e.message); }
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

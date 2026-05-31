@@ -330,6 +330,21 @@ export async function setUserRole(targetName, role) {
   } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }
 
+/** Elimina la cuenta de un trabajador (solo admin; el servidor refuerza con 403).
+ *  Al lograrlo, lo quita también de la caché local. {ok, error?} */
+export async function deleteUser(targetName) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
+  try {
+    const r = await remote.remoteDeleteUser(token, targetName);
+    if (r && r.ok) {
+      write(USERS_KEY, getUsers().filter((x) => norm(x.name) !== norm(targetName)));
+      return { ok: true };
+    }
+    return { ok: false, error: (r && r.error) || "No se pudo eliminar al trabajador." };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
+}
+
 /** Color de un usuario por nombre (para teñir su actividad). null si no existe. */
 export function colorOf(name) {
   const u = getUsers().find((x) => norm(x.name) === norm(name));
