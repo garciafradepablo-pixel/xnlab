@@ -91,6 +91,31 @@ const ICONS = {
 const icon = (name) => ICONS[name] || "";
 const iconEl = (name, cls = "") => el("span", { class: `ic ${cls}`.trim(), html: icon(name) });
 
+// Cuenta animada para cifras vivas (racha, acciones, posits…). Anima SOLO
+// cuando el valor cambia de verdad respecto a lo último mostrado — nunca en
+// el primer pintado ni en re-renders incidentales — para premiar el gesto
+// sin parpadeo. Respeta prefers-reduced-motion y degrada a texto estático
+// fuera del navegador (tests).
+const _countLast = new Map();
+function countUp(node, to, key) {
+  to = Number(to) || 0;
+  const prev = _countLast.get(key);
+  _countLast.set(key, to);
+  const canAnim = typeof requestAnimationFrame === "function" && typeof performance !== "undefined";
+  const reduce = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!canAnim || reduce || prev == null || prev === to) { node.textContent = String(to); return; }
+  const from = prev, dur = 480, t0 = performance.now();
+  node.textContent = String(from);
+  const tick = (now) => {
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3); // easeOutCubic
+    node.textContent = String(Math.round(from + (to - from) * e));
+    if (p < 1) requestAnimationFrame(tick);
+    else { node.textContent = String(to); node.classList.add("tp-bumped"); setTimeout(() => node.classList.remove("tp-bumped"), 380); }
+  };
+  requestAnimationFrame(tick);
+}
+
 const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
@@ -810,19 +835,22 @@ function todayPulseStrip(me) {
   const unread = posits.unread(me);
   const rec = posits.lastRecognition(me);
 
-  const cell = (cls, iconName, big, label, onClick) =>
-    el("button", { class: `tp-cell ${cls}`, onClick }, [
+  const cell = (cls, iconName, big, label, onClick, key) => {
+    const bigNode = el("span", { class: "tp-big" });
+    countUp(bigNode, big, key); // cifra viva: anima solo si cambió
+    return el("button", { class: `tp-cell ${cls}`, onClick }, [
       iconEl(iconName, "tp-glyph"),
       el("div", { class: "tp-text" }, [
-        el("span", { class: "tp-big", text: String(big) }),
+        bigNode,
         el("span", { class: "tp-label", text: label }),
       ]),
     ]);
+  };
 
   const cells = [
-    cell("tp-streak", "flame", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today")),
-    cell("tp-done", "bolt", done, "acciones hoy", () => goView("cards")),
-    cell(`tp-inbox${unread ? " on" : ""}`, "pin", unread, "posits sin ver", () => goView("muelle")),
+    cell("tp-streak", "flame", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today"), "tp-streak"),
+    cell("tp-done", "bolt", done, "acciones hoy", () => goView("cards"), "tp-done"),
+    cell(`tp-inbox${unread ? " on" : ""}`, "pin", unread, "posits sin ver", () => goView("muelle"), "tp-inbox"),
   ];
   if (rec) {
     cells.push(el("button", { class: "tp-cell tp-rec", title: `${rec.from} te potenció`, onClick: () => goView("muelle") }, [

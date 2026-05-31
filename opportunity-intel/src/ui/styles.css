@@ -1733,7 +1733,10 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 .tp-inbox.on .tp-glyph { color: var(--accent); }
 .tp-rec .tp-glyph { color: var(--xn); }
 .tp-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
-.tp-big { font: 800 22px var(--sans); color: var(--ink); }
+.tp-big { font: 800 22px var(--sans); color: var(--ink); display: inline-block; transform-origin: left center; }
+/* Pop breve cuando una cifra viva cambia (lo dispara countUp en JS). */
+.tp-bumped { animation: tpBump .38s cubic-bezier(.2,.8,.2,1); }
+@keyframes tpBump { 0% { transform: scale(1); } 42% { transform: scale(1.16); } 100% { transform: scale(1); } }
 .tp-rec-from { font-size: 16px; }
 .tp-label { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .05em; }
 .tp-streak .tp-big { color: var(--accent); }
