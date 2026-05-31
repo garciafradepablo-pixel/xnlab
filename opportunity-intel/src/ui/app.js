@@ -1798,6 +1798,7 @@ async function autoTick() {
           if (!lead.phone && c.phone) lead.phone = c.phone;
           if (!lead.instagram && c.instagram) lead.instagram = c.instagram;
           if (!lead.linkedin && c.linkedin) lead.linkedin = c.linkedin;
+          if (Array.isArray(c.images) && c.images.length) lead.images = c.images;
         }
         store.saveUserLead(lead);
       }
@@ -2118,9 +2119,11 @@ function captureMap() {
         if (!l.phone && c.phone) l.phone = c.phone;
         if (!l.instagram && c.instagram) l.instagram = c.instagram;
         if (!l.linkedin && c.linkedin) l.linkedin = c.linkedin;
+        if (Array.isArray(c.images) && c.images.length) l.images = c.images;
         store.saveUserLead(l);
-        ui.status = (c.email || c.phone || c.instagram || c.linkedin)
-          ? `✓ Contactos de «${l.company}» añadidos desde su web.`
+        const got = c.email || c.phone || c.instagram || c.linkedin || (l.images && l.images.length);
+        ui.status = got
+          ? `✓ «${l.company}»: contactos${l.images && l.images.length ? " e imágenes" : ""} desde su web.`
           : `Sin contactos visibles en la web de «${l.company}».`;
       } else {
         ui.status = `No pude leer la web de «${l.company}» (bloqueada o sin contactos).`;
@@ -2129,13 +2132,22 @@ function captureMap() {
     });
     const name = el("span", { class: "cat-lead-name", title: "Abrir en el ranking", text: l.company,
       onClick: () => { state.filters.search = l.company; goView("cards"); } });
-    return el("div", { class: "cat-lead" }, [
+    const row = el("div", { class: "cat-lead" }, [
       name,
       ...tagVals.slice(0, 2).map((v) => el("span", { class: "cat-tag", text: v })),
       ...contacts,
       el("span", { class: "cat-lead-city", text: l.city || "" }),
       findBtn,
     ]);
+    // Moodboard: miniaturas de la web (remotas, lazy → cero peso al bundle).
+    if (Array.isArray(l.images) && l.images.length) {
+      const mb = el("div", { class: "cat-mood" }, l.images.slice(0, 5).map((src) =>
+        el("a", { class: "cat-mood-i", href: src, target: "_blank", rel: "noopener" }, [
+          el("img", { src, loading: "lazy", alt: "", referrerpolicy: "no-referrer" }),
+        ])));
+      return el("div", { class: "cat-lead-wrap" }, [row, mb]);
+    }
+    return row;
   }
   function leadList(path, depth) {
     let leads = leadsUnder(path, store.getUserLeads());
