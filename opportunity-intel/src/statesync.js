@@ -22,6 +22,11 @@
 const ENDPOINT = "https://fecfncfkkgzazuetcllx.supabase.co/functions/v1/connect-state";
 const KEY = "sb_publishable_GtToYg33N8bT7T6O3OEmQw_Wu_hEvkS";
 
+// Identidad del proyecto para el canal de Realtime (broadcast). Misma clave
+// publishable; el broadcast es pub/sub puro entre clientes, sin tabla ni RLS.
+export const PROJECT_REF = "fecfncfkkgzazuetcllx";
+export const PUBLISHABLE_KEY = KEY;
+
 async function call(action, payload) {
   const res = await fetch(ENDPOINT, {
     method: "POST",

@@ -291,10 +291,22 @@ capas, todas sobre el canal de sync existente (cero infra nueva, cero deps):
 - **Aviso de cambios.** Cuando entra un cambio del equipo, la tarjeta afectada
   del Estudio **destella** y salta un aviso efímero («Connect interno» se
   actualizó) — los cambios se sienten, no son silenciosos.
+- **Realtime por websocket (<1 s).** Encima del sondeo, un canal de **Supabase
+  Realtime (broadcast)** propaga un *nudge* en cuanto alguien sube un cambio; el
+  otro lo recibe y trae al instante. El indicador pasa de «En vivo» a **«Tiempo
+  real»**. Ver [`src/realtime.js`](./src/realtime.js) — cliente Phoenix mínimo,
+  sin dependencias, con reconexión por backoff.
 
-> Sigue siendo *polling*, no websockets, a propósito: el cliente solo lleva la
-> clave publishable y todo escribe vía la Edge Function (service role). El salto
-> a Supabase Realtime (broadcast) es un paso aparte, documentado como opcional.
+> **Por qué broadcast y no datos por el socket:** el broadcast es pub/sub puro
+> entre clientes — no toca la tabla ni RLS, así que el cliente sigue llevando
+> solo la clave publishable y la fuente durable sigue siendo la Edge Function
+> (service role). El socket lleva un *aviso*, no el estado.
+>
+> **Aditivo y degradable:** si el websocket no conecta (red, política del
+> entorno, server), el sondeo adaptativo sigue siendo el suelo — la app funciona
+> igual, solo un poco menos instantánea. El nudge se emite SOLO tras un push
+> propio confirmado (no en el pull de migración), así que no hay bucle de avisos
+> entre los dos navegadores.
 
 > El sector **Software y Producto Digital** se añadió a la taxonomía interna
 > para que el funnel también detecte momentos en ese vertical. Es taxonomía del

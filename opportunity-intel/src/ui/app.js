@@ -51,6 +51,8 @@ import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
 import * as presence from "../presence.js";
+import * as realtime from "../realtime.js";
+import { PROJECT_REF, PUBLISHABLE_KEY } from "../statesync.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
@@ -137,7 +139,7 @@ export async function mount(rootEl) {
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
   auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
-  store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
+  store.startSharedSync().then((r) => { if (r && r.ok) { ensureRealtime(); recompute().then(render); } }).catch(() => {});
 }
 
 // —— Indicador discreto de sincronización ————————————————————————————————————
@@ -251,6 +253,36 @@ function ensurePresence() {
   presenceTimer = setInterval(heartbeat, presence.HEARTBEAT_MS);
   if (presenceTimer && typeof presenceTimer.unref === "function") presenceTimer.unref();
 }
+
+// —— Realtime por websocket (propagación <1 s) ————————————————————————————————
+// Capa ADITIVA encima del sondeo: un canal de broadcast lleva un "nudge" cuando
+// alguien sube un cambio; al recibirlo, traemos al instante. Si no conecta, el
+// sondeo adaptativo sigue funcionando igual. Solo en navegador real (no en el
+// shim de tests) y solo una vez que la sync compartida está viva.
+let rt = null, rtStatus = "off";
+function realtimeUsable() {
+  if (typeof WebSocket === "undefined") return false;
+  // El shim de tests se identifica como "node-dom-shim": fuera de un navegador
+  // real no abrimos sockets (ni red ni handles colgando en CI).
+  const ua = (typeof navigator !== "undefined" && navigator.userAgent) || "";
+  return !/node-dom-shim/.test(ua);
+}
+function ensureRealtime() {
+  if (rt || !realtimeUsable()) return;
+  if (!auth.currentUser() || !store.isSyncEnabled()) return;
+  rt = realtime.createRealtime({
+    url: realtime.realtimeUrl(PROJECT_REF, PUBLISHABLE_KEY),
+    channel: realtime.channelTopic("default"),
+    onSignal: () => { lastPullAt = 0; liveTick(); }, // nudge ajeno → pull inmediato
+    onStatus: (s) => {
+      rtStatus = s;
+      if (s === "live") heartbeat(); // al entrar al canal, anúnciate ya
+      updatePresenceBar();
+    },
+  }).start();
+  // Cuando subo un cambio mío al servidor, aviso al equipo por el canal.
+  store.onPushed(() => { try { rt && rt.nudge({ by: meName() }); } catch { /* */ } });
+}
 function updatePresenceBar() {
   if (!root) return;
   const node = root.querySelector(".presence-bar");
@@ -260,8 +292,11 @@ function updatePresenceBar() {
   clear(node);
   if (!others.length) { node.style.display = "none"; return; }
   node.style.display = "";
-  node.appendChild(el("span", { class: "presence-live", title: "Equipo conectado, en vivo" }, [
-    el("span", { class: "presence-pulse" }), "En vivo",
+  node.appendChild(el("span", {
+    class: `presence-live ${rtStatus === "live" ? "instant" : ""}`,
+    title: rtStatus === "live" ? "Tiempo real — los cambios llegan al instante" : "En vivo — refresco cada pocos segundos",
+  }, [
+    el("span", { class: "presence-pulse" }), rtStatus === "live" ? "Tiempo real" : "En vivo",
   ]));
   for (const o of others.slice(0, 5)) {
     node.appendChild(el("span", {

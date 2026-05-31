@@ -82,6 +82,13 @@ function setSync(s) {
   for (const cb of syncListeners) { try { cb(s); } catch { /* */ } }
 }
 
+// Aviso de "acabo de subir un cambio MÍO al servidor" — lo usa el Realtime para
+// lanzar un nudge al equipo. Se dispara SOLO en el push programado (acción del
+// usuario), nunca en el push de migración del pull, para no encadenar nudges.
+const pushedListeners = new Set();
+export function onPushed(cb) { pushedListeners.add(cb); return () => pushedListeners.delete(cb); }
+function notifyPushed() { for (const cb of pushedListeners) { try { cb(); } catch { /* */ } } }
+
 function getRev() { return Number(read(REV_KEY, 0)) || 0; }
 function setRev(r) { write(REV_KEY, Number(r) || 0); }
 
@@ -173,7 +180,7 @@ function scheduleSync() {
 async function runScheduledPush() {
   pushTimer = null;
   pushInFlight = true;
-  try { await pushSharedState(); }
+  try { const r = await pushSharedState(); if (r && r.ok) notifyPushed(); }
   finally {
     pushInFlight = false;
     if (pushAgain) { pushAgain = false; scheduleSync(); }
