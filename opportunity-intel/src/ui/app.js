@@ -1215,6 +1215,28 @@ function todayView() {
     blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
   }
 
+  // Tu día personal: el reto crítico de la semana y tu agenda que vence hoy —
+  // para que Crecer no quede enterrado en una pestaña, sino en la entrada.
+  blocks.push(el("h2", { class: "today-h2", text: "Tu día" }));
+  blocks.push(el("div", { class: "today-crit", title: "Ir a Desarrollo", onClick: () => goView("growth") }, [
+    el("span", { class: "today-crit-tag", text: "🧠 Reto de la semana" }),
+    el("span", { class: "today-crit-text", text: growth.weeklyCriticalPrompt() }),
+  ]));
+  const me = meName();
+  const ref = agenda.today();
+  const dueToday = store.getAgenda()
+    .filter((i) => (i.owner === me || i.owner === agenda.COMMON) && !i.done && (i.date === ref || agenda.isOverdue(i, ref)))
+    .sort((a, b) => Number(agenda.isOverdue(b, ref)) - Number(agenda.isOverdue(a, ref)));
+  if (dueToday.length) {
+    blocks.push(el("ul", { class: "today-agenda" }, dueToday.slice(0, 6).map((it) => el("li", { class: `today-ag ${agenda.isOverdue(it, ref) ? "overdue" : ""}` }, [
+      allow("write") ? el("button", { class: "ag-check", text: "○", title: "Hecho", onClick: () => { store.saveAgendaItem(agenda.toggleDone(it)); render(); } }) : null,
+      el("span", { class: "today-ag-title", text: it.title }),
+      it.owner === agenda.COMMON ? el("span", { class: "today-ag-tag", text: "común" }) : null,
+    ]))));
+  } else {
+    blocks.push(el("p", { class: "today-empty", text: "Nada en tu agenda para hoy. Planifica en Crecer → Agenda." }));
+  }
+
   return el("div", { class: "today" }, blocks);
 }
 
