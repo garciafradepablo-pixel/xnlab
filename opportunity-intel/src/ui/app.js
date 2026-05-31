@@ -326,13 +326,17 @@ function render() {
   // Configuración como BARRA plegable arriba del contenido (a todo el ancho),
   // no como columna lateral — así no deja hueco vacío y va igual en móvil y
   // escritorio. Cerrada por defecto.
-  const cfg = el("details", { class: "config-wrap" }, [
-    el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda y datos" }),
-    configPanel(),
-  ]);
-  cfg.open = state._cfgOpen ?? false;
-  cfg.addEventListener("toggle", () => { state._cfgOpen = cfg.open; });
-  main.appendChild(cfg);
+  // Configuración técnica (dataset, país, conservadurismo…): solo para ADMIN y
+  // fuera de la vista diaria del trabajador. La capacidad se conserva; el ruido no.
+  if (allow("manage_roles")) {
+    const cfg = el("details", { class: "config-wrap" }, [
+      el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda y datos" }),
+      configPanel(),
+    ]);
+    cfg.open = state._cfgOpen ?? false;
+    cfg.addEventListener("toggle", () => { state._cfgOpen = cfg.open; });
+    main.appendChild(cfg);
+  }
   main.appendChild(viewArea());
   scroller.appendChild(main);
   root.appendChild(scroller);
@@ -360,9 +364,9 @@ function header() {
       el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
     ]),
     el("div", { class: "head-actions" }, [
-      state.dataset === "researched"
-        ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
-        : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
+      state.dataset !== "researched"
+        ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Conecta fuentes reales (ver README)." })
+        : null,
       userChip(),
       syncBadge(),
       el("span", { class: "ver-tag", title: "Versión publicada (última actualización)", text: pubLabel || "actualizando…" }),
@@ -501,7 +505,7 @@ function openProfile() {
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
+  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
   { key: "training", label: "Formación", views: [["training", "Dossiers"]] },
