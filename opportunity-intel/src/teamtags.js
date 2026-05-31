@@ -95,3 +95,18 @@ export function teamByTag(users, catalog) {
     .map(([slug, e]) => ({ slug, label: lm.get(slug) || slug, count: e.count, people: e.people }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 }
+
+/**
+ * Posiciones abiertas: etiquetas del catálogo que NADIE del equipo lleva aún.
+ * La cara B de teamByTag — qué perfiles faltan por cubrir, para planificar
+ * plantilla. Conserva el orden del catálogo. users = [{tags:[...]}].
+ * @returns {Array<{slug, label}>}
+ */
+export function teamGaps(users, catalog) {
+  const cat = catalog || getCatalog();
+  const covered = new Set();
+  for (const u of users || []) for (const slug of cleanTags(u && u.tags)) covered.add(slug);
+  return cat
+    .filter((t) => t && t.slug && !covered.has(t.slug))
+    .map((t) => ({ slug: t.slug, label: t.label || t.slug }));
+}

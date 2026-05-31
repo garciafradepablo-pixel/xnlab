@@ -53,7 +53,7 @@ import { autoProgress, AUTO_BAR } from "../autopilot.js";
 import { synthesize } from "../synthesis.js";
 import { pendingCronLeads, claimCronLeads } from "../cronleads.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
-import { getCatalog, cacheCatalog, labelMap, teamByTag } from "../teamtags.js";
+import { getCatalog, cacheCatalog, labelMap, teamByTag, teamGaps } from "../teamtags.js";
 import * as chat from "../messaging.js";
 import { buildLeaderboard } from "../productivity.js";
 import { remoteCreateShare, remoteLoadShare } from "../statesync.js";
@@ -917,7 +917,22 @@ function usersView() {
 
   // ── Quién sabe hacer qué (perfiles del equipo, clic para filtrar) ──────────
   const overview = el("div", { class: "tag-overview" });
+
+  // ── Posiciones abiertas: perfiles del catálogo que nadie cubre todavía ─────
+  const gaps = el("div", { class: "gap-list" });
+  const paintGaps = () => {
+    clear(gaps);
+    const users = auth.getUsers().filter((u) => !u.colorOnly || u.role);
+    const missing = teamGaps(users, getCatalog());
+    if (!missing.length) {
+      gaps.appendChild(el("p", { class: "hint", text: "Cada perfil del catálogo tiene al menos a una persona. Ningún hueco abierto ahora mismo." }));
+      return;
+    }
+    for (const g of missing) gaps.appendChild(el("span", { class: "gap-chip", title: "Nadie del equipo cubre este perfil todavía", text: g.label }));
+  };
+
   const paintOverview = () => {
+    paintGaps();
     clear(overview);
     const users = auth.getUsers().filter((u) => !u.colorOnly || u.role);
     const summary = teamByTag(users, getCatalog());
@@ -931,6 +946,11 @@ function usersView() {
     ]));
   };
   wrap.appendChild(el("div", { class: "team-sec" }, [el("h4", { text: "Quién sabe hacer qué" }), overview]));
+  wrap.appendChild(el("div", { class: "team-sec" }, [
+    el("h4", { text: "Posiciones abiertas" }),
+    el("p", { class: "config-note", text: "Perfiles del catálogo que nadie del equipo cubre todavía: dónde planificar plantilla. Añade un perfil al catálogo y aparecerá aquí hasta que alguien lo lleve." }),
+    gaps,
+  ]));
 
   const list = el("div", { class: "users-list" });
   wrap.appendChild(list);

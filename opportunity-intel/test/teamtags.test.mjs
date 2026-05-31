@@ -5,7 +5,7 @@ globalThis.localStorage = (() => {
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, String(v)), removeItem: (k) => m.delete(k) };
 })();
 
-const { DEFAULT_CATALOG, getCatalog, cacheCatalog, labelMap, labelOf, cleanTags, teamByTag } =
+const { DEFAULT_CATALOG, getCatalog, cacheCatalog, labelMap, labelOf, cleanTags, teamByTag, teamGaps } =
   await import("../src/teamtags.js");
 
 let passed = 0, failed = 0;
@@ -33,6 +33,15 @@ const rrhh = summary.find((t) => t.slug === "rrhh");
 ok(rrhh && rrhh.count === 2, "teamByTag cuenta personas por etiqueta");
 ok(rrhh.people.includes("Pablo") && rrhh.people.includes("Sara"), "lista quién lleva cada etiqueta");
 ok(summary[0].slug === "rrhh", "ordena por más frecuente primero");
+
+// teamGaps: la cara B — perfiles del catálogo (cacheado: legal, rrhh) que nadie lleva.
+const gaps = teamGaps([
+  { name: "Pablo", tags: ["rrhh"] },
+  { name: "Javi", tags: [] },
+]);
+ok(gaps.length === 1 && gaps[0].slug === "legal", "teamGaps lista los perfiles que nadie cubre");
+ok(teamGaps([{ tags: ["legal"] }, { tags: ["rrhh"] }]).length === 0, "sin huecos cuando se cubre todo el catálogo");
+ok(teamGaps([]).length === getCatalog().length, "equipo vacío: todo el catálogo está abierto");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

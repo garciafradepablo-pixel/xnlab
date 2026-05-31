@@ -1521,6 +1521,11 @@ button:disabled { cursor: not-allowed; }
 .tag-stat-n { font-size: 12px; font-weight: 700; color: var(--ink);
   background: var(--panel-3); border-radius: 999px; min-width: 20px; text-align: center; padding: 0 6px; }
 
+/* —— Posiciones abiertas: perfiles del catálogo que nadie cubre ——————————————— */
+.gap-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.gap-chip { font-size: 12px; color: var(--ink-faint); background: transparent;
+  border: 1px dashed var(--line-2); border-radius: 8px; padding: 5px 10px; }
+
 /* —— Catálogo (admin) ————————————————————————————————————————————————————————— */
 .cat-list { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0; }
 .cat-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2);
