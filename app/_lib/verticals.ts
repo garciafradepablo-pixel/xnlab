@@ -24,12 +24,12 @@ export type VerticalSlug = "hospitality" | "clinics" | "restaurants" | "real-est
 // (/worlds/<slug>) so the applied page and the canonical world stay in
 // one vocabulary. `n` is the editorial number shown in the UI.
 export const SURFACES: { n: string; slug: string; label: Bi }[] = [
-  { n: "01", slug: "product", label: { en: "Product & Experience", es: "Producto y experiencia" } },
-  { n: "02", slug: "owned-digital", label: { en: "Owned Digital", es: "Digital propio" } },
-  { n: "03", slug: "retail-physical", label: { en: "Space & Physical", es: "Espacio y físico" } },
-  { n: "04", slug: "customer-operations", label: { en: "Customer Operations", es: "Operación de cliente" } },
+  { n: "01", slug: "product", label: { en: "Product", es: "Producto" } },
+  { n: "02", slug: "owned-digital", label: { en: "Owned Digital", es: "Digital Propio" } },
+  { n: "03", slug: "retail-physical", label: { en: "Retail & Physical", es: "Retail y Físico" } },
+  { n: "04", slug: "customer-operations", label: { en: "Customer Operations", es: "Operaciones de Cliente" } },
   { n: "05", slug: "communication", label: { en: "Communication", es: "Comunicación" } },
-  { n: "06", slug: "community-culture", label: { en: "Community & Culture", es: "Comunidad y cultura" } },
+  { n: "06", slug: "community-culture", label: { en: "Community & Culture", es: "Comunidad y Cultura" } },
 ];
 
 export type Vertical = {
