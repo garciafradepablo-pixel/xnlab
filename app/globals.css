@@ -34,24 +34,6 @@ h1, h2, h3, p {
   overflow-wrap: break-word;
 }
 
-/* Film grain drift — an oversized noise tile is nudged on its own GPU
-   layer in stepped jumps so the texture shimmers like analog film grain
-   rather than sliding. Transform-only, no scroll dependency. Disabled
-   wholesale by the reduced-motion block below. */
-@keyframes xn-grain {
-  0%   { transform: translate(0, 0); }
-  10%  { transform: translate(-2%, -3%); }
-  20%  { transform: translate(-7%, 2%); }
-  30%  { transform: translate(4%, -6%); }
-  40%  { transform: translate(-3%, 7%); }
-  50%  { transform: translate(-8%, 4%); }
-  60%  { transform: translate(5%, 2%); }
-  70%  { transform: translate(-4%, 6%); }
-  80%  { transform: translate(2%, -7%); }
-  90%  { transform: translate(-6%, -2%); }
-  100% { transform: translate(0, 0); }
-}
-
 /* Respect users who ask for reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *,

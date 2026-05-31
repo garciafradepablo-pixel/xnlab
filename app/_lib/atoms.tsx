@@ -1,35 +1,6 @@
 "use client";
-import { motion, useScroll, useTransform, useReducedMotion } from "framer-motion";
-import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-
-// Scroll-linked parallax. Wraps any layer and drifts it on its own scroll
-// progress so foreground and background travel at different rates — the
-// cinematic depth of the hero, available to any section. Transform-only
-// (GPU), and flat for reduced-motion. `from`/`to` are the y in px at the
-// section's entry and exit.
-export function Parallax({
-  children,
-  from = 50,
-  to = -50,
-  className = "",
-  style = {},
-}: {
-  children?: React.ReactNode;
-  from?: number;
-  to?: number;
-  className?: string;
-  style?: React.CSSProperties;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const reduced = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
-  const y = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [from, to]);
-  return (
-    <motion.div ref={ref} className={className} style={{ ...style, y, willChange: "transform" }}>
-      {children}
-    </motion.div>
-  );
-}
+import { motion } from "framer-motion";
+import { useEffect, useState, useSyncExternalStore } from "react";
 
 // Hydration gate. useSyncExternalStore returns the server snapshot
 // (`false`) during SSR + first render, then the client snapshot (`true`)
@@ -43,8 +14,8 @@ export function useMounted() {
 }
 
 // Shared design tokens
-export const ts = "0 1px 18px rgba(0,0,0,0.92),0 0 6px rgba(0,0,0,0.55)";
-export const tsS = "0 2px 40px rgba(0,0,0,0.95),0 0 20px rgba(0,0,0,0.82)";
+export const ts = "0 1px 20px rgba(0,0,0,0.9)";
+export const tsS = "0 2px 40px rgba(0,0,0,0.95),0 0 20px rgba(0,0,0,0.8)";
 export const serif = "var(--font-serif,'Cormorant Garamond',Georgia,serif)";
 
 // Word-by-word reveal
@@ -70,12 +41,12 @@ export function W({
           key={i}
           className="inline-block"
           variants={{
-            hidden: { opacity: 0, y: 26, filter: "blur(6px)" },
+            hidden: { opacity: 0, y: 16, filter: "blur(4px)" },
             visible: {
               opacity: 1,
               y: 0,
               filter: "blur(0px)",
-              transition: { duration: 1.0, ease: [0.22, 1, 0.36, 1], delay: delay + i * 0.075 },
+              transition: { duration: 0.95, ease: [0.22, 1, 0.36, 1], delay: delay + i * 0.065 },
             },
           }}
         >
@@ -101,10 +72,10 @@ export function R({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 38, scale: 0.984, filter: "blur(7px)" }}
-      whileInView={{ opacity: 1, y: 0, scale: 1, filter: "blur(0px)" }}
-      viewport={{ once: true, margin: "-9%" }}
-      transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1], delay }}
+      initial={{ opacity: 0, y: 20, filter: "blur(5px)" }}
+      whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+      viewport={{ once: true, margin: "-8%" }}
+      transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay }}
       className={className}
       style={style}
     >
@@ -128,8 +99,7 @@ export function Label({
         fontWeight: 500,
         letterSpacing: "0.38em",
         textTransform: "uppercase",
-        color: "rgba(255,255,255,0.46)",
-        textShadow: "0 1px 16px rgba(0,0,0,0.9)",
+        color: "rgba(255,255,255,0.42)",
         ...style,
       }}
     >
@@ -172,19 +142,14 @@ export function Commentary({
           ...style,
         }}
       >
-        <motion.span
+        <span
           aria-hidden
-          initial={{ scaleX: 0, opacity: 0 }}
-          whileInView={{ scaleX: 1, opacity: 1 }}
-          viewport={{ once: true, margin: "-9%" }}
-          transition={{ duration: 0.95, ease: [0.22, 1, 0.36, 1], delay: delay + 0.18 }}
           style={{
             display: "inline-block",
             verticalAlign: "middle",
             width: "clamp(32px,3.8vw,48px)",
             height: 1,
             marginBottom: "clamp(14px,1.8vw,22px)",
-            transformOrigin: "center",
             background:
               "linear-gradient(to right, transparent 0%, rgba(232,183,131,0.6) 50%, transparent 100%)",
             filter: "drop-shadow(0 0 6px rgba(232,183,131,0.35))",

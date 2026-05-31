@@ -1,6 +1,6 @@
 "use client";
-import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useInView, useScroll } from "framer-motion";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { motion, useMotionValue, useSpring, useTransform, useReducedMotion, useInView } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
@@ -28,7 +28,7 @@ type HeroCopy = {
 // Sizes and spacing scale with the viewport. The mins were chosen so the
 // outermost orb (mult ±3) fits inside a 375px viewport with breathing
 // room: 3·UNIT + ORB/2 must stay under half-viewport minus padding.
-const ORB_SIZE = "clamp(40px,6vw,96px)";
+const ORB_SIZE = "clamp(28px,5vw,88px)";
 // dy in viewport-height units so the dome's gentle arc scales with the
 // section height. Same numeric values as before (3.5%, 2%, 0.6%).
 // Each orb carries its own depth profile. The constellation reads as an
@@ -89,27 +89,21 @@ const ORB_SIZE = "clamp(40px,6vw,96px)";
 // The depth modulation (op, sc, dy) still produces the alveolus arc
 // at rest — that's a spatial property of the constellation, not a
 // timing one. Six rooms, equal citizens, equal entrance.
-// Atmospheric perspective. The constellation is a crescent receding into
-// depth, not a flat row of equal jewels: the outer Cores sit further back
-// (smaller, dimmer, softly out of focus, dropped lower) while the inner
-// pair sit forward of the picture plane (larger, sharp, full colour). The
-// `blur` value is depth-of-field — it is cleared the instant a Core is
-// hovered so the visitor pulls it into focus.
 const PLAN = [
-  { idx: 0, mult: -3, dy: 4.8, delay: 0.7, op: 0.66, sc: 0.72, blur: 1.7 },
-  { idx: 1, mult: -2, dy: 2.5, delay: 0.7, op: 0.84, sc: 0.87, blur: 0.7 },
-  { idx: 2, mult: -1, dy: 0.6, delay: 0.7, op: 1,    sc: 1.07, blur: 0   },
-  { idx: 3, mult: 1,  dy: 0.6, delay: 0.7, op: 1,    sc: 1.07, blur: 0   },
-  { idx: 4, mult: 2,  dy: 2.5, delay: 0.7, op: 0.84, sc: 0.87, blur: 0.7 },
-  { idx: 5, mult: 3,  dy: 4.8, delay: 0.7, op: 0.66, sc: 0.72, blur: 1.7 },
+  { idx: 0, mult: -3, dy: 2.8, delay: 0.7, op: 0.94, sc: 0.94 },
+  { idx: 1, mult: -2, dy: 1.6, delay: 0.7, op: 0.97, sc: 0.97 },
+  { idx: 2, mult: -1, dy: 0.4, delay: 0.7, op: 1,    sc: 1    },
+  { idx: 3, mult: 1,  dy: 0.4, delay: 0.7, op: 1,    sc: 1    },
+  { idx: 4, mult: 2,  dy: 1.6, delay: 0.7, op: 0.97, sc: 0.97 },
+  { idx: 5, mult: 3,  dy: 2.8, delay: 0.7, op: 0.94, sc: 0.94 },
 ];
-const UNIT = "clamp(44px,7vw,130px)";
-const CENTRAL_SIZE = "clamp(42px,6.5vw,108px)";
+const UNIT = "clamp(40px,7vw,130px)";
+const CENTRAL_SIZE = "clamp(34px,6vw,108px)";
 // Dome top position: a single source of truth that scales with viewport
 // height — header position on mobile (~100px from top), more centred
 // on tall desktops (~260px). Without this, top:14% looked like a header
 // on phones but left a huge empty gap above the wordmark on desktops.
-const DOME_TOP = "clamp(168px, calc(40svh - 40px), 320px)";
+const DOME_TOP = "clamp(140px, calc(35svh - 100px), 280px)";
 
 export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   const ref = useRef<HTMLElement | null>(null);
@@ -138,60 +132,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
   // cost meaningfully. The state is preserved on return via
   // framer-motion's animate={false} freeze pattern.
   const inView = useInView(ref, { amount: 0.15 });
-
-  // Star / cosmic-dust field. A single 1px node carries the whole field
-  // as one box-shadow list (N stars, zero extra DOM, painted once), so it
-  // fills the negative space with depth for free. Positions/tints come
-  // from a seeded PRNG so SSR and client render the identical string —
-  // no hydration mismatch, no Math.random-at-render. A few stars take a
-  // jewel tint (gold / cyan / violet / rose) to echo the world palette
-  // rather than a flat white speckle.
-  const starShadow = useMemo(() => {
-    let s = 0x9e3779b1;
-    const rnd = () => {
-      s = (Math.imul(s, 1103515245) + 12345) & 0x7fffffff;
-      return s / 0x7fffffff;
-    };
-    const tints = [
-      "255,247,232", // warm white
-      "255,247,232",
-      "255,247,232",
-      "255,206,138", // gold
-      "150,214,224", // cyan
-      "196,160,236", // violet
-      "244,168,176", // rose
-    ];
-    const out: string[] = [];
-    for (let i = 0; i < 78; i++) {
-      const x = (rnd() * 100).toFixed(2);
-      const y = (rnd() * 100).toFixed(2);
-      const b = (0.18 + rnd() * 0.62).toFixed(2);
-      const spread = rnd() > 0.82 ? "0.6px" : rnd() > 0.5 ? "0.3px" : "0";
-      const tint = tints[Math.floor(rnd() * tints.length)];
-      out.push(`${x}vw ${y}vh 0 ${spread} rgba(${tint},${b})`);
-    }
-    return out.join(", ");
-  }, []);
-
-  // Scroll-linked parallax. framer batches reads to rAF and writes pure
-  // GPU transforms/opacity (no layout, no paint of large surfaces), so the
-  // exit stays cheap even on mobile. As the hero scrolls away each plane
-  // travels at its own rate — wordmark drifts down and dissolves, the
-  // sculpture sinks slower and swells, the dome lifts and the nebula
-  // trails — which is what gives the composition real Z-depth instead of
-  // a flat picture sliding off. Reduced-motion users get static values.
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end start"] });
-  const sp = (input: number[], output: number[]) =>
-    // eslint-disable-next-line react-hooks/rules-of-hooks
-    useTransform(scrollYProgress, input, output);
-  const nebulaY = sp([0, 1], reduced ? [0, 0] : [0, -90]);
-  const nebulaScale = sp([0, 1], reduced ? [1, 1] : [1, 1.14]);
-  const domeY = sp([0, 1], reduced ? [0, 0] : [0, -64]);
-  const xY = sp([0, 1], reduced ? [0, 0] : [0, 120]);
-  const xScroB = sp([0, 1], reduced ? [1, 1] : [1, 1.08]);
-  const wordY = sp([0, 1], reduced ? [0, 0] : [0, 150]);
-  const wordOpacity = sp([0, 0.72], reduced ? [1, 1] : [1, 0]);
-  const bottomOpacity = sp([0, 0.5], reduced ? [1, 1] : [1, 0]);
 
   useEffect(() => {
     if (reduced) return;
@@ -240,10 +180,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         height: "min(100svh, 1100px)",
         minHeight: 560,
         overflow: "hidden",
-        // Warm-neutral near-black instead of the old brown-black (#060402).
-        // Keeps a breath of warmth without the muddy cast that read as
-        // "mediocre brown" once the washes stacked on top of it.
-        background: "#070605",
+        background: "#060402",
         // CRITICAL: isolate the hero's stacking context so the
         // mix-blend-mode: screen layers inside (chrome X, back orbits,
         // haze) only compose against the hero's own contents — never
@@ -266,7 +203,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           (the original chrome aura around the wordmark area survives
           softly) without distinct light artifacts behind the orbs. */}
       <div style={{ position: "absolute", inset: 0, zIndex: 1 }}>
-        <div style={{ position: "absolute", inset: 0, opacity: 0.4 }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.46 }}>
           <Image
             src="/images/hero/01_background_mobile.png"
             alt=""
@@ -282,10 +219,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
             style={{
               objectFit: "cover",
               objectPosition: "center",
-              // Pull the saturation down further: the baked-in bokeh of this
-              // PNG is what carried most of the muddy brown. Desaturating it
-              // lets the clean champagne washes above set the hue instead.
-              filter: "blur(28px) saturate(0.62)",
+              filter: "blur(28px) saturate(0.9)",
             }}
           />
         </div>
@@ -306,7 +240,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           style={{
             position: "absolute",
             inset: 0,
-            background: "radial-gradient(ellipse 92% 88% at 50% 46%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.1) 48%, rgba(3,2,1,0.52) 80%, rgba(2,1,1,0.9) 100%)",
+            background: "radial-gradient(ellipse at 50% 50%, rgba(3,2,1,0.0) 0%, rgba(3,2,1,0.32) 75%, rgba(3,2,1,0.62) 100%)",
           }}
         />
       </div>
@@ -319,108 +253,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         initial={{ opacity: 1 }}
         animate={{ opacity: 0 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1], delay: 0 }}
-      />
-
-      {/* NEBULA — saturated cosmic colour field. Several large jewel-tone
-          radials (brand gold + violet + sea-teal + copper-rose, the
-          studio's own world palette) drift, breathe and counter-rotate on
-          long out-of-phase loops, screen-blended so they read as coloured
-          light suspended in space — depth through HUE, not just value.
-          This is the single biggest cure for "flat": the dark stops being
-          one brown plane and becomes a graded, living atmosphere. */}
-      <motion.div
-        aria-hidden
-        style={{ position: "absolute", inset: 0, zIndex: 3, pointerEvents: "none", y: nebulaY, scale: nebulaScale, willChange: "transform" }}
-      >
-      <motion.div
-        aria-hidden
-        style={{
-          position: "absolute",
-          inset: "-12%",
-          pointerEvents: "none",
-          mixBlendMode: "screen",
-          background: [
-            // ASYMMETRIC BALANCE — one dominant warm bloom off the
-            // upper-left axis, answered by smaller cooler masses on the
-            // opposite diagonal. The classic painter's triangle: a big
-            // warm protagonist, a medium cool counterweight, a small
-            // accent — never a mirror. Opacities are pushed hard so the
-            // dark reads as a SATURATED nebula, not a tea stain.
-            // DUALITY — warm hemisphere LEFT (the brand, premium in
-            // person) vs cool hemisphere RIGHT (the customer, premium on
-            // every screen). The chrome X sits on the meeting line: "the
-            // atmosphere between them is the work." Centre stays calm for
-            // the wordmark.
-            "radial-gradient(ellipse 58% 60% at 13% 30%, rgba(255,176,88,0.46) 0%, rgba(255,138,66,0.13) 33%, transparent 62%)",
-            "radial-gradient(ellipse 44% 48% at 7% 66%, rgba(238,140,84,0.26) 0%, transparent 60%)",
-            "radial-gradient(ellipse 42% 44% at 30% 88%, rgba(242,120,92,0.2) 0%, transparent 58%)",
-            "radial-gradient(ellipse 52% 56% at 87% 28%, rgba(152,96,228,0.34) 0%, transparent 60%)",
-            "radial-gradient(ellipse 48% 52% at 94% 62%, rgba(60,152,214,0.3) 0%, transparent 60%)",
-            "radial-gradient(ellipse 44% 46% at 74% 90%, rgba(72,112,232,0.2) 0%, transparent 58%)",
-          ].join(", "),
-          willChange: "transform, opacity",
-        }}
-        initial={{ opacity: 0, scale: 1 }}
-        animate={
-          reduced || !inView
-            ? { opacity: 0.95, scale: 1 }
-            : { opacity: [0.78, 1, 0.78], scale: [1, 1.08, 1], x: [0, 22, -14, 0], y: [0, -16, 12, 0] }
-        }
-        transition={
-          reduced
-            ? { duration: 1.4, delay: 0.5 }
-            : { duration: 28, ease: "easeInOut", repeat: Infinity, repeatType: "loop", delay: 0.5 }
-        }
-      />
-      </motion.div>
-
-      {/* STAR / COSMIC-DUST FIELD — fills the negative space with depth.
-          One node, one box-shadow list; drifts and twinkles on a long
-          loop, screen-blended, paused off-screen. The jewel-tinted stars
-          tie the empty dark into the same palette as the orbs. */}
-      <motion.div
-        aria-hidden
-        style={{ position: "absolute", inset: 0, zIndex: 4, pointerEvents: "none", mixBlendMode: "screen", willChange: "transform, opacity" }}
-        initial={{ opacity: 0 }}
-        animate={inView && !reduced ? { opacity: [0.72, 1, 0.72], x: [0, -16, 0], y: [0, 12, 0] } : { opacity: 0.85 }}
-        transition={reduced ? { duration: 1.6, delay: 0.9 } : { duration: 38, ease: "easeInOut", repeat: Infinity, repeatType: "loop", delay: 0.9 }}
-      >
-        <div style={{ position: "absolute", top: 0, left: 0, width: 1, height: 1, borderRadius: "50%", backgroundColor: "transparent", boxShadow: starShadow }} />
-      </motion.div>
-
-      {/* LIGHT SHAFTS — volumetric god-rays projected from the optical
-          centre. A slow conic sweep of faint gold sectors, masked to a
-          soft disc with a hollow core and screen-blended, rotating on a
-          long loop so the light feels cast by an unseen source above the
-          sculpture. Concentric with the chrome X / copper halo (same Y
-          offset) so the rays emanate from behind the wordmark. */}
-      <motion.div
-        aria-hidden
-        style={{
-          position: "absolute",
-          left: "50%",
-          top: "50%",
-          width: "clamp(600px, 98vw, 1500px)",
-          height: "clamp(600px, 98vw, 1500px)",
-          transform: "translate(-50%, calc(-50% + clamp(40px, 8svh, 90px)))",
-          zIndex: 4,
-          pointerEvents: "none",
-          mixBlendMode: "screen",
-          borderRadius: "50%",
-          background:
-            "conic-gradient(from 0deg at 50% 50%, transparent 0deg, rgba(255,198,132,0.11) 11deg, transparent 28deg, transparent 58deg, rgba(255,182,120,0.07) 72deg, transparent 92deg, transparent 146deg, rgba(255,204,142,0.10) 165deg, transparent 190deg, transparent 250deg, rgba(255,186,122,0.07) 266deg, transparent 294deg, transparent 318deg, rgba(255,196,130,0.08) 332deg, transparent 352deg, transparent 360deg)",
-          maskImage:
-            "radial-gradient(circle at 50% 50%, transparent 6%, #000 22%, rgba(0,0,0,0.55) 40%, transparent 66%)",
-          WebkitMaskImage:
-            "radial-gradient(circle at 50% 50%, transparent 6%, #000 22%, rgba(0,0,0,0.55) 40%, transparent 66%)",
-          willChange: "transform, opacity",
-        }}
-        initial={{ opacity: 0, rotate: 0 }}
-        animate={inView && !reduced ? { opacity: 0.9, rotate: 360 } : { opacity: 0.85, rotate: 0 }}
-        transition={{
-          opacity: { duration: 1.8, ease: [0.22, 1, 0.36, 1], delay: 0.6 },
-          rotate: { duration: 120, ease: "linear", repeat: Infinity },
-        }}
       />
 
       {/* Warm aureole unifying the dome — Movement II of the master
@@ -440,7 +272,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           height: "clamp(360px, 38vh, 600px)",
           pointerEvents: "none",
           background:
-            "radial-gradient(ellipse at center, rgba(255,202,132,0.26) 0%, rgba(244,176,112,0.09) 36%, rgba(180,120,70,0.02) 56%, transparent 74%)",
+            "radial-gradient(ellipse at center, rgba(228,180,128,0.13) 0%, rgba(190,140,90,0.05) 35%, rgba(60,40,30,0.012) 58%, transparent 75%)",
         }}
         initial={{ opacity: 0, scale: 0.92 }}
         animate={{ opacity: 0.95, scale: 1 }}
@@ -503,7 +335,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               // Quality 50 saves payload without visible loss.
               loading="lazy"
               quality={50}
-              style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.18 }}
+              style={{ objectFit: "contain", mixBlendMode: "screen", opacity: 0.09 }}
             />
           </motion.div>
         </motion.div>
@@ -641,7 +473,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           sibling dimming — Apple's Dock doesn't dim neighbours, it
           just enlarges them, and that reads as luxurious rather than
           stagey. */}
-      {PLAN.map(({ idx, mult, dy, delay, op, sc, blur }) => {
+      {PLAN.map(({ idx, mult, dy, delay, op, sc }) => {
         const w = worlds[idx];
         const isHover = hovered === w.slug;
         // Strict isolation: only the hovered orb reacts. Even a tiny
@@ -679,25 +511,6 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               pointerEvents: "auto",
             }}
           >
-            <motion.div style={{ y: domeY, position: "relative", width: "100%", height: "100%" }}>
-            {/* Colour pocket — a soft pool of THIS Core's own light bled
-                into the surrounding atmosphere and screen-blended, so the
-                sphere reads as embedded in a lit volume of space rather
-                than pasted onto it. Brighter/larger for the near Cores,
-                fainter for those receding into depth. */}
-            <div
-              aria-hidden
-              style={{
-                position: "absolute",
-                inset: "-78%",
-                borderRadius: "50%",
-                background: `radial-gradient(circle at 50% 42%, ${w.color.hex} 0%, ${w.color.glow} 30%, transparent 62%)`,
-                mixBlendMode: "screen",
-                filter: "blur(15px)",
-                opacity: op * (0.7 + 0.6 * (1 - dist / 3)),
-                pointerEvents: "none",
-              }}
-            />
             <motion.div
               style={{ x: sphX, y: sphY, width: "100%", height: "100%" }}
               initial={{ opacity: 0 }}
@@ -738,9 +551,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                     // The neighbour gets a whisper to acknowledge the
                     // gesture without competing for attention.
                     filter: isHover
-                      ? `drop-shadow(0 0 30px ${w.color.glow}) drop-shadow(0 0 58px ${w.color.glow}) drop-shadow(0 0 16px rgba(255,255,255,0.42))`
-                      : blur
-                      ? `blur(${blur}px) saturate(0.9) brightness(0.95)`
+                      ? `drop-shadow(0 0 28px ${w.color.glow}) drop-shadow(0 0 52px ${w.color.glow}) drop-shadow(0 0 14px rgba(255,255,255,0.35))`
                       : "none",
                     y: [0, -6, 0],
                   }}
@@ -807,18 +618,14 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 </div>
               </Link>
             </motion.div>
-            </motion.div>
           </div>
         );
       })}
 
       {/* LAYER 3 — XNLAB wordmark. Pulled a touch above the visual centre
           on shorter viewports so it sits closer to the dome, removing the
-          empty zone between them. Falls back to centred on tall screens.
-          Carries the scroll-parallax: drifts down and dissolves as the
-          hero leaves, so the brand mark hands off to the page below
-          instead of scrolling away rigidly. */}
-      <motion.div
+          empty zone between them. Falls back to centred on tall screens. */}
+      <div
         style={{
           position: "absolute",
           inset: 0,
@@ -834,18 +641,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           alignItems: "center",
           justifyContent: "center",
           pointerEvents: "none",
-          // Responsive vertical placement WITHOUT a media query (Tailwind
-          // v4 / Lightning CSS was dropping the @media class rule). The
-          // `(640px - 100vw)` term is positive only below a 640px viewport,
-          // so on phones the mark block drops clear of the lowered orb dome
-          // (no more eyebrow/dome collision); on desktop both terms resolve
-          // to the original raise. Pure inline calc — never touched by the
-          // CSS pipeline.
-          paddingTop: "max(0px, calc((640px - 100vw) * 0.12))",
-          paddingBottom: "clamp(0px, calc((100vw - 560px) * 0.05), 20px)",
-          y: wordY,
-          opacity: wordOpacity,
-          willChange: "transform, opacity",
+          paddingBottom: "clamp(0px, 8svh, 80px)",
         }}
       >
         <motion.p
@@ -884,16 +680,13 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         </motion.p>
         <motion.h1
           style={{
-            fontSize: "clamp(64px,11vw,184px)",
+            fontSize: "clamp(56px,9.5vw,156px)",
             fontWeight: 400,
-            letterSpacing: "-0.05em",
-            lineHeight: 0.86,
+            letterSpacing: "-0.045em",
+            lineHeight: 0.88,
             color: "white",
             textAlign: "center",
-            // Warm rim + deep drop: the wordmark sits inside the gold
-            // light pool, so it carries a faint champagne halo as well as
-            // the dark shadow that lifts it off the sculpture behind it.
-            textShadow: "0 2px 70px rgba(0,0,0,0.9), 0 0 36px rgba(255,200,140,0.18)",
+            textShadow: "0 2px 60px rgba(0,0,0,0.85)",
           }}
           initial={{ opacity: 0, filter: "blur(14px)", scale: 1.02 }}
           animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
@@ -918,28 +711,7 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               : " (también XN Lab, XN Studio, XNL, Xnlab Studio; se pronuncia X-N-Lab, a veces se oye como «x en la app») — Sistemas de atmósfera para marcas, clientes y canales. Producto, digital propio, retail y físico, operaciones de cliente, comunicación y comunidad — las seis superficies por las que una marca moderna llega a su cliente. Solo con cita previa."}
           </span>
         </motion.h1>
-
-        {/* Duality axis — a hairline under the wordmark that runs from warm
-            (left, the brand) through white to cool (right, the customer).
-            It anchors the mark, fills the gap down to the strapline, and
-            restates the whole composition's thesis in one stroke. Draws in
-            after the wordmark resolves. */}
-        <motion.div
-          aria-hidden
-          initial={{ scaleX: 0, opacity: 0 }}
-          animate={{ scaleX: 1, opacity: 1 }}
-          transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1], delay: 1.5 }}
-          style={{
-            marginTop: "clamp(16px,2.2vw,30px)",
-            width: "clamp(140px, 18vw, 280px)",
-            height: 1,
-            transformOrigin: "center",
-            background:
-              "linear-gradient(to right, rgba(255,176,104,0) 0%, rgba(255,176,104,0.75) 26%, rgba(255,255,255,0.9) 50%, rgba(120,156,238,0.75) 74%, rgba(120,156,238,0) 100%)",
-            boxShadow: "0 0 14px rgba(255,200,150,0.28)",
-          }}
-        />
-      </motion.div>
+      </div>
 
       {/* LAYER 2C — chrome X rising from below the hero edge.
           The symbol's vertical CENTRE sits BELOW the bottom of the
@@ -970,21 +742,17 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           zIndex: 5,
           left: "50%",
           top: "50%",
-          width: "clamp(420px, 72vw, 1080px)",
-          height: "clamp(420px, 72vw, 1080px)",
+          width: "clamp(360px, 64vw, 980px)",
+          height: "clamp(360px, 64vw, 980px)",
           transform: "translate(-50%, calc(-50% + clamp(40px, 8svh, 90px)))",
           pointerEvents: "none",
           borderRadius: "50%",
           background:
-            // DUAL RIM-LIGHT — warm source from the left (the brand, in
-            // person), cool source from the right (the customer, on screen).
-            // The chrome X sits between them and catches both, so the
-            // sculpture itself embodies the duality of the whole field.
-            "radial-gradient(circle at 30% 48%, rgba(255,184,112,0.3) 0%, rgba(238,158,96,0.09) 32%, transparent 62%), radial-gradient(circle at 70% 52%, rgba(116,154,236,0.24) 0%, rgba(96,128,224,0.07) 32%, transparent 62%)",
-          filter: "blur(26px)",
+            "radial-gradient(circle at center, rgba(232,150,90,0.18) 0%, rgba(212,140,80,0.07) 28%, rgba(140,80,40,0.02) 52%, transparent 72%)",
+          filter: "blur(28px)",
         }}
         initial={{ opacity: 0, scale: 0.92 }}
-        animate={{ opacity: 1, scale: 1 }}
+        animate={{ opacity: 0.9, scale: 1 }}
         // Same delay as the warm aureole — they ignite together as
         // the atmospheric stage. Identical timing (no 150ms offset)
         // reads as one event; offsets read as choreography.
@@ -1012,13 +780,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           zIndex: 6,
           left: "50%",
           top: "50%",
-          width: "clamp(280px, 52vw, 720px)",
-          height: "clamp(280px, 52vw, 720px)",
+          width: "clamp(200px, 42vw, 600px)",
+          height: "clamp(200px, 42vw, 600px)",
           transform: "translate(-50%, calc(-50% + clamp(40px, 8svh, 90px)))",
           pointerEvents: "none",
         }}
       >
-        <motion.div style={{ y: xY, scale: xScroB, width: "100%", height: "100%", willChange: "transform" }}>
         <motion.div
           style={{ position: "relative", x: symX, y: symY, width: "100%", height: "100%" }}
           initial={{ opacity: 0 }}
@@ -1051,21 +818,15 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
                 style={{
                   objectFit: "contain",
                   mixBlendMode: "screen",
-                  opacity: 0.85,
+                  opacity: 0.62,
                   // Single stronger drop-shadow instead of two stacked.
                   // Stacked drop-shadows blow up paint cost — Chromium
                   // re-rasterises the full layer per shadow. One wider
                   // shadow reads as the same atmospheric copper rim.
-                  // Dual edge-glow: warm bloom thrown to the left, cool to
-                  // the right, so the chrome reads as lit by both worlds at
-                  // once. Two offset shadows on a single static image —
-                  // rasterised once, composited cheaply by the parent.
-                  filter:
-                    "drop-shadow(-18px 1px 46px rgba(255,176,104,0.58)) drop-shadow(18px 1px 46px rgba(120,156,238,0.52))",
+                  filter: "drop-shadow(0 0 36px rgba(222,144,84,0.5))",
                 }}
               />
           </motion.div>
-        </motion.div>
         </motion.div>
       </div>
 
@@ -1093,40 +854,12 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
         />
       </motion.div>
 
-      {/* FILM GRAIN — fractal-noise texture over the whole hero, soft-light
-          blended at low opacity and drifting in stepped jumps. Reads as the
-          analog grain of a graded film frame: it unifies the layers, hides
-          gradient banding, and is the texture that separates "rendered in a
-          browser" from "directed." Pure CSS noise (no asset), one GPU
-          transform loop; the reduced-motion block freezes it. */}
-      <div
-        aria-hidden
-        style={{ position: "absolute", inset: 0, zIndex: 26, pointerEvents: "none", overflow: "hidden", opacity: 0.3 }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: "-50%",
-            backgroundImage:
-              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E\")",
-            backgroundSize: "180px 180px",
-            mixBlendMode: "soft-light",
-            opacity: 0.55,
-            animation: "xn-grain 0.7s steps(5) infinite",
-            // Pause the grain shimmer when the hero is off-screen — no
-            // point repainting a texture nobody is looking at.
-            animationPlayState: inView ? "running" : "paused",
-            willChange: "transform",
-          }}
-        />
-      </div>
-
       <Dust count={6} opacity={0.07} />
 
       {/* Bottom — strapline + scroll cue stacked in one column so they
           never collide on short viewports. Single flex container at the
           bottom of the hero, scroll cue follows the strapline below. */}
-      <motion.div
+      <div
         style={{
           position: "absolute",
           inset: 0,
@@ -1135,16 +868,9 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           flexDirection: "column",
           alignItems: "center",
           justifyContent: "flex-end",
-          // Footer breathing room + safe-area inset so the scarcity line
-          // never tucks under the phone's home indicator / browser chrome.
-          // Extra bottom space below 640px via the same media-query-free
-          // calc trick.
-          paddingBottom:
-            "calc(env(safe-area-inset-bottom, 0px) + clamp(22px,3vh,36px) + max(0px, calc((640px - 100vw) * 0.045)))",
-          gap: "clamp(18px,2.6vh,44px)",
+          paddingBottom: "clamp(20px,3vh,36px)",
+          gap: "clamp(26px,3.6vh,44px)",
           pointerEvents: "none",
-          opacity: bottomOpacity,
-          willChange: "opacity",
         }}
       >
         {/* Strapline — the lead phrase + small-caps dek. The two share
@@ -1237,26 +963,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
           </p>
         </motion.div>
 
-        {/* Scroll cue — a pulse of light running down a hairline track.
-            Anchors the foot of the composition, lifts the strapline up
-            into a tighter relationship with the wordmark, and signals
-            there is more below. */}
-        <motion.div
-          aria-hidden
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 2 }}
-          style={{ position: "relative", width: 1, height: 38, background: "rgba(255,255,255,0.13)", overflow: "hidden", borderRadius: 1 }}
-        >
-          <motion.div
-            style={{ position: "absolute", left: 0, right: 0, top: 0, height: 15, background: "linear-gradient(to bottom, transparent, rgba(246,200,142,0.95))" }}
-            animate={reduced ? { y: 12 } : { y: [-15, 38] }}
-            transition={reduced ? undefined : { duration: 2, ease: "easeInOut", repeat: Infinity, repeatDelay: 0.5 }}
-          />
-        </motion.div>
 
-
-      </motion.div>
+      </div>
 
       <div
         style={{

@@ -80,82 +80,6 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
           scale,
         }}
       >
-        {/* Orbit ring + spokes — the six surfaces drawn as ONE system.
-            A slow comet-trail gradient ring rotates behind the Cores, and
-            a spoke runs from the brand centre to each Core; the active
-            spoke lights up in that world's colour on hover. The concept
-            ("one brand, six surfaces") made literal, and the empty void
-            filled with structure. */}
-        <svg
-          viewBox="0 0 100 100"
-          aria-hidden
-          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", overflow: "visible", pointerEvents: "none", zIndex: 1 }}
-        >
-          <defs>
-            <linearGradient id="xn-orbit" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="rgba(232,183,131,0)" />
-              <stop offset="50%" stopColor="rgba(232,183,131,0.5)" />
-              <stop offset="100%" stopColor="rgba(232,183,131,0)" />
-            </linearGradient>
-          </defs>
-          {worlds.map((w, i) => {
-            const a = (-90 + i * 60) * (Math.PI / 180);
-            const x = 50 + 40 * Math.sin(a);
-            const y = 50 - 40 * Math.cos(a);
-            const on = hovered === w.slug;
-            return (
-              <line
-                key={w.slug}
-                x1="50"
-                y1="50"
-                x2={x}
-                y2={y}
-                style={{
-                  stroke: on ? w.color.hex : "rgba(255,255,255,0.12)",
-                  strokeWidth: on ? 0.6 : 0.3,
-                  opacity: on ? 0.95 : 0.45,
-                  transition: "stroke 0.45s ease, stroke-width 0.45s ease, opacity 0.45s ease",
-                }}
-              />
-            );
-          })}
-          <motion.circle
-            cx="50"
-            cy="50"
-            r="40"
-            fill="none"
-            stroke="url(#xn-orbit)"
-            strokeWidth="0.5"
-            strokeDasharray="1.6 4"
-            style={{ transformOrigin: "50% 50%" }}
-            animate={{ rotate: 360 }}
-            transition={{ duration: 130, ease: "linear", repeat: Infinity }}
-          />
-        </svg>
-
-        {/* Central core — the single brand the six surfaces resolve into.
-            A champagne glow at rest that adopts the active world's colour
-            on hover, breathing slowly so the centre always reads as alive. */}
-        <motion.div
-          aria-hidden
-          style={{
-            position: "absolute",
-            left: "50%",
-            top: "50%",
-            width: "20%",
-            height: "20%",
-            transform: "translate(-50%, -50%)",
-            borderRadius: "50%",
-            pointerEvents: "none",
-            zIndex: 1,
-            background: `radial-gradient(circle at 50% 45%, ${active ? active.color.hex : "rgba(246,202,152,0.9)"} 0%, ${active ? active.color.glow : "rgba(232,183,131,0.4)"} 36%, transparent 70%)`,
-            filter: "blur(7px)",
-            mixBlendMode: "screen",
-          }}
-          animate={{ scale: active ? [1, 1.14, 1] : [1, 1.07, 1], opacity: active ? 0.95 : 0.5 }}
-          transition={{ scale: { duration: 5, ease: "easeInOut", repeat: Infinity }, opacity: { duration: 0.5 } }}
-        />
-
         {/* Centred caption — PITCH only, kept compact so it lives inside
             the hex void without crowding the orbs. SSR-rendered to
             match the desktop default; unmounts on touch after the
@@ -227,14 +151,9 @@ export function CircleOfWorlds({ lang }: { lang: "en" | "es" }) {
                 }}
               >
                 <motion.div
-                  animate={{
-                    scale: isHover ? 1.2 : 1,
-                    filter: isHover
-                      ? `drop-shadow(0 0 24px ${w.color.glow}) drop-shadow(0 0 10px rgba(255,255,255,0.3))`
-                      : "drop-shadow(0 0 0px rgba(0,0,0,0))",
-                  }}
+                  animate={{ scale: isHover ? 1.16 : 1 }}
                   transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
-                  style={{ width: "100%", height: "100%", willChange: "transform, filter" }}
+                  style={{ width: "100%", height: "100%" }}
                 >
                   <Orb world={w} size={140} />
                 </motion.div>

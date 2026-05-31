@@ -36,9 +36,7 @@ export function Magnetic({
   );
 }
 
-// Scroll progress bar pinned to the top; spring-eased. Carries the
-// studio's duality axis — warm (the brand) → white → cool (the customer)
-// — so even the progress indicator speaks the brand's thesis.
+// 1px scroll progress bar pinned to the top; spring-eased, soft gold tint
 export function ScrollProgress() {
   const { scrollYProgress } = useScroll();
   const x = useSpring(scrollYProgress, { stiffness: 120, damping: 28, mass: 0.3 });
@@ -50,10 +48,8 @@ export function ScrollProgress() {
         top: 0,
         left: 0,
         right: 0,
-        height: 2,
-        background:
-          "linear-gradient(90deg, rgba(255,176,104,0.95) 0%, rgba(255,255,255,0.95) 50%, rgba(120,156,238,0.95) 100%)",
-        boxShadow: "0 0 12px rgba(255,200,150,0.4)",
+        height: 1,
+        background: "linear-gradient(90deg, rgba(230,205,165,0.85), rgba(255,255,255,0.6))",
         transformOrigin: "0% 50%",
         scaleX: x,
         zIndex: 9998,
