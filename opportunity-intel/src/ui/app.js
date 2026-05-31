@@ -36,6 +36,7 @@ import {
   classifyLeads, pathNodes, allTags, leadMatchesFacet, radarSuggest, seedCron,
 } from "../taxonomy.js";
 import { fetchContacts } from "../contacts.js";
+import { startAutoUpdate } from "../autoupdate.js";
 import { discover } from "../discovery.js";
 import { runBatch } from "../agent.js";
 import * as auth from "../auth.js";
@@ -118,6 +119,9 @@ export async function mount(rootEl) {
   // el cron con los nichos del mapa, para que cace lo que el cerebro decide.
   absorbCronLeads();
   seedCronFromMap();
+
+  // Auto-actualización: cada ventana recarga sola cuando hay un deploy nuevo.
+  startAutoUpdate();
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
