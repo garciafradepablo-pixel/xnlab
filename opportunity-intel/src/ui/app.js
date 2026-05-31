@@ -317,7 +317,7 @@ function renderAuth() {
 
   const card = el("div", { class: "auth-card" }, [
     el("div", { class: "auth-whale" }, [whaleMark()]),
-    el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+    el("div", { class: "auth-logo", html: 'CONNECT' }),
     el("p", { class: "auth-kicker", text: "Inteligencia de oportunidades · de la señal al chorro" }),
     state._invite ? el("p", { class: "auth-invite", text: "Tienes una invitación a Connect — crea tu usuario abajo." }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
