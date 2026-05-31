@@ -301,8 +301,8 @@ function renderTagRound(creds) {
   const msg = el("p", { class: "auth-msg" });
   const { chips } = tagPickerChips(getCatalog(), selected);
 
-  const enter = el("button", { class: "btn-primary auth-go", text: "Entrar" });
-  const busy = (on) => { enter.disabled = on; enter.textContent = on ? "Creando tu usuario…" : "Entrar"; };
+  const enter = el("button", { class: "btn-primary auth-go", text: "Entrar al equipo" });
+  const busy = (on) => { enter.disabled = on; enter.textContent = on ? "Creando tu usuario…" : "Entrar al equipo"; };
   enter.addEventListener("click", async () => {
     busy(true); msg.textContent = "";
     const r = await auth.createUserAsync(creds.name, creds.password, creds.color, creds.invite, [...selected]);
@@ -314,8 +314,8 @@ function renderTagRound(creds) {
 
   const card = el("div", { class: "auth-card auth-tags" }, [
     el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· tu perfil</span>' }),
-    el("p", { class: "auth-tagline", text: `Hola, ${creds.name}. ¿Qué etiquetas te definen?` }),
-    el("p", { class: "config-note", text: "Marca todas las que encajen — puedes ser varias a la vez (p. ej. Dirección + RRHH + Psicología). Así el equipo ve de un vistazo qué perfiles tiene. Podrás cambiarlas luego desde tu perfil." }),
+    el("p", { class: "auth-tagline", text: `Hola, ${creds.name}. ¿En qué te reconoces?` }),
+    el("p", { class: "config-note", text: "Marca todo lo que encaje — puedes ser varias cosas a la vez (Dirección, RRHH, Psicología…). Así el equipo sabe a quién acudir. Lo cambias cuando quieras." }),
     chips, enter, msg, back,
   ]);
   root.appendChild(el("div", { class: "auth-screen" }, [card]));
@@ -475,9 +475,10 @@ function userChip() {
   const u = auth.currentUser();
   if (!u) return el("span");
   const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
-  const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para tu perfil` }, [
+  const chip = el("button", { class: "user-chip", title: `${u.name} · ${tierLabel(u.tier)} · ${roleLabel(u.role)} — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
+    el("span", { class: `tier-badge tier-${u.tier}`, text: `N${u.tier}` }),
     el("span", { class: `role-badge role-${u.role}`, text: roleLabel(u.role) }),
   ]);
   chip.addEventListener("click", openProfile);
@@ -587,14 +588,14 @@ function openProfile() {
     el("div", { class: "pb-head" }, [
       el("div", { class: "prof-id" }, [dot, el("div", {}, [
         el("div", { class: "prof-name", text: u.name }),
-        el("div", { class: "prof-role", text: roleLabel(u.role) }),
+        el("div", { class: "prof-role", text: `${tierLabel(u.tier)} · ${roleLabel(u.role)}` }),
       ])]),
       el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
     ]),
     el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
     el("div", { class: "prof-sec" }, [
-      el("h4", {}, [el("span", { text: "Tus etiquetas " }), tagStatus]),
-      el("p", { class: "config-note", text: "Las que te definen. Puedes llevar varias. El equipo las ve de un vistazo." }),
+      el("h4", {}, [el("span", { text: "Quién eres en el equipo " }), tagStatus]),
+      el("p", { class: "config-note", text: "Las etiquetas que te definen. Puedes llevar varias — el equipo sabrá a quién acudir." }),
       tagPick.chips,
     ]),
     el("div", { class: "prof-sec" }, [
@@ -603,8 +604,8 @@ function openProfile() {
       notes,
     ]),
     isWriter(u.role) ? el("div", { class: "prof-sec" }, [
-      el("h4", { text: "Compartir vista de prueba" }),
-      el("p", { class: "config-note", text: "Enlace de solo lectura de TODA la app — para enseñarla sin que la otra persona se registre. No pide permiso a nadie." }),
+      el("h4", { text: "Compartir una vista de prueba" }),
+      el("p", { class: "config-note", text: "Un enlace de solo lectura de toda la app, para enseñarla sin que la otra persona tenga que registrarse. No pide permiso a nadie." }),
       shareBtn, shareBox,
     ]) : null,
     el("div", { class: "prof-sec" }, [securitySection()]),
@@ -612,8 +613,8 @@ function openProfile() {
       el("h4", { text: "Invitar a alguien" }),
       allow("manage_roles")
         ? el("div", {}, [
-            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Elige la posición (rol de acceso) y genera el enlace — el código lleva ese rol." }),
-            el("div", { class: "invite-row" }, [el("label", { class: "invite-lbl", text: "Posición:" }), inviteRole]),
+            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga tu invitación. Elige qué podrá hacer y genera el enlace — el código ya lleva ese rol. Su nivel y etiquetas los ajustas luego en El equipo." }),
+            el("div", { class: "invite-row" }, [el("label", { class: "invite-lbl", text: "Podrá:" }), inviteRole]),
             genBtn, inviteBox,
           ])
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
@@ -867,11 +868,41 @@ function viewArea() {
   return area;
 }
 
-// ---- Gestión de usuarios y roles (solo admin) -------------------------------
+// Etiqueta del nivel jerárquico (organigrama). 0 dirección · 1 · 2 equipo · 3+.
+function tierLabel(t) {
+  return `Nivel ${t}` + ({ 0: " · Dirección", 1: " · Segundo nivel", 2: " · Equipo" }[t] || "");
+}
+
+// Editor de etiquetas de OTRA persona (solo admin). Guarda al instante; `onSaved`
+// repinta la lista. Pablo monta los perfiles sin esperar a que cada uno se etiquete.
+function openTagEditor(user, onSaved) {
+  const selected = new Set(user.tags || []);
+  const status = el("span", { class: "role-status" });
+  const save = async () => {
+    status.textContent = "Guardando…";
+    const r = await auth.setUserTags(user.name, [...selected]);
+    status.textContent = r.ok ? "✓" : (r.error || "Error");
+    if (r.ok && onSaved) onSaved([...selected]);
+    setTimeout(() => { if (status.textContent === "✓") status.textContent = ""; }, 1500);
+  };
+  const { chips } = tagPickerChips(getCatalog(), selected, save);
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => overlay.remove();
+  overlay.appendChild(el("div", { class: "pb-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", { class: "prof-name" }, [el("span", { text: `Etiquetas de ${user.name} ` }), status]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    el("p", { class: "config-note", text: "Marca lo que define a esta persona. Se guarda al instante." }),
+    chips,
+  ]));
+  document.body.appendChild(overlay);
+}
+
+// ---- El equipo: personas, organigrama, roles y etiquetas (solo admin) -------
 //
 // El cliente refuerza el acceso ocultando la pestaña, pero la verdad la impone
-// el servidor: setRole exige un token de admin o devuelve 403. Aquí el admin ve
-// el equipo y puede cambiar el rol de cada uno.
+// el servidor: setRole/setTier/setUserTags exigen token de admin o devuelven 403.
 function usersView() {
   // Cinturón y tirantes: aunque la pestaña esté oculta, si se navega a "users"
   // sin permiso, no se muestra nada operable.
@@ -880,17 +911,17 @@ function usersView() {
   }
   const me = auth.currentUser();
   const wrap = el("div", {}, [
-    el("h2", { text: "Personas del equipo" }),
-    el("p", { class: "hint", text: "De un vistazo: quién es quién, qué etiquetas lo definen y qué rol tiene. Cambia el rol de cada miembro — el cambio se aplica en el servidor (un VIEWER no podrá modificar la mesa aunque manipule su navegador)." }),
+    el("h2", { text: "El equipo" }),
+    el("p", { class: "hint", text: "Quién es quién y dónde encaja. El nivel dibuja el organigrama (0 dirección · 1 · 2 equipo); el rol marca qué puede tocar en Connect; las etiquetas, qué sabe hacer. Todo lo montas tú aquí." }),
   ]);
 
-  // ── Ojeada del equipo por etiqueta (cuántos de cada perfil) ────────────────
+  // ── Quién sabe hacer qué (perfiles del equipo, clic para filtrar) ──────────
   const overview = el("div", { class: "tag-overview" });
   const paintOverview = () => {
     clear(overview);
     const users = auth.getUsers().filter((u) => !u.colorOnly || u.role);
     const summary = teamByTag(users, getCatalog());
-    if (!summary.length) { overview.appendChild(el("p", { class: "hint", text: "Aún nadie ha elegido etiquetas." })); return; }
+    if (!summary.length) { overview.appendChild(el("p", { class: "hint", text: "Aún nadie tiene etiquetas. Pónselas tú con ✎ o que las elijan al entrar." })); return; }
     for (const t of summary) overview.appendChild(el("button", {
       class: "tag-stat", title: t.people.join(", "),
       onClick: () => { state._tagFilter = state._tagFilter === t.slug ? null : t.slug; renderList(); paintOverview(); },
@@ -899,7 +930,7 @@ function usersView() {
       el("span", { class: "tag-stat-n", text: String(t.count) }),
     ]));
   };
-  wrap.appendChild(el("div", { class: "team-sec" }, [el("h4", { text: "Perfiles del equipo" }), overview]));
+  wrap.appendChild(el("div", { class: "team-sec" }, [el("h4", { text: "Quién sabe hacer qué" }), overview]));
 
   const list = el("div", { class: "users-list" });
   wrap.appendChild(list);
@@ -907,39 +938,59 @@ function usersView() {
   const renderList = () => {
     clear(list);
     const lm = labelMap(getCatalog());
-    let users = auth.getUsers()
-      .filter((u) => !u.colorOnly || u.role)
-      .sort((a, b) => a.name.localeCompare(b.name));
+    let users = auth.getUsers().filter((u) => !u.colorOnly || u.role);
     if (state._tagFilter) users = users.filter((u) => (u.tags || []).includes(state._tagFilter));
-    if (!users.length) { list.appendChild(el("p", { class: "hint", text: state._tagFilter ? "Nadie con esa etiqueta." : "Aún no hay otras cuentas." })); return; }
+    if (!users.length) { list.appendChild(el("p", { class: "hint", text: state._tagFilter ? "Nadie con esa etiqueta — un hueco que cubrir." : "Aún no hay otras cuentas." })); return; }
+    // Orden por organigrama: nivel y, dentro, por nombre.
+    users.sort((a, b) => (a.tier ?? 2) - (b.tier ?? 2) || a.name.localeCompare(b.name));
+    let curTier = null;
     for (const u of users) {
+      const tier = Number.isFinite(u.tier) ? u.tier : 2;
+      if (tier !== curTier) {
+        curTier = tier;
+        list.appendChild(el("div", { class: "tier-head" }, [
+          el("span", { class: `tier-badge tier-${tier}`, text: `N${tier}` }),
+          el("span", { class: "tier-head-l", text: tierLabel(tier) }),
+        ]));
+      }
       const role = u.role || "editor";
-      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.avatar || u.name[0] || "?").toString().toUpperCase().slice(0, 2) });
-      const sel = el("select", { class: "lead-f role-select" }, ROLES.map((r) =>
-        el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })
-      ));
       const isMe = me && norm(u.name) === norm(me.name);
-      sel.disabled = isMe;
-      const status = el("span", { class: "role-status" });
-      sel.addEventListener("change", async () => {
-        const newRole = sel.value;
-        status.textContent = "Guardando…";
-        const r = await auth.setUserRole(u.name, newRole);
-        if (r.ok) { status.textContent = "✓"; setTimeout(() => (status.textContent = ""), 1500); }
-        else { status.textContent = r.error || "Error"; sel.value = role; }
+      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.avatar || u.name[0] || "?").toString().toUpperCase().slice(0, 2) });
+
+      const roleSel = el("select", { class: "lead-f role-select", title: "Qué puede tocar en Connect" }, ROLES.map((r) =>
+        el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })));
+      roleSel.disabled = isMe;
+      const roleStatus = el("span", { class: "role-status" });
+      roleSel.addEventListener("change", async () => {
+        roleStatus.textContent = "Guardando…";
+        const r = await auth.setUserRole(u.name, roleSel.value);
+        if (r.ok) { roleStatus.textContent = "✓"; setTimeout(() => (roleStatus.textContent = ""), 1500); }
+        else { roleStatus.textContent = r.error || "Error"; roleSel.value = role; }
       });
-      const tags = el("div", { class: "user-tags" }, (u.tags || []).length
+
+      const tierSel = el("select", { class: "lead-f tier-select", title: "Nivel en el organigrama" }, [0, 1, 2, 3].map((n) =>
+        el("option", { value: String(n), selected: n === tier, text: `Nivel ${n}` })));
+      const tierStatus = el("span", { class: "role-status" });
+      tierSel.addEventListener("change", async () => {
+        tierStatus.textContent = "…";
+        const r = await auth.setUserTier(u.name, Number(tierSel.value));
+        if (r.ok) renderList();
+        else { tierStatus.textContent = r.error || "Error"; tierSel.value = String(tier); }
+      });
+
+      const tagEls = (u.tags || []).length
         ? (u.tags || []).map((s) => el("span", { class: "tag-mini", text: lm.get(s) || s }))
-        : [el("span", { class: "tag-none", text: "sin etiquetas" })]);
+        : [el("span", { class: "tag-none", text: "sin etiquetas" })];
+      const editTags = el("button", { class: "btn-ghost btn-xs", title: "Editar las etiquetas de esta persona", text: "✎ etiquetas", onClick: () => openTagEditor(u, () => { renderList(); paintOverview(); }) });
+
       list.appendChild(el("div", { class: "user-row" }, [
         el("div", { class: "user-row-main" }, [
           dot,
           el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
           el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
-          sel,
-          status,
+          roleSel, roleStatus, tierSel, tierStatus,
         ]),
-        tags,
+        el("div", { class: "user-row-tags" }, [el("div", { class: "user-tags" }, tagEls), editTags]),
       ]));
     }
   };
@@ -1066,9 +1117,9 @@ function composer(placeholder, onSend, onRefresh) {
 
 function chatView(channel) {
   const meta = {
-    general: { h: "Chat general", sub: "Todo el equipo. Lo que se dice aquí lo ve todo el mundo." },
-    mejoras: { h: "Apuntes y mejoras", sub: "Comentarios de mejora interna: ideas para que la herramienta y el trabajo vayan a mejor. Quedan registrados para no perderlos." },
-  }[channel] || { h: "Chat", sub: "" };
+    general: { h: "Chat del equipo", sub: "El canal de todos. Aquí se coordina el día y no se pierde nada de vista.", ph: "Escribe al equipo…" },
+    mejoras: { h: "Ideas de mejora", sub: "Lo que haría el trabajo más fácil, anotado. Cada idea pequeña que suma queda aquí, a la vista y sin perderse.", ph: "Propón una mejora…" },
+  }[channel] || { h: "Chat", sub: "", ph: "Escribe un mensaje…" };
   const wrap = el("div", {}, [el("h2", { text: meta.h }), el("p", { class: "hint", text: meta.sub })]);
   const box = el("div", { class: "chat-box" });
   wrap.appendChild(box);
@@ -1079,7 +1130,7 @@ function chatView(channel) {
     else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudieron cargar los mensajes." }));
   };
   wrap.appendChild(composer(
-    channel === "mejoras" ? "Escribe una idea de mejora…" : "Escribe un mensaje…",
+    meta.ph,
     async (body) => { const r = await chat.sendMessage(auth.getToken(), { channel, body }); if (r && r.ok) { await load(); return true; } alert((r && r.error) || "No se pudo enviar."); return false; },
     load,
   ));
@@ -1090,12 +1141,12 @@ function chatView(channel) {
 function dmsView() {
   const me = auth.currentUser();
   const wrap = el("div", {}, [
-    el("h2", { text: "Privados" }),
-    el("p", { class: "hint", text: "Mensajería privada 1:1 entre trabajadores. Solo tú y la otra persona lo veis (un admin puede supervisar)." }),
+    el("h2", { text: "Mensajes privados" }),
+    el("p", { class: "hint", text: "Uno a uno, en privado. Para lo que no hace falta que vea todo el equipo. (El admin puede supervisar.)" }),
   ]);
   const layout = el("div", { class: "dm-layout" });
   const people = el("div", { class: "dm-people" });
-  const thread = el("div", { class: "dm-thread" }, [el("p", { class: "hint", text: "Elige a alguien para empezar." })]);
+  const thread = el("div", { class: "dm-thread" }, [el("p", { class: "hint", text: "Elige a alguien y empieza la conversación." })]);
   layout.appendChild(people);
   layout.appendChild(thread);
   wrap.appendChild(layout);
@@ -1123,7 +1174,7 @@ function dmsView() {
     await load();
   };
 
-  if (!others.length) people.appendChild(el("p", { class: "hint", text: "No hay otras personas todavía." }));
+  if (!others.length) people.appendChild(el("p", { class: "hint", text: "Aún no hay nadie más en el equipo." }));
   for (const o of others) {
     people.appendChild(el("button", { class: "dm-person", onClick: () => openThread(o) }, [
       el("span", { class: "user-dot", style: `background:${o.color || "#4a9eff"}`, text: (o.name[0] || "?").toUpperCase() }),
@@ -1159,8 +1210,8 @@ function openConversation(channel, title) {
 
 function leaderboardView() {
   const wrap = el("div", {}, [
-    el("h2", { text: "Productividad del equipo" }),
-    el("p", { class: "hint", text: "La batalla real: quién mueve, reúne y cierra. Sale de lo que cada uno firma en la mesa compartida (cambios de estado, resultados) y de la mensajería interna. Premia el resultado, no el ruido." }),
+    el("h2", { text: "El marcador" }),
+    el("p", { class: "hint", text: "Quién mueve, quién reúne, quién cierra. No cuenta el ruido — cuenta el resultado. El listón sube solo cuando se ve." }),
   ]);
   const board = el("div", { class: "board" });
   wrap.appendChild(board);
@@ -1168,7 +1219,7 @@ function leaderboardView() {
     clear(board);
     const users = auth.getUsers().filter((u) => !u.colorOnly || u.role).map((u) => ({ name: u.name, color: u.color, avatar: u.avatar }));
     const rows = buildLeaderboard(store.getTracking(), store.getLearning(), users, stats || {});
-    if (!rows.length) { board.appendChild(el("p", { class: "hint", text: "Aún no hay actividad que medir." })); return; }
+    if (!rows.length) { board.appendChild(el("p", { class: "hint", text: "Todavía no hay nada que medir. En cuanto el equipo se mueva, el marcador se llena." })); return; }
     const max = rows[0].score || 1;
     rows.forEach((r, i) => {
       board.appendChild(el("div", { class: `board-row ${i === 0 && r.score > 0 ? "lead" : ""}` }, [

@@ -113,7 +113,7 @@ export function login(name, password) {
 // Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
 // sesión persista y se pueda entrar sin red la próxima vez en este navegador.
 // Guarda también rol y token de sesión devueltos por el servidor.
-function cacheUser(name, color, password, role, token, avatar, tags) {
+function cacheUser(name, color, password, role, token, avatar, tags, tier) {
   const prev = getUsers().find((u) => norm(u.name) === norm(name));
   const users = getUsers().filter((u) => norm(u.name) !== norm(name));
   users.push({
@@ -121,6 +121,7 @@ function cacheUser(name, color, password, role, token, avatar, tags) {
     role: role ? normalizeRole(role) : DEFAULT_ROLE,
     token: token || null,
     tags: Array.isArray(tags) ? tags : (prev?.tags ?? []),
+    tier: Number.isFinite(tier) ? tier : (prev?.tier ?? 2),
     createdAt: new Date().toISOString(), remote: true,
   });
   write(USERS_KEY, users);
@@ -139,7 +140,7 @@ export async function createUserAsync(name, password, color, invite, tags) {
   try {
     const r = await remote.remoteRegister(n, password, finalColor, invite, tags || []);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
-    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, null, r.user.tags || tags || []);
+    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, null, r.user.tags || tags || [], r.user.tier);
     return { ok: true };
   } catch {
     // Sin red: crea al menos en local (se sincronizará cuando vuelva la red).
@@ -165,7 +166,7 @@ export async function loginAsync(name, password) {
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
-      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.tags || []);
+      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.tags || [], r.user.tier);
       write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
       return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
@@ -220,8 +221,8 @@ export async function syncRemoteColors() {
     const byName = new Map(users.map((u) => [norm(u.name), u]));
     for (const r of list) {
       const ex = byName.get(norm(r.name));
-      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; if (Array.isArray(r.tags)) ex.tags = r.tags; } // color/rol/avatar/etiquetas: el servidor manda
-      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, tags: Array.isArray(r.tags) ? r.tags : [], colorOnly: true }); // para teñir/badge/ojeada
+      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; if (Array.isArray(r.tags)) ex.tags = r.tags; if (Number.isFinite(r.tier)) ex.tier = r.tier; } // color/rol/avatar/etiquetas/nivel: el servidor manda
+      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, tags: Array.isArray(r.tags) ? r.tags : [], tier: Number.isFinite(r.tier) ? r.tier : 2, colorOnly: true }); // para teñir/badge/ojeada
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
@@ -256,13 +257,19 @@ export function currentUser() {
   if (!s) return null;
   const u = getUsers().find((x) => norm(x.name) === norm(s.name));
   if (!u) return null;
-  return { name: u.name, color: u.color, avatar: u.avatar || null, tags: Array.isArray(u.tags) ? u.tags : [], role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+  return { name: u.name, color: u.color, avatar: u.avatar || null, tags: Array.isArray(u.tags) ? u.tags : [], tier: Number.isFinite(u.tier) ? u.tier : 2, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
 }
 
 /** Etiquetas de equipo del usuario en sesión (slugs). [] si no hay sesión. */
 export function getTags() {
   const u = currentUser();
   return u ? (u.tags || []) : [];
+}
+
+/** Nivel jerárquico del usuario en sesión (0=dirección…). 2 si no hay sesión. */
+export function getTier() {
+  const u = currentUser();
+  return u ? u.tier : 2;
 }
 
 /** Rol del usuario en sesión (admin/editor/viewer/analyst). viewer si no hay sesión. */
@@ -292,7 +299,7 @@ export async function refreshSession() {
       write(SESSION_KEY, { ...s, role });
       const users = getUsers();
       const u = users.find((x) => norm(x.name) === norm(s.name));
-      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; if (Array.isArray(r.user.tags)) u.tags = r.user.tags; write(USERS_KEY, users); }
+      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; if (Array.isArray(r.user.tags)) u.tags = r.user.tags; if (Number.isFinite(r.user.tier)) u.tier = r.user.tier; write(USERS_KEY, users); }
       return { ok: true, role };
     }
     return { ok: false };
@@ -387,4 +394,39 @@ export async function removeCatalogTag(label) {
   if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
   try { return await remote.remoteRemoveTag(token, label); }
   catch { return { ok: false, error: "Sin conexión con el servidor." }; }
+}
+
+// —— Jerarquía (nivel/organigrama) ————————————————————————————————————————————
+
+/** Fija el nivel jerárquico de alguien (solo admin; el servidor refuerza). */
+export async function setUserTier(targetName, tier) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
+  try {
+    const r = await remote.remoteSetTier(token, targetName, tier);
+    if (r && r.ok) {
+      const users = getUsers();
+      const u = users.find((x) => norm(x.name) === norm(targetName));
+      if (u) { u.tier = Number(tier); write(USERS_KEY, users); }
+      return { ok: true };
+    }
+    return { ok: false, error: (r && r.error) || "No se pudo cambiar el nivel." };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
+}
+
+/** Ajusta las etiquetas de OTRA persona (solo admin; el servidor refuerza). */
+export async function setUserTags(targetName, tags) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
+  const list = Array.isArray(tags) ? tags : [];
+  try {
+    const r = await remote.remoteSetUserTags(token, targetName, list);
+    if (r && r.ok) {
+      const users = getUsers();
+      const u = users.find((x) => norm(x.name) === norm(targetName));
+      if (u) { u.tags = r.tags || list; write(USERS_KEY, users); }
+      return { ok: true, tags: r.tags || list };
+    }
+    return { ok: false, error: (r && r.error) || "No se pudieron guardar las etiquetas." };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }

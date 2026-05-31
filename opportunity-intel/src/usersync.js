@@ -55,6 +55,16 @@ export function remoteRemoveTag(token, label) {
   return call("removeTag", { token, label });
 }
 
+/** Fija el nivel jerárquico de alguien (solo admin; el servidor refuerza). */
+export function remoteSetTier(token, targetName, tier) {
+  return call("setTier", { token, targetName, tier });
+}
+
+/** Ajusta las etiquetas de otra persona (solo admin; el servidor refuerza). */
+export function remoteSetUserTags(token, targetName, tags) {
+  return call("setUserTags", { token, targetName, tags: tags || [] });
+}
+
 /** Genera un código de invitación (solo admin; el servidor refuerza). */
 export function remoteCreateInvite(token, role) {
   return call("createInvite", { token, role });
