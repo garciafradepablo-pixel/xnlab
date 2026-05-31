@@ -106,6 +106,7 @@ export async function mount(rootEl) {
     return;
   }
   ensureSyncSubscription();
+  ensureRemoteRefresh(); // el latido del muelle: lo del otro entra sin recargar
   ensureHotkeys(); // ⌘K disponible en toda la app
   ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
@@ -144,6 +145,30 @@ function ensureSyncSubscription() {
   if (syncSubscribed) return;
   syncSubscribed = true;
   store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
+}
+
+// Refresco en vivo: cuando el latido baja cambios del otro, repintamos. Pero con
+// cuidado — no arrancarle el teclado a quien escribe ni repintar a lo loco. Se
+// agrupa con un respiro y se aplaza si hay un campo de texto enfocado. Los
+// modales viven en document.body, así que render() (que limpia root) no los toca.
+let remoteSubscribed = false;
+let remoteRenderPending = false;
+function ensureRemoteRefresh() {
+  if (remoteSubscribed) return;
+  remoteSubscribed = true;
+  store.onRemoteChange(scheduleRemoteRender);
+}
+function scheduleRemoteRender() {
+  if (remoteRenderPending) return;
+  remoteRenderPending = true;
+  setTimeout(flushRemoteRender, 400);
+}
+function flushRemoteRender() {
+  const a = typeof document !== "undefined" ? document.activeElement : null;
+  const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
+  if (typing) { setTimeout(flushRemoteRender, 1500); return; } // espera a que termine
+  remoteRenderPending = false;
+  recompute().then(render).catch(() => render());
 }
 // Cuando hay sesión local/sin sincronizar, el badge invita a reconectar.
 const syncClickable = (s) => s === "local" || s === "offline";

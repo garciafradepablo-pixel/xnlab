@@ -95,11 +95,14 @@ function snapshot() { return JSON.parse(exportState()); }
  */
 export async function startSharedSync() {
   syncEnabled = true;
-  return pullSharedState();
+  const r = await pullSharedState();
+  startPolling(); // a partir de aquí, el latido trae lo del otro sin recargar
+  return r;
 }
 export function stopSharedSync() {
   syncEnabled = false;
   if (pushTimer) { clearTimeout(pushTimer); pushTimer = null; }
+  if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; }
 }
 export function isSyncEnabled() { return syncEnabled; }
 
@@ -176,6 +179,71 @@ async function runScheduledPush() {
   finally {
     pushInFlight = false;
     if (pushAgain) { pushAgain = false; scheduleSync(); }
+  }
+}
+
+// ---- Refresco en vivo (polling) ---------------------------------------------
+// El problema "lo veo todo muy atrasado": cada cambio se SUBE, pero la app
+// abierta nunca BAJA lo del otro tras el primer pull. Resultado: un posit de Javi
+// solo le aparece a Pablo al recargar. El latido lo arregla — trae y fusiona los
+// cambios del servidor cada pocos segundos, y al instante al volver a la pestaña.
+// Es deliberadamente ligero: solo fusiona si el servidor avanzó de `rev`, nunca
+// empuja, y se aparta si hay una subida en curso para no competir con ella.
+
+let pollTimer = null;
+let pollVisBound = false;
+const POLL_MS = 12000;
+
+const remoteListeners = new Set();
+/** Avisa a la UI de que ha llegado y se ha fusionado estado nuevo del otro. */
+export function onRemoteChange(cb) { remoteListeners.add(cb); return () => remoteListeners.delete(cb); }
+function emitRemoteChange() { for (const cb of remoteListeners) { try { cb(); } catch { /* */ } } }
+
+/** Pull ligero: trae y fusiona SOLO si el servidor avanzó de rev. No empuja.
+ *  @returns {Promise<{ok:boolean, changed?:boolean, busy?:boolean}>} */
+export async function pollSharedState() {
+  // No competir con una subida en curso o pendiente: evita pisar/duplicar.
+  if (pushInFlight || pushTimer) return { ok: false, busy: true };
+  try {
+    const r = await remote.remoteLoadState(getToken());
+    if (!r || !r.ok) return { ok: false };
+    const incoming = Number(r.rev || 0);
+    const changed = incoming !== getRev();
+    if (changed) {
+      if (r.data) importState(r.data, { replace: false }); // newest-per-entity wins
+      setRev(incoming);
+      setSync("synced");
+      emitRemoteChange();
+    }
+    return { ok: true, changed };
+  } catch {
+    // Fallo de un latido de fondo: silencioso, sin marear el badge. El próximo
+    // latido (o la reconexión manual) lo reintenta.
+    return { ok: false };
+  }
+}
+
+function scheduleNextPoll() {
+  if (!syncEnabled || typeof setTimeout === "undefined") return; // off en tests/CLI
+  clearTimeout(pollTimer);
+  // Pestaña oculta → late más lento: no gastes red/batería mirando a nada.
+  const hidden = typeof document !== "undefined" && document.hidden;
+  pollTimer = setTimeout(pollTick, hidden ? POLL_MS * 5 : POLL_MS);
+  if (pollTimer && typeof pollTimer.unref === "function") pollTimer.unref();
+}
+async function pollTick() {
+  pollTimer = null;
+  if (!syncEnabled) return;
+  try { await pollSharedState(); } finally { scheduleNextPoll(); }
+}
+function startPolling() {
+  scheduleNextPoll();
+  if (typeof document !== "undefined" && typeof document.addEventListener === "function" && !pollVisBound) {
+    pollVisBound = true;
+    // Al volver a la pestaña, refresca al instante: lo primero que ves está al día.
+    document.addEventListener("visibilitychange", () => {
+      if (!document.hidden && syncEnabled) { clearTimeout(pollTimer); pollTimer = null; pollTick(); }
+    });
   }
 }
 
