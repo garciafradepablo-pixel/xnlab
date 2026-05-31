@@ -54,8 +54,8 @@ h1, h2, h3, .today-greet, .auth-logo, .logo { letter-spacing: -0.02em; }
 a { color: var(--o1); text-decoration: none; }
 a:hover { text-decoration: underline; }
 button { font-family: inherit; cursor: pointer; }
-h2 { font-size: 17px; margin: 0 0 12px; letter-spacing: .2px; }
-h3 { font-size: 15px; margin: 0; }
+h2 { font-size: 22px; font-weight: 800; margin: 0 0 16px; letter-spacing: -0.02em; }
+h3 { font-size: 16px; font-weight: 700; margin: 0; letter-spacing: -0.01em; }
 h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: var(--ink-dim); margin: 0 0 6px; }
 
 /* ---- Header ---- */
@@ -1693,3 +1693,16 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
   border-radius: 999px; padding: 8px 16px; font-size: 13px; box-shadow: var(--sh-2);
   opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
 .posit-toast.in { opacity: 1; transform: translate(-50%, 0); }
+
+/* Ficha más corta: momento + web lado a lado en ancho (apilados en móvil). */
+.case-signals { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.case-signals > .case-fresh { margin-bottom: 0; }
+@media (max-width: 760px) { .case-signals { grid-template-columns: 1fr; } }
+
+/* Estado de arranque en Hoy: onboarding claro en vez de KPIs a cero. */
+.today-onboard { background: linear-gradient(180deg, rgba(74,158,255,.06), transparent 70%), var(--panel);
+  border: 1px solid var(--line); border-radius: 16px; padding: 18px 20px; margin-bottom: 22px; box-shadow: var(--sh-1); }
+.ob-step { display: flex; align-items: center; gap: 12px; padding: 7px 0; font-size: 15px; color: var(--ink); }
+.ob-n { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line);
+  display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: var(--accent); }
+.ob-cta { width: auto; margin-top: 12px; padding: 11px 22px; }
