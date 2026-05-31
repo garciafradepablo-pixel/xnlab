@@ -2406,10 +2406,7 @@ function searchView() {
     ]));
   }
 
-  blocks.push(el("h3", { class: "capt-h", text: "O capta a mano una búsqueda concreta" }));
-  blocks.push(el("p", { class: "hint", html: "Escribe a quién quieres captar (ej. «clínicas dentales en Valencia» o «estudios de tatuaje»). Connect <b>detecta el sector —o crea uno nuevo—</b>, trae empresas reales del mapa, <b>las puntúa y las mete en el ranking</b>." }));
-
-  // --- CAPTADOR AUTOMÁTICO ---
+  // --- CAPTAR A MANO (avanzado): se pliega al final; el Mapa + piloto mandan ---
   const qInput = el("input", { type: "search", class: "search-city capt-input", placeholder: "¿A quién quieres captar?", autocomplete: "off" });
   const sectorChip = el("div", { class: "capt-sector" });
   const statusBox = el("div", { class: "capt-status" });
@@ -2484,32 +2481,30 @@ function searchView() {
 
   const captBtn = el("button", { class: "btn-primary capt-go", text: "Captar", onClick: captar });
   qInput.addEventListener("keydown", (e) => { if (e.key === "Enter") captar(); });
-  blocks.push(el("div", { class: "capt-bar" }, [qInput, captBtn]));
-  blocks.push(sectorChip);
 
-  // Tus intereses: lo que más buscas, a un clic. Si aún no hay historial, ideas.
   const interests = getInterests(8);
   const chips = interests.length
     ? interests.map((it) => [it.q, it.q])
     : [["clínicas dentales Madrid"], ["restaurante premium Marbella"], ["promotora branded residences"], ["estudios de tatuaje Barcelona"]].map(([q]) => [q, q]);
-  blocks.push(el("div", { class: "idea-chips" }, [
-    el("span", { class: "idea-lbl", text: interests.length ? "Tus intereses:" : "Ideas:" }),
-    ...chips.map(([label, q]) => el("button", { class: "idea-chip", text: label, onClick: () => { qInput.value = q; captar(); } })),
-  ]));
 
-  blocks.push(statusBox);
-  blocks.push(resultsBox);
-
-  // Sectores personalizados (Fase 8): crear nichos nuevos sin tocar código.
-  blocks.push(sectorManager());
-
-  // Formulario de alta.
-  blocks.push(el("h3", { text: "Añadir lead", class: "add-h" }));
-  blocks.push(addLeadForm());
-
-  // Leads ya añadidos.
+  // Todo lo manual/avanzado, plegado. El Mapa y el piloto de arriba son la vía
+  // normal; esto queda para casos puntuales, sin ensuciar la pantalla.
+  const manual = [
+    el("p", { class: "hint", text: "Para casos puntuales. La vía normal es el Mapa y el piloto de arriba." }),
+    el("div", { class: "capt-bar" }, [qInput, captBtn]),
+    sectorChip,
+    el("div", { class: "idea-chips" }, [
+      el("span", { class: "idea-lbl", text: interests.length ? "Tus intereses:" : "Ideas:" }),
+      ...chips.map(([label, q]) => el("button", { class: "idea-chip", text: label, onClick: () => { qInput.value = q; captar(); } })),
+    ]),
+    statusBox,
+    resultsBox,
+    sectorManager(),
+    el("h3", { text: "Añadir lead a mano", class: "add-h" }),
+    addLeadForm(),
+  ];
   if (userLeads.length) {
-    blocks.push(el("div", { class: "sec" }, [
+    manual.push(el("div", { class: "sec" }, [
       el("h4", { text: `Tus leads añadidos (${userLeads.length})` }),
       el("ul", { class: "user-leads" }, userLeads.map((l) =>
         el("li", {}, [
@@ -2519,6 +2514,10 @@ function searchView() {
       )),
     ]));
   }
+  blocks.push(el("details", { class: "legacy-tools" }, [
+    el("summary", { text: "Captar a mano · herramientas avanzadas" }),
+    el("div", { class: "legacy-body" }, manual),
+  ]));
 
   return el("div", {}, blocks);
 }
