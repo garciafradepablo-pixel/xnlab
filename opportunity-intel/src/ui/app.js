@@ -7,6 +7,7 @@
 import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
 import { ensureEco } from "./voice.js";
+import * as posits from "./posits.js";
 import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
@@ -354,6 +355,24 @@ function goView(view) {
   render();
 }
 
+// Pulso del muelle: el gadget de cabecera que engancha. La llama es tu racha de
+// días trabajando en la app; el punto se enciende si tienes posits sin ver. Un
+// toque te lleva al Muelle. Glanceable — un número y un punto, sin texto.
+function muellePulse() {
+  const me = auth.currentUser()?.name || "";
+  const n = posits.unread(me);
+  const days = posits.streak(me);
+  return el("button", {
+    class: `muelle-pulse${n ? " has-unread" : ""}`,
+    title: `${n ? `${n} posit${n === 1 ? "" : "s"} sin ver · ` : ""}Racha: ${days} día${days === 1 ? "" : "s"} seguidos en la app`,
+    onClick: () => goView("muelle"),
+  }, [
+    el("span", { class: "pulse-flame", text: "🔥" }),
+    el("span", { class: "pulse-streak", text: String(days) }),
+    n ? el("span", { class: "pulse-dot", text: String(n) }) : null,
+  ]);
+}
+
 function header() {
   return el("header", { class: "app-head" }, [
     el("div", { class: "brand" }, [
@@ -367,6 +386,7 @@ function header() {
       state.dataset !== "researched"
         ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Conecta fuentes reales (ver README)." })
         : null,
+      muellePulse(),
       userChip(),
       syncBadge(),
       el("span", { class: "ver-tag", title: "Versión publicada (última actualización)", text: pubLabel || "actualizando…" }),
@@ -507,6 +527,7 @@ const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
+  { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
   { key: "training", label: "Formación", views: [["training", "Dossiers"]] },
 ];
@@ -728,8 +749,26 @@ function viewArea() {
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
   else if (state.view === "training") area.appendChild(trainingView());
+  else if (state.view === "muelle") area.appendChild(muelleView());
   else area.appendChild(learningView());
   return area;
+}
+
+// El Muelle: posits del equipo. Resuelve el nombre del lead desde el pipeline en
+// memoria para que el gadget muestre "sobre Tal" sin guardar texto en el posit.
+function leadNameById(id) {
+  const o = (state.results?.all || []).find((x) => x.id === id);
+  return o ? o.company : null;
+}
+function muelleView() {
+  const me = auth.currentUser()?.name || "";
+  return posits.positsView({
+    me,
+    isCeo: allow("manage_roles"),
+    openLead: (id) => openCase(id),
+    rerender: render,
+    leadName: leadNameById,
+  });
 }
 
 // ---- Gestión de usuarios y roles (solo admin) -------------------------------
@@ -1416,6 +1455,15 @@ function cardHandlers(afterMutate) {
       openProposal(lead);
     },
     onOpen: (id) => openCase(id),
+    // Un toque para lanzar un sello sobre este lead al compañero. No es escritura
+    // de negocio (lo puede hacer cualquiera con sesión), así que va fuera de RBAC.
+    onSello: (id) => posits.openSelloPicker({
+      leadId: id,
+      leadName: leadNameById(id),
+      me: auth.currentUser()?.name || "",
+      isCeo: allow("manage_roles"),
+      onSent: render,
+    }),
   };
 }
 

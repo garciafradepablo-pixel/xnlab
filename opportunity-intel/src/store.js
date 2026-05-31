@@ -23,6 +23,7 @@ const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const TRAIN_KEY = `${NS}training`; // dossiers de formación interna (compartidos)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
+const POSITS_KEY = `${NS}posits`; // muelle de posits (gadgets async entre el equipo)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
 // Graceful no-op storage when localStorage is unavailable (e.g. Node tests).
@@ -389,6 +390,7 @@ export function exportState() {
       verifications: getVerifications(),
       userLeads: getUserLeads(),
       training: getTraining(),
+      posits: read(POSITS_KEY, []),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -502,7 +504,26 @@ export function importState(json, { replace = false } = {}) {
     write(TRAIN_KEY, [...byId.values()]);
   }
 
+  // --- posits (merge por id; gana la mutación más reciente: seenAt/archivedAt) --
+  const incomingPosits = Array.isArray(data.posits) ? data.posits : [];
+  if (replace) {
+    write(POSITS_KEY, incomingPosits);
+  } else if (incomingPosits.length) {
+    const byId = new Map(read(POSITS_KEY, []).map((p) => [p.id, p]));
+    for (const p of incomingPosits) {
+      const cur = byId.get(p.id);
+      if (!cur || positStamp(p) > positStamp(cur)) byId.set(p.id, p);
+    }
+    write(POSITS_KEY, [...byId.values()]);
+  }
+
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
+}
+
+// La "frescura" de un posit es su mutación más reciente: así un "visto" o un
+// "archivado" hecho en otro dispositivo gana al original sin conflictos.
+function positStamp(p) {
+  return String(p.archivedAt || p.seenAt || p.createdAt || "");
 }
 
 function outcomeKey(o) {
@@ -632,6 +653,34 @@ export function saveTraining(doc) {
 }
 export function removeTraining(id) {
   write(TRAIN_KEY, getTraining().filter((d) => d.id !== id));
+  scheduleSync();
+}
+
+// ---- Muelle de posits: gadgets asíncronos entre el equipo ---------------------
+// Un posit NO es texto libre: es un gadget con tipo (sello, relevo, potencia, eco)
+// anclado a un contexto (un lead, un día, una persona). Rueda sobre el mismo sync
+// compartido — sin servidor de tiempo real, sin coste, sin estar en directo.
+//   { id, kind, from, to, glyph, label, leadId?, audio?, createdAt, seenAt?, archivedAt? }
+/** @returns {Array} todos los posits compartidos, del más reciente al más antiguo. */
+export function getPosits() {
+  return read(POSITS_KEY, []).slice().sort((a, b) => String(b.createdAt || "").localeCompare(String(a.createdAt || "")));
+}
+/** Lanza (o actualiza por id) un posit y programa la sincronización. */
+export function savePosit(posit) {
+  const p = { seenAt: null, archivedAt: null, ...posit };
+  const all = read(POSITS_KEY, []).filter((x) => x.id !== p.id);
+  all.push(p);
+  write(POSITS_KEY, all);
+  scheduleSync();
+  return p;
+}
+/** Marca un posit con un sello de tiempo (seenAt / archivedAt) y sincroniza. */
+export function markPosit(id, patch) {
+  const all = read(POSITS_KEY, []);
+  const p = all.find((x) => x.id === id);
+  if (!p) return;
+  Object.assign(p, patch);
+  write(POSITS_KEY, all);
   scheduleSync();
 }
 

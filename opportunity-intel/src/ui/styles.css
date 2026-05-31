@@ -1597,3 +1597,99 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 .legacy-tools[open] > summary::before { content: "▾"; }
 .legacy-tools > summary:hover { color: var(--ink); }
 .legacy-body { padding-top: 12px; }
+
+/* ============================================================================
+   EL MUELLE — posits (gadgets async del equipo). Glanceable, táctil, sin texto.
+   ========================================================================== */
+
+/* Botón de sello en la tarjeta, junto a ⤢ */
+.c-sello { flex: 0 0 auto; background: var(--panel-2); color: var(--ink-dim);
+  border: 1px solid var(--line); border-radius: 9px; width: 28px; height: 28px;
+  font-size: 14px; cursor: pointer; line-height: 1; transition: .15s; }
+.c-sello:hover { color: var(--ink); border-color: var(--accent); transform: translateY(-1px); }
+
+/* Pulso de cabecera: llama (racha) + punto (sin ver) */
+.muelle-pulse { display: inline-flex; align-items: center; gap: 4px; position: relative;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 10px 4px 8px; cursor: pointer; color: var(--ink-dim); transition: .15s; }
+.muelle-pulse:hover { border-color: var(--accent); color: var(--ink); }
+.muelle-pulse.has-unread { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(203,162,74,.14); }
+.pulse-flame { font-size: 13px; filter: grayscale(.2); }
+.muelle-pulse.has-unread .pulse-flame { filter: none; }
+.pulse-streak { font: 700 12px var(--mono); color: var(--ink); }
+.pulse-dot { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px;
+  padding: 0 4px; border-radius: 999px; background: var(--red); color: #fff;
+  font: 700 10px var(--mono); display: inline-flex; align-items: center; justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,.5); }
+
+/* Selector de sello (popover) */
+.sello-pop { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px);
+  z-index: 70; width: min(380px, calc(100vw - 32px)); background: var(--panel);
+  border: 1px solid var(--line-2); border-radius: 16px; box-shadow: var(--sh-3), var(--hl);
+  padding: 14px; opacity: 0; transition: opacity .16s ease, transform .16s ease; }
+.sello-pop.in { opacity: 1; transform: translate(-50%, 0); }
+.sello-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.sello-ctx { font-size: 12px; color: var(--ink-dim); letter-spacing: .02em; }
+.sello-x { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 14px; }
+.sello-x:hover { color: var(--ink); }
+.sello-who { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.who-chip { display: inline-flex; align-items: center; gap: 6px; background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px 3px 4px;
+  color: var(--ink-dim); cursor: pointer; font-size: 12px; }
+.who-chip.on { border-color: var(--accent); color: var(--ink); }
+.sello-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.sello { display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 12px;
+  padding: 12px 6px; cursor: pointer; transition: .14s; }
+.sello:hover { transform: translateY(-2px); border-color: var(--line-2); background: var(--panel-3); }
+.sello:active { transform: scale(.95); }
+.sello-glyph { font-size: 22px; line-height: 1; }
+.sello-label { font-size: 11px; color: var(--ink-dim); }
+.sello-hot:hover { border-color: var(--red); }
+.sello-good:hover { border-color: var(--ok); }
+.sello-relief:hover, .sello-boost:hover { border-color: var(--xn); }
+
+/* La vista Muelle */
+.muelle { max-width: 720px; }
+.muelle-head { margin-bottom: 18px; }
+.muelle-title { margin: 0; font-size: 22px; letter-spacing: -.01em; }
+.muelle-sub { margin: 4px 0 12px; color: var(--ink-dim); font-size: 13px; max-width: 52ch; }
+.muelle-new { background: linear-gradient(180deg, var(--accent), var(--accent-2)); color: #1a1206;
+  border: none; border-radius: 10px; padding: 8px 14px; font-weight: 600; cursor: pointer; box-shadow: var(--sh-1); }
+.muelle-new:hover { filter: brightness(1.06); }
+.muelle-band { font-size: 12px; text-transform: uppercase; letter-spacing: .08em;
+  color: var(--ink-faint); margin: 18px 0 8px; }
+.muelle-band.faint { opacity: .7; }
+.muelle-empty { color: var(--ink-faint); font-size: 13px; }
+.muelle-stack { display: flex; flex-direction: column; gap: 8px; }
+.muelle-stack.faint { opacity: .62; }
+
+.posit { display: flex; align-items: center; gap: 12px; background: var(--panel);
+  border: 1px solid var(--line); border-left: 3px solid var(--line-2); border-radius: 12px;
+  padding: 11px 12px; cursor: pointer; transition: transform .16s ease, opacity .16s ease, border-color .15s; }
+.posit:hover { border-color: var(--line-2); transform: translateX(2px); }
+.posit.fresh { border-left-color: var(--accent); box-shadow: var(--hl); }
+.posit.gone { opacity: 0; transform: translateX(40px); }
+.posit-hot { border-left-color: var(--red); }
+.posit-good { border-left-color: var(--ok); }
+.posit-relief, .posit-boost { border-left-color: var(--xn); }
+.posit-glyph { font-size: 24px; line-height: 1; flex: 0 0 auto; }
+.posit-body { flex: 1 1 auto; min-width: 0; }
+.posit-label { display: block; font-weight: 600; font-size: 14px; }
+.posit-meta { display: flex; align-items: center; gap: 6px; margin-top: 3px;
+  font-size: 11.5px; color: var(--ink-faint); }
+.posit-av { width: 16px; height: 16px; border-radius: 50%; color: #fff; font: 700 9px var(--mono);
+  display: inline-flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+.posit-lead { color: var(--ink-dim); }
+.posit-time { margin-left: auto; }
+.posit-arch { flex: 0 0 auto; background: var(--panel-2); color: var(--ink-faint);
+  border: 1px solid var(--line); border-radius: 8px; width: 28px; height: 28px;
+  cursor: pointer; font-size: 13px; transition: .14s; }
+.posit-arch:hover { color: var(--ok); border-color: var(--ok); }
+
+/* Toast de confirmación al lanzar */
+.posit-toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 12px);
+  z-index: 80; background: var(--panel-3); color: var(--ink); border: 1px solid var(--line-2);
+  border-radius: 999px; padding: 8px 16px; font-size: 13px; box-shadow: var(--sh-2);
+  opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none; }
+.posit-toast.in { opacity: 1; transform: translate(-50%, 0); }
