@@ -91,17 +91,27 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 /* ---- Tabs ---- */
 .tabs { display: flex; gap: 2px; padding: 0 22px; border-bottom: 1px solid var(--line); background: var(--panel); overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .tabs::-webkit-scrollbar { display: none; }
-.tab { background: transparent; border: 0; color: var(--ink-dim); padding: 12px 16px; font-size: 13px; border-bottom: 2px solid transparent; white-space: nowrap; flex: 0 0 auto; }
-.tab.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab { position: relative; background: transparent; border: 0; color: var(--ink-dim); padding: 12px 16px; font-size: 13px; border-bottom: 2px solid transparent; white-space: nowrap; flex: 0 0 auto; }
+.tab.active { color: var(--ink); }
+.tab.active::after { content: ""; position: absolute; left: 14px; right: 14px; bottom: -1px; height: 2px; border-radius: 2px; background: var(--accent); }
 .tab:hover { color: var(--ink); }
+/* El subrayado de pestaña y el pop de zona animan SOLO al navegar (clase
+   .anim que pone tabs() en navegación real), no en re-renders por sync. */
+.navwrap.anim .tab.active::after { animation: tabline .3s cubic-bezier(.2,.8,.2,1) both; }
+.navwrap.anim .zone.active { animation: zonePop .26s cubic-bezier(.2,.8,.2,1); }
+@keyframes tabline { from { transform: scaleX(0); opacity: .3; } to { transform: scaleX(1); opacity: 1; } }
+@keyframes zonePop { from { transform: scale(.97); } to { transform: scale(1); } }
 
 /* ---- Navegación premium: zonas (nivel 1) + subpestañas (nivel 2) ---- */
 .navwrap { flex: 0 0 auto; }
 .zones { display: flex; gap: 4px; align-items: center; padding: 10px 22px; background: var(--panel); }
-.zone { background: transparent; border: 1px solid transparent; color: var(--ink-dim);
-  padding: 8px 16px; font-size: 13px; font-weight: 600; letter-spacing: -0.01em; border-radius: 999px; white-space: nowrap;
+.zone { display: inline-flex; align-items: center; gap: 7px; background: transparent; border: 1px solid transparent; color: var(--ink-dim);
+  padding: 8px 14px; font-size: 13px; font-weight: 600; letter-spacing: -0.01em; border-radius: 999px; white-space: nowrap;
   transition: color .15s ease, background-color .15s ease, box-shadow .15s ease; }
+.zone-ic { color: var(--ink-faint); flex: 0 0 auto; transition: color .15s ease; }
+.zone-ic svg { width: 16px; height: 16px; }
 .zone:hover { color: var(--ink); background: rgba(255,255,255,.04); }
+.zone:hover .zone-ic, .zone.active .zone-ic { color: var(--accent); }
 .zone.active { color: var(--ink); background: var(--panel-2); box-shadow: var(--sh-1), inset 0 0 0 1px var(--line); }
 .zone-cmd { margin-left: auto; font-family: var(--mono); font-size: 12px; border: 1px solid var(--line);
   border-radius: 8px; padding: 6px 10px; color: var(--ink-dim); }
@@ -1614,8 +1624,9 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
   padding: 4px 10px 4px 8px; cursor: pointer; color: var(--ink-dim); transition: .15s; }
 .muelle-pulse:hover { border-color: var(--accent); color: var(--ink); }
 .muelle-pulse.has-unread { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(203,162,74,.14); }
-.pulse-flame { font-size: 13px; filter: grayscale(.2); }
-.muelle-pulse.has-unread .pulse-flame { filter: none; }
+.pulse-flame { color: var(--ink-dim); display: inline-flex; }
+.pulse-flame svg { width: 15px; height: 15px; }
+.muelle-pulse.has-unread .pulse-flame { color: var(--accent); }
 .pulse-streak { font: 700 12px var(--mono); color: var(--ink); }
 .pulse-dot { position: absolute; top: -5px; right: -5px; min-width: 16px; height: 16px;
   padding: 0 4px; border-radius: 999px; background: var(--red); color: #fff;
@@ -1715,7 +1726,12 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
   background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
   padding: 12px 14px; cursor: pointer; transition: .15s; box-shadow: var(--hl); }
 .tp-cell:hover { border-color: var(--line-2); transform: translateY(-2px); }
-.tp-glyph { font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.tp-glyph { flex: 0 0 auto; color: var(--ink-dim); }
+.tp-glyph svg { width: 22px; height: 22px; }
+.tp-glyph-emoji { font-size: 22px; line-height: 1; }
+.tp-streak .tp-glyph { color: var(--accent); }
+.tp-inbox.on .tp-glyph { color: var(--accent); }
+.tp-rec .tp-glyph { color: var(--xn); }
 .tp-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
 .tp-big { font: 800 22px var(--sans); color: var(--ink); }
 .tp-rec-from { font-size: 16px; }
