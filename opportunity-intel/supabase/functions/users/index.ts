@@ -1,17 +1,5 @@
-// =============================================================================
-// users — Cuentas durables + RBAC (Supabase).
-//
-// Acciones: register, login, me, list, setPassword, setRole.
-// - Contraseñas: SHA-256(salt + "::" + password), sal por usuario. El cliente
-//   nunca ve los hashes.
-// - Sesión: al register/login se emite un TOKEN opaco (no es la service_role
-//   key) que el cliente guarda y envía en las llamadas que mutan datos. El
-//   servidor resuelve token → usuario/rol y decide permisos.
-// - Roles: admin/editor/viewer/analyst. El primer usuario del workspace nace
-//   admin; el resto editor. setRole es solo-admin y protege al último admin.
-//
+// users — Cuentas durables + RBAC + etiquetas + nivel jerárquico (Supabase).
 // verify_jwt=false: la publishable no es un JWT; la autenticación es propia.
-// =============================================================================
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
@@ -27,11 +15,29 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-const ROLES = ["admin", "editor", "viewer", "analyst"];
+const ROLES = ["admin", "editor", "viewer", "analyst", "vendedor"];
 const normRole = (r: string) => (ROLES.includes(r) ? r : "viewer");
 
-// Caducidad de sesión: un token más viejo que esto deja de valer y exige
-// re-login. Limita la ventana de un token filtrado.
+async function catalogSlugs(): Promise<Set<string>> {
+  const res = await rest(`connect_team_tags?select=slug`);
+  const rows = await res.json();
+  return new Set((Array.isArray(rows) ? rows : []).map((r: any) => String(r.slug)));
+}
+async function sanitizeTags(tags: unknown): Promise<string[]> {
+  if (!Array.isArray(tags)) return [];
+  const want = [...new Set(tags.map((t) => String(t || "").trim().toLowerCase()).filter(Boolean))].slice(0, 24);
+  if (!want.length) return [];
+  try {
+    const cat = await catalogSlugs();
+    return cat.size ? want.filter((t) => cat.has(t)) : want;
+  } catch {
+    return want;
+  }
+}
+const slugify = (s: string) =>
+  String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
 const tokenExpired = (tokenAt: string | null) =>
   !!tokenAt && Date.now() - new Date(tokenAt).getTime() > TOKEN_TTL_MS;
@@ -60,10 +66,10 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,token_at&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,tags,tier,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
   const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
-  if (!u || tokenExpired(u.token_at)) return null; // sesión caducada → re-login
+  if (!u || tokenExpired(u.token_at)) return null;
   return u;
 }
 
@@ -76,40 +82,100 @@ async function issueToken(id: string): Promise<string> {
   return token;
 }
 
-// Token de sesión que NO rompe sesiones existentes: si el usuario ya tiene un
-// token vigente, lo reutiliza (solo refresca caducidad). Solo emite uno nuevo si
-// no hay o caducó. Antes el login rotaba el token y dejaba "Solo local" a las
-// demás pestañas/dispositivos del mismo usuario.
-async function sessionToken(id: string, current: string | null, currentAt: string | null): Promise<string> {
-  if (current && !tokenExpired(currentAt)) {
-    await rest(`connect_users?id=eq.${encodeURIComponent(id)}`, {
-      method: "PATCH",
-      body: JSON.stringify({ token_at: new Date().toISOString() }),
-    });
-    return current;
-  }
-  return await issueToken(id);
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, name, password, color, token, targetName, role, avatar, invite } = await req.json().catch(() => ({}));
+    const { action, name, password, color, token, targetName, role, avatar, invite, tags, label, tier } = await req.json().catch(() => ({}));
     const nm = String(name || "").trim();
     const nameLower = nm.toLowerCase();
 
-    // list: nombres + colores + roles + avatar (no sensible).
     if (action === "list") {
-      const res = await rest(`connect_users?select=name,color,role,avatar`);
+      const res = await rest(`connect_users?select=name,color,role,avatar,tags,tier`);
       const rows = await res.json();
       return json({ ok: true, users: Array.isArray(rows) ? rows : [] });
     }
 
-    // setAvatar: el propio usuario (sesión válida) fija su emoji/avatar.
+    if (action === "setTier") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN cambia el nivel." }, 403);
+      const tgt = String(targetName || "").trim().toLowerCase();
+      const t = Math.max(0, Math.min(9, Math.round(Number(tier))));
+      if (!tgt) return json({ ok: false, error: "Falta el usuario objetivo." }, 400);
+      if (!Number.isFinite(t)) return json({ ok: false, error: "Nivel no válido." }, 400);
+      const up = await rest(`connect_users?name_lower=eq.${encodeURIComponent(tgt)}`, {
+        method: "PATCH", headers: { Prefer: "return=representation" },
+        body: JSON.stringify({ tier: t }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo cambiar el nivel." }, 500);
+      const updated = await up.json();
+      if (!Array.isArray(updated) || !updated.length) return json({ ok: false, error: "Usuario no encontrado." }, 404);
+      return json({ ok: true, user: { name: updated[0].name, tier: updated[0].tier } });
+    }
+
+    if (action === "setUserTags") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN edita las etiquetas de otros." }, 403);
+      const tgt = String(targetName || "").trim().toLowerCase();
+      if (!tgt) return json({ ok: false, error: "Falta el usuario objetivo." }, 400);
+      const clean = await sanitizeTags(tags);
+      const up = await rest(`connect_users?name_lower=eq.${encodeURIComponent(tgt)}`, {
+        method: "PATCH", body: JSON.stringify({ tags: clean }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudieron guardar las etiquetas." }, 500);
+      return json({ ok: true, tags: clean });
+    }
+
+    if (action === "tagCatalog") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const res = await rest(`connect_team_tags?select=slug,label&order=label.asc`);
+      const rows = await res.json();
+      return json({ ok: true, tags: Array.isArray(rows) ? rows : [] });
+    }
+
+    if (action === "addTag") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN amplía el catálogo." }, 403);
+      const lbl = String(label || "").trim().slice(0, 40);
+      const slug = slugify(lbl);
+      if (!slug) return json({ ok: false, error: "Etiqueta no válida." }, 400);
+      const up = await rest(`connect_team_tags?on_conflict=slug`, {
+        method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ slug, label: lbl, created_by: caller.name || null }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo añadir la etiqueta." }, 500);
+      return json({ ok: true, tag: { slug, label: lbl } });
+    }
+
+    if (action === "removeTag") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN edita el catálogo." }, 403);
+      const slug = slugify(String(label || ""));
+      if (!slug) return json({ ok: false, error: "Etiqueta no válida." }, 400);
+      const del = await rest(`connect_team_tags?slug=eq.${encodeURIComponent(slug)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+      if (!del.ok) return json({ ok: false, error: "No se pudo quitar la etiqueta." }, 500);
+      return json({ ok: true });
+    }
+
+    if (action === "setTags") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const clean = await sanitizeTags(tags);
+      const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
+        method: "PATCH", body: JSON.stringify({ tags: clean }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudieron guardar las etiquetas." }, 500);
+      return json({ ok: true, tags: clean });
+    }
+
     if (action === "setAvatar") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
-      const av = String(avatar || "").trim().slice(0, 8); // emoji corto; nada de URLs largas
+      const av = String(avatar || "").trim().slice(0, 8);
       const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
         method: "PATCH", body: JSON.stringify({ avatar: av || null }),
       });
@@ -117,7 +183,6 @@ Deno.serve(async (req) => {
       return json({ ok: true, avatar: av || null });
     }
 
-    // createInvite: SOLO admin. Genera un código de invitación de un solo uso.
     if (action === "createInvite") {
       const caller = await userByToken(String(token || ""));
       if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
@@ -132,19 +197,15 @@ Deno.serve(async (req) => {
       return json({ ok: true, code, expires_at });
     }
 
-    // register: crea cuenta, emite token, devuelve rol. CERRADO: salvo el primer
-    // usuario del workspace, exige una invitación válida (registro privado).
     if (action === "register") {
       if (nm.length < 2) return json({ ok: false, error: "El nombre debe tener al menos 2 caracteres." });
       if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
       const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const existing = await chk.json();
       if (Array.isArray(existing) && existing.length) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
-      // El PRIMER usuario del workspace nace admin y no necesita invitación.
       const anyRes = await rest(`connect_users?select=id&limit=1`);
       const any = await anyRes.json();
       const firstUser = !(Array.isArray(any) && any.length);
-      // Registro cerrado: si ya hay usuarios, exige invitación válida.
       let inviteRole: string | null = null;
       const inviteCode = String(invite || "").trim();
       if (!firstUser) {
@@ -159,10 +220,11 @@ Deno.serve(async (req) => {
       const salt = randHex(16);
       const pass_hash = await sha256(`${salt}::${password}`);
       const newRole = firstUser ? "admin" : (inviteRole || "editor");
+      const cleanTags = await sanitizeTags(tags);
       const ins = await rest(`connect_users`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
-        body: JSON.stringify({ name: nm, name_lower: nameLower, color: color || "#4a9eff", pass_hash, salt, role: newRole }),
+        body: JSON.stringify({ name: nm, name_lower: nameLower, color: color || "#4a9eff", pass_hash, salt, role: newRole, tags: cleanTags }),
       });
       if (!ins.ok) {
         const t = await ins.text();
@@ -176,31 +238,26 @@ Deno.serve(async (req) => {
       }
       const row = (await ins.json())[0];
       const tok = await issueToken(row.id);
-      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, token: tok } });
+      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, tags: row.tags || [], tier: row.tier ?? 2, token: tok } });
     }
 
-    // login: verifica, emite token, devuelve rol.
     if (action === "login") {
-      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt,token,token_at&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const res = await rest(`connect_users?select=id,name,color,role,avatar,tags,tier,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const rows = await res.json();
       const u = Array.isArray(rows) ? rows[0] : null;
       if (!u) return json({ ok: false, error: "Usuario no encontrado." });
       const h = await sha256(`${u.salt}::${password}`);
       if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
-      // Reutiliza token vigente (no rota) → sesión estable entre pestañas/dispositivos.
-      const tok = await sessionToken(u.id, u.token || null, u.token_at || null);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, token: tok } });
+      const tok = await issueToken(u.id);
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, tags: u.tags || [], tier: u.tier ?? 2, token: tok } });
     }
 
-    // me: valida un token y devuelve el usuario+rol (fuente de verdad del rol).
     if (action === "me") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, tags: u.tags || [], tier: u.tier ?? 2 } });
     }
 
-    // setPassword: el propio usuario (sesión válida) cambia su contraseña. Sal
-    // nueva por cambio. No requiere admin: cada uno gestiona la suya.
     if (action === "setPassword") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
@@ -215,7 +272,6 @@ Deno.serve(async (req) => {
       return json({ ok: true });
     }
 
-    // setRole: SOLO admin. Protege al último admin de quedarse sin él.
     if (action === "setRole") {
       const caller = await userByToken(String(token || ""));
       if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);

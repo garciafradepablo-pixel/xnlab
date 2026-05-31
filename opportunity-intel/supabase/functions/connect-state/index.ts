@@ -13,11 +13,12 @@
 //   - load: exige una sesión válida (token). Cualquier rol puede LEER.
 //   - save: exige que el ROL detrás del token pueda escribir (admin/editor).
 //           viewer/analyst → 403, aunque manipulen el cliente.
+//   - createShare: un rol con escritura genera un enlace de PRUEBA solo-lectura.
+//   - loadShare: SIN sesión; valida el enlace y devuelve el estado en lectura.
 //
 // Concurrencia (control optimista por `rev`):
 //   - save → si tu `rev` == rev del servidor: escribe y devuelve { ok, rev+1 }.
-//            si no: { ok:false, conflict:true, data, rev } para que el cliente
-//            re-fusione (newest-per-entity) y reintente. Nunca pisa a ciegas.
+//            si no: { ok:false, conflict:true, data, rev } para re-fusionar.
 // =============================================================================
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
@@ -34,9 +35,7 @@ const cors = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
-// Capacidad de escritura por rol (copia de roles.js; el servidor manda).
-const CAN_WRITE = new Set(["admin", "editor"]);
-// Caducidad de sesión (igual que en `users`): token viejo → re-login.
+const CAN_WRITE = new Set(["admin", "editor", "vendedor"]);
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
 
 async function rest(path: string, init: RequestInit = {}) {
@@ -60,13 +59,64 @@ async function userByToken(token: string) {
   return u;
 }
 
+function randHex(n: number): string {
+  const a = new Uint8Array(n); crypto.getRandomValues(a);
+  return [...a].map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, workspace, data, rev, token } = await req.json().catch(() => ({}));
+    const { action, workspace, data, rev, token, scope, company, companyName, share } = await req.json().catch(() => ({}));
     const ws = String(workspace || "default").slice(0, 64);
 
-    // load: cualquier sesión válida puede LEER (viewer incluido).
+    if (action === "createShare") {
+      const user = await userByToken(String(token || ""));
+      if (!user) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (!CAN_WRITE.has(user.role)) {
+        return json({ ok: false, error: "Tu rol no permite compartir vistas de prueba." }, 403);
+      }
+      const sc = scope === "company" ? "company" : "workspace";
+      const tok = randHex(16);
+      const expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+      const ins = await rest(`connect_shares`, {
+        method: "POST", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          token: tok, scope: sc, workspace: ws,
+          company: sc === "company" ? String(company || "").slice(0, 120) || null : null,
+          company_name: sc === "company" ? String(companyName || "").slice(0, 160) || null : null,
+          created_by: user.name || null, expires_at,
+        }),
+      });
+      if (!ins.ok) {
+        const detail = await ins.text();
+        return json({ ok: false, error: "No se pudo crear el enlace.", detail }, 500);
+      }
+      return json({ ok: true, token: tok, scope: sc, expires_at });
+    }
+
+    if (action === "loadShare") {
+      const sh = String(share || "").trim();
+      if (!sh) return json({ ok: false, error: "Falta el enlace." }, 400);
+      const sr = await rest(`connect_shares?select=scope,company,company_name,workspace,expires_at&token=eq.${encodeURIComponent(sh)}`);
+      const srows = await sr.json();
+      const srow = Array.isArray(srows) ? srows[0] : null;
+      if (!srow) return json({ ok: false, error: "Enlace no válido." }, 404);
+      if (srow.expires_at && new Date(srow.expires_at) < new Date()) return json({ ok: false, error: "El enlace ha caducado." }, 410);
+      const sws = String(srow.workspace || "default").slice(0, 64);
+      const res = await rest(`connect_state?select=data,rev&workspace=eq.${encodeURIComponent(sws)}`);
+      const rows = await res.json();
+      const row = Array.isArray(rows) ? rows[0] : null;
+      return json({
+        ok: true, readOnly: true,
+        scope: srow.scope || "workspace",
+        company: srow.company || null,
+        companyName: srow.company_name || null,
+        data: row ? row.data : null,
+        rev: row ? row.rev : 0,
+      });
+    }
+
     if (action === "load") {
       const user = await userByToken(String(token || ""));
       if (!user) return json({ ok: false, error: "Sesión no válida." }, 401);
@@ -77,8 +127,6 @@ Deno.serve(async (req) => {
       return json({ ok: true, data: row.data, rev: row.rev });
     }
 
-    // save: exige sesión válida Y rol con permiso de escritura. Refuerzo REAL:
-    // aunque el cliente oculte botones, un viewer/analyst recibe 403 aquí.
     if (action === "save") {
       const user = await userByToken(String(token || ""));
       if (!user) return json({ ok: false, error: "Sesión no válida." }, 401);

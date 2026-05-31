@@ -13,7 +13,7 @@ const CORS = {
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { ...CORS, "Content-Type": "application/json" } });
 
-const CAN_DISCOVER = new Set(["admin", "editor"]);
+const CAN_DISCOVER = new Set(["admin", "editor", "vendedor"]);
 
 // Rate-limit por usuario (defensa en profundidad contra abuso de cuota de Google
 // Places si un token se filtra o un script se desboca). Generoso para el uso

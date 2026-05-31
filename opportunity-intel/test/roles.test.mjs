@@ -40,6 +40,18 @@ ok(can("admin", "secrets") && can("admin", "calibration"), "admin SÍ secretos y
 ok(can("admin", "write") && can("admin", "crm"), "admin SÍ escribe y mueve CRM");
 ok(can("admin", "audit"), "admin SÍ ve auditoría");
 
+// 3b. VENDEDOR opera la llamada (escribe, mueve CRM, descubre, cierra) pero NO
+//     exporta (no se saca la base de leads) ni gobierna.
+ok(can("vendedor", "write"), "vendedor SÍ puede escribir (marcar llamadas)");
+ok(can("vendedor", "crm"), "vendedor SÍ mueve el CRM");
+ok(can("vendedor", "discover") && can("vendedor", "enrich"), "vendedor SÍ descubre y abre webs");
+ok(can("vendedor", "followup") && can("vendedor", "close"), "vendedor SÍ hace follow-ups y cierres");
+ok(can("vendedor", "stats"), "vendedor SÍ ve estadísticas");
+ok(!can("vendedor", "export"), "vendedor NO exporta (no se lleva los leads)");
+ok(!can("vendedor", "manage_users") && !can("vendedor", "manage_roles"), "vendedor NO gobierna equipo");
+ok(!can("vendedor", "hard_delete") && !can("vendedor", "calibration"), "vendedor NO borra ni calibra");
+ok(isWriter("vendedor"), "isWriter(vendedor) = true");
+
 // 4. ANALYST ve/exporta estadísticas y auditoría, pero no edita CRM.
 ok(can("analyst", "read"), "analyst SÍ lee");
 ok(can("analyst", "stats"), "analyst SÍ ve estadísticas");
@@ -60,7 +72,9 @@ ok(can(undefined, "read"), "rol indefinido aún puede leer (viewer)");
 // 6. Etiquetas y catálogo.
 ok(roleLabel("admin") === "ADMIN" && roleLabel("analyst") === "ANALYST", "etiquetas correctas");
 ok(roleLabel("xxx") === "VIEWER", "etiqueta de rol desconocido = VIEWER");
-ok(ROLES.length === 4 && DEFAULT_ROLE === "editor", "catálogo de 4 roles, default editor");
+ok(ROLES.length === 5 && DEFAULT_ROLE === "editor", "catálogo de 5 roles, default editor");
+ok(roleLabel("vendedor") === "VENDEDOR", "etiqueta vendedor = VENDEDOR");
+ok(normalizeRole("vendedor") === "vendedor", "vendedor es rol conocido");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
