@@ -130,7 +130,7 @@ export async function mount(rootEl) {
 
   // Revalida el rol contra el servidor (si un admin lo cambió) y repinta el
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
-  auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
+  auth.refreshSession().then((r) => { if (r && r.ok) render(); maybePromptEmail(); }).catch(() => {});
   store.startSharedSync().then(async (r) => {
     if (r && r.ok) { await recompute(); await maybeSeedStarterPlan(); render(); }
   }).catch(() => {});
@@ -668,7 +668,7 @@ function openProfile() {
             el("label", { class: "prof-rolewrap" }, [el("span", { text: "Tipo de cuenta" }), roleSel]),
             genBtn, inviteBox,
           ])
-        : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
+        : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin que te genere el enlace." }),
     ]),
     el("div", { class: "prof-foot" }, [
       el("span", { class: "prof-ver", title: "Versión publicada que estás usando", text: pubLabel || "comprobando versión…" }),
@@ -676,6 +676,19 @@ function openProfile() {
     ]),
   ]));
   document.body.appendChild(overlay);
+}
+
+// Si el usuario aún no tiene email (cuentas anteriores a esta regla), le abrimos
+// el perfil UNA vez por sesión para que lo ponga — sin bloquear la app. El email
+// es lo que te tiene localizado y comunicado con el equipo.
+let _emailPrompted = false;
+function maybePromptEmail() {
+  if (_emailPrompted) return;
+  const u = auth.currentUser();
+  if (!u || u.email) return;
+  if (document.querySelector(".prof-panel")) return; // ya hay un perfil abierto
+  _emailPrompted = true;
+  openProfile();
 }
 
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
