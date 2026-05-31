@@ -84,7 +84,7 @@ const COPY = {
     label: "002.5 — Position",
     h1a: "First cycle,",
     h1b: "open.",
-    sub: "The studio has not yet published its engagements. Direction begins when the work is recognised. What we publish about a brand rests on its permission, not on ours.",
+    sub: "The roster is published when the work is recognised. What appears here rests on the brand's permission, not on ours.",
     rosterLabel: "Currently",
     cycleLabel: "Cycle MMXXVI",
     cycleWindow: "January — June",
@@ -92,7 +92,7 @@ const COPY = {
     cycleNote:
       "Cycles close at six brands. We do not stretch the studio to make a seventh fit.",
     trust1:
-      "New engagements arrive through introduction. The studio replies in writing, signed, within forty-eight hours.",
+      "New engagements arrive through introduction. Reply in writing, signed, within forty-eight hours.",
     trust2:
       "Practice founded MMXXII · By appointment.",
     ledgerLabel: "How the studio operates",
@@ -105,7 +105,7 @@ const COPY = {
     label: "002.5 — Posición",
     h1a: "Primer ciclo,",
     h1b: "abierto.",
-    sub: "El estudio aún no ha publicado sus encargos. La dirección empieza cuando el trabajo se reconoce. Lo que publicamos sobre una marca depende de su permiso, no del nuestro.",
+    sub: "El roster se publica cuando el trabajo se reconoce. Lo que aparece aquí depende del permiso de la marca, no del nuestro.",
     rosterLabel: "Actualmente",
     cycleLabel: "Ciclo MMXXVI",
     cycleWindow: "Enero — junio",
@@ -113,7 +113,7 @@ const COPY = {
     cycleNote:
       "Los ciclos cierran a seis marcas. No estiramos el estudio para que entre una séptima.",
     trust1:
-      "Los encargos nuevos llegan por presentación. El estudio responde por escrito, firmado, dentro de cuarenta y ocho horas.",
+      "Los encargos nuevos llegan por presentación. Respuesta por escrito, firmada, en cuarenta y ocho horas.",
     trust2:
       "Práctica fundada en MMXXII · Solo con cita previa.",
     ledgerLabel: "Cómo opera el estudio",
