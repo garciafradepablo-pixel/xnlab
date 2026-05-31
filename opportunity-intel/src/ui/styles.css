@@ -1483,3 +1483,36 @@ button:disabled { cursor: not-allowed; }
 .brand-lock .whale svg, .auth-whale .whale svg { width: auto; }
 .brand-lock .brand-mark svg { width: 30px; height: 30px; }
 .auth-whale .brand-mark svg, .auth-mark .brand-mark svg { width: 52px; height: 52px; }
+
+/* =============================================================================
+   TERMÓMETRO REAL — el calor no se mide en verde. Frío → azul, templado → ámbar,
+   caliente → rojo. El verde se reserva para éxito/firmado/verificado, no para
+   "este lead está caliente". Escala de temperatura coherente en todo el sistema.
+   ============================================================================= */
+:root { --hot: #ef6a45; --warm-t: #e0a13a; --cold: #4fa3e8; }
+
+/* Termómetro del dossier (CALIENTE / TEMPLADO / FRÍO) */
+.synth-temp.synth-hot  { color: #f57953; background: rgba(239,106,69,.15); }
+.synth-temp.synth-warm { color: var(--accent); background: rgba(224,161,58,.13); }
+.synth-temp.synth-cold { color: #74b6ec; background: rgba(79,163,232,.12); }
+.synth-meter-fill.synth-hot  { background: linear-gradient(90deg, #f0843e, #ef5a3c); }
+.synth-meter-fill.synth-warm { background: linear-gradient(90deg, #e0a13a, #d4922c); }
+.synth-meter-fill.synth-cold { background: linear-gradient(90deg, #4fa3e8, #5b8cf0); }
+.synth-hero.synth-h-hot  { box-shadow: inset 0 0 0 1px rgba(239,106,69,.22); }
+.synth-hero.synth-h-cold { box-shadow: inset 0 0 0 1px rgba(79,163,232,.18); }
+
+/* Anillo de score */
+.ring-hot .ring-fg  { stroke: #ef6a45; } .ring-hot .ring-num  { color: #f57953; }
+.ring-warm .ring-fg { stroke: var(--accent); } .ring-warm .ring-num { color: var(--accent); }
+.ring-cool .ring-fg { stroke: #4fa3e8; } .ring-cool .ring-num { color: #74b6ec; }
+
+/* Score en listas/tablas/CRM */
+.tp-hot .tp-score { background: rgba(239,106,69,.22); color: #f57953; }
+.conn-lead-score.conf-hot, .crm-card-conf.conf-hot { color: #f57953; }
+.conn-lead-score.conf-cool, .crm-card-conf.conf-cool { color: #74b6ec; }
+
+/* Recomendación 'llamar ya' = urgencia, no verde */
+.reco-hot { color: #f57953; border-color: rgba(239,106,69,.45); }
+
+/* Prioridad alta = caliente (borde superior de la tarjeta) */
+.card.prio-high { border-top-color: #ef6a45; }
