@@ -1706,3 +1706,23 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 .ob-n { flex: 0 0 auto; width: 26px; height: 26px; border-radius: 50%; background: var(--panel-2); border: 1px solid var(--line);
   display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; color: var(--accent); }
 .ob-cta { width: auto; margin-top: 12px; padding: 11px 22px; }
+
+/* Pulso personal en Hoy: tira de señales que enganchan (racha · hoy · muelle · CEO) */
+.today-pulse { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px;
+  margin: 14px 0 20px; }
+@media (max-width: 640px) { .today-pulse { grid-auto-flow: row; grid-template-columns: 1fr 1fr; } }
+.tp-cell { display: flex; align-items: center; gap: 10px; text-align: left;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 14px;
+  padding: 12px 14px; cursor: pointer; transition: .15s; box-shadow: var(--hl); }
+.tp-cell:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.tp-glyph { font-size: 22px; line-height: 1; flex: 0 0 auto; }
+.tp-text { display: flex; flex-direction: column; line-height: 1.1; min-width: 0; }
+.tp-big { font: 800 22px var(--sans); color: var(--ink); }
+.tp-rec-from { font-size: 16px; }
+.tp-label { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: .05em; }
+.tp-streak .tp-big { color: var(--accent); }
+.tp-inbox.on { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(203,162,74,.12); }
+.tp-inbox.on .tp-big { color: var(--accent); }
+.tp-rec { background: linear-gradient(180deg, rgba(155,128,240,.10), transparent 70%), var(--panel);
+  border-color: rgba(155,128,240,.35); }
+.tp-rec .tp-big { color: var(--xn); }

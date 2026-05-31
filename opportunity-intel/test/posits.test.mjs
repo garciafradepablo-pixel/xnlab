@@ -73,5 +73,17 @@ globalThis.localStorage.setItem("oi:posits", JSON.stringify([
 ok(posits.streak("Javi") === 3, "racha de 3 días consecutivos terminando hoy");
 ok(posits.streak("Pablo") === 0, "sin actividad reciente, racha 0");
 
+// —— Acciones de hoy: solo cuentan las mías y de hoy ——————————————————————————
+ok(posits.actionsToday("Javi") === 1, "actionsToday cuenta solo los gestos de hoy (1 de los 4 sembrados)");
+ok(posits.actionsToday("Pablo") === 0, "actionsToday de otro = 0");
+
+// —— Reconocimiento del CEO: persiste y es el más reciente ————————————————————
+ok(posits.lastRecognition("Javi") === null, "sin potencia previa, no hay reconocimiento");
+posits.fling({ kind: "potencia", glyph: "🚀", label: "Te potencio", to: "Javi" }, "Pablo");
+const rec = posits.lastRecognition("Javi");
+ok(rec && rec.from === "Pablo" && rec.kind === "potencia", "lastRecognition devuelve la potencia del CEO");
+store.markPosit(rec.id, { archivedAt: new Date().toISOString() });
+ok(posits.lastRecognition("Javi"), "el reconocimiento persiste aunque se archive (deja huella)");
+
 console.log(`${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);

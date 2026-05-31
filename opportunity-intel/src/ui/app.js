@@ -760,6 +760,41 @@ function leadNameById(id) {
   const o = (state.results?.all || []).find((x) => x.id === id);
   return o ? o.company : null;
 }
+// Tira de pulso personal en Hoy. Cuatro señales de un vistazo; las dos primeras
+// premian trabajar en la app, la tercera te tira del muelle, la cuarta es la
+// huella del CEO. Cada una es tocable y lleva a la acción, nunca es texto muerto.
+function todayPulseStrip(me) {
+  const days = posits.streak(me);
+  const done = posits.actionsToday(me);
+  const unread = posits.unread(me);
+  const rec = posits.lastRecognition(me);
+
+  const cell = (cls, glyph, big, label, onClick) =>
+    el("button", { class: `tp-cell ${cls}`, onClick }, [
+      el("span", { class: "tp-glyph", text: glyph }),
+      el("div", { class: "tp-text" }, [
+        el("span", { class: "tp-big", text: String(big) }),
+        el("span", { class: "tp-label", text: label }),
+      ]),
+    ]);
+
+  const cells = [
+    cell("tp-streak", "🔥", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today")),
+    cell("tp-done", "⚡", done, "acciones hoy", () => goView("cards")),
+    cell(`tp-inbox${unread ? " on" : ""}`, "📌", unread, "posits sin ver", () => goView("muelle")),
+  ];
+  if (rec) {
+    cells.push(el("button", { class: "tp-cell tp-rec", title: `${rec.from} te potenció`, onClick: () => goView("muelle") }, [
+      el("span", { class: "tp-glyph", text: rec.glyph || "🚀" }),
+      el("div", { class: "tp-text" }, [
+        el("span", { class: "tp-big tp-rec-from", text: rec.from }),
+        el("span", { class: "tp-label", text: "te potencia" }),
+      ]),
+    ]));
+  }
+  return el("div", { class: "today-pulse" }, cells);
+}
+
 function muelleView() {
   const me = auth.currentUser()?.name || "";
   return posits.positsView({
@@ -1035,6 +1070,10 @@ function todayView() {
     el("div", { class: "today-greet", text: `${greet}${u ? `, ${u.name}` : ""}` }),
     el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
   ]));
+
+  // Pulso personal: la obsesión hecha tira glanceable. Racha, lo hecho hoy, lo que
+  // te espera en el muelle y la última palmada del CEO. Sin texto: cifras y gestos.
+  if (u) blocks.push(todayPulseStrip(u.name));
 
   // Estado de arranque: si aún no hay NADA movido (cero llamadas, cero cierres),
   // un onboarding claro en vez de un muro de KPIs a cero compitiendo.

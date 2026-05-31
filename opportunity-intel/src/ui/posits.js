@@ -100,6 +100,24 @@ export function streak(me) {
   return n;
 }
 
+/** Acciones tuyas registradas HOY (sellos lanzados, estados movidos, resultados).
+ *  Es el combustible del Pulso: ver subir el número engancha a trabajar EN la app. */
+export function actionsToday(me) {
+  const today = new Date().toISOString().slice(0, 10);
+  const isToday = (iso) => String(iso || "").slice(0, 10) === today;
+  let n = 0;
+  for (const o of store.getLearning()) if (o.by === me && isToday(o.createdAt)) n++;
+  for (const r of Object.values(store.getTracking())) if (r.by === me && isToday(r.updatedAt)) n++;
+  for (const p of store.getPosits()) if (p.from === me && isToday(p.createdAt)) n++;
+  return n;
+}
+
+/** El reconocimiento más reciente que te ha dado el CEO (🚀 potencia). Persiste
+ *  aunque se archive: el objetivo 3 deja huella, no se borra de un gesto. */
+export function lastRecognition(me) {
+  return store.getPosits().find((p) => p.to === me && p.kind === "potencia") || null;
+}
+
 // ---- Selector de sello: el gadget que lanzas desde donde trabajas ------------
 // Popover ligero, anclado al cuerpo, glanceable. Un toque elige el sello; si hay
 // más de un compañero, una fila de avatares elige a quién. Se cierra solo.
