@@ -21,6 +21,7 @@ const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
+const TRAIN_KEY = `${NS}training`; // dossiers de formación interna (compartidos)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -387,6 +388,7 @@ export function exportState() {
       learning: getLearning(),
       verifications: getVerifications(),
       userLeads: getUserLeads(),
+      training: getTraining(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -485,6 +487,19 @@ export function importState(json, { replace = false } = {}) {
       byId.set(l.id, l);
     }
     write(USER_LEADS_KEY, [...byId.values()]);
+  }
+
+  // --- training (dossiers de formación; merge por id, gana updatedAt) ---
+  const incomingTrain = Array.isArray(data.training) ? data.training : [];
+  if (replace) {
+    write(TRAIN_KEY, incomingTrain);
+  } else if (incomingTrain.length) {
+    const byId = new Map(getTraining().map((d) => [d.id, d]));
+    for (const d of incomingTrain) {
+      const cur = byId.get(d.id);
+      if (!cur || String(d.updatedAt || "") > String(cur.updatedAt || "")) byId.set(d.id, d);
+    }
+    write(TRAIN_KEY, [...byId.values()]);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
@@ -602,6 +617,21 @@ export function saveUserLead(lead) {
 
 export function removeUserLead(id) {
   write(USER_LEADS_KEY, getUserLeads().filter((l) => l.id !== id));
+  scheduleSync();
+}
+
+// ---- Formación interna: dossiers compartidos (se sincronizan a todo el equipo) -
+/** @returns {Array<{id,title,body,tag,updatedAt,by}>} */
+export function getTraining() { return read(TRAIN_KEY, []); }
+export function saveTraining(doc) {
+  const all = getTraining().filter((d) => d.id !== doc.id);
+  all.push(doc);
+  write(TRAIN_KEY, all);
+  scheduleSync();
+  return all;
+}
+export function removeTraining(id) {
+  write(TRAIN_KEY, getTraining().filter((d) => d.id !== id));
   scheduleSync();
 }
 

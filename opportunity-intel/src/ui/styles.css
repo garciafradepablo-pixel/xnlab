@@ -1540,3 +1540,24 @@ html, body { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; 
 button:focus:not(:focus-visible), a:focus:not(:focus-visible), input:focus:not(:focus-visible) { outline: none; }
 /* Enlaces e interacciones, transición coherente */
 a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .cat-contact-btn { transition: color .15s ease, background-color .15s ease, border-color .15s ease, transform .15s ease; }
+
+/* ===== Formación interna — dossiers del equipo, claros y tranquilos ===== */
+.train-form { display: grid; gap: 8px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 16px; margin-bottom: 18px; box-shadow: var(--hl); }
+.train-form .lead-f { width: 100%; }
+.train-body { min-height: 92px; resize: vertical; line-height: 1.55; }
+.train-form-foot { display: flex; align-items: center; gap: 12px; }
+.train-form-foot .btn-primary { width: auto; padding: 9px 18px; }
+.train-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+.train-card { background: linear-gradient(180deg, rgba(255,255,255,.022), transparent 40%), var(--panel);
+  border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; box-shadow: var(--sh-1), var(--hl); }
+.train-card-h { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.train-tag-chip { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase;
+  color: var(--accent); background: rgba(203,162,74,.12); border-radius: 999px; padding: 3px 9px; flex: 0 0 auto; }
+.train-card-t { font-size: 16px; font-weight: 700; flex: 1; margin: 0; }
+.train-del { margin-left: auto; background: transparent; border: 0; color: var(--ink-faint); cursor: pointer;
+  padding: 4px; border-radius: 6px; flex: 0 0 auto; }
+.train-del:hover { color: #ef6a45; }
+.train-del svg { width: 16px; height: 16px; }
+.train-card-b { color: var(--ink-dim); font-size: 14px; line-height: 1.55; white-space: pre-wrap; margin: 0 0 12px; }
+.train-card-f { font-size: 11px; color: var(--ink-faint); }

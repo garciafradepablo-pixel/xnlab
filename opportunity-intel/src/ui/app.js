@@ -472,6 +472,7 @@ const ZONES = [
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
+  { key: "training", label: "Formación", views: [["training", "Dossiers"]] },
 ];
 function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
@@ -690,6 +691,7 @@ function viewArea() {
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
+  else if (state.view === "training") area.appendChild(trainingView());
   else area.appendChild(learningView());
   return area;
 }
@@ -1897,12 +1899,12 @@ function autopilotPanel() {
       el("span", { class: "auto-title", text: "Piloto automático de captación" }),
       a.on ? el("span", { class: "auto-live", text: "● EN MARCHA" }) : null,
     ]),
-    el("p", { class: "hint", text: "Arráncalo y déjalo correr: capta empresas cualificadas, las archiva y etiqueta solo en el mapa, abre nichos nuevos según el momento y va sacando contactos de sus webs. El cerebro entero, en automático." }),
+    el("p", { class: "hint", text: "Arráncalo y trabaja solo: capta, ordena, etiqueta y busca contactos." }),
     track("01", prog.q01, prog.pct01, "01"),
     track("XN", prog.qxn, prog.pctxn, "xn"),
     el("div", { class: "auto-ctl" }, [el("label", { class: "auto-tlbl", text: "Objetivo por marca:" }), targetInput, toggle]),
     a._msg ? el("p", { class: "auto-msg", text: a._msg }) : null,
-    el("p", { class: "auto-foot", text: "Corre mientras la pestaña esté abierta y dentro del presupuesto diario del mapa (se pausa y reanuda solo). Cuenta empresas con nota ≥70; llegar a 100 de nota exige enriquecimiento (en construcción)." }),
+    el("p", { class: "auto-foot", text: "Corre con la pestaña abierta; se pausa y reanuda solo." }),
   ]);
 }
 
@@ -1975,6 +1977,49 @@ async function seedCronFromMap() {
     const leaves = leavesUnder([]).slice(0, 40).map((lf) => ({ query: pathQuery(lf.path), sector: ensureRootSector(lf.path[0]) }));
     if (leaves.length) await seedCron(leaves, auth.getToken());
   } catch { /* best-effort */ }
+}
+
+// ---- FORMACIÓN INTERNA: dossiers del equipo, claros y a mano --------------
+// Un sitio tranquilo para guías y procesos. Los admin/editores publican; todo
+// el equipo los lee. Se sincroniza, así que lo que pongas lo ve todo el mundo.
+function trainingView() {
+  const docs = store.getTraining().slice().sort((a, b) => String(b.updatedAt || "").localeCompare(String(a.updatedAt || "")));
+  const canEdit = allow("write");
+  const blocks = [
+    el("h2", { text: "Formación interna" }),
+    el("p", { class: "hint", text: "Guías y dossiers del equipo. Lo esencial, claro y a mano." }),
+  ];
+
+  if (canEdit) {
+    const title = el("input", { class: "lead-f train-title", placeholder: "Título — ej. Cómo abrir una llamada" });
+    const tag = el("input", { class: "lead-f train-tag", placeholder: "Etiqueta (opcional) — Ventas, Marca…" });
+    const body = el("textarea", { class: "lead-f train-body", placeholder: "El contenido, en claro. Pasos, no párrafos." });
+    const msg = el("span", { class: "add-msg" });
+    const pub = el("button", {
+      class: "btn-primary", text: "Publicar dossier", onClick: () => {
+        const t = title.value.trim(); const b = body.value.trim();
+        if (t.length < 2 || !b) { msg.textContent = "Pon título y contenido."; return; }
+        store.saveTraining({ id: `t-${Date.now().toString(36)}`, title: t, body: b, tag: tag.value.trim() || null, by: auth.currentUser()?.name || "", updatedAt: new Date().toISOString() });
+        render();
+      },
+    });
+    blocks.push(el("div", { class: "train-form" }, [title, tag, body, el("div", { class: "train-form-foot" }, [pub, msg])]));
+  }
+
+  if (!docs.length) {
+    blocks.push(el("p", { class: "empty", text: canEdit ? "Aún no hay dossiers. Publica el primero arriba." : "Aún no hay formación publicada. Pídele a un admin que añada dossiers." }));
+  } else {
+    blocks.push(el("div", { class: "train-list" }, docs.map((d) => el("article", { class: "train-card" }, [
+      el("div", { class: "train-card-h" }, [
+        d.tag ? el("span", { class: "train-tag-chip", text: d.tag }) : null,
+        el("h3", { class: "train-card-t", text: d.title }),
+        canEdit ? el("button", { class: "train-del", title: "Eliminar", html: icon("trash"), onClick: () => { if (confirm(`¿Eliminar «${d.title}»?`)) { store.removeTraining(d.id); render(); } } }) : null,
+      ]),
+      el("p", { class: "train-card-b", text: d.body }),
+      el("div", { class: "train-card-f", text: `${d.by ? d.by + " · " : ""}${d.updatedAt ? new Date(d.updatedAt).toLocaleDateString("es-ES", { day: "numeric", month: "short" }) : ""}` }),
+    ]))));
+  }
+  return el("div", {}, blocks);
 }
 
 function captureMap() {
@@ -2194,7 +2239,7 @@ function captureMap() {
         onClick: () => { if (confirm("¿Borrar todo el mapa de categorías? Los leads ya captados se quedan en el ranking.")) { clearForest(); ui.status = ""; render(); } },
       }) : null,
     ]),
-    el("p", { class: "hint", html: "Escribe <b>una idea</b> y Connect crea solo un árbol de <b>categorías anidadas</b> (carpetas dentro de carpetas). Luego pulsa <b>buscar</b> en cualquier carpeta para traer empresas reales y archivarlas dentro." }),
+    el("p", { class: "hint", html: "Escribe <b>una idea</b>. Se crea el árbol de carpetas; pulsa <b>buscar</b> y entran empresas reales." }),
     el("div", { class: "cmap-bar" }, [promptInput, genBtn]),
   ];
 
