@@ -22,11 +22,21 @@ export function prunePresence(map = {}, now = Date.now(), ttl = PRESENCE_TTL) {
   return out;
 }
 
-/** Inserta/actualiza la presencia de un usuario (clave: nombre). Mapa nuevo. */
+/**
+ * Inserta/actualiza la presencia de un usuario (clave: nombre). Mapa nuevo.
+ * `focus` (opcional) marca QUÉ está mirando/editando — p.ej. el id del proyecto
+ * abierto en el Estudio — para señalar edición concurrente y no pisarse.
+ */
 export function upsertPresence(map = {}, entry, now = Date.now()) {
   const name = String(entry?.name || "").trim();
   if (!name) return map || {};
-  return { ...(map || {}), [name]: { name, color: entry.color || "", view: entry.view || "", at: now } };
+  return { ...(map || {}), [name]: { name, color: entry.color || "", view: entry.view || "", focus: entry.focus || "", at: now } };
+}
+
+/** Quién más (no tú) tiene puesto el foco en `focusId` ahora mismo. */
+export function othersOnFocus(map = {}, focusId, opts = {}) {
+  if (!focusId) return [];
+  return activePresence(map, opts).filter((e) => e.focus === focusId);
 }
 
 /**

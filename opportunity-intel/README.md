@@ -307,6 +307,24 @@ capas, todas sobre el canal de sync existente (cero infra nueva, cero deps):
 > igual, solo un poco menos instantánea. El nudge se emite SOLO tras un push
 > propio confirmado (no en el pull de migración), así que no hay bucle de avisos
 > entre los dos navegadores.
+>
+> **Validación en vivo pendiente:** la capa de protocolo está unit-testeada con
+> un WebSocket falso (`test/realtime.test.mjs`), pero el handshake real no se ha
+> probado contra Supabase (el entorno de desarrollo no tiene salida de red). La
+> primera vez en dos navegadores se ve si el indicador llega a «Tiempo real».
+
+**Ambiente colaborativo.** Tres capas más que hacen el taller compartido:
+
+- **Edición concurrente.** Cada cliente publica en su latido QUÉ proyecto tiene
+  abierto (`focus`); el Estudio muestra el avatar de quien también está en una
+  tarjeta y un aviso «Javi también está aquí — cuidado al editar a la vez».
+- **Actividad del equipo** (`Memoria → Actividad`). Feed cronológico derivado del
+  trabajo real (proyectos creados, notas/commits de bitácora, hitos cumplidos,
+  movimientos del CRM), firmado por color. No hay que registrar nada —
+  [`src/activity.js`](./src/activity.js), puro y testeado.
+- **Sonido de aviso.** Un timbre suave (WebAudio, sin assets) al llegar un
+  cambio remoto. Apagado por defecto, con interruptor en la cabecera, recordado
+  por dispositivo.
 
 > El sector **Software y Producto Digital** se añadió a la taxonomía interna
 > para que el funnel también detecte momentos en ese vertical. Es taxonomía del

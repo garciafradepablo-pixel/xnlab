@@ -53,6 +53,7 @@ import * as auth from "../auth.js";
 import * as presence from "../presence.js";
 import * as realtime from "../realtime.js";
 import { PROJECT_REF, PUBLISHABLE_KEY } from "../statesync.js";
+import { buildActivity } from "../activity.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
@@ -164,7 +165,7 @@ function ensureSyncSubscription() {
 // `pullSharedState` fusiona no-destructivo (lo más reciente por entidad gana),
 // así que NO tocamos el modelo de sync optimista ni abrimos la tabla: solo hace
 // que los cambios del equipo aparezcan solos. Nunca repinta mientras escribes.
-let liveTimer = null, liveSig = null, liveEngSnap = {};
+let liveTimer = null, liveSig = null, liveEngSnap = {}, lastPresenceSig = "";
 let lastPullAt = 0, lastActivity = Date.now();
 
 function sharedSignature() {
@@ -181,11 +182,20 @@ function engSnapshot() {
   for (const e of store.getEngagements()) m[e.id] = e.updatedAt || "";
   return m;
 }
+// Firma de presencia ajena: quién hay, en qué vista y sobre qué proyecto.
+// Separada de la firma de datos: un cambio de presencia refresca indicadores
+// (edición concurrente) sin disparar el aviso/sonido de cambio de datos.
+function presenceSignature() {
+  const me = auth.currentUser()?.name || "";
+  return presence.activePresence(store.getPresence(), { exclude: me })
+    .map((o) => `${o.name}:${o.view}:${o.focus}`).join("|");
+}
 // Línea base de "lo último que YA pinté": tras cada render local no debe saltar
 // el aviso de cambio remoto (si no, te avisaría de tus propios cambios).
 function markLiveBaseline() {
   liveSig = sharedSignature();
   liveEngSnap = engSnapshot();
+  lastPresenceSig = presenceSignature();
 }
 function noteActivity() { lastActivity = Date.now(); }
 function liveCadence() {
@@ -207,14 +217,20 @@ async function liveTick() {
   try {
     await store.pullSharedState();
     updatePresenceBar(); // la presencia se refresca SIEMPRE, aunque no haya datos nuevos
-    const sig = sharedSignature();
-    if (sig === liveSig) return;
+    const engChanged = sharedSignature() !== liveSig;
+    const presChanged = presenceSignature() !== lastPresenceSig;
+    lastPresenceSig = presenceSignature();
+    if (!engChanged && !presChanged) return;
     // No pises una edición en curso: reintenta en el próximo tick tras desenfocar.
     const ae = typeof document !== "undefined" ? document.activeElement : null;
     if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName || "")) return;
-    const changed = changedEngagements();
-    render(); // re-marca la línea base
-    announceRemoteChange(changed);
+    if (engChanged) {
+      const changed = changedEngagements();
+      render(); // re-marca la línea base
+      announceRemoteChange(changed);
+    } else if (presChanged && state.view === "studio") {
+      render(); // solo refresca indicadores de edición concurrente (sin aviso)
+    }
   } catch { /* offline: el badge ya lo refleja */ }
 }
 function ensureLiveRefresh() {
@@ -237,14 +253,16 @@ function ensureLiveRefresh() {
 const VIEW_LABEL = {
   today: "Hoy", cards: "Oportunidades", search: "Buscar", table: "Ranking",
   connector: "01 ↔ XN", crm: "CRM", pipeline: "Embudo", studio: "Estudio",
-  learning: "Aprendizaje", users: "Usuarios",
+  learning: "Aprendizaje", activity: "Actividad", users: "Usuarios",
 };
 const viewLabel = (v) => VIEW_LABEL[v] || "Connect";
 let presenceTimer = null;
 function heartbeat() {
   const u = auth.currentUser();
   if (!u || !store.isSyncEnabled()) return;
-  store.setPresence({ name: u.name, color: u.color, view: state.view });
+  // `focus` señala el proyecto abierto en el Estudio → edición concurrente.
+  const focus = (state.view === "studio" && state.studioSel) ? state.studioSel : "";
+  store.setPresence({ name: u.name, color: u.color, view: state.view, focus });
   updatePresenceBar();
 }
 function ensurePresence() {
@@ -309,7 +327,31 @@ function updatePresenceBar() {
   if (others.length > 5) node.appendChild(el("span", { class: "presence-more", text: `+${others.length - 5}` }));
 }
 
+// Sonido de aviso (opcional, apagado por defecto, solo este dispositivo).
+const SOUND_KEY = "oi:sound";
+function soundOn() { try { return localStorage.getItem(SOUND_KEY) === "1"; } catch { return false; } }
+function setSoundOn(v) { try { localStorage.setItem(SOUND_KEY, v ? "1" : "0"); } catch { /* */ } }
+let _audioCtx = null;
+function playChime() {
+  try {
+    const AC = (typeof window !== "undefined") && (window.AudioContext || window.webkitAudioContext);
+    if (!AC) return;
+    _audioCtx = _audioCtx || new AC();
+    const ctx = _audioCtx, t = ctx.currentTime;
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(880, t);          // dos notas suaves, breves
+    o.frequency.setValueAtTime(1320, t + 0.07);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.05, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(t); o.stop(t + 0.24);
+  } catch { /* sin audio / sin gesto previo: silencio */ }
+}
+
 function announceRemoteChange({ ids, titles }) {
+  if (soundOn()) playChime();
   // Destella las tarjetas del Estudio que cambiaron (si están a la vista).
   if (root) {
     for (const it of root.querySelectorAll(".studio-item")) {
@@ -546,6 +588,12 @@ function header() {
         ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
         : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
       el("span", { class: "presence-bar", style: "display:none", title: "Equipo conectado" }),
+      el("button", {
+        class: `snd-toggle ${soundOn() ? "on" : ""}`,
+        title: soundOn() ? "Sonido de avisos: activado (pulsa para silenciar)" : "Sonido de avisos: silenciado (pulsa para activar)",
+        text: soundOn() ? "🔔" : "🔕",
+        onClick: () => { const next = !soundOn(); setSoundOn(next); if (next) playChime(); render(); },
+      }),
       userChip(),
       syncBadge(),
       el("span", { class: "ver-tag", title: "Versión publicada", text: "v47 · estudio en vivo" }),
@@ -673,7 +721,7 @@ const ZONES = [
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"], ["connector", "01 ↔ XN"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
   { key: "deliver", label: "Entregar", views: [["studio", "Estudio"]] },
-  { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
+  { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"], ["activity", "Actividad"]] },
 ];
 function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
@@ -890,6 +938,7 @@ function viewArea() {
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
   else if (state.view === "studio") area.appendChild(studioView());
+  else if (state.view === "activity") area.appendChild(activityView());
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
@@ -1970,10 +2019,12 @@ function studioView() {
 function studioListItem(e, isActive) {
   const p = engProgress(e);
   const od = overdueCount(e);
-  return el("div", { class: `studio-item ${isActive ? "active" : ""} st-${e.status}`, "data-eng": e.id, onClick: () => { state.studioSel = e.id; render(); } }, [
+  const here = presence.othersOnFocus(store.getPresence(), e.id, { exclude: meName() });
+  return el("div", { class: `studio-item ${isActive ? "active" : ""} st-${e.status}`, "data-eng": e.id, onClick: () => { state.studioSel = e.id; render(); heartbeat(); } }, [
     el("div", { class: "studio-item-top" }, [
       el("span", { class: `studio-kind k-${e.kind}`, text: ENGAGEMENT_KIND_LABELS[e.kind] }),
       el("span", { class: "studio-item-name", text: e.title }),
+      ...here.map((o) => el("span", { class: "here-dot", style: `background:${o.color || "#888"}`, title: `${o.name} está aquí`, text: (o.name[0] || "?").toUpperCase() })),
     ]),
     el("div", { class: "studio-item-meta" }, [
       el("span", { text: `${ENGAGEMENT_STATUS_LABELS[e.status]} · ${p.done}/${p.total} tareas` }),
@@ -1999,6 +2050,13 @@ function studioDetail(e) {
     ]),
   ]);
 
+  // Edición concurrente: quién más tiene este proyecto abierto ahora mismo.
+  const here = presence.othersOnFocus(store.getPresence(), e.id, { exclude: meName() });
+  const hereBanner = here.length ? el("div", { class: "studio-here" }, [
+    ...here.map((o) => el("span", { class: "here-dot", style: `background:${o.color || "#888"}`, title: o.name, text: (o.name[0] || "?").toUpperCase() })),
+    el("span", { text: here.length === 1 ? `${here[0].name} también está aquí — cuidado al editar a la vez` : `${here.map((o) => o.name).join(", ")} también están aquí` }),
+  ]) : null;
+
   const controls = canW ? el("div", { class: "studio-status-row" }, Object.keys(ENGAGEMENT_STATUS_LABELS).map((s) =>
     el("button", { class: `studio-status-btn ${e.status === s ? "active" : ""}`, text: ENGAGEMENT_STATUS_LABELS[s],
       onClick: () => updateEngagement(setEngStatus(e, s)) }))) : null;
@@ -2023,7 +2081,7 @@ function studioDetail(e) {
   const logAdd = canW ? studioLogAdder(e) : null;
 
   return el("div", {}, [
-    head, controls, readyHint,
+    head, hereBanner, controls, readyHint,
     el("div", { class: "studio-sec" }, [el("h4", { text: "Tareas" }), ...taskRows, taskAdd]),
     studioMilestones(e, canW),
     studioAttachments(e, canW),
@@ -2144,6 +2202,56 @@ function studioLogAdder(e) {
     el("div", { class: "studio-commit-row" }, [hash, curl]),
     el("button", { class: "btn", text: "Anotar", onClick: add }),
   ]);
+}
+
+// ---- Actividad del equipo ---------------------------------------------------
+
+function fmtAgo(iso) {
+  const t = Date.parse(iso);
+  if (!t) return "";
+  const s = Math.max(0, Math.floor((Date.now() - t) / 1000));
+  if (s < 60) return "ahora mismo";
+  const m = Math.floor(s / 60); if (m < 60) return `hace ${m} min`;
+  const h = Math.floor(m / 60); if (h < 24) return `hace ${h} h`;
+  const d = Math.floor(h / 24); if (d === 1) return "ayer";
+  if (d < 7) return `hace ${d} días`;
+  try { return new Date(t).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }); } catch { return ""; }
+}
+
+const ACT_LABEL = { eng_new: "Proyecto", log: "Bitácora", ms: "Hito", crm: "CRM" };
+
+function activityView() {
+  const byId = new Map((state.results?.all || []).map((o) => [o.id, o.company]));
+  const feed = buildActivity({
+    engagements: store.getEngagements(),
+    tracking: store.getTracking(),
+    leadName: (id) => byId.get(id) || "",
+  });
+
+  const head = el("div", {}, [
+    el("h2", { text: "Actividad del equipo" }),
+    el("p", { class: "hint", text: "El pulso del taller: quién creó qué, qué se anotó, qué hitos cayeron y cómo se movió el CRM — lo más reciente arriba. Se alimenta solo del trabajo real, no hay que registrar nada." }),
+  ]);
+
+  if (!feed.length) {
+    return el("div", {}, [head, el("p", { class: "empty", text: "Aún no hay actividad. En cuanto firméis un lead, creéis un proyecto o anotéis en una bitácora, aparecerá aquí." })]);
+  }
+
+  const rows = feed.map((a) => el("div", { class: "act-row" }, [
+    el("span", { class: "act-dot", style: `background:${a.by ? auth.colorOf(a.by) : "var(--line-2)"}`, title: a.by || "" }),
+    el("div", { class: "act-body" }, [
+      el("div", { class: "act-line" }, [
+        a.by ? el("span", { class: "act-by", text: a.by }) : null,
+        el("span", { class: "act-text", text: a.by ? ` ${a.text}` : a.text }),
+        a.commit ? commitChip(a.commit) : null,
+      ]),
+      a.note ? el("p", { class: "act-note", text: a.note }) : null,
+    ]),
+    el("span", { class: `act-tag tag-${a.kind}`, text: ACT_LABEL[a.kind] || "" }),
+    el("span", { class: "act-when", text: fmtAgo(a.at) }),
+  ]));
+
+  return el("div", {}, [head, el("div", { class: "act-feed" }, rows)]);
 }
 
 // ---- Buscar / añadir leads --------------------------------------------------
