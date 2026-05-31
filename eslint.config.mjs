@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // App interna autónoma (zero-build, se despliega aparte). Sus Edge
+    // Functions de Deno (`jsr:…`, `Deno.*`) y sus módulos vanilla no son parte
+    // del build del sitio Next — no los type-checkees ni los lintees aquí.
+    "opportunity-intel/**",
   ]),
 ]);
 
