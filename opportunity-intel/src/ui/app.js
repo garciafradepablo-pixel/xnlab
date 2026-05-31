@@ -58,6 +58,7 @@ import * as chat from "../messaging.js";
 import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
 import * as tasks from "../tasks.js";
+import * as presence from "../presence.js";
 import { remoteCreateShare, remoteLoadShare } from "../statesync.js";
 
 // Modo PRUEBA (solo lectura, sin sesión): cuando se abre un enlace ?preview=…
@@ -138,6 +139,10 @@ export async function mount(rootEl) {
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
   auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
   store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
+
+  // Latido de presencia: anuncia que estás y en qué andas. Best-effort; si no
+  // hay red, simplemente no late (nadie te ve como presente, que es lo honesto).
+  presence.startHeartbeat(() => ({ status: myStatus, activity: currentActivity() }));
 }
 
 // Modo PRUEBA: abre un enlace compartido en solo-lectura, sin sesión. Trae el
@@ -432,6 +437,7 @@ function goView(view) {
   state.view = view;
   state._resetScroll = true;
   render();
+  presence.beatNow(); // tu "en qué andas" se actualiza al instante al cambiar de vista
 }
 
 function header() {
@@ -622,7 +628,7 @@ function openProfile() {
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
     ]),
     el("div", { class: "prof-foot" }, [
-      el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); close(); mount(root); } } }),
+      el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { presence.stopHeartbeat(); auth.logout(); close(); mount(root); } } }),
     ]),
   ]));
   document.body.appendChild(overlay);
@@ -643,9 +649,9 @@ function zonesForUser() {
     return [{ key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["table", "Ranking"]] }];
   }
   const z = ZONES.map((zz) => ({ ...zz }));
-  // Zona de equipo: chat general, apuntes de mejora, privados y el marcador de
-  // productividad para todos; la gestión de personas/roles/etiquetas solo admin.
-  const teamViews = [["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
+  // Zona de equipo: quién está ahora, chat general, apuntes de mejora, privados
+  // y el marcador de productividad para todos; gestión de personas solo admin.
+  const teamViews = [["presence", "Ahora"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
   if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
   z.push({ key: "team", label: "Equipo", views: teamViews });
   return z;
@@ -690,7 +696,7 @@ function openCommand() {
     for (const z of zonesForUser()) for (const [key, label] of z.views)
       out.push({ kind: "nav", label: `Ir a ${label}`, run: () => { close(); goView(key); } });
     out.push({ kind: "act", label: "Buscar oportunidades (recalcular)", run: async () => { close(); await recompute(); goView("cards"); } });
-    out.push({ kind: "act", label: "Cerrar sesión", run: () => { close(); if (confirm("¿Cerrar sesión?")) { auth.logout(); mount(root); } } });
+    out.push({ kind: "act", label: "Cerrar sesión", run: () => { close(); if (confirm("¿Cerrar sesión?")) { presence.stopHeartbeat(); auth.logout(); mount(root); } } });
     for (const o of (state.results?.all || []))
       out.push({ kind: "lead", label: `${o.company}${o.city ? " · " + o.city : ""}`, run: () => { close(); openCase(o.id); } });
     const qq = q.trim().toLowerCase();
@@ -867,6 +873,7 @@ function viewArea() {
   else if (state.view === "board") area.appendChild(chatView("mejoras"));
   else if (state.view === "dms") area.appendChild(dmsView());
   else if (state.view === "drive") area.appendChild(driveView());
+  else if (state.view === "presence") area.appendChild(presenceView());
   else if (state.view === "leaderboard") area.appendChild(leaderboardView());
   else area.appendChild(learningView());
   return area;
@@ -1332,6 +1339,84 @@ function openConversation(channel, title) {
   ]));
   document.body.appendChild(overlay);
   load();
+}
+
+// ---- Presencia: quién está ahora --------------------------------------------
+
+// Mi estado declarado (lo elijo a mano en la vista "Ahora"); el latido lo
+// mantiene fresco. Arranca en "disponible" al entrar.
+let myStatus = "online";
+
+// En qué ando: la vista en la que estoy, en lenguaje natural ("en CRM"). Viaja
+// con el latido para que el equipo vea no solo que estás, sino en qué.
+function currentActivity() {
+  for (const z of zonesForUser()) {
+    const v = z.views.find(([k]) => k === state.view);
+    if (v) return `en ${v[1]}`;
+  }
+  return "";
+}
+
+let presenceGen = 0; // corta el refresco de una vista que ya no está montada
+function presenceView() {
+  const mine = ++presenceGen;
+  const me = auth.currentUser();
+  const wrap = el("section", { class: "presence-view" });
+  wrap.appendChild(el("div", { class: "view-head" }, [
+    el("h2", { text: "Quién está ahora" }),
+    el("p", { class: "hint", text: "El equipo en vivo: quién está disponible, ocupado o en reunión, y en qué anda. Tu estado se mantiene solo mientras trabajas." }),
+  ]));
+
+  // Tu estado: lo eliges a mano. "Desconectado" no se ofrece — eso lo marca
+  // cerrar sesión o quedarte sin latir; aquí solo declaras presencia activa.
+  const STSEL = [["online", "Disponible"], ["meeting", "En reunión"], ["busy", "Ocupado"], ["away", "Ausente"]];
+  const sel = el("select", { class: "presence-mystatus lead-f" }, STSEL.map(([v, l]) =>
+    el("option", { value: v, selected: v === myStatus, text: l })));
+  sel.addEventListener("change", () => { myStatus = sel.value; presence.beatNow(); });
+  wrap.appendChild(el("div", { class: "presence-me" }, [
+    el("span", { class: "presence-me-lbl", text: "Tu estado" }), sel,
+  ]));
+
+  const summary = el("p", { class: "presence-summary hint" });
+  const list = el("div", { class: "presence-list" });
+  wrap.appendChild(summary);
+  wrap.appendChild(list);
+
+  const team = auth.getUsers().filter((u) => !u.colorOnly || u.role);
+
+  const paint = (roster) => {
+    const sorted = presence.sortRoster(roster);
+    const s = presence.summarize(sorted);
+    summary.textContent = `${s.present} de ${s.total} presentes · ${s.online} disponibles`;
+    clear(list);
+    for (const r of sorted) {
+      const color = auth.colorOf(r.name) || "#4a9eff";
+      const meta = [presence.STATUS_LABELS[r.status]];
+      if (r.activity && r.status !== "offline") meta.push(r.activity);
+      meta.push(presence.relativeSeen(r.lastSeen));
+      list.appendChild(el("div", { class: `presence-row${r.me ? " is-me" : ""}${r.status === "offline" ? " is-off" : ""}` }, [
+        el("span", { class: "presence-avatar", style: `background:${color}` }, [
+          el("span", { class: "presence-initial", text: (r.name[0] || "?").toUpperCase() }),
+          el("span", { class: `presence-dot status-${presence.STATUS_DOT[r.status]}`, title: presence.STATUS_LABELS[r.status] }),
+        ]),
+        el("div", { class: "presence-who" }, [
+          el("span", { class: "presence-name", text: r.name + (r.me ? " (tú)" : "") }),
+          el("span", { class: "presence-meta", text: meta.filter(Boolean).join(" · ") }),
+        ]),
+      ]));
+    }
+  };
+
+  const load = async () => {
+    const r = await presence.fetchRoster();
+    if (mine !== presenceGen || state.view !== "presence") return; // la vista cambió: corta el refresco
+    if (!r || !r.ok) { clear(list); list.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la presencia." })); }
+    else paint(presence.buildRoster(r.roster || [], team, Date.now(), me ? me.name : ""));
+    if (mine === presenceGen && state.view === "presence") setTimeout(load, 15000); // refresco suave en vivo
+  };
+  list.appendChild(el("p", { class: "hint", text: "Cargando…" }));
+  load();
+  return wrap;
 }
 
 // ---- Productividad / competitividad interna ---------------------------------

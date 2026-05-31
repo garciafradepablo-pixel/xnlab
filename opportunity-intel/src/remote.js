@@ -10,6 +10,7 @@ const BASE = globalThis.__CONNECT_API__ || "https://fecfncfkkgzazuetcllx.supabas
 const KEY = "sb_publishable_GtToYg33N8bT7T6O3OEmQw_Wu_hEvkS";
 
 const URL_DRIVE = BASE ? `${BASE}/drive` : "";
+const URL_PRESENCE = BASE ? `${BASE}/presence` : "";
 
 async function post(url, body) {
   // Resiliente: una caída de red NUNCA lanza (devuelve un objeto limpio). Así la
@@ -31,4 +32,10 @@ async function post(url, body) {
  *  acción ("list"|"signUpload"|"signDownload"|"delete") y el token de sesión. */
 export function remoteDrive(token, payload) {
   return post(URL_DRIVE, { token, ...(payload || {}) });
+}
+
+/** Presencia: latido y mesa del equipo. El payload lleva la acción
+ *  ("beat"|"roster") y, en beat, el estado y la actividad. */
+export function remotePresence(token, payload) {
+  return post(URL_PRESENCE, { token, ...(payload || {}) });
 }
