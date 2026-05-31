@@ -7,6 +7,7 @@
 import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
 import { ensureEco } from "./voice.js";
+import * as posits from "./posits.js";
 import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
@@ -107,6 +108,7 @@ export async function mount(rootEl) {
     return;
   }
   ensureSyncSubscription();
+  ensureRemoteRefresh(); // el latido del muelle: lo del otro entra sin recargar
   ensureHotkeys(); // ⌘K disponible en toda la app
   ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
@@ -145,6 +147,30 @@ function ensureSyncSubscription() {
   if (syncSubscribed) return;
   syncSubscribed = true;
   store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
+}
+
+// Refresco en vivo: cuando el latido baja cambios del otro, repintamos. Pero con
+// cuidado — no arrancarle el teclado a quien escribe ni repintar a lo loco. Se
+// agrupa con un respiro y se aplaza si hay un campo de texto enfocado. Los
+// modales viven en document.body, así que render() (que limpia root) no los toca.
+let remoteSubscribed = false;
+let remoteRenderPending = false;
+function ensureRemoteRefresh() {
+  if (remoteSubscribed) return;
+  remoteSubscribed = true;
+  store.onRemoteChange(scheduleRemoteRender);
+}
+function scheduleRemoteRender() {
+  if (remoteRenderPending) return;
+  remoteRenderPending = true;
+  setTimeout(flushRemoteRender, 400);
+}
+function flushRemoteRender() {
+  const a = typeof document !== "undefined" ? document.activeElement : null;
+  const typing = a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA" || a.isContentEditable);
+  if (typing) { setTimeout(flushRemoteRender, 1500); return; } // espera a que termine
+  remoteRenderPending = false;
+  recompute().then(render).catch(() => render());
 }
 // Cuando hay sesión local/sin sincronizar, el badge invita a reconectar.
 const syncClickable = (s) => s === "local" || s === "offline";
@@ -357,6 +383,24 @@ function goView(view) {
   render();
 }
 
+// Pulso del muelle: el gadget de cabecera que engancha. La llama es tu racha de
+// días trabajando en la app; el punto se enciende si tienes posits sin ver. Un
+// toque te lleva al Muelle. Glanceable — un número y un punto, sin texto.
+function muellePulse() {
+  const me = auth.currentUser()?.name || "";
+  const n = posits.unread(me);
+  const days = posits.streak(me);
+  return el("button", {
+    class: `muelle-pulse${n ? " has-unread" : ""}`,
+    title: `${n ? `${n} posit${n === 1 ? "" : "s"} sin ver · ` : ""}Racha: ${days} día${days === 1 ? "" : "s"} seguidos en la app`,
+    onClick: () => goView("muelle"),
+  }, [
+    el("span", { class: "pulse-flame", text: "🔥" }),
+    el("span", { class: "pulse-streak", text: String(days) }),
+    n ? el("span", { class: "pulse-dot", text: String(n) }) : null,
+  ]);
+}
+
 function header() {
   return el("header", { class: "app-head" }, [
     el("div", { class: "brand" }, [
@@ -370,9 +414,9 @@ function header() {
       state.dataset !== "researched"
         ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Conecta fuentes reales (ver README)." })
         : null,
+      muellePulse(),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada (última actualización)", text: pubLabel || "actualizando…" }),
     ]),
   ]);
 }
@@ -386,7 +430,9 @@ function setPublishedVersion(v) {
   pubLabel = isNaN(d.getTime())
     ? `v · ${String(v).slice(0, 16)}`
     : `actualizado ${d.toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`;
-  if (root) { const n = root.querySelector(".ver-tag"); if (n) n.textContent = pubLabel; }
+  // La versión vive ahora en el menú de perfil (cabecera más calmada): si está
+  // abierto, refréscalo en sitio.
+  if (typeof document !== "undefined") { const n = document.body.querySelector?.(".prof-ver"); if (n) n.textContent = pubLabel; }
 }
 
 // Indicador discreto del estado de sincronización con el servidor compartido.
@@ -497,6 +543,7 @@ function openProfile() {
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
     ]),
     el("div", { class: "prof-foot" }, [
+      el("span", { class: "prof-ver", title: "Versión publicada que estás usando", text: pubLabel || "comprobando versión…" }),
       el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); close(); mount(root); } } }),
     ]),
   ]));
@@ -506,15 +553,27 @@ function openProfile() {
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
 // "en qué estoy") y las vistas de cada zona debajo. Menos superficie, más
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
+// Navegación en dos niveles: ZONAS (verbo dominante del trabajo) y, dentro,
+// sub-vistas. Sigue el bucle diario: trabajar → captar → cerrar → hablar (muelle)
+// → saber. «Saber» reúne lo que el equipo aprende y lo que estudia (antes dos
+// zonas sueltas, Memoria y Formación): menos botones arriba, mismo contenido.
+// Cada sub-vista es [clave, etiqueta, capacidad?]. La capacidad opcional la
+// esconde a quien no la tiene: un viewer/analyst (solo lectura) no ve «Buscar»
+// (descubrir) ni el tablero «CRM» (mover) — entra a su mundo sin botones que no
+// puede pulsar. El editor (Javi) las ve todas; el admin (Pablo), además «Equipo».
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["agenda", "Agenda"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"], ["table", "Ranking"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["connector", "01 ↔ XN"], ["pipeline", "Embudo"]] },
-  { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
-  { key: "training", label: "Formación", views: [["training", "Dossiers"]] },
+  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar", "discover"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"]] },
+  { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
+  { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
 function zonesForUser() {
-  const z = ZONES.map((zz) => ({ ...zz }));
+  // Filtra las sub-vistas que el rol no puede usar; si una zona se queda sin
+  // ninguna, desaparece de la barra (nada de zonas vacías).
+  const z = ZONES
+    .map((zz) => ({ ...zz, views: zz.views.filter(([, , cap]) => !cap || allow(cap)) }))
+    .filter((zz) => zz.views.length);
   if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", views: [["users", "Usuarios"]] });
   return z;
 }
@@ -732,8 +791,61 @@ function viewArea() {
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
   else if (state.view === "training") area.appendChild(trainingView());
+  else if (state.view === "muelle") area.appendChild(muelleView());
   else area.appendChild(learningView());
   return area;
+}
+
+// El Muelle: posits del equipo. Resuelve el nombre del lead desde el pipeline en
+// memoria para que el gadget muestre "sobre Tal" sin guardar texto en el posit.
+function leadNameById(id) {
+  const o = (state.results?.all || []).find((x) => x.id === id);
+  return o ? o.company : null;
+}
+// Tira de pulso personal en Hoy. Cuatro señales de un vistazo; las dos primeras
+// premian trabajar en la app, la tercera te tira del muelle, la cuarta es la
+// huella del CEO. Cada una es tocable y lleva a la acción, nunca es texto muerto.
+function todayPulseStrip(me) {
+  const days = posits.streak(me);
+  const done = posits.actionsToday(me);
+  const unread = posits.unread(me);
+  const rec = posits.lastRecognition(me);
+
+  const cell = (cls, glyph, big, label, onClick) =>
+    el("button", { class: `tp-cell ${cls}`, onClick }, [
+      el("span", { class: "tp-glyph", text: glyph }),
+      el("div", { class: "tp-text" }, [
+        el("span", { class: "tp-big", text: String(big) }),
+        el("span", { class: "tp-label", text: label }),
+      ]),
+    ]);
+
+  const cells = [
+    cell("tp-streak", "🔥", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today")),
+    cell("tp-done", "⚡", done, "acciones hoy", () => goView("cards")),
+    cell(`tp-inbox${unread ? " on" : ""}`, "📌", unread, "posits sin ver", () => goView("muelle")),
+  ];
+  if (rec) {
+    cells.push(el("button", { class: "tp-cell tp-rec", title: `${rec.from} te potenció`, onClick: () => goView("muelle") }, [
+      el("span", { class: "tp-glyph", text: rec.glyph || "🚀" }),
+      el("div", { class: "tp-text" }, [
+        el("span", { class: "tp-big tp-rec-from", text: rec.from }),
+        el("span", { class: "tp-label", text: "te potencia" }),
+      ]),
+    ]));
+  }
+  return el("div", { class: "today-pulse" }, cells);
+}
+
+function muelleView() {
+  const me = auth.currentUser()?.name || "";
+  return posits.positsView({
+    me,
+    isCeo: allow("manage_roles"),
+    openLead: (id) => openCase(id),
+    rerender: render,
+    leadName: leadNameById,
+  });
 }
 
 // ---- Gestión de usuarios y roles (solo admin) -------------------------------
@@ -1007,6 +1119,10 @@ function todayView() {
     el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
   ]));
 
+  // Pulso personal: la obsesión hecha tira glanceable. Racha, lo hecho hoy, lo que
+  // te espera en el muelle y la última palmada del CEO. Sin texto: cifras y gestos.
+  if (u) blocks.push(todayPulseStrip(u.name));
+
   // Estado de arranque: si aún no hay NADA movido (cero llamadas, cero cierres),
   // un onboarding claro en vez de un muro de KPIs a cero compitiendo.
   const movedAnything = pulse.called > 0 || pulse.meetings > 0 || pulse.won > 0 || pulse.proposals > 0;
@@ -1021,20 +1137,6 @@ function todayView() {
 
   // Centro de mando: la acción de ahora + la ruta del día.
   blocks.push(commandCenter(calls));
-
-  // Pulso del pipeline: cuatro cifras que mandan.
-  blocks.push(el("div", { class: "pulse" }, [
-    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
-    pulseKpi(pulse.total, "oportunidades vivas"),
-    pulseKpi(pulse.pending, "por llamar"),
-    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
-  ]));
-  blocks.push(el("div", { class: "pulse-split" }, [
-    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
-    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
-    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
-    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
-  ]));
 
   // Las llamadas de hoy.
   blocks.push(el("h2", { class: "today-h2", text: "Las 3 llamadas de hoy" }));
@@ -1051,6 +1153,23 @@ function todayView() {
     blocks.push(el("h2", { class: "today-h2", text: `Seguimientos para hoy · ${due.length}` }));
     blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
   }
+
+  // El marcador, al final: primero el trabajo del día, luego cómo va todo. Las
+  // cifras son referencia (sirven sobre todo a la dirección), no el titular —
+  // la acción manda arriba, el pulso del pipeline acompaña abajo.
+  blocks.push(el("h2", { class: "today-h2 today-h2-quiet", text: "El marcador" }));
+  blocks.push(el("div", { class: "pulse" }, [
+    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
+    pulseKpi(pulse.total, "oportunidades vivas"),
+    pulseKpi(pulse.pending, "por llamar"),
+    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
+  ]));
+  blocks.push(el("div", { class: "pulse-split" }, [
+    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
+    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
+    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
+    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
+  ]));
 
   return el("div", { class: "today" }, blocks);
 }
@@ -1438,6 +1557,15 @@ function cardHandlers(afterMutate) {
       openProposal(lead);
     },
     onOpen: (id) => openCase(id),
+    // Un toque para lanzar un sello sobre este lead al compañero. No es escritura
+    // de negocio (lo puede hacer cualquiera con sesión), así que va fuera de RBAC.
+    onSello: (id) => posits.openSelloPicker({
+      leadId: id,
+      leadName: leadNameById(id),
+      me: auth.currentUser()?.name || "",
+      isCeo: allow("manage_roles"),
+      onSent: render,
+    }),
   };
 }
 
@@ -1668,17 +1796,24 @@ function openCase(id) {
     clear(cardWrap);
     const card = renderCard(lead, store.getTracking()[lead.id], handlers);
     card.classList.add("case-card");
+    // Jerarquía: el caso abre al veredicto (síntesis) → señales → esenciales del
+    // lead. El análisis profundo queda plegado, a un clic — disponible, no encima.
     const det = card.querySelector(".c-detail");
-    if (det) det.open = true; // en pantalla completa el análisis va siempre abierto
+    if (det) det.open = false;
     cardWrap.appendChild(card);
   }
   rebuild();
   loadMomentum(lead, momentumPanel, rebuild); // automático: detecta el momento en prensa
   loadFreshness(lead, freshPanel, rebuild); // automático: lee su web y sube la nota
 
+  // Jerarquía: la barra titula la EMPRESA (el sujeto de esta pantalla), no la
+  // marca CONNECT — que ya firma en el pie. Abres un caso y lees a quién llamas.
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
-    el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al valor</i>' })]),
+    el("div", { class: "case-subject" }, [
+      el("span", { class: "case-co", text: lead.company }),
+      el("span", { class: "case-co-sub", text: `${lead.subsector || lead.sector || ""}${lead.city ? " · " + lead.city : ""}` }),
+    ]),
     el("span", { class: "case-rank", text: `#${lead.ranking ?? "—"}` }),
   ]);
   const foot = el("div", { class: "case-foot" }, [
