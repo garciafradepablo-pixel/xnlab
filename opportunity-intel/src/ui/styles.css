@@ -1573,3 +1573,58 @@ button:disabled { cursor: not-allowed; }
 .studio-log-note { margin: 4px 0 0; font-size: 13px; white-space: pre-wrap; }
 
 .studio-danger { margin-top: 22px; padding-top: 14px; border-top: 1px solid var(--line); }
+
+/* Estudio — tareas enriquecidas (fecha, dependencias, bloqueo) ---------------- */
+.studio-task { flex-direction: column; align-items: stretch; gap: 5px; }
+.studio-task-top { display: flex; align-items: center; gap: 9px; }
+.studio-task.blocked .studio-task-title { color: var(--ink-dim); }
+.task-state.ts-blockeddep { color: var(--ink-faint); border-color: var(--line-2); border-style: dashed; }
+.studio-due {
+  flex: none; font-size: 11px; color: var(--ink-dim); background: var(--panel-2);
+  border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;
+}
+.studio-due.overdue { color: var(--red); border-color: rgba(227,91,91,.45); }
+.studio-task-ctrl { display: flex; gap: 8px; padding-left: 4px; }
+.studio-date {
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 6px;
+  padding: 4px 7px; color: var(--ink); font-family: inherit; font-size: 12px; color-scheme: dark;
+}
+.studio-depsel {
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 6px;
+  padding: 4px 7px; color: var(--ink-dim); font-family: inherit; font-size: 12px; max-width: 180px;
+}
+.studio-deps { display: flex; flex-wrap: wrap; gap: 6px; padding-left: 4px; }
+.dep-chip {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 11px;
+  border: 1px solid var(--line-2); border-radius: 5px; padding: 1px 4px 1px 7px; color: var(--ink-dim);
+}
+.dep-chip.open { color: var(--yellow); border-color: rgba(212,167,44,.4); }
+.dep-chip.closed { color: var(--ok); border-color: rgba(58,157,110,.35); }
+.dep-x { background: none; border: 0; color: inherit; font-size: 13px; line-height: 1; padding: 0 2px; opacity: .7; }
+.dep-x:hover { opacity: 1; color: var(--red); }
+
+/* Hitos ---------------------------------------------------------------------- */
+.studio-ms { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.studio-ms-title { flex: 1; font-size: 13px; }
+.studio-ms-title.done { color: var(--ink-faint); text-decoration: line-through; }
+.ms-check {
+  flex: none; width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line-2);
+  background: var(--panel-2); color: var(--ink-dim); font-size: 12px; line-height: 1; padding: 0;
+}
+.ms-check.done { color: var(--ok); border-color: rgba(58,157,110,.5); }
+
+/* Adjuntos (enlaces) --------------------------------------------------------- */
+.studio-att { display: flex; align-items: center; gap: 9px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.studio-att-link { flex: 1; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Bitácora — vínculo de commit ----------------------------------------------- */
+.studio-add-log { flex-direction: column; align-items: stretch; }
+.studio-commit-row { display: flex; gap: 8px; }
+.studio-commit { font-size: 12px; }
+.commit-chip {
+  font-family: var(--mono); font-size: 11px; color: var(--o1);
+  background: rgba(92,124,250,.12); border: 1px solid rgba(92,124,250,.3);
+  border-radius: 5px; padding: 1px 6px;
+}
+a.commit-chip:hover { text-decoration: none; filter: brightness(1.15); }
+.studio-od { color: var(--red); }

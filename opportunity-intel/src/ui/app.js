@@ -32,6 +32,9 @@ import {
 import {
   createEngagement, engagementFromLead, addTask, setTaskState, removeTask,
   addLog as engAddLog, setStatus as setEngStatus, progress as engProgress, isComplete as engComplete,
+  setTaskDue, addDependency, removeDependency, blockingDeps, isBlockedByDeps,
+  addMilestone, toggleMilestone, removeMilestone, addAttachment, removeAttachment,
+  isOverdue, overdueCount,
 } from "../engagements.js";
 import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
@@ -113,6 +116,7 @@ export async function mount(rootEl) {
     return;
   }
   ensureSyncSubscription();
+  ensureLiveRefresh(); // refresco en vivo: la mesa del otro aparece sola
   ensureHotkeys(); // ⌘K disponible en toda la app
   ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
@@ -147,6 +151,46 @@ function ensureSyncSubscription() {
   if (syncSubscribed) return;
   syncSubscribed = true;
   store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
+}
+
+// —— Refresco en vivo ————————————————————————————————————————————————————————
+// Sin websockets: sondeamos la mesa compartida cada pocos segundos (y al volver
+// a la pestaña). `pullSharedState` fusiona no-destructivo (lo más reciente por
+// entidad gana), así que esto NO toca el modelo de sync optimista — solo hace
+// que los cambios del otro aparezcan solos. Pausa con la pestaña oculta; nunca
+// repinta mientras escribes (no te borra un input a medias).
+let liveTimer = null, liveSig = null;
+function sharedSignature() {
+  const engs = store.getEngagements();
+  const tr = store.getTracking();
+  let s = `e${engs.length}`;
+  for (const e of engs) s += `|${e.id}:${e.updatedAt || ""}`;
+  s += `;t${Object.keys(tr).length}`;
+  for (const k of Object.keys(tr)) s += `|${k}:${tr[k].updatedAt || ""}`;
+  return s;
+}
+async function liveTick() {
+  if (typeof document !== "undefined" && document.hidden) return;
+  if (!store.isSyncEnabled()) return;
+  try {
+    await store.pullSharedState();
+    const sig = sharedSignature();
+    if (sig === liveSig) return;
+    // No pises una edición en curso: repinta en el próximo tick tras desenfocar.
+    const ae = typeof document !== "undefined" ? document.activeElement : null;
+    if (ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName || "")) return;
+    liveSig = sig;
+    render();
+  } catch { /* offline: el badge ya lo refleja */ }
+}
+function ensureLiveRefresh() {
+  if (liveTimer || typeof setInterval !== "function") return;
+  liveSig = sharedSignature();
+  liveTimer = setInterval(liveTick, 12000);
+  if (liveTimer && typeof liveTimer.unref === "function") liveTimer.unref();
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) liveTick(); });
+  }
 }
 function updateSyncBadge(s) {
   if (!root) return;
@@ -1740,6 +1784,7 @@ function studioView() {
 
   const active = engs.filter((e) => e.status === "active");
   const openCount = engs.reduce((s, e) => s + e.tasks.filter((t) => t.state !== "done").length, 0);
+  const overdue = engs.reduce((s, e) => s + overdueCount(e), 0);
   const avg = active.length ? Math.round(active.reduce((s, e) => s + engProgress(e).pct, 0) / active.length) : 0;
 
   const header = el("div", {}, [
@@ -1750,6 +1795,7 @@ function studioView() {
   const kpis = el("div", { class: "crm-kpis" }, [
     crmKpi("Activos", active.length, ""),
     crmKpi("Tareas abiertas", openCount, ""),
+    crmKpi("Vencidos", overdue, overdue ? "tareas/hitos pasados" : "", overdue ? "cool" : null),
     crmKpi("Avance medio", `${avg}%`, "de proyectos activos", "hot"),
   ]);
 
@@ -1775,12 +1821,16 @@ function studioView() {
 
 function studioListItem(e, isActive) {
   const p = engProgress(e);
+  const od = overdueCount(e);
   return el("div", { class: `studio-item ${isActive ? "active" : ""} st-${e.status}`, onClick: () => { state.studioSel = e.id; render(); } }, [
     el("div", { class: "studio-item-top" }, [
       el("span", { class: `studio-kind k-${e.kind}`, text: ENGAGEMENT_KIND_LABELS[e.kind] }),
       el("span", { class: "studio-item-name", text: e.title }),
     ]),
-    el("div", { class: "studio-item-meta", text: `${ENGAGEMENT_STATUS_LABELS[e.status]} · ${p.done}/${p.total} tareas` }),
+    el("div", { class: "studio-item-meta" }, [
+      el("span", { text: `${ENGAGEMENT_STATUS_LABELS[e.status]} · ${p.done}/${p.total} tareas` }),
+      od ? el("span", { class: "studio-od", text: ` · ⚠ ${od} vencido${od > 1 ? "s" : ""}` }) : null,
+    ]),
     el("div", { class: "studio-track" }, [el("div", { class: "studio-track-fill", style: `width:${p.pct}%` })]),
   ]);
 }
@@ -1808,29 +1858,27 @@ function studioDetail(e) {
   const readyHint = (canW && e.status === "active" && engComplete(e))
     ? el("p", { class: "studio-ready", text: "Todas las tareas hechas — ¿marcar como entregado?" }) : null;
 
-  // Tareas
-  const taskRows = e.tasks.length ? e.tasks.map((t) => el("div", { class: "studio-task" }, [
-    el("button", { class: `task-state ts-${t.state}`, text: TASK_STATE_LABELS[t.state], title: canW ? "Cambiar estado" : "",
-      onClick: canW ? () => updateEngagement(setTaskState(e, t.id, nextTaskState(t.state))) : null }),
-    el("span", { class: `studio-task-title ${t.state === "done" ? "done" : ""}`, text: t.title }),
-    t.assignee ? el("span", { class: "studio-task-who", text: t.assignee }) : null,
-    canW ? el("button", { class: "studio-task-x", text: "×", title: "Eliminar tarea", onClick: () => updateEngagement(removeTask(e, t.id)) }) : null,
-  ])) : [el("p", { class: "empty", text: "Sin tareas todavía." })];
+  // Tareas (con fecha, dependencias y bloqueo derivado)
+  const taskRows = e.tasks.length ? e.tasks.map((t) => studioTaskRow(e, t, canW))
+    : [el("p", { class: "empty", text: "Sin tareas todavía." })];
   const taskAdd = canW ? studioTaskAdder(e) : null;
 
-  // Bitácora
+  // Bitácora (con vínculo opcional a commit)
   const logRows = e.log.length ? e.log.map((L) => el("div", { class: "studio-log" }, [
     el("div", { class: "studio-log-meta" }, [
       L.by ? el("span", { class: "by-dot", style: `background:${auth.colorOf(L.by)}` }) : null,
       el("span", { text: `${L.by || "—"} · ${fmtStudioDate(L.at)}` }),
+      L.commit ? commitChip(L.commit) : null,
     ]),
-    el("p", { class: "studio-log-note", text: L.note }),
+    L.note ? el("p", { class: "studio-log-note", text: L.note }) : null,
   ])) : [el("p", { class: "empty", text: "Bitácora vacía." })];
   const logAdd = canW ? studioLogAdder(e) : null;
 
   return el("div", {}, [
     head, controls, readyHint,
     el("div", { class: "studio-sec" }, [el("h4", { text: "Tareas" }), ...taskRows, taskAdd]),
+    studioMilestones(e, canW),
+    studioAttachments(e, canW),
     el("div", { class: "studio-sec" }, [el("h4", { text: "Bitácora" }), logAdd, ...logRows]),
     canW ? el("div", { class: "studio-danger" }, [
       el("button", { class: "btn-danger", text: "Eliminar proyecto", onClick: () => {
@@ -1841,16 +1889,113 @@ function studioDetail(e) {
   ]);
 }
 
+const fmtDue = (iso) => { try { return new Date(iso).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }); } catch { return iso; } };
+
+function commitChip(c) {
+  const label = `⎇ ${c.short || c.hash}`;
+  return c.url
+    ? el("a", { class: "commit-chip", href: c.url, target: "_blank", rel: "noopener noreferrer", text: label })
+    : el("code", { class: "commit-chip", text: label });
+}
+
+// Una fila de tarea: estado (con bloqueo por dependencias), título, fecha, deps.
+function studioTaskRow(e, t, canW) {
+  const blocked = isBlockedByDeps(e, t);
+  const stateBtn = el("button", {
+    class: `task-state ts-${t.state} ${blocked && t.state !== "done" ? "ts-blockeddep" : ""}`,
+    text: blocked && t.state !== "done" ? "Bloqueada" : TASK_STATE_LABELS[t.state],
+    title: canW ? (blocked ? "Cierra antes sus dependencias" : "Cambiar estado") : "",
+    onClick: (canW && !blocked) ? () => updateEngagement(setTaskState(e, t.id, nextTaskState(t.state))) : null,
+  });
+  const top = el("div", { class: "studio-task-top" }, [
+    stateBtn,
+    el("span", { class: `studio-task-title ${t.state === "done" ? "done" : ""}`, text: t.title }),
+    t.due ? el("span", { class: `studio-due ${isOverdue(t) ? "overdue" : ""}`, text: fmtDue(t.due) }) : null,
+    t.assignee ? el("span", { class: "studio-task-who", text: t.assignee }) : null,
+    canW ? el("button", { class: "studio-task-x", text: "×", title: "Eliminar tarea", onClick: () => updateEngagement(removeTask(e, t.id)) }) : null,
+  ]);
+  const children = [top];
+
+  if (t.deps.length) {
+    children.push(el("div", { class: "studio-deps" }, t.deps.map((depId) => {
+      const dt = e.tasks.find((x) => x.id === depId);
+      const open = dt && dt.state !== "done";
+      return el("span", { class: `dep-chip ${open ? "open" : "closed"}` }, [
+        el("span", { text: `↳ ${dt ? dt.title : "—"}` }),
+        canW ? el("button", { class: "dep-x", text: "×", title: "Quitar dependencia", onClick: () => updateEngagement(removeDependency(e, t.id, depId)) }) : null,
+      ]);
+    })));
+  }
+
+  if (canW) {
+    const due = el("input", { type: "date", class: "studio-date", value: t.due || "",
+      onchange: (ev) => updateEngagement(setTaskDue(e, t.id, ev.target.value || null)) });
+    const opts = e.tasks.filter((x) => x.id !== t.id && !t.deps.includes(x.id));
+    const sel = el("select", { class: "studio-depsel",
+      onchange: (ev) => { const v = ev.target.value; if (v) updateEngagement(addDependency(e, t.id, v)); } }, [
+      el("option", { value: "", text: "+ depende de…" }),
+      ...opts.map((x) => el("option", { value: x.id, text: x.title })),
+    ]);
+    children.push(el("div", { class: "studio-task-ctrl" }, [due, sel]));
+  }
+  return el("div", { class: `studio-task ${blocked ? "blocked" : ""}` }, children);
+}
+
 function studioTaskAdder(e) {
   const input = el("input", { class: "studio-input", placeholder: "Nueva tarea…", onkeydown: (ev) => { if (ev.key === "Enter") add(); } });
   function add() { const v = (input.value || "").trim(); if (!v) return; updateEngagement(addTask(e, v, meName())); }
   return el("div", { class: "studio-add" }, [input, el("button", { class: "btn", text: "Añadir", onClick: add })]);
 }
 
+function studioMilestones(e, canW) {
+  const rows = (e.milestones || []).length ? e.milestones.map((m) => el("div", { class: "studio-ms" }, [
+    el("button", { class: `ms-check ${m.doneAt ? "done" : ""}`, text: m.doneAt ? "✓" : "○", title: "Cumplido",
+      onClick: canW ? () => updateEngagement(toggleMilestone(e, m.id)) : null }),
+    el("span", { class: `studio-ms-title ${m.doneAt ? "done" : ""}`, text: m.title }),
+    m.due ? el("span", { class: `studio-due ${isOverdue(m) ? "overdue" : ""}`, text: fmtDue(m.due) }) : null,
+    canW ? el("button", { class: "studio-task-x", text: "×", title: "Eliminar hito", onClick: () => updateEngagement(removeMilestone(e, m.id)) }) : null,
+  ])) : [el("p", { class: "empty", text: "Sin hitos." })];
+  return el("div", { class: "studio-sec" }, [el("h4", { text: "Hitos" }), ...rows, canW ? studioMsAdder(e) : null]);
+}
+
+function studioMsAdder(e) {
+  const title = el("input", { class: "studio-input", placeholder: "Hito…", onkeydown: (ev) => { if (ev.key === "Enter") add(); } });
+  const date = el("input", { type: "date", class: "studio-date" });
+  function add() { const v = (title.value || "").trim(); if (!v) return; updateEngagement(addMilestone(e, v, date.value || null)); }
+  return el("div", { class: "studio-add" }, [title, date, el("button", { class: "btn", text: "Añadir", onClick: add })]);
+}
+
+function studioAttachments(e, canW) {
+  const rows = (e.attachments || []).length ? e.attachments.map((a) => el("div", { class: "studio-att" }, [
+    el("a", { class: "studio-att-link", href: a.url, target: "_blank", rel: "noopener noreferrer", text: a.label }),
+    a.by ? el("span", { class: "studio-task-who", text: a.by }) : null,
+    canW ? el("button", { class: "studio-task-x", text: "×", title: "Quitar enlace", onClick: () => updateEngagement(removeAttachment(e, a.id)) }) : null,
+  ])) : [el("p", { class: "empty", text: "Sin enlaces." })];
+  return el("div", { class: "studio-sec" }, [el("h4", { text: "Adjuntos (enlaces)" }), ...rows, canW ? studioAttAdder(e) : null]);
+}
+
+function studioAttAdder(e) {
+  const label = el("input", { class: "studio-input", placeholder: "Etiqueta" });
+  const url = el("input", { class: "studio-input", placeholder: "https://…", onkeydown: (ev) => { if (ev.key === "Enter") add(); } });
+  function add() { const u = (url.value || "").trim(); if (!u) return; updateEngagement(addAttachment(e, label.value || "", u, meName())); }
+  return el("div", { class: "studio-add" }, [label, url, el("button", { class: "btn", text: "Enlazar", onClick: add })]);
+}
+
 function studioLogAdder(e) {
   const ta = el("textarea", { class: "studio-textarea", placeholder: "Sesión de trabajo, decisión, nota…", rows: "2" });
-  function add() { const v = (ta.value || "").trim(); if (!v) return; updateEngagement(engAddLog(e, v, meName())); }
-  return el("div", { class: "studio-add studio-add-log" }, [ta, el("button", { class: "btn", text: "Anotar", onClick: add })]);
+  const hash = el("input", { class: "studio-input studio-commit", placeholder: "commit (hash, opcional)" });
+  const curl = el("input", { class: "studio-input studio-commit", placeholder: "URL del commit (opcional)" });
+  function add() {
+    const v = (ta.value || "").trim();
+    const h = (hash.value || "").trim();
+    if (!v && !h) return;
+    updateEngagement(engAddLog(e, v, meName(), h ? { commit: { hash: h, url: curl.value || "" } } : {}));
+  }
+  return el("div", { class: "studio-add studio-add-log" }, [
+    ta,
+    el("div", { class: "studio-commit-row" }, [hash, curl]),
+    el("button", { class: "btn", text: "Anotar", onClick: add }),
+  ]);
 }
 
 // ---- Buscar / añadir leads --------------------------------------------------

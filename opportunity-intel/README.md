@@ -267,6 +267,22 @@ operativo (`store.js`), así que **se sincroniza entre Pablo y Javi** vía
 `export/importState` sin código extra — la misma mesa de trabajo en cualquier
 dispositivo.
 
+**Gestión real del trabajo.** Cada tarea admite **fecha límite** (se marca en
+rojo si vence) y **dependencias** entre tareas: una tarea con dependencias sin
+cerrar sale como *Bloqueada* y no avanza hasta que se cierran (sin auto-deps ni
+ciclos, validado). El proyecto tiene **hitos** con fecha, **adjuntos** como
+enlaces citados (Drive, Figma, un repo — no subimos binarios: el estado viaja
+como un JSON sincronizado) y una bitácora que puede **vincular un commit de
+git** (hash + URL), que se renderiza como un chip enlazado. Un KPI de
+*Vencidos* resume tareas e hitos pasados.
+
+**Refresco en vivo.** Mientras la app está abierta sondea la mesa compartida
+cada pocos segundos (y al volver a la pestaña) y repinta sola cuando el otro
+cambia algo. Es deliberadamente *polling*, no websockets: `pullSharedState`
+fusiona no-destructivo (lo más reciente por entidad gana), así que **no toca el
+modelo de sync optimista** ya probado ni abre la tabla a acceso directo —
+conserva la seguridad de la Edge Function. Nunca repinta mientras escribes.
+
 > El sector **Software y Producto Digital** se añadió a la taxonomía interna
 > para que el funnel también detecte momentos en ese vertical. Es taxonomía del
 > instrumento interno, independiente de los seis mundos públicos de la marca.

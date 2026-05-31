@@ -14,6 +14,9 @@ globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Tester", r
 import {
   createEngagement, engagementFromLead, addTask, setTaskState, removeTask,
   addLog, setStatus, progress, openTasks, isComplete,
+  setTaskDue, addDependency, removeDependency, blockingDeps, isBlockedByDeps,
+  addMilestone, toggleMilestone, removeMilestone,
+  addAttachment, removeAttachment, isOverdue, overdueCount,
 } from "../src/engagements.js";
 
 const store = await import("../src/store.js");
@@ -116,6 +119,116 @@ function eq(a, b, msg) { ok(a === b, `${msg} (got ${JSON.stringify(a)}, want ${J
   eq(e.status, "done", "marca entregado");
   e = setStatus(e, "inventado");
   eq(e.status, "done", "estado inválido se ignora");
+}
+
+// ---- dependencias: bloquean el avance, sin ciclos ni auto-deps --------------
+{
+  let e = createEngagement({ title: "X" });
+  e = addTask(e, "Diseño"); e = addTask(e, "Maqueta"); e = addTask(e, "Deploy");
+  const [d, m, dep] = e.tasks.map((t) => t.id);
+
+  e = addDependency(e, m, d); // maqueta depende de diseño
+  eq(e.tasks[1].deps.length, 1, "registra la dependencia");
+  e = addDependency(e, m, d); // duplicada
+  eq(e.tasks[1].deps.length, 1, "no duplica dependencia");
+  e = addDependency(e, m, m); // auto
+  eq(e.tasks[1].deps.length, 1, "rechaza auto-dependencia");
+
+  ok(isBlockedByDeps(e, e.tasks[1]), "maqueta bloqueada por diseño abierto");
+  eq(blockingDeps(e, e.tasks[1]).length, 1, "una dependencia bloqueante");
+  const before = e.tasks[1].state;
+  e = setTaskState(e, m, "doing");
+  eq(e.tasks[1].state, before, "no avanza mientras la dependencia sigue abierta");
+
+  e = setTaskState(e, d, "done"); // cierro diseño
+  ok(!isBlockedByDeps(e, e.tasks[1]), "desbloqueada al cerrar la dependencia");
+  e = setTaskState(e, m, "done");
+  eq(e.tasks[1].state, "done", "ahora sí avanza");
+
+  // ciclo: deploy depende de maqueta; maqueta no puede depender de deploy
+  e = addDependency(e, dep, m);
+  e = addDependency(e, m, dep);
+  ok(!e.tasks[1].deps.includes(dep), "rechaza dependencia que crearía un ciclo");
+
+  e = removeDependency(e, dep, m);
+  eq(e.tasks[2].deps.length, 0, "quita la dependencia");
+
+  // al borrar una tarea, se limpia de las deps ajenas
+  let e2 = createEngagement({ title: "Y" });
+  e2 = addTask(e2, "A"); e2 = addTask(e2, "B");
+  const [aid, bid] = e2.tasks.map((t) => t.id);
+  e2 = addDependency(e2, bid, aid);
+  e2 = removeTask(e2, aid);
+  eq(e2.tasks[0].deps.length, 0, "borrar A la quita de las deps de B");
+}
+
+// ---- fechas y vencimiento ---------------------------------------------------
+{
+  let e = createEngagement({ title: "X" });
+  e = addTask(e, "Entrega");
+  const id = e.tasks[0].id;
+  e = setTaskDue(e, id, "2026-01-15");
+  eq(e.tasks[0].due, "2026-01-15", "fija la fecha");
+  ok(isOverdue(e.tasks[0], "2026-02-01"), "vencida si hoy es posterior");
+  ok(!isOverdue(e.tasks[0], "2026-01-01"), "no vencida si hoy es anterior");
+  e = setTaskState(e, id, "done");
+  ok(!isOverdue(e.tasks[0], "2026-02-01"), "una tarea hecha no está vencida");
+  e = setTaskDue(e, id, null);
+  eq(e.tasks[0].due, null, "limpia la fecha");
+  eq(setTaskDue(e, id, "no-fecha").tasks[0].due, null, "fecha inválida → null");
+}
+
+// ---- hitos ------------------------------------------------------------------
+{
+  let e = createEngagement({ title: "X" });
+  e = addMilestone(e, "Entrega 1", "2026-03-01");
+  e = addMilestone(e, "Kickoff", "2026-01-10");
+  eq(e.milestones.length, 2, "dos hitos");
+  eq(e.milestones[0].title, "Kickoff", "ordenados por fecha");
+  e = addMilestone(e, "   "); // vacío
+  eq(e.milestones.length, 2, "ignora hito sin título");
+
+  const id = e.milestones[0].id;
+  e = toggleMilestone(e, id);
+  ok(!!e.milestones[0].doneAt, "marca el hito cumplido");
+  ok(!isOverdue(e.milestones[0], "2027-01-01"), "hito cumplido no vence");
+  e = toggleMilestone(e, id);
+  ok(!e.milestones[0].doneAt, "lo vuelve a abrir");
+  ok(isOverdue(e.milestones[0], "2027-01-01"), "hito abierto y pasado → vencido");
+
+  eq(overdueCount(e, "2027-01-01"), 2, "cuenta los dos hitos vencidos");
+  e = removeMilestone(e, id);
+  eq(e.milestones.length, 1, "elimina un hito");
+}
+
+// ---- adjuntos (enlaces) -----------------------------------------------------
+{
+  let e = createEngagement({ title: "X" });
+  e = addAttachment(e, "Brief en Drive", "https://drive.example/brief", "Pablo");
+  eq(e.attachments.length, 1, "añade un adjunto-enlace");
+  eq(e.attachments[0].label, "Brief en Drive", "guarda la etiqueta");
+  e = addAttachment(e, "", "https://x.example/y");
+  eq(e.attachments[1].label, "https://x.example/y", "sin etiqueta usa la URL");
+  e = addAttachment(e, "Malo", "no-es-url");
+  eq(e.attachments.length, 2, "rechaza URL no http(s)");
+  e = removeAttachment(e, e.attachments[0].id);
+  eq(e.attachments.length, 1, "elimina un adjunto");
+}
+
+// ---- bitácora con commit ----------------------------------------------------
+{
+  let e = createEngagement({ title: "X" });
+  e = addLog(e, "Cableado del Estudio", "Javi", { commit: { hash: "ee2d7ec1234", url: "https://github.com/x/y/commit/ee2d7ec1234" } });
+  eq(e.log[0].commit.short, "ee2d7ec", "acorta el hash a 7");
+  ok(e.log[0].commit.url.includes("commit"), "conserva el enlace");
+  e = addLog(e, "", "Javi", { commit: { hash: "abcdef0" } }); // solo commit, sin nota
+  eq(e.log.length, 2, "permite entrada de solo-commit");
+  eq(e.log[0].commit.url, "", "url no http(s) se descarta");
+  e = addLog(e, "nota normal", "Pablo");
+  eq(e.log[0].commit, null, "nota sin commit → commit null");
+  const n = e.log.length;
+  e = addLog(e, "  ", "Pablo", { commit: { hash: "zzz" } }); // sin nota y hash inválido
+  eq(e.log.length, n, "sin nota y commit inválido → no añade");
 }
 
 // ---- store: persistencia + upsert + borrado ---------------------------------
