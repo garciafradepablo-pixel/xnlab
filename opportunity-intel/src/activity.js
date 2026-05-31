@@ -16,7 +16,7 @@ import { CRITICAL_KINDS } from "./growth.js";
  * @param {function} leadName      id → nombre de empresa (para el CRM)
  * @param {number}   limit
  */
-export function buildActivity({ engagements = [], tracking = {}, growth = {}, leadName = () => "", limit = 50 } = {}) {
+export function buildActivity({ engagements = [], tracking = {}, growth = {}, kudos = [], leadName = () => "", limit = 50 } = {}) {
   const items = [];
 
   for (const e of engagements) {
@@ -46,6 +46,12 @@ export function buildActivity({ engagements = [], tracking = {}, growth = {}, le
       if (!c || !c.at) continue;
       items.push({ at: c.at, by: owner, kind: "critical", text: `ejercitó pensamiento crítico · ${CRITICAL_KINDS[c.kind] || "reto"}`, note: c.note || "" });
     }
+  }
+
+  // Reconocimientos: el mérito hecho visible.
+  for (const k of kudos || []) {
+    if (!k || !k.at) continue;
+    items.push({ at: k.at, by: k.from || "", kind: "kudo", text: `reconoció a ${k.to}`, note: k.note || "" });
   }
 
   return items

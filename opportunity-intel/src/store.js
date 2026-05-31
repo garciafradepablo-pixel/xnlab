@@ -26,6 +26,7 @@ const ENGAGE_KEY = `${NS}engagements`; // fase Entregar: clientes activos + proy
 const PRESENCE_KEY = `${NS}presence`; // presencia en vivo del equipo (efímera, podada por TTL)
 const AGENDA_KEY = `${NS}agenda`;     // agendas personales + común (items con dueño)
 const GROWTH_KEY = `${NS}growth`;     // desarrollo personal por dueño (perfil)
+const KUDOS_KEY = `${NS}kudos`;       // reconocimientos entre el equipo (append-only)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
 const REV_KEY = `${NS}rev`; // revisión del documento compartido (control optimista)
 
@@ -403,6 +404,7 @@ export function exportState() {
       presence: getPresence(),
       agenda: getAgenda(),
       growth: getAllGrowth(),
+      kudos: getKudos(),
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -547,6 +549,16 @@ export function importState(json, { replace = false } = {}) {
       if (!cur[owner] || (prof.updatedAt || "") > (cur[owner].updatedAt || "")) cur[owner] = prof;
     }
     write(GROWTH_KEY, cur);
+  }
+
+  // --- kudos (append-only, merge por id) ---
+  const incomingKudos = Array.isArray(data.kudos) ? data.kudos : [];
+  if (replace) {
+    write(KUDOS_KEY, incomingKudos);
+  } else {
+    const byId = new Map(getKudos().map((k) => [k.id, k]));
+    for (const k of incomingKudos) if (k && k.id && !byId.has(k.id)) byId.set(k.id, k);
+    write(KUDOS_KEY, [...byId.values()]);
   }
 
   return { ok: true, addedOutcomes, mergedTracking, addedLeads };
@@ -750,10 +762,25 @@ export function saveGrowth(profile) {
   return all[profile.owner];
 }
 
+// ---- Kudos (reconocimiento) -------------------------------------------------
+
+export function getKudos() { return read(KUDOS_KEY, []); }
+
+/** Añade un reconocimiento (append-only). Ignora nulos/duplicados por id. */
+export function addKudo(kudo) {
+  if (!kudo || !kudo.id) return kudo;
+  const all = getKudos();
+  if (all.some((k) => k.id === kudo.id)) return kudo;
+  all.push(kudo);
+  write(KUDOS_KEY, all);
+  scheduleSync();
+  return kudo;
+}
+
 /** Hard reset de la caché LOCAL (control "borrar" de la UI). No borra el estado
  *  compartido del servidor: al recargar/iniciar sesión se vuelve a traer desde
  *  Supabase. Es deliberado — evita que un borrado local destruya el trabajo
  *  compartido del equipo. */
 export function resetAll() {
-  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, PRESENCE_KEY, AGENDA_KEY, GROWTH_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
+  [TRACK_KEY, LEARN_KEY, CONFIG_KEY, VERIFY_KEY, USER_LEADS_KEY, ENGAGE_KEY, PRESENCE_KEY, AGENDA_KEY, GROWTH_KEY, KUDOS_KEY, REV_KEY].forEach((k) => storage.removeItem(k));
 }

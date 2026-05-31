@@ -1844,3 +1844,10 @@ a.commit-chip:hover { text-decoration: none; filter: brightness(1.15); }
 .today-ag-title { flex: 1; font-size: 13px; }
 .today-ag.overdue .today-ag-title { color: var(--red); }
 .today-ag-tag { font-size: 10px; text-transform: uppercase; letter-spacing: .5px; color: var(--ink-dim); background: var(--panel-2); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; }
+
+/* Reconocimientos (kudos) ---------------------------------------------------- */
+.kudos-sec .kudo-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--line); }
+.kudo-body { flex: 1; }
+.kudo-note { font-size: 13px; color: var(--ink); }
+.kudo-meta { font-size: 11px; color: var(--ink-dim); margin-top: 2px; }
+.act-tag.tag-kudo { color: var(--accent); border-color: rgba(203,162,74,.35); }

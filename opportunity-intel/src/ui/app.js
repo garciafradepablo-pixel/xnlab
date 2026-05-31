@@ -56,6 +56,7 @@ import { PROJECT_REF, PUBLISHABLE_KEY } from "../statesync.js";
 import { buildActivity, weeklyDigest } from "../activity.js";
 import * as agenda from "../agenda.js";
 import * as growth from "../growth.js";
+import { createKudo, kudosFor, kudosCount } from "../kudos.js";
 import * as xport from "../export.js";
 import { pickTodayCalls, nextStep, pipelinePulse } from "../today.js";
 import { buildPlaybook, playbookToText } from "../playbook.js";
@@ -2245,7 +2246,7 @@ function fmtAgo(iso) {
   try { return new Date(t).toLocaleDateString("es-ES", { day: "2-digit", month: "short" }); } catch { return ""; }
 }
 
-const ACT_LABEL = { eng_new: "Proyecto", log: "Bitácora", ms: "Hito", crm: "CRM", critical: "Crítica" };
+const ACT_LABEL = { eng_new: "Proyecto", log: "Bitácora", ms: "Hito", crm: "CRM", critical: "Crítica", kudo: "Kudos" };
 
 function activityView() {
   const byId = new Map((state.results?.all || []).map((o) => [o.id, o.company]));
@@ -2253,6 +2254,7 @@ function activityView() {
     engagements: store.getEngagements(),
     tracking: store.getTracking(),
     growth: store.getAllGrowth(),
+    kudos: store.getKudos(),
     leadName: (id) => byId.get(id) || "",
   });
 
@@ -2423,7 +2425,34 @@ function growthView() {
     canEdit ? growthAdder("Detectar un freno / pereza…", "Detectar", (v) => growth.addFriction(profile, v), profile) : null,
   ]);
 
-  return el("div", {}, [head, picker, kpis, criticalCard(profile, canEdit), strengths, frictions]);
+  return el("div", {}, [head, picker, kpis, criticalCard(profile, canEdit), kudosSection(person, me), strengths, frictions]);
+}
+
+// Reconocimientos recibidos + dar uno (a otra persona). Mérito hecho visible:
+// la forma legítima de mover motivación y autoridad ganada, sin ranking.
+function kudosSection(person, me) {
+  const received = kudosFor(store.getKudos(), person);
+  const canGive = person !== me && allow("write");
+  const rows = received.length ? received.map((k) => el("div", { class: "kudo-row" }, [
+    el("span", { class: "by-dot", style: `background:${auth.colorOf(k.from)}`, title: k.from }),
+    el("div", { class: "kudo-body" }, [
+      el("div", { class: "kudo-note", text: k.note || "Reconocimiento" }),
+      el("div", { class: "kudo-meta", text: `${k.from || "—"} · ${fmtAgo(k.at)}` }),
+    ]),
+  ])) : [el("p", { class: "empty", text: person === me ? "Aún sin reconocimientos. Los que te lleguen aparecerán aquí." : `Reconoce el buen trabajo de ${person}.` })];
+
+  const children = [el("h4", { text: `Reconocimientos${received.length ? ` · ${received.length}` : ""}` }), ...rows];
+  if (canGive) {
+    const note = el("input", { class: "studio-input", placeholder: `Reconoce algo concreto de ${person}…`, onkeydown: (e) => { if (e.key === "Enter") give(); } });
+    const give = () => {
+      const v = (note.value || "").trim();
+      if (!v) return;
+      store.addKudo(createKudo({ to: person, from: me, note: v }));
+      render();
+    };
+    children.push(el("div", { class: "studio-add" }, [note, el("button", { class: "btn", text: `Reconocer a ${person}`, onClick: give })]));
+  }
+  return el("div", { class: "growth-sec kudos-sec" }, children);
 }
 
 // Pensamiento crítico — pilar acentuado: nivel, provocación del día y retos.
