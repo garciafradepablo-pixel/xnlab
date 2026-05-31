@@ -139,13 +139,26 @@ function ensureSyncSubscription() {
   syncSubscribed = true;
   store.onSyncState(updateSyncBadge); // parche en sitio, sin re-render completo
 }
+// Cuando hay sesión local/sin sincronizar, el badge invita a reconectar.
+const syncClickable = (s) => s === "local" || s === "offline";
+function syncText(s) {
+  const label = SYNC_LABEL[s] || "";
+  return syncClickable(s) && label ? `${label} · reconectar` : label;
+}
+// Reconecta: re-login para coger un token estable (arregla "Solo local"). Con la
+// corrección del servidor, volver a entrar ya no rota el token de nadie.
+function reconnectSession() {
+  if (!syncClickable(store.getSyncState())) return;
+  auth.logout();
+  mount(root);
+}
 function updateSyncBadge(s) {
   if (!root) return;
   const node = root.querySelector(".sync-badge");
   if (!node) return;
-  const label = SYNC_LABEL[s] || "";
+  const label = syncText(s);
   node.textContent = label;
-  node.className = `sync-badge sync-${s}`;
+  node.className = `sync-badge sync-${s}${syncClickable(s) ? " sync-click" : ""}`;
   node.style.display = label ? "" : "none";
 }
 
@@ -353,14 +366,16 @@ function header() {
 }
 
 // Indicador discreto del estado de sincronización con el servidor compartido.
+// Es un botón: si la sesión está en local, un toque reconecta (re-login).
 function syncBadge() {
   const s = store.getSyncState();
-  const label = SYNC_LABEL[s] || "";
-  return el("span", {
-    class: `sync-badge sync-${s}`,
+  const label = syncText(s);
+  return el("button", {
+    class: `sync-badge sync-${s}${syncClickable(s) ? " sync-click" : ""}`,
     text: label,
     style: label ? "" : "display:none",
-    title: "Estado de sincronización con el servidor compartido",
+    title: syncClickable(s) ? "Reconectar: vuelve a entrar para sincronizar con el equipo" : "Estado de sincronización con el servidor compartido",
+    onClick: reconnectSession,
   });
 }
 

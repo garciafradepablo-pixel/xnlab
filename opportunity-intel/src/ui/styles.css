@@ -923,10 +923,12 @@ output { font-size: 12px; color: var(--accent); }
 .ver-tag { font-size: 11px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; }
 
 /* Indicador discreto de sincronización con el servidor compartido. */
-.sync-badge { font-size: 10px; letter-spacing: 0.3px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
-.sync-badge.sync-synced { color: #3fb950; border-color: rgba(63, 185, 80, 0.4); }
-.sync-badge.sync-syncing { color: #c9a227; border-color: rgba(201, 162, 39, 0.4); }
-.sync-badge.sync-offline, .sync-badge.sync-local { color: #f0883e; border-color: rgba(240, 136, 62, 0.4); }
+.sync-badge { font-size: 10px; letter-spacing: 0.3px; color: var(--ink-dim); border: 1px solid var(--line); border-radius: 999px; padding: 3px 9px; white-space: nowrap; background: transparent; font-family: inherit; cursor: default; }
+.sync-badge.sync-synced { color: var(--ok); border-color: rgba(58, 157, 110, 0.45); }
+.sync-badge.sync-syncing { color: var(--accent); border-color: rgba(203, 162, 74, 0.45); }
+.sync-badge.sync-offline, .sync-badge.sync-local { color: #f0883e; border-color: rgba(240, 136, 62, 0.45); background: rgba(240,136,62,.08); }
+.sync-badge.sync-click { cursor: pointer; font-weight: 600; }
+.sync-badge.sync-click:hover { color: #fff; background: rgba(240,136,62,.18); border-color: #f0883e; }
 
 /* Badge de rol (RBAC) junto a la firma del usuario. */
 .role-badge { font-size: 9px; font-weight: 800; letter-spacing: 0.6px; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--ink-dim); text-transform: uppercase; }
