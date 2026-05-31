@@ -102,7 +102,11 @@ function renderPanel() {
   while (panel.firstChild) panel.removeChild(panel.firstChild);
 
   const me = currentUser();
-  const others = getUsers().filter((u) => u.name !== (me && me.name));
+  // El equipo se identifica por APODO (aka): los ecos se dirigen por aka y nadie
+  // ve el nombre real de otro. Usamos el aka tanto para mostrar como para enviar.
+  const akaOf = (u) => u.aka || u.name;
+  const myAka = me ? (me.aka || me.name) : "";
+  const others = getUsers().filter((u) => (u.colorOnly ? u.role : true) && akaOf(u) && akaOf(u) !== myAka);
 
   // Cabecera + métrica norte (¿tus ecos llegan claros?)
   panel.appendChild(el("div", { class: "eco-head" }, [
@@ -117,10 +121,10 @@ function renderPanel() {
   const status = el("p", { class: "eco-status" });
   const transcript = el("textarea", { class: "eco-transcript", placeholder: "Aprieta el micro y habla… (o escribe aquí)", rows: "4" });
 
-  let toName = others[0] ? others[0].name : "";
+  let toName = others[0] ? akaOf(others[0]) : "";
   const toSel = el("select", { class: "eco-to" },
     others.length
-      ? others.map((u) => el("option", { value: u.name, text: u.name }))
+      ? others.map((u) => el("option", { value: akaOf(u), text: akaOf(u) }))
       : [el("option", { value: "", text: "— sin compañero —" })]);
   toSel.addEventListener("change", () => { toName = toSel.value; });
 

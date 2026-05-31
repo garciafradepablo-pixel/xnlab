@@ -25,8 +25,8 @@ try {
 } catch (e) { ok(false, "mount sin sesión no debe lanzar: " + e.message); }
 
 // ── 2. Crea sesión local y monta la app con sesión ───────────────────────────
-auth.createUser("SmokePablo", "clave1234", "#4a9eff"); // cuenta local (sin red)
-const lg = auth.login("SmokePablo", "clave1234");
+auth.createUser("Smoke Pablo", "clave1234", "#4a9eff"); // cuenta local (sin red): NOMBRE + APELLIDO
+const lg = auth.login("Smoke Pablo", "clave1234");
 ok(lg.ok, "login local de prueba correcto");
 
 try {
@@ -112,7 +112,7 @@ try {
   enterZone(/Cerrar/); ok(subs().some((t) => /CRM/.test(t)), "editor ve «CRM» (mover el tablero) dentro de Cerrar");
 
   // Bajamos la sesión a viewer (solo lectura) y re-montamos.
-  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "viewer", token: null }));
+  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Smoke Pablo", role: "viewer", token: null }));
   await mount(root);
   const zoneLabels = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
   ok(zoneLabels.some((t) => /Captar/.test(t)), "viewer conserva la zona «Captar» (Oportunidades es lectura)");
@@ -122,7 +122,7 @@ try {
   ok(root.querySelector(".navwrap") != null, "el shell sigue entero con rol viewer");
 
   // Restaura la sesión editor para no contaminar nada posterior.
-  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "editor", token: null }));
+  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Smoke Pablo", role: "editor", token: null }));
 } catch (e) { ok(false, "la navegación por rol no debe lanzar: " + e.message); }
 
 console.log(`\n${passed} passed, ${failed} failed`);

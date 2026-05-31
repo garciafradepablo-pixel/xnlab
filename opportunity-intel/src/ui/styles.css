@@ -944,7 +944,9 @@ output { font-size: 12px; color: var(--accent); }
 /* Gestión de usuarios (admin). */
 .users-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
 .user-row { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 8px 12px; }
-.user-row-name { flex: 1; font-weight: 600; }
+.user-row-id { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.user-row-name { font-weight: 600; }
+.user-row-meta { font-size: 11px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .role-select { min-width: 120px; }
 .role-status { font-size: 12px; color: var(--ink-dim); min-width: 60px; }
 
@@ -953,6 +955,12 @@ output { font-size: 12px; color: var(--accent); }
 .sec-f { width: 100%; }
 .sec-msg { font-size: 12px; color: var(--ink-dim); margin: 0; }
 .sec-msg.ok { color: #3fb950; }
+
+/* Avatares con FOTO: la imagen llena el círculo (cualquier tamaño de dot). */
+.user-dot.has-photo, .prof-dot.has-photo { background-size: cover; background-position: center; background-repeat: no-repeat; }
+/* Perfil: identidad (apodo/email) y subida de foto. */
+.prof-fieldlabel { display: block; font-size: 11px; color: var(--ink-dim); margin: 8px 0 2px; }
+.prof-photorow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .sec-msg.err { color: #f85149; }
 
 /* ---- Cobertura por sector ---- */

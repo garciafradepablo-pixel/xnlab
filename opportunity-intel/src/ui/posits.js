@@ -36,9 +36,10 @@ function uid() {
   return `p_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
-/** Compañeros a los que puedes lanzar un posit (todos menos tú). */
+/** Compañeros a los que puedes lanzar un posit (todos menos tú). Se identifican
+ *  por APODO (aka): es la identidad visible del equipo (privacidad). */
 export function recipients(me) {
-  return auth.getUsers().map((u) => u.name).filter((n) => n && n !== me);
+  return auth.getUsers().map((u) => u.aka || u.name).filter((n) => n && n !== me);
 }
 
 /** Posits dirigidos a mí, vivos (sin archivar), del más reciente al más antiguo. */

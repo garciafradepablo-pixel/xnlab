@@ -1,7 +1,11 @@
 // =============================================================================
 // users — Cuentas durables + RBAC (Supabase).
 //
-// Acciones: register, login, me, list, setPassword, setRole.
+// Acciones: register, login, me, list, setPassword, setRole, setProfile.
+//
+// PRIVACIDAD: el nombre real (NOMBRE + APELLIDO) y el email solo los ve el
+// ADMIN. El resto del equipo se ve por APODO (aka) + foto/emoji + color. Cada
+// uno edita su aka/email/foto desde su perfil (setProfile).
 // - Contraseñas: SHA-256(salt + "::" + password), sal por usuario. El cliente
 //   nunca ve los hashes.
 // - Sesión: al register/login se emite un TOKEN opaco (no es la service_role
@@ -29,6 +33,22 @@ const json = (body: unknown, status = 200) =>
 
 const ROLES = ["admin", "editor", "viewer", "analyst"];
 const normRole = (r: string) => (ROLES.includes(r) ? r : "viewer");
+
+// Apodo por defecto = nombre de pila (privacidad: el equipo se ve por aka).
+const firstName = (n: string) => {
+  const w = String(n || "").trim().split(/\s+/)[0] || "";
+  return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : "";
+};
+const validEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "").trim());
+// Foto de avatar: data URL de imagen. Tope de tamaño para no inflar la fila.
+const PHOTO_MAX = 700_000; // ~0.7 MB en base64
+const cleanPhoto = (p: unknown) => {
+  const s = String(p || "").trim();
+  if (!s) return "";
+  if (!/^data:image\/(png|jpe?g|webp|gif);base64,/.test(s)) return null; // inválida
+  if (s.length > PHOTO_MAX) return null; // demasiado grande
+  return s;
+};
 
 // Caducidad de sesión: un token más viejo que esto deja de valer y exige
 // re-login. Limita la ventana de un token filtrado.
@@ -60,7 +80,7 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,token_at&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,aka,email,photo,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
   const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!u || tokenExpired(u.token_at)) return null; // sesión caducada → re-login
@@ -94,16 +114,55 @@ async function sessionToken(id: string, current: string | null, currentAt: strin
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, name, password, color, token, targetName, role, avatar, invite } = await req.json().catch(() => ({}));
+    const { action, name, password, color, token, targetName, role, avatar, invite, aka, email, photo } = await req.json().catch(() => ({}));
     // Nombres de equipo: SIEMPRE en MAYÚSCULAS, espacios colapsados. Canónico.
     const nm = String(name || "").trim().replace(/\s+/g, " ").toUpperCase();
     const nameLower = nm.toLowerCase();
 
-    // list: nombres + colores + roles + avatar (no sensible).
+    // list: identidad del equipo. PRIVACIDAD: solo el ADMIN ve nombre real y
+    // email; el resto ve a los demás por su APODO (aka) + foto/emoji + color.
     if (action === "list") {
-      const res = await rest(`connect_users?select=name,color,role,avatar`);
+      const caller = await userByToken(String(token || ""));
+      const isAdmin = caller?.role === "admin";
+      const res = await rest(`connect_users?select=name,aka,email,color,role,avatar,photo`);
       const rows = await res.json();
-      return json({ ok: true, users: Array.isArray(rows) ? rows : [] });
+      const list = (Array.isArray(rows) ? rows : []).map((u: any) => {
+        const display = u.aka || firstName(u.name) || u.name;
+        return isAdmin
+          ? { name: u.name, aka: display, email: u.email || null, color: u.color, role: u.role, avatar: u.avatar || null, photo: u.photo || null }
+          // No-admin: el "name" que se entrega ya ES el apodo (la app nunca ve el real).
+          : { name: display, aka: display, color: u.color, role: u.role, avatar: u.avatar || null, photo: u.photo || null };
+      });
+      return json({ ok: true, users: list });
+    }
+
+    // setProfile: el propio usuario edita su APODO (aka), EMAIL y FOTO. El email
+    // es obligatorio (localización/contacto). El nombre real no se toca aquí.
+    if (action === "setProfile") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const patch: Record<string, unknown> = {};
+      if (aka !== undefined) {
+        const a = String(aka || "").trim().replace(/\s+/g, " ").slice(0, 24);
+        if (a.length < 2) return json({ ok: false, error: "El apodo debe tener al menos 2 caracteres." });
+        patch.aka = a;
+      }
+      if (email !== undefined) {
+        if (!validEmail(email)) return json({ ok: false, error: "Pon un email válido para tenerte localizado." });
+        patch.email = String(email).trim().toLowerCase();
+      }
+      if (photo !== undefined) {
+        const p = cleanPhoto(photo);
+        if (p === null) return json({ ok: false, error: "La foto no es válida o pesa demasiado (máx ~0,7 MB)." });
+        patch.photo = p || null; // "" → quitar foto
+      }
+      if (!Object.keys(patch).length) return json({ ok: false, error: "Nada que actualizar." }, 400);
+      const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
+        method: "PATCH", headers: { Prefer: "return=representation" }, body: JSON.stringify(patch),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo guardar el perfil." }, 500);
+      const row = (await up.json())[0] || {};
+      return json({ ok: true, user: { aka: row.aka || null, email: row.email || null, photo: row.photo || null } });
     }
 
     // setAvatar: el propio usuario (sesión válida) fija su emoji/avatar.
@@ -127,7 +186,7 @@ Deno.serve(async (req) => {
       const expires_at = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString();
       const inv = await rest(`connect_invites`, {
         method: "POST", headers: { Prefer: "return=minimal" },
-        body: JSON.stringify({ code, created_by: caller.name || null, role: normRole(String(role || "editor")), expires_at }),
+        body: JSON.stringify({ code, created_by: caller.aka || caller.name || null, role: normRole(String(role || "editor")), expires_at }),
       });
       if (!inv.ok) return json({ ok: false, error: "No se pudo crear la invitación." }, 500);
       return json({ ok: true, code, expires_at });
@@ -142,6 +201,7 @@ Deno.serve(async (req) => {
         return json({ ok: false, error: "Escribe tu NOMBRE y un APELLIDO (los dos)." });
       }
       if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
+      if (!validEmail(email)) return json({ ok: false, error: "Pon un email válido para tenerte localizado." });
       const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const existing = await chk.json();
       if (Array.isArray(existing) && existing.length) return json({ ok: false, error: "Ya existe un usuario con ese nombre." });
@@ -167,7 +227,7 @@ Deno.serve(async (req) => {
       const ins = await rest(`connect_users`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
-        body: JSON.stringify({ name: nm, name_lower: nameLower, color: color || "#4a9eff", pass_hash, salt, role: newRole }),
+        body: JSON.stringify({ name: nm, name_lower: nameLower, aka: firstName(nm), email: String(email).trim().toLowerCase(), color: color || "#4a9eff", pass_hash, salt, role: newRole }),
       });
       if (!ins.ok) {
         const t = await ins.text();
@@ -176,17 +236,17 @@ Deno.serve(async (req) => {
       }
       if (!firstUser && inviteCode) {
         await rest(`connect_invites?code=eq.${encodeURIComponent(inviteCode)}`, {
-          method: "PATCH", body: JSON.stringify({ used_by: nm, used_at: new Date().toISOString() }),
+          method: "PATCH", body: JSON.stringify({ used_by: firstName(nm), used_at: new Date().toISOString() }),
         });
       }
       const row = (await ins.json())[0];
       const tok = await issueToken(row.id);
-      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, token: tok } });
+      return json({ ok: true, user: { name: row.name, aka: row.aka || firstName(row.name), email: row.email || null, color: row.color, role: row.role, avatar: null, photo: null, token: tok } });
     }
 
     // login: verifica, emite token, devuelve rol.
     if (action === "login") {
-      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt,token,token_at&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const res = await rest(`connect_users?select=id,name,aka,email,color,role,avatar,photo,pass_hash,salt,token,token_at&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const rows = await res.json();
       const u = Array.isArray(rows) ? rows[0] : null;
       if (!u) return json({ ok: false, error: "Usuario no encontrado." });
@@ -194,14 +254,14 @@ Deno.serve(async (req) => {
       if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
       // Reutiliza token vigente (no rota) → sesión estable entre pestañas/dispositivos.
       const tok = await sessionToken(u.id, u.token || null, u.token_at || null);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, token: tok } });
+      return json({ ok: true, user: { name: u.name, aka: u.aka || firstName(u.name), email: u.email || null, color: u.color, role: u.role, avatar: u.avatar || null, photo: u.photo || null, token: tok } });
     }
 
     // me: valida un token y devuelve el usuario+rol (fuente de verdad del rol).
     if (action === "me") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null } });
+      return json({ ok: true, user: { name: u.name, aka: u.aka || firstName(u.name), email: u.email || null, color: u.color, role: u.role, avatar: u.avatar || null, photo: u.photo || null } });
     }
 
     // setPassword: el propio usuario (sesión válida) cambia su contraseña. Sal

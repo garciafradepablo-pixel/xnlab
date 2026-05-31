@@ -53,6 +53,9 @@ const norm = (s) => String(s || "").trim().toLowerCase();
 const canonName = (s) => String(s || "").trim().replace(/\s+/g, " ").toUpperCase();
 // Regla: nombre + al menos un apellido (dos palabras).
 const hasSurname = (s) => canonName(s).split(" ").filter(Boolean).length >= 2;
+const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "").trim());
+// Apodo de partida = nombre de pila (privacidad: el equipo se ve por aka).
+const firstName = (s) => { const w = canonName(s).split(" ")[0] || ""; return w ? w[0] + w.slice(1).toLowerCase() : ""; };
 
 // Paleta de colores de firma (distintos y legibles sobre fondo oscuro).
 export const SIGNATURE_COLORS = [
@@ -120,11 +123,14 @@ export function login(name, password) {
 // Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
 // sesión persista y se pueda entrar sin red la próxima vez en este navegador.
 // Guarda también rol y token de sesión devueltos por el servidor.
-function cacheUser(name, color, password, role, token, avatar) {
+function cacheUser(name, color, password, role, token, avatar, aka, email, photo) {
   const prev = getUsers().find((u) => norm(u.name) === norm(name));
   const users = getUsers().filter((u) => norm(u.name) !== norm(name));
   users.push({
     name, color, avatar: avatar ?? prev?.avatar ?? null, hash: hash(password),
+    aka: aka ?? prev?.aka ?? null,
+    email: email ?? prev?.email ?? null,
+    photo: photo ?? prev?.photo ?? null,
     role: role ? normalizeRole(role) : DEFAULT_ROLE,
     token: token || null,
     createdAt: new Date().toISOString(), remote: true,
@@ -137,20 +143,21 @@ function cacheUser(name, color, password, role, token, avatar) {
  * local. Si el servidor no responde, cae al modo local para no bloquear.
  * @returns {Promise<{ok, error?}>}
  */
-export async function createUserAsync(name, password, color, invite) {
+export async function createUserAsync(name, password, color, invite, email) {
   const n = canonName(name);
   if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
   if (!hasSurname(n)) return { ok: false, error: "Escribe tu NOMBRE y un APELLIDO (los dos)." };
   if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
+  if (!validEmail(email)) return { ok: false, error: "Pon un email válido para tenerte localizado." };
   const finalColor = color || nextFreeColor();
   try {
-    const r = await remote.remoteRegister(n, password, finalColor, invite);
+    const r = await remote.remoteRegister(n, password, finalColor, invite, email);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
-    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
+    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.aka, r.user.email, r.user.photo);
     return { ok: true };
   } catch {
-    // Sin red: crea al menos en local (se sincronizará cuando vuelva la red).
-    return createUser(n, password, finalColor);
+    // Sin red: el registro necesita servidor (email/aka/durabilidad). No caemos a local.
+    return { ok: false, error: "Sin conexión: el registro necesita servidor. Inténtalo de nuevo." };
   }
 }
 
@@ -172,7 +179,7 @@ export async function loginAsync(name, password) {
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
-      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar);
+      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.aka, r.user.email, r.user.photo);
       write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
       return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
@@ -221,14 +228,17 @@ export async function migrateLocalUser(name, password) {
  *  teñir la actividad por autor de forma consistente entre dispositivos. */
 export async function syncRemoteColors() {
   try {
-    const list = await remote.remoteList();
+    const list = await remote.remoteList(getToken());
     if (!Array.isArray(list) || !list.length) return;
     const users = getUsers();
     const byName = new Map(users.map((u) => [norm(u.name), u]));
     for (const r of list) {
-      const ex = byName.get(norm(r.name));
-      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; } // color/rol/avatar: el servidor manda
-      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, colorOnly: true }); // para teñir/badge
+      // Para un no-admin, el servidor entrega `name` = apodo (privacidad). Para
+      // un admin, `name` es el real y `aka` el apodo. La app tiñe/identifica por
+      // apodo, así que guardamos ambos.
+      const ex = byName.get(norm(r.name)) || byName.get(norm(r.aka));
+      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; ex.aka = r.aka ?? ex.aka ?? null; ex.photo = r.photo ?? null; if (r.email) ex.email = r.email; } // el servidor manda
+      else users.push({ name: r.name, aka: r.aka ?? r.name, email: r.email ?? null, color: r.color, avatar: r.avatar ?? null, photo: r.photo ?? null, role: r.role ? normalizeRole(r.role) : undefined, colorOnly: true }); // para teñir/badge
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
@@ -257,13 +267,22 @@ export async function setAvatar(avatar) {
 
 export function logout() { storage.removeItem(SESSION_KEY); }
 
-/** Usuario en sesión (con color y rol) o null. */
+/** Usuario en sesión o null.
+ *  `name` es el APODO (aka) — la identidad de trabajo en la app (firma, muelle,
+ *  ecos), porque el equipo se ve entre sí por apodo (privacidad). `realName`
+ *  guarda NOMBRE + APELLIDO para la vista de Equipo (solo admin). */
 export function currentUser() {
   const s = read(SESSION_KEY, null);
   if (!s) return null;
   const u = getUsers().find((x) => norm(x.name) === norm(s.name));
   if (!u) return null;
-  return { name: u.name, color: u.color, avatar: u.avatar || null, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+  const aka = u.aka || firstName(u.name) || u.name;
+  return {
+    name: aka, aka, realName: u.name,
+    email: u.email || null, color: u.color,
+    avatar: u.avatar || null, photo: u.photo || null,
+    role: normalizeRole(s.role || u.role || DEFAULT_ROLE),
+  };
 }
 
 /** Rol del usuario en sesión (admin/editor/viewer/analyst). viewer si no hay sesión. */
@@ -293,7 +312,14 @@ export async function refreshSession() {
       write(SESSION_KEY, { ...s, role });
       const users = getUsers();
       const u = users.find((x) => norm(x.name) === norm(s.name));
-      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; write(USERS_KEY, users); }
+      if (u) {
+        u.role = role;
+        if (r.user.color) u.color = r.user.color;
+        if (r.user.aka !== undefined) u.aka = r.user.aka;
+        if (r.user.email !== undefined) u.email = r.user.email;
+        if (r.user.photo !== undefined) u.photo = r.user.photo;
+        write(USERS_KEY, users);
+      }
       return { ok: true, role };
     }
     return { ok: false };
@@ -338,8 +364,36 @@ export async function setUserRole(targetName, role) {
   } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }
 
-/** Color de un usuario por nombre (para teñir su actividad). null si no existe. */
+/** Color de un usuario por su identidad visible (apodo o, si acaso, nombre).
+ *  La autoría se firma por APODO, así que buscamos primero por aka. */
 export function colorOf(name) {
-  const u = getUsers().find((x) => norm(x.name) === norm(name));
+  const k = norm(name);
+  const u = getUsers().find((x) => norm(x.aka) === k) || getUsers().find((x) => norm(x.name) === k);
   return u ? u.color : null;
+}
+
+/**
+ * Edita el perfil del usuario en sesión: APODO (aka), EMAIL y/o FOTO. Server-first
+ * (durable y visible para el equipo); refleja en local para la sesión actual.
+ * Pasa solo los campos que quieras cambiar. @returns {Promise<{ok, error?}>}
+ */
+export async function setProfile({ aka, email, photo } = {}) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada (vuelve a entrar online)." };
+  if (aka !== undefined && canonName(aka).length < 2) return { ok: false, error: "El apodo debe tener al menos 2 caracteres." };
+  if (email !== undefined && !validEmail(email)) return { ok: false, error: "Pon un email válido para tenerte localizado." };
+  try {
+    const r = await remote.remoteSetProfile(token, { aka, email, photo });
+    if (!r || !r.ok) return { ok: false, error: (r && r.error) || "No se pudo guardar el perfil." };
+    const s = read(SESSION_KEY, null);
+    const users = getUsers();
+    const me = s && users.find((x) => norm(x.name) === norm(s.name));
+    if (me) {
+      if (r.user.aka !== undefined) me.aka = r.user.aka;
+      if (r.user.email !== undefined) me.email = r.user.email;
+      if (r.user.photo !== undefined) me.photo = r.user.photo;
+      write(USERS_KEY, users);
+    }
+    return { ok: true, user: r.user };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }

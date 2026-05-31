@@ -47,12 +47,20 @@ async function rest(path: string, init: RequestInit = {}) {
   });
 }
 
+// Identidad de equipo en la app = APODO (aka). Los ecos se dirigen y firman por
+// aka (privacidad: nadie ve el nombre real de otro). Si una cuenta vieja no
+// tuviera aka, caemos al nombre de pila.
+const firstName = (n: string) => {
+  const w = String(n || "").trim().split(/\s+/)[0] || "";
+  return w ? w[0].toUpperCase() + w.slice(1).toLowerCase() : "";
+};
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,role,token_at&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,aka,role,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
   const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!u || tokenExpired(u.token_at)) return null;
+  u.aka = u.aka || firstName(u.name);
   return u;
 }
 
@@ -124,7 +132,7 @@ Deno.serve(async (req) => {
         method: "POST",
         headers: { Prefer: "return=representation" },
         body: JSON.stringify({
-          from_name: caller.name,
+          from_name: caller.aka,
           to_name: dest,
           to_name_lower: dest.toLowerCase(),
           resumen: d.resumen,
@@ -143,7 +151,7 @@ Deno.serve(async (req) => {
       const caller = await userByToken(String(token || ""));
       if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
       const res = await rest(
-        `connect_ecos?select=*&to_name_lower=eq.${encodeURIComponent(caller.name_lower)}&order=created_at.desc&limit=50`,
+        `connect_ecos?select=*&to_name_lower=eq.${encodeURIComponent(caller.aka.toLowerCase())}&order=created_at.desc&limit=50`,
       );
       const ecos = await res.json();
       return json({ ok: true, ecos: Array.isArray(ecos) ? ecos : [] });
@@ -154,7 +162,7 @@ Deno.serve(async (req) => {
       const caller = await userByToken(String(token || ""));
       if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
       await rest(
-        `connect_ecos?id=eq.${encodeURIComponent(String(id || ""))}&to_name_lower=eq.${encodeURIComponent(caller.name_lower)}`,
+        `connect_ecos?id=eq.${encodeURIComponent(String(id || ""))}&to_name_lower=eq.${encodeURIComponent(caller.aka.toLowerCase())}`,
         { method: "PATCH", body: JSON.stringify({ read_at: new Date().toISOString() }) },
       );
       return json({ ok: true });
@@ -169,7 +177,7 @@ Deno.serve(async (req) => {
       if (!v) return json({ ok: false, error: "Verdict no válido." }, 400);
       const now = new Date().toISOString();
       await rest(
-        `connect_ecos?id=eq.${encodeURIComponent(String(id || ""))}&to_name_lower=eq.${encodeURIComponent(caller.name_lower)}`,
+        `connect_ecos?id=eq.${encodeURIComponent(String(id || ""))}&to_name_lower=eq.${encodeURIComponent(caller.aka.toLowerCase())}`,
         { method: "PATCH", body: JSON.stringify({ verdict: v, verdict_at: now, read_at: now }) },
       );
       return json({ ok: true });
@@ -180,7 +188,7 @@ Deno.serve(async (req) => {
       const caller = await userByToken(String(token || ""));
       if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
       const res = await rest(
-        `connect_ecos?select=id,to_name,verdict,created_at&from_name=eq.${encodeURIComponent(caller.name)}&order=created_at.desc&limit=100`,
+        `connect_ecos?select=id,to_name,verdict,created_at&from_name=eq.${encodeURIComponent(caller.aka)}&order=created_at.desc&limit=100`,
       );
       const ecos = await res.json();
       return json({ ok: true, ecos: Array.isArray(ecos) ? ecos : [] });

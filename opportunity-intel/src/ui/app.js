@@ -216,6 +216,9 @@ function renderAuth() {
     try { nameI.setSelectionRange(p, p); } catch { /* */ }
   });
   const passI = el("input", { class: "auth-f", type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
+  // Email: obligatorio al crear cuenta (te tiene localizado y comunicado). En la
+  // app, el equipo se ve por APODO; el nombre real y el email solo los ve el admin.
+  const emailI = el("input", { class: "auth-f", type: "email", placeholder: "Email (para contacto)", autocomplete: "email" });
 
   // Selector de color (solo al crear). Se muestran los 8 colores, pero los que
   // ya pertenecen a alguien salen BLOQUEADOS (no seleccionables) con su dueño;
@@ -252,7 +255,7 @@ function renderAuth() {
     msg.textContent = "";
     if (!chosenColor) { msg.textContent = "No quedan colores de firma libres. Pide a un admin que libere uno."; return; }
     busy(true);
-    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor, state._invite);
+    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor, state._invite, emailI.value);
     if (!r.ok) { busy(false, "Crear usuario y entrar"); msg.textContent = r.error; return; }
     await auth.loginAsync(nameI.value, passI.value);
     mount(root);
@@ -272,6 +275,8 @@ function renderAuth() {
     state._invite ? el("p", { class: "auth-invite", text: "Tienes una invitación a Connect — crea tu usuario abajo." }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
     nameI, passI,
+    tab === "create" ? emailI : null,
+    tab === "create" ? el("p", { class: "config-note", text: "Tu NOMBRE Y APELLIDO y tu email son para registro y contacto (los ve el admin). En la app, el equipo te verá por el apodo que elijas en tu perfil." }) : null,
     tab === "create" ? el("div", {}, [
       el("p", { class: "auth-color-label", text: noColors ? "No quedan colores de firma libres." : "Tu color (firma tu trabajo):" }),
       swatches,
@@ -462,11 +467,22 @@ function syncBadge() {
   });
 }
 
-// Chip del usuario en sesión: inicial sobre su color de firma + cerrar sesión.
+// Avatar de un usuario: FOTO de su galería si la puso; si no, su emoji; y si no,
+// la inicial de su apodo sobre su color de firma. `cls` permite reusar el estilo
+// en cabecera (user-dot), perfil (prof-dot) y lista de equipo.
+function avatarDot(u, cls = "user-dot") {
+  const initial = (u.aka || u.name || "?")[0].toUpperCase();
+  if (u.photo) {
+    return el("span", { class: `${cls} has-photo`, style: `background-image:url(${u.photo})` });
+  }
+  return el("span", { class: cls, style: `background:${u.color || "#4a9eff"}`, text: u.avatar || initial });
+}
+
+// Chip del usuario en sesión: avatar + apodo + cerrar sesión.
 function userChip() {
   const u = auth.currentUser();
   if (!u) return el("span");
-  const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  const dot = avatarDot(u, "user-dot");
   const chip = el("button", { class: "user-chip", title: `${u.name} (${roleLabel(u.role)}) — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
@@ -483,27 +499,98 @@ function setUserNotes(name, v) { try { localStorage.setItem(notesKey(name), v); 
 
 const PROFILE_EMOJIS = ["◆", "✦", "★", "▲", "●", "◇", "✧", "◈", "❖", "⬢", "⬡", "⚡", "△", "□", "○", "✕"];
 
-// Perfil del usuario: avatar (emoji), notas privadas, contraseña e invitación.
-// Más personal y más privado, sin foto que suba a ningún sitio.
+// Reduce una imagen de la galería a un cuadrado pequeño (data URL JPEG) en el
+// navegador: recorte centrado + lado máximo `size`. Así la foto de avatar viaja
+// ligera (cabe de sobra en el tope del servidor) y no sube el original pesado.
+function downscaleImage(file, size = 256, quality = 0.82) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const side = Math.min(img.width, img.height);
+        const sx = (img.width - side) / 2, sy = (img.height - side) / 2;
+        const canvas = document.createElement("canvas");
+        canvas.width = canvas.height = size;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, sx, sy, side, side, 0, 0, size, size);
+        resolve(canvas.toDataURL("image/jpeg", quality));
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Perfil del usuario: apodo (aka), email, avatar (foto o emoji), notas privadas,
+// contraseña e invitación. El equipo te ve por tu APODO y tu foto/emoji; tu
+// nombre real y tu email solo los ve el admin.
 function openProfile() {
   const u = auth.currentUser();
   if (!u) return;
   const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
   const close = () => overlay.remove();
 
-  const dot = el("span", { class: "prof-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
+  // Estado local del avatar (lo refrescamos al subir foto / elegir emoji).
+  const view = { avatar: u.avatar, photo: u.photo, aka: u.aka };
+  let dot = avatarDot({ ...u, ...view }, "prof-dot");
+  const idLine = el("div", { class: "prof-name", text: view.aka || u.name });
+  const refreshDot = () => { const nd = avatarDot({ ...u, ...view }, "prof-dot"); dot.replaceWith(nd); dot = nd; };
+
   const picker = el("div", { class: "prof-emojis" });
   const mark = (val) => [...picker.children].forEach((c) => c.classList?.[c._val === val ? "add" : "remove"]?.("sel"));
   PROFILE_EMOJIS.forEach((e) => {
     const b = el("button", { class: `prof-emoji ${u.avatar === e ? "sel" : ""}`, text: e });
     b._val = e;
-    b.addEventListener("click", async () => { await auth.setAvatar(e); dot.textContent = e; mark(e); render(); });
+    b.addEventListener("click", async () => { await auth.setAvatar(e); view.avatar = e; view.photo = null; refreshDot(); mark(e); render(); });
     picker.appendChild(b);
   });
   const clearB = el("button", { class: "prof-emoji prof-clear", text: "∅", title: "Sin emoji (usa tu inicial)" });
   clearB._val = null;
-  clearB.addEventListener("click", async () => { await auth.setAvatar(""); dot.textContent = u.name[0].toUpperCase(); mark(null); render(); });
+  clearB.addEventListener("click", async () => { await auth.setAvatar(""); view.avatar = null; refreshDot(); mark(null); render(); });
   picker.appendChild(clearB);
+
+  // Foto de la galería como avatar. Se reduce en el navegador a un cuadrado
+  // pequeño (data URL) antes de subirla, para no engordar la fila ni la red.
+  const photoInput = el("input", { type: "file", accept: "image/*", style: "display:none" });
+  const photoMsg = el("p", { class: "sec-msg" });
+  const photoBtn = el("button", { class: "btn", text: "Subir foto", onClick: () => photoInput.click() });
+  const photoDel = el("button", { class: "btn-ghost", text: "Quitar foto", onClick: async () => {
+    photoMsg.className = "sec-msg"; photoMsg.textContent = "Quitando…";
+    const r = await auth.setProfile({ photo: "" });
+    if (r.ok) { view.photo = null; refreshDot(); render(); photoMsg.textContent = "✓ Foto quitada."; photoMsg.classList.add("ok"); }
+    else { photoMsg.textContent = r.error || "No se pudo."; photoMsg.classList.add("err"); }
+  } });
+  photoInput.addEventListener("change", async () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+    photoMsg.className = "sec-msg"; photoMsg.textContent = "Procesando…";
+    try {
+      const dataUrl = await downscaleImage(file, 256, 0.82);
+      const r = await auth.setProfile({ photo: dataUrl });
+      if (r.ok) { view.photo = dataUrl; refreshDot(); render(); photoMsg.textContent = "✓ Foto actualizada."; photoMsg.classList.add("ok"); }
+      else { photoMsg.textContent = r.error || "No se pudo."; photoMsg.classList.add("err"); }
+    } catch { photoMsg.textContent = "No se pudo leer la imagen."; photoMsg.classList.add("err"); }
+    photoInput.value = "";
+  });
+
+  // Apodo (aka) + email: editables en cualquier momento.
+  const akaI = el("input", { class: "sec-f", value: u.aka || "", placeholder: "Tu apodo (lo ve el equipo)", maxlength: "24" });
+  const emailI = el("input", { class: "sec-f", type: "email", value: u.email || "", placeholder: "Tu email (lo ve el admin)", autocomplete: "email" });
+  const idMsg = el("p", { class: "sec-msg" });
+  const idBtn = el("button", { class: "btn-primary", text: "Guardar apodo y email", onClick: async () => {
+    idMsg.className = "sec-msg"; idBtn.disabled = true; idMsg.textContent = "Guardando…";
+    const r = await auth.setProfile({ aka: akaI.value, email: emailI.value });
+    idBtn.disabled = false;
+    if (r.ok) {
+      view.aka = (r.user?.aka) || akaI.value.trim();
+      idLine.textContent = view.aka; refreshDot(); render();
+      idMsg.textContent = "✓ Guardado."; idMsg.classList.add("ok");
+    } else { idMsg.textContent = r.error || "No se pudo."; idMsg.classList.add("err"); }
+  } });
+  const needEmail = !u.email;
 
   const notes = el("textarea", { class: "prof-notes", placeholder: "Tus notas privadas (solo en este dispositivo)…" });
   notes.value = getUserNotes(u.name);
@@ -546,12 +633,27 @@ function openProfile() {
   overlay.appendChild(el("div", { class: "pb-panel prof-panel" }, [
     el("div", { class: "pb-head" }, [
       el("div", { class: "prof-id" }, [dot, el("div", {}, [
-        el("div", { class: "prof-name", text: u.name }),
+        idLine,
         el("div", { class: "prof-role", text: roleLabel(u.role) }),
       ])]),
       el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
     ]),
-    el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Tu identidad" }),
+      el("p", { class: "config-note", text: "El equipo te ve por tu apodo. Tu email es para que el admin te tenga localizado y comunicado — no lo ve el resto del equipo." }),
+      needEmail ? el("p", { class: "sec-msg err", text: "Te falta el email: ponlo para seguir bien localizado." }) : null,
+      el("label", { class: "prof-fieldlabel", text: "Apodo (visible para el equipo)" }), akaI,
+      el("label", { class: "prof-fieldlabel", text: "Email (solo lo ve el admin)" }), emailI,
+      idBtn, idMsg,
+    ]),
+    el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Tu avatar" }),
+      el("p", { class: "config-note", text: "Una foto de tu galería o un símbolo. Es tu cara para el equipo." }),
+      el("div", { class: "prof-photorow" }, [photoBtn, u.photo || view.photo ? photoDel : null, photoInput]),
+      photoMsg,
+      el("p", { class: "config-note", text: "…o elige un símbolo:" }),
+      picker,
+    ]),
     el("div", { class: "prof-sec" }, [
       el("h4", { text: "Tus notas privadas" }),
       el("p", { class: "config-note", text: "Solo en este dispositivo. No se comparten ni suben al servidor." }),
@@ -902,11 +1004,11 @@ function usersView() {
     if (!users.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay otras cuentas." })); return; }
     for (const u of users) {
       const role = u.role || "editor";
-      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.name[0] || "?").toUpperCase() });
+      const dot = avatarDot(u, "user-dot");
       const sel = el("select", { class: "lead-f role-select" }, ROLES.map((r) =>
         el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })
       ));
-      const isMe = me && norm(u.name) === norm(me.name);
+      const isMe = me && (norm(u.name) === norm(me.realName) || norm(u.aka) === norm(me.aka));
       sel.disabled = isMe; // no te cambias el rol a ti mismo desde aquí (evita autobloqueo)
       const status = el("span", { class: "role-status" });
       sel.addEventListener("change", async () => {
@@ -916,9 +1018,16 @@ function usersView() {
         if (r.ok) { status.textContent = "✓"; setTimeout(() => (status.textContent = ""), 1500); }
         else { status.textContent = r.error || "Error"; sel.value = role; }
       });
+      // Vista de admin: apodo (lo que ve el equipo) + nombre real y email debajo,
+      // para tener a cada persona localizada y comunicada (organización interna).
+      const aka = u.aka || u.name;
+      const realLine = [u.name && u.name !== aka ? u.name : null, u.email || null].filter(Boolean).join(" · ");
       list.appendChild(el("div", { class: "user-row" }, [
         dot,
-        el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
+        el("div", { class: "user-row-id" }, [
+          el("span", { class: "user-row-name", text: aka + (isMe ? " (tú)" : "") }),
+          realLine ? el("span", { class: "user-row-meta", text: realLine }) : null,
+        ]),
         el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
         sel,
         status,
@@ -1641,7 +1750,8 @@ function agendaRow(o, tracking) {
 
 function agendaView() {
   const me = auth.currentUser();
-  const team = auth.getUsers().map((u) => u.name).filter(Boolean);
+  // El reparto se identifica por APODO (aka): es la identidad visible del equipo.
+  const team = auth.getUsers().map((u) => u.aka || u.name).filter(Boolean);
   if (!state.agendaUser || (!team.includes(state.agendaUser) && state.agendaUser !== me?.name)) {
     state.agendaUser = me?.name || team[0] || "";
   }
@@ -1775,7 +1885,7 @@ function agendaView() {
 // Control de asignación en la ficha: responsable · día · ronda. Solo escritura.
 function assignmentBar(id, rebuild) {
   const t = store.getTracking()[id] || {};
-  const team = auth.getUsers().map((u) => u.name).filter(Boolean);
+  const team = auth.getUsers().map((u) => u.aka || u.name).filter(Boolean);
   const canWrite = allow("write");
   const box = el("div", { class: "case-assign" });
   box.appendChild(el("span", { class: "ca-label", text: "Responsable" }));
@@ -1803,15 +1913,16 @@ const STARTER_SCHEDULE = { workdays: [1, 2, 3, 4, 5], start: "09:30", end: "14:3
 async function maybeSeedStarterPlan() {
   try {
     if (!allow("write")) return;
-    const dani = auth.getUsers().find((u) => /dani/i.test(u.name || ""));
+    const dani = auth.getUsers().find((u) => /dani/i.test(`${u.aka || ""} ${u.name || ""}`));
     if (!dani) return; // su cuenta aún no está creada/sincronizada
-    if (store.getSchedule(dani.name)) return; // ya sembrado → nunca repetir
+    const daniId = dani.aka || dani.name; // reparto por apodo
+    if (store.getSchedule(daniId)) return; // ya sembrado → nunca repetir
     const all = state.results?.all || [];
     const ids = new Set(MALLORCA.map((m) => m.id));
     const tanda = all.filter((o) => ids.has(o.id));
     if (!tanda.length) return; // resultados aún sin la tanda: se reintenta en otro arranque
-    store.setSchedule(dani.name, STARTER_SCHEDULE);
-    for (const o of tanda) store.assignLead(o.id, { assignedTo: dani.name });
+    store.setSchedule(daniId, STARTER_SCHEDULE);
+    for (const o of tanda) store.assignLead(o.id, { assignedTo: daniId });
     const tomorrow = new Date();
     tomorrow.setDate(tomorrow.getDate() + 1);
     const live = orderByPriority(tanda.filter((o) => ["01", "xn"].includes(o.scores?.classification)));

@@ -29,9 +29,14 @@ async function call(action, payload) {
   return res.json();
 }
 
-/** Registra una cuenta (requiere invitación salvo el primer usuario). */
-export function remoteRegister(name, password, color, invite) {
-  return call("register", { name, password, color, invite });
+/** Registra una cuenta (requiere invitación salvo el primer usuario). Email obligatorio. */
+export function remoteRegister(name, password, color, invite, email) {
+  return call("register", { name, password, color, invite, email });
+}
+
+/** Edita el perfil propio: apodo (aka), email y/o foto. Requiere token de sesión. */
+export function remoteSetProfile(token, { aka, email, photo } = {}) {
+  return call("setProfile", { token, aka, email, photo });
 }
 
 /** Genera un código de invitación (solo admin; el servidor refuerza). */
@@ -64,8 +69,9 @@ export function remoteSetAvatar(token, avatar) {
   return call("setAvatar", { token, avatar });
 }
 
-/** Lista de {name, color, role} de todas las cuentas. [] si falla. */
-export async function remoteList() {
-  try { const r = await call("list", {}); return r.ok ? r.users : []; }
+/** Lista del equipo. Con token de admin trae nombre real + email; si no, solo
+ *  apodos (aka) + foto/color (privacidad). [] si falla. */
+export async function remoteList(token) {
+  try { const r = await call("list", token ? { token } : {}); return r.ok ? r.users : []; }
   catch { return []; }
 }
