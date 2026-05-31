@@ -326,12 +326,25 @@ function visibleOpps() {
 // ---- Render -----------------------------------------------------------------
 
 function render() {
-  clear(root);
+  // Shell premium con cabecera PERSISTENTE: la barra superior (con su capa
+  // neuronal animada) se monta una sola vez y NO se reconstruye en cada acción
+  // — así la animación no parpadea ni se reinicia y se evita repintar DOM caro.
+  // Solo se refrescan sus indicadores vivos (avatar, dataset, sync) y se sustituye
+  // la navegación + el área de scroll. Si no hay cabecera (primer pintado o tras
+  // login), se construye el shell completo.
+  const existingHead = root.querySelector(".app-head");
+  if (existingHead) {
+    refreshHeadActions();
+    // Quita todo menos la cabecera y vuelve a montar nav + contenido.
+    for (const child of [...root.childNodes]) if (child !== existingHead) root.removeChild(child);
+  } else {
+    clear(root);
+    root.appendChild(header());
+  }
+  root.appendChild(tabs());
   // Shell fijo: cabecera + tabs pegados arriba, y UN área de scroll para el
   // contenido. Así el scroll es propio del contenido y se reinicia al cambiar
   // de pantalla (antes el scroll del body se quedaba a medias entre vistas).
-  root.appendChild(header());
-  root.appendChild(tabs());
   const scroller = el("div", { class: "scroll" });
   const main = el("div", { class: "main" });
   // Configuración como BARRA plegable arriba del contenido (a todo el ancho),
@@ -370,15 +383,30 @@ function header() {
       ]),
       el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
     ]),
-    el("div", { class: "head-actions" }, [
-      state.dataset === "researched"
-        ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
-        : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
-      userChip(),
-      syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada", text: "v45 · momento en prensa" }),
-    ]),
+    el("div", { class: "head-actions" }, headActions()),
   ]);
+}
+
+// Indicadores vivos de la cabecera (dataset · usuario · sync · versión). Se
+// rehacen en cada render sin tocar el contenedor animado de la barra.
+function headActions() {
+  return [
+    state.dataset === "researched"
+      ? el("span", { class: "demo-badge researched-badge", text: "INVESTIGADO — momentos verificados en prensa", title: "Leads reales: aperturas/financiación/expansiones verificadas con prensa citada. Webs, contactos y tensión interna NO verificados (señales grises) — enriquece antes de llamar." })
+      : el("span", { class: "demo-badge", text: "DATOS DEMO — leads sintéticos", title: "El dataset de ejemplo es ilustrativo. Conecta fuentes reales mediante los adaptadores de enriquecimiento (ver README)." }),
+    userChip(),
+    syncBadge(),
+    el("span", { class: "ver-tag", title: "Versión publicada", text: "v46 · atmósfera premium" }),
+  ];
+}
+
+// Refresca SOLO los indicadores de la cabecera persistente (avatar tras
+// personalizar, badge de dataset, estado de sync) sin reconstruir la barra.
+function refreshHeadActions() {
+  const box = root.querySelector(".head-actions");
+  if (!box) return;
+  clear(box);
+  for (const node of headActions()) box.appendChild(node);
 }
 
 // Indicador discreto del estado de sincronización con el servidor compartido.

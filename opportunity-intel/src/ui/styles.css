@@ -1572,3 +1572,104 @@ button:disabled { cursor: not-allowed; }
 .brand-lock .whale svg, .auth-whale .whale svg { width: auto; }
 .brand-lock .brand-mark svg { width: 30px; height: 30px; }
 .auth-whale .brand-mark svg, .auth-mark .brand-mark svg { width: 52px; height: 52px; }
+
+/* =============================================================================
+   ATMÓSFERA PREMIUM — el acabado de una sala de operaciones que ya factura.
+   Profundidad, material y respuesta. NO cambia la disposición: solo eleva la
+   superficie, el movimiento y la sensación. Respeta prefers-reduced-motion
+   (bloque universal de más arriba).
+   ============================================================================= */
+:root {
+  --ease: cubic-bezier(.22,.61,.36,1);   /* salida premium, sin rebote */
+  --ease-snap: cubic-bezier(.2,.8,.2,1);
+  --dur-1: 130ms; --dur-2: 220ms;
+  --glass: saturate(140%) blur(14px);
+}
+
+/* — Selección con la firma de la casa — */
+::selection { background: rgba(203,162,74,.26); color: #fff; }
+
+/* — Atmósfera: viñeta + grano finísimo. Mata el banding de los degradados
+     oscuros y da cuerpo. Detrás del contenido, sin capturar clics. — */
+.app { position: relative; z-index: 1; }
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(135% 105% at 50% -5%, transparent 58%, rgba(0,0,0,.42) 100%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.028'/%3E%3C/svg%3E");
+  background-size: cover, 130px 130px;
+}
+
+/* — Barras de scroll de la casa (antes, las del SO) — */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 999px; border: 3px solid transparent; background-clip: content-box; }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-faint); background-clip: content-box; }
+html { scrollbar-width: thin; scrollbar-color: var(--line-2) transparent; }
+
+/* — Foco de teclado: anillo de acento con halo (más visible y de marca que el
+     blanco duro de antes). Sustituye al del bloque de accesibilidad. — */
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 78%, #ffffff 22%);
+  outline-offset: 2px; border-radius: 5px;
+  box-shadow: 0 0 0 4px rgba(203,162,74,.16);
+}
+.tab:focus-visible { outline-offset: -2px; box-shadow: none; }
+
+/* — Cristal coherente en las capas superpuestas — */
+.pb-overlay { backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
+.cmd-overlay { backdrop-filter: var(--glass); -webkit-backdrop-filter: var(--glass); }
+
+/* — Indicador de sincronización como señal "en vivo" de operaciones — */
+.sync-badge { display: inline-flex; align-items: center; gap: 6px; }
+.sync-badge::before {
+  content: ""; width: 6px; height: 6px; border-radius: 50%;
+  background: currentColor; box-shadow: 0 0 7px currentColor; flex: 0 0 auto;
+}
+.sync-badge.sync-syncing::before { animation: ops-pulse 1.3s ease-in-out infinite; }
+@keyframes ops-pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.7); } }
+.ver-tag { font-family: var(--mono); letter-spacing: .2px; }
+
+/* — Profundidad de tarjetas de lista: relieve y elevación al hover (no la
+     vista de caso a pantalla completa) — */
+.cards > .card { transition: border-color var(--dur-1) var(--ease), box-shadow var(--dur-2) var(--ease), transform var(--dur-1) var(--ease); }
+.cards > .card:hover { box-shadow: var(--sh-2), var(--hl); transform: translateY(-1px); }
+.worker-card, .mytasks, .auth-roster { box-shadow: var(--hl); }
+.av-studio-preview .av { box-shadow: var(--sh-2), var(--hl); }
+
+/* — Botones de acción: brillo superior y elevación premium al pulsar/hover — */
+.btn-primary { box-shadow: var(--sh-1), var(--hl); }
+.btn-primary:hover { filter: brightness(1.06); }
+
+/* — Tipografía operativa: números tabulares en cifras nuevas — */
+.auth-roster-n, .mytasks-count, .pulse-kpi, .stage-n, .stat-n { font-variant-numeric: tabular-nums; }
+
+/* — Eficiencia: virtualización barata de listas largas (paint solo lo visible) — */
+.worker-card { content-visibility: auto; contain-intrinsic-size: auto 132px; }
+.crm-card { content-visibility: auto; contain-intrinsic-size: auto 64px; }
+.rank-table tbody tr { content-visibility: auto; contain-intrinsic-size: auto 44px; }
+
+/* =============================================================================
+   ARRANQUE — primer fotograma intencional (se reemplaza al montar la app).
+   Da sensación de instantaneidad: nunca un lienzo negro vacío.
+   ============================================================================= */
+.boot {
+  position: fixed; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 12px; z-index: 5;
+  background: radial-gradient(900px 520px at 50% 30%, #15181f 0%, var(--bg) 70%);
+  animation: bootIn var(--dur-2) var(--ease);
+}
+.boot-mark {
+  font-weight: 800; font-size: 22px; letter-spacing: 7px; padding-left: 7px;
+  background: linear-gradient(180deg, #f3f5f9, #cba24a);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.boot-sub { font-family: var(--mono); font-size: 11px; letter-spacing: 3px; color: var(--ink-dim); }
+.boot-bar { width: 132px; height: 2px; background: var(--line); border-radius: 2px; overflow: hidden; }
+.boot-bar span {
+  display: block; height: 100%; width: 38%;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  animation: bootSlide 1.1s ease-in-out infinite;
+}
+@keyframes bootIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes bootSlide { from { transform: translateX(-130%); } to { transform: translateX(340%); } }

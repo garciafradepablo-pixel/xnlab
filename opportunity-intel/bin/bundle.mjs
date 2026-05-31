@@ -81,7 +81,7 @@ ${HEAD}
 <style>${css}</style>
 </head>
 <body>
-<div id="app" class="app"></div>
+<div id="app" class="app"><div class="boot" aria-hidden="true"><div class="boot-mark">CONNECT</div><div class="boot-sub">· 01 ↔ XN ·</div><div class="boot-bar"><span></span></div></div></div>
 <noscript>Esta herramienta requiere JavaScript.</noscript>
 <script type="importmap">${JSON.stringify({ imports })}</script>
 <script type="module">
