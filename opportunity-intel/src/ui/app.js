@@ -1605,17 +1605,24 @@ function openCase(id) {
     clear(cardWrap);
     const card = renderCard(lead, store.getTracking()[lead.id], handlers);
     card.classList.add("case-card");
+    // Jerarquía: el caso abre al veredicto (síntesis) → señales → esenciales del
+    // lead. El análisis profundo queda plegado, a un clic — disponible, no encima.
     const det = card.querySelector(".c-detail");
-    if (det) det.open = true; // en pantalla completa el análisis va siempre abierto
+    if (det) det.open = false;
     cardWrap.appendChild(card);
   }
   rebuild();
   loadMomentum(lead, momentumPanel, rebuild); // automático: detecta el momento en prensa
   loadFreshness(lead, freshPanel, rebuild); // automático: lee su web y sube la nota
 
+  // Jerarquía: la barra titula la EMPRESA (el sujeto de esta pantalla), no la
+  // marca CONNECT — que ya firma en el pie. Abres un caso y lees a quién llamas.
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
-    el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al valor</i>' })]),
+    el("div", { class: "case-subject" }, [
+      el("span", { class: "case-co", text: lead.company }),
+      el("span", { class: "case-co-sub", text: `${lead.subsector || lead.sector || ""}${lead.city ? " · " + lead.city : ""}` }),
+    ]),
     el("span", { class: "case-rank", text: `#${lead.ranking ?? "—"}` }),
   ]);
   const foot = el("div", { class: "case-foot" }, [

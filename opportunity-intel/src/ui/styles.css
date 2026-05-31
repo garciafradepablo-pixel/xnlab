@@ -1179,9 +1179,11 @@ button:disabled { cursor: not-allowed; }
 }
 .case-back { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; padding: 7px 16px; font-size: 13px; font-weight: 600; }
 .case-back:hover { border-color: var(--accent); }
-.case-brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
-.case-brand-t { font-weight: 800; letter-spacing: 1.5px; font-size: 14px; white-space: nowrap; }
-.case-brand-t i { font-style: italic; font-weight: 500; letter-spacing: .4px; color: var(--accent); font-size: 12px; }
+/* La barra del caso titula la empresa: nombre grande, contexto debajo, centrado
+   y recortado con elegancia si es largo. La marca CONNECT firma en el pie. */
+.case-subject { display: flex; flex-direction: column; align-items: center; min-width: 0; flex: 1 1 auto; line-height: 1.15; }
+.case-co { font-weight: 800; font-size: 16px; color: var(--ink); max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.case-co-sub { font-size: 11px; color: var(--ink-dim); letter-spacing: .03em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .case-rank { font-family: var(--mono); color: var(--ink-dim); font-size: 14px; flex: 0 0 auto; }
 
 .whale { display: inline-flex; flex: 0 0 auto; filter: drop-shadow(0 1px 5px rgba(74,158,255,.4)); }
@@ -1275,7 +1277,7 @@ button:disabled { cursor: not-allowed; }
   .case-card .c-ident h3 { font-size: 21px; }
   .case-card .c-detail[open] { grid-template-columns: 1fr; }
   .case-bar { padding: 10px 14px; }
-  .case-brand-t i { display: none; }
+  .case-co { font-size: 15px; }
 }
 
 /* ── EC · Eco — micrófono flotante + panel ────────────────────────────────── */
