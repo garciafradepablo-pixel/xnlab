@@ -95,7 +95,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const { action, name, password, color, token, targetName, role, avatar, invite } = await req.json().catch(() => ({}));
-    const nm = String(name || "").trim();
+    // Nombres de equipo: SIEMPRE en MAYÚSCULAS, espacios colapsados. Canónico.
+    const nm = String(name || "").trim().replace(/\s+/g, " ").toUpperCase();
     const nameLower = nm.toLowerCase();
 
     // list: nombres + colores + roles + avatar (no sensible).
@@ -136,6 +137,10 @@ Deno.serve(async (req) => {
     // usuario del workspace, exige una invitación válida (registro privado).
     if (action === "register") {
       if (nm.length < 2) return json({ ok: false, error: "El nombre debe tener al menos 2 caracteres." });
+      // Regla de equipo: NOMBRE + al menos un APELLIDO (dos palabras). En MAYÚSCULAS.
+      if (nm.split(" ").filter(Boolean).length < 2) {
+        return json({ ok: false, error: "Escribe tu NOMBRE y un APELLIDO (los dos)." });
+      }
       if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
       const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const existing = await chk.json();

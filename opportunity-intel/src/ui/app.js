@@ -203,7 +203,18 @@ function renderAuth() {
   const tab = state._authTab || "login";
   const msg = el("p", { class: "auth-msg" });
 
-  const nameI = el("input", { class: "auth-f", placeholder: "Usuario", autocomplete: "username" });
+  const nameI = el("input", {
+    class: "auth-f",
+    placeholder: tab === "login" ? "Usuario" : "NOMBRE Y APELLIDO",
+    autocomplete: "username",
+    style: "text-transform:uppercase",
+  });
+  // El nombre del equipo va siempre en MAYÚSCULAS: lo forzamos al teclear.
+  nameI.addEventListener("input", () => {
+    const p = nameI.selectionStart;
+    nameI.value = nameI.value.toUpperCase();
+    try { nameI.setSelectionRange(p, p); } catch { /* */ }
+  });
   const passI = el("input", { class: "auth-f", type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
 
   // Selector de color (solo al crear). Se muestran los 8 colores, pero los que

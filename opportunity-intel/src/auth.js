@@ -48,6 +48,12 @@ function hash(str) {
 
 const norm = (s) => String(s || "").trim().toLowerCase();
 
+// Nombre canónico de equipo: MAYÚSCULAS y espacios colapsados. El servidor
+// aplica lo mismo; aquí es para coherencia local y feedback inmediato.
+const canonName = (s) => String(s || "").trim().replace(/\s+/g, " ").toUpperCase();
+// Regla: nombre + al menos un apellido (dos palabras).
+const hasSurname = (s) => canonName(s).split(" ").filter(Boolean).length >= 2;
+
 // Paleta de colores de firma (distintos y legibles sobre fondo oscuro).
 export const SIGNATURE_COLORS = [
   "#4a9eff", // azul
@@ -87,8 +93,9 @@ export function nextFreeColor() {
  * El color es FIJO: una vez elegido, ese usuario siempre firma con él.
  */
 export function createUser(name, password, color) {
-  const n = String(name || "").trim();
+  const n = canonName(name);
   if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
+  if (!hasSurname(n)) return { ok: false, error: "Escribe tu NOMBRE y un APELLIDO (los dos)." };
   if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
   const users = getUsers();
   if (users.some((u) => norm(u.name) === norm(n))) return { ok: false, error: "Ya existe un usuario con ese nombre." };
@@ -131,8 +138,9 @@ function cacheUser(name, color, password, role, token, avatar) {
  * @returns {Promise<{ok, error?}>}
  */
 export async function createUserAsync(name, password, color, invite) {
-  const n = String(name || "").trim();
+  const n = canonName(name);
   if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
+  if (!hasSurname(n)) return { ok: false, error: "Escribe tu NOMBRE y un APELLIDO (los dos)." };
   if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
   const finalColor = color || nextFreeColor();
   try {
