@@ -843,7 +843,10 @@ function pipelineView() {
     el("p", { class: "hint", text: "Nº de leads en el corte final y su puntuación media por sector. Sirve para ver si falta cubrir algún objetivo del brief." }),
   ]);
 
-  const exports = el("div", { class: "exports" }, [
+  // Exportar = sacar la base de leads fuera de la app. Solo roles con permiso de
+  // export (admin/editor/analyst). Un vendedor/viewer trabaja DENTRO de la app:
+  // ve y llama, pero no se descarga la lista. Refuerzo real de "no roben leads".
+  const exports = allow("export") ? el("div", { class: "exports" }, [
     el("h3", { text: "Exportar lista final" }),
     el("div", { class: "export-btns" }, [
       el("button", { class: "btn", text: "CSV", onClick: () => xport.exportCSV(state.results.final, store.getTracking()) }),
@@ -851,7 +854,7 @@ function pipelineView() {
       el("button", { class: "btn", text: "Informe PDF", onClick: () => xport.exportPDF(state.results.final) }),
       el("button", { class: "btn", text: "Hoja de llamadas", onClick: () => xport.exportCallSheet(state.results.final) }),
     ]),
-  ]);
+  ]) : null;
 
   // Camino al dinero: el cierre comercial atribuible a Connect.
   const pulse = pipelinePulse(state.results.all, store.getTracking());
@@ -2711,9 +2714,11 @@ function learningView() {
 
   // Controles para compartir — hacen portable el registro de llamadas.
   blocks.push(el("div", { class: "share-bar" }, [
-    el("button", { class: "btn", text: "Exportar registro", onClick: () => {
+    // Exportar el registro completo es un volcado de la base: solo con permiso de
+    // export. El vendedor opera dentro de la app, no se lleva el archivo.
+    allow("export") ? el("button", { class: "btn", text: "Exportar registro", onClick: () => {
       xport.download(`registro-llamadas-${new Date().toISOString().slice(0,10)}.json`, store.exportState(), "application/json");
-    } }),
+    } }) : null,
     el("button", { class: "btn", text: "Importar registro", onClick: () => importPicker.click() }),
     importPickerEl(),
   ]));

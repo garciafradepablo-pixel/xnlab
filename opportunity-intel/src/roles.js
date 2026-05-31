@@ -6,24 +6,28 @@
 // cliente esconde lo que no puedes hacer (UX), pero el servidor devuelve 403 si
 // tu rol no tiene el permiso (seguridad real).
 //
-// Cuatro roles:
-//   admin   — gobierna: usuarios, roles, secretos, calibración crítica, borrado.
-//   editor  — opera: leads, CRM, discovery, enriquecimiento, follow-ups, cierres.
-//   viewer  — solo lectura: ranking, dossier, evidencias, playbook, estadísticas.
-//   analyst — lectura + estadísticas + export + auditoría. No edita CRM.
+// Cinco roles:
+//   admin    — gobierna: usuarios, roles, secretos, calibración crítica, borrado.
+//   editor   — opera: leads, CRM, discovery, enriquecimiento, follow-ups, cierres + export.
+//   vendedor — opera la llamada: marca resultados, abre webs y discovery, cierra;
+//              pero NO puede EXPORTAR (no se saca la base de leads), ni calibrar,
+//              ni borrar, ni gestionar equipo. Es "editor menos export".
+//   viewer   — solo lectura: ranking, dossier, evidencias, playbook, estadísticas.
+//   analyst  — lectura + estadísticas + export + auditoría. No edita CRM.
 //
 // Acciones (capabilities). "write" es la llave maestra de mutación de la mesa
 // compartida (CRM, notas, verificaciones, leads): el servidor la exige para
 // aceptar un `save` del estado compartido.
 // =============================================================================
 
-export const ROLES = ["admin", "editor", "viewer", "analyst"];
+export const ROLES = ["admin", "editor", "vendedor", "viewer", "analyst"];
 export const DEFAULT_ROLE = "editor"; // equipo pequeño y de confianza; admin puede bajar
 export const FALLBACK_ROLE = "viewer"; // rol desconocido → el más restrictivo
 
 export const ROLE_LABEL = {
   admin: "ADMIN",
   editor: "EDITOR",
+  vendedor: "VENDEDOR",
   viewer: "VIEWER",
   analyst: "ANALYST",
 };
@@ -38,6 +42,10 @@ const MATRIX = {
   editor: [
     "read", "write", "crm", "discover", "enrich", "followup", "close",
     "export", "stats",
+  ],
+  vendedor: [
+    "read", "write", "crm", "discover", "enrich", "followup", "close",
+    "stats",
   ],
   viewer: ["read", "stats"],
   analyst: ["read", "stats", "export", "audit"],
