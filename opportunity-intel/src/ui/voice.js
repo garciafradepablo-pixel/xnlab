@@ -258,3 +258,35 @@ function micSVG() {
   return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><line x1="12" y1="18" x2="12" y2="21"/></svg>';
 }
+
+// —— Dictado reutilizable ——————————————————————————————————————————————————————
+// Cablea un botón para dictar por voz en cualquier <textarea>/<input>, con
+// estado propio e independiente del grabador de Eco (no comparte el flujo de
+// mensajería). Sin servidor: Web Speech API del navegador. Si el navegador no
+// transcribe, deja el botón deshabilitado y se puede escribir a mano.
+// Import-safe en Node: SpeechRecognition solo se toca dentro del handler.
+export function attachDictation(field, btn) {
+  if (!field || !btn) return;
+  const Ctor = SR();
+  if (!Ctor) { btn.disabled = true; btn.title = "Tu navegador no transcribe voz (usa Chrome)."; return; }
+  let r = null, on = false, base = "", itm = "";
+  const stop = () => { on = false; try { r && r.stop(); } catch { /* ya parado */ } r = null; btn.classList.remove("on"); };
+  btn.addEventListener("click", () => {
+    if (on) { stop(); return; }
+    base = field.value ? field.value + " " : ""; itm = "";
+    r = new Ctor();
+    r.lang = "es-ES"; r.continuous = true; r.interimResults = true;
+    r.onresult = (ev) => {
+      itm = "";
+      for (let i = ev.resultIndex; i < ev.results.length; i++) {
+        const x = ev.results[i];
+        if (x.isFinal) base += x[0].transcript + " "; else itm += x[0].transcript;
+      }
+      field.value = (base + itm).replace(/\s+/g, " ").trimStart();
+      field.dispatchEvent(new Event("input")); // que el autosave del campo se entere
+    };
+    r.onerror = () => stop();
+    r.onend = () => { if (on) { try { r.start(); } catch { /* reinicio benigno */ } } };
+    try { r.start(); on = true; btn.classList.add("on"); } catch { /* sin micro */ }
+  });
+}

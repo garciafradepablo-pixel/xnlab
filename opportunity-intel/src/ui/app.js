@@ -6,7 +6,7 @@
 
 import { el, $, clear, esc } from "./dom.js";
 import { renderCard } from "./card.js";
-import { ensureEco } from "./voice.js";
+import { ensureEco, attachDictation } from "./voice.js";
 import * as posits from "./posits.js";
 import { runPipeline } from "../pipeline.js";
 import { scoreOpportunity } from "../scoring.js";
@@ -77,6 +77,7 @@ const ICONS = {
   phone: _svg('<path d="M6.5 4h3l1.4 4-2 1.4a12 12 0 0 0 5.7 5.7l1.4-2 4 1.4v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4z"/>'),
   id: _svg('<rect x="3" y="5" width="18" height="14" rx="2.4"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16a2.6 2.6 0 0 1 5 0M14.5 10h4M14.5 13.5h4"/>'),
   trash: _svg('<path d="M4 7h16M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7l1 12.5A1.5 1.5 0 0 0 9 21h6a1.5 1.5 0 0 0 1.5-1.4L17.5 7"/>'),
+  mic: _svg('<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>'),
   // Gadget glyphs — same line-stroke vocabulary as the chrome, so the
   // gamification strip stops mixing emoji with executive icons.
   flame: _svg('<path d="M12 3c.4 2.6 2 3.8 3.2 5.4A5 5 0 1 1 7 13.4c0-1.3.5-2.2 1.1-3 .7.9 1.6 1.2 2.4.9C9.6 9.6 10.4 7 12 3z"/>'),
@@ -556,6 +557,10 @@ function openProfile() {
   const notes = el("textarea", { class: "prof-notes", placeholder: "Tus notas privadas (solo en este dispositivo)…" });
   notes.value = getUserNotes(u.name);
   notes.addEventListener("input", () => setUserNotes(u.name, notes.value));
+  // Dictado por voz a las notas (manos libres tras una llamada). Aislado del
+  // flujo de Eco: solo escribe en este campo local.
+  const noteMic = el("button", { class: "btn prof-mic", html: icon("mic") + " Dictar", title: "Dictar la nota por voz (Chrome)" });
+  attachDictation(notes, noteMic);
 
   const base = String(location.href || "").split("?")[0].split("#")[0];
   const inviteBox = el("div", { class: "prof-invitebox" });
@@ -589,7 +594,10 @@ function openProfile() {
     ]),
     el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
     el("div", { class: "prof-sec" }, [
-      el("h4", { text: "Tus notas privadas" }),
+      el("div", { class: "prof-notes-head" }, [
+        el("h4", { text: "Tus notas privadas" }),
+        noteMic,
+      ]),
       el("p", { class: "config-note", text: "Solo en este dispositivo. No se comparten ni suben al servidor." }),
       notes,
     ]),
