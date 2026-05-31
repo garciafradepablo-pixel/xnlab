@@ -375,6 +375,33 @@ function visibleOpps() {
 
 // ---- Render -----------------------------------------------------------------
 
+// Barra de "lead enfocado": cuando filters.search coincide EXACTAMENTE con
+// una empresa (es lo que dejan los clics de fila/tarjeta, que fijan
+// search = company), surge una tira de contexto bajo la nav. Conecta el
+// trabajo: el mismo lead se sigue entre las vistas que honran el filtro
+// (Oportunidad/cards y Ranking/table), con la ficha a un clic. No toca el
+// modelo de datos ni los handlers — solo lee estado que ya existe.
+let _fbShown = false;
+function focusBar() {
+  const q = (state.filters.search || "").trim().toLowerCase();
+  const all = state.results?.all || [];
+  const matches = q ? all.filter((o) => (o.company || "").toLowerCase() === q) : [];
+  if (matches.length !== 1) { _fbShown = false; return null; }
+  const o = matches[0];
+  const fresh = !_fbShown; _fbShown = true; // anima solo al aparecer, no en cada render
+  const jump = (view, label) => el("button", {
+    class: `fb-jump ${state.view === view ? "active" : ""}`, text: label, onClick: () => goView(view),
+  });
+  return el("div", { class: `focusbar${fresh ? " fb-fresh" : ""}` }, [
+    el("span", { class: "fb-dot" }),
+    el("span", { class: "fb-name", text: o.company }),
+    o.city ? el("span", { class: "fb-city", text: o.city }) : null,
+    el("span", { class: "fb-track" }, [jump("cards", "Oportunidad"), jump("table", "Ranking")]),
+    el("button", { class: "fb-open", html: icon("id") + " Ver ficha", onClick: () => openCase(o.id) }),
+    el("button", { class: "fb-x", title: "Quitar foco", text: "✕", onClick: () => { state.filters.search = ""; render(); } }),
+  ]);
+}
+
 function render() {
   clear(root);
   // Shell fijo: cabecera + tabs pegados arriba, y UN área de scroll para el
@@ -382,6 +409,8 @@ function render() {
   // de pantalla (antes el scroll del body se quedaba a medias entre vistas).
   root.appendChild(header());
   root.appendChild(tabs());
+  const fb = focusBar();
+  if (fb) root.appendChild(fb); // contexto: el lead enfocado, seguible entre vistas
   const scroller = el("div", { class: "scroll" });
   const main = el("div", { class: "main" });
   // Configuración como BARRA plegable arriba del contenido (a todo el ancho),

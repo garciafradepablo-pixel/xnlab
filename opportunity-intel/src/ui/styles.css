@@ -124,6 +124,30 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .zones { border-bottom: 1px solid var(--line); }
 .navwrap .subtabs { margin-top: -1px; }
 
+/* ---- Barra de "lead enfocado": contexto seguible entre vistas ---- */
+.focusbar { display: flex; align-items: center; gap: 10px; flex: 0 0 auto; padding: 8px 22px;
+  background: var(--panel-2); border-bottom: 1px solid var(--line); font-size: 12px;
+  overflow-x: auto; scrollbar-width: none; }
+.focusbar::-webkit-scrollbar { display: none; }
+.focusbar.fb-fresh { animation: fbIn .26s cubic-bezier(.2,.8,.2,1); }
+@keyframes fbIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: none; } }
+.fb-dot { width: 7px; height: 7px; border-radius: 999px; background: var(--accent); flex: 0 0 auto;
+  box-shadow: 0 0 0 3px rgba(203,162,74,.15); }
+.fb-name { font-weight: 700; color: var(--ink); white-space: nowrap; }
+.fb-city { color: var(--ink-faint); white-space: nowrap; }
+.fb-track { display: flex; gap: 2px; margin-left: 4px; flex: 0 0 auto; }
+.fb-jump { background: transparent; border: 1px solid transparent; color: var(--ink-dim); border-radius: 999px;
+  padding: 4px 12px; font-size: 12px; white-space: nowrap; transition: color .14s ease, background-color .14s ease, border-color .14s ease; }
+.fb-jump:hover { color: var(--ink); background: rgba(255,255,255,.04); }
+.fb-jump.active { color: var(--accent); border-color: var(--line-2); background: var(--panel); }
+.fb-open { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; flex: 0 0 auto;
+  background: transparent; border: 1px solid var(--line); color: var(--ink-dim); border-radius: 8px;
+  padding: 5px 11px; font-size: 12px; white-space: nowrap; transition: color .14s ease, border-color .14s ease; }
+.fb-open svg { width: 15px; height: 15px; }
+.fb-open:hover { color: var(--accent); border-color: var(--accent); }
+.fb-x { background: transparent; border: 0; color: var(--ink-faint); font-size: 13px; padding: 4px 6px; flex: 0 0 auto; }
+.fb-x:hover { color: var(--ink); }
+
 /* ---- Paleta de comandos (⌘K) ---- */
 .cmd-overlay { position: fixed; inset: 0; z-index: 80; background: rgba(0,0,0,.5);
   backdrop-filter: blur(4px); display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px; }
