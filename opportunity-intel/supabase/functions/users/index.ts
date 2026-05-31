@@ -76,6 +76,21 @@ async function issueToken(id: string): Promise<string> {
   return token;
 }
 
+// Token de sesión que NO rompe sesiones existentes: si el usuario ya tiene un
+// token vigente, lo reutiliza (solo refresca caducidad). Solo emite uno nuevo si
+// no hay o caducó. Antes el login rotaba el token y dejaba "Solo local" a las
+// demás pestañas/dispositivos del mismo usuario.
+async function sessionToken(id: string, current: string | null, currentAt: string | null): Promise<string> {
+  if (current && !tokenExpired(currentAt)) {
+    await rest(`connect_users?id=eq.${encodeURIComponent(id)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ token_at: new Date().toISOString() }),
+    });
+    return current;
+  }
+  return await issueToken(id);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
@@ -166,13 +181,14 @@ Deno.serve(async (req) => {
 
     // login: verifica, emite token, devuelve rol.
     if (action === "login") {
-      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt,token,token_at&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const rows = await res.json();
       const u = Array.isArray(rows) ? rows[0] : null;
       if (!u) return json({ ok: false, error: "Usuario no encontrado." });
       const h = await sha256(`${u.salt}::${password}`);
       if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
-      const tok = await issueToken(u.id);
+      // Reutiliza token vigente (no rota) → sesión estable entre pestañas/dispositivos.
+      const tok = await sessionToken(u.id, u.token || null, u.token_at || null);
       return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, token: tok } });
     }
 
