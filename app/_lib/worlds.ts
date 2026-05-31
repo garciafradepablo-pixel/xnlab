@@ -81,8 +81,8 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.04], breatheDuration: 7.5, drift: 4, pulse: "slow" },
     title: { en: "Product", es: "Producto" },
     pitch: {
-      en: "We direct app, hardware and software as a sequence of atmospheres — first launch, motion, empty states, micro-interactions — until daily use carries the same signature as the campaign.",
-      es: "Dirigimos app, hardware y software como una secuencia de atmósferas — primera apertura, animación, estados vacíos, micro-interacciones — hasta que el uso diario lleva la misma firma que la campaña.",
+      en: "App, hardware and software directed as one atmosphere — from the first launch to the daily tap.",
+      es: "App, hardware y software dirigidos como una sola atmósfera — del primer arranque al uso diario.",
     },
     outcome: {
       en: "When the first eight seconds of the app match the brand, daily use becomes the strongest advertising the company has.",
@@ -163,8 +163,8 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.03], breatheDuration: 8.5, drift: 6, pulse: "wave" },
     title: { en: "Owned Digital", es: "Digital Propio" },
     pitch: {
-      en: "We compose web, marketing site, account and dashboard as a single editorial system — one tempo, one restraint, one room read through many doors.",
-      es: "Componemos web, sitio editorial, cuenta y dashboard como un solo sistema editorial — un tempo, una contención, una sala que se lee a través de muchas puertas.",
+      en: "Web, account and dashboard as one editorial system — one tempo, one room read through many doors.",
+      es: "Web, cuenta y dashboard como un solo sistema editorial — un tempo, una sala leída por muchas puertas.",
     },
     outcome: {
       en: "The dashboard the customer opens forty times a week becomes the room they remember the brand from.",
@@ -245,8 +245,8 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.05], breatheDuration: 3.4, drift: 7, pulse: "vibrate" },
     title: { en: "Retail & Physical", es: "Retail y Físico" },
     pitch: {
-      en: "We choreograph stores, branches, pop-ups and events — threshold, light, material, sound, staff register — so the body reads the brand before the eye finishes the sign.",
-      es: "Coreografiamos tiendas, sucursales, pop-ups y eventos — umbral, luz, material, sonido, registro del personal — para que el cuerpo lea la marca antes de que el ojo termine de leer el rótulo.",
+      en: "Stores, branches, pop-ups — threshold, light, material — the body reads the brand before the eye reads the sign.",
+      es: "Tiendas, sucursales, pop-ups — umbral, luz, material — el cuerpo lee la marca antes de que el ojo lea el rótulo.",
     },
     outcome: {
       en: "The first three meters inside the door decide what the customer tells a friend the next morning.",
@@ -327,8 +327,8 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.018], breatheDuration: 10, drift: 2, pulse: "still" },
     title: { en: "Customer Operations", es: "Operaciones de Cliente" },
     pitch: {
-      en: "We rewrite onboarding, support and post-sale in the studio voice — templates, response tempo, escalation rhythm — until the brand answers the same on Sunday at eleven as on Monday at ten.",
-      es: "Reescribimos onboarding, soporte y postventa en la voz del estudio — plantillas, tempo de respuesta, ritmo de escalado — hasta que la marca responde igual el domingo a las once que el lunes a las diez.",
+      en: "Onboarding, support and post-sale in the studio voice — the brand answers the same on Sunday at eleven as on Monday at ten.",
+      es: "Onboarding, soporte y postventa en la voz del estudio — la marca responde igual el domingo a las once que el lunes a las diez.",
     },
     outcome: {
       en: "Customers remember the brand that answered with care at eleven on a Sunday night. And that memory renews the contract.",
@@ -409,8 +409,8 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.012], breatheDuration: 14, drift: 1, pulse: "still" },
     title: { en: "Communication", es: "Comunicación" },
     pitch: {
-      en: "We direct paid, owned and earned communication as one editorial atmosphere — fewer pieces, slower tempo, every line signed by the same hand.",
-      es: "Dirigimos la comunicación pagada, propia y ganada como una sola atmósfera editorial — menos piezas, tempo más lento, cada línea firmada por la misma mano.",
+      en: "Paid, owned and earned as one editorial atmosphere — fewer pieces, slower tempo, one hand signing.",
+      es: "Pagado, propio y ganado como una sola atmósfera editorial — menos piezas, tempo más lento, una sola firma.",
     },
     outcome: {
       en: "Restraint earns the next read instead of demanding it. The brand stops being noise and starts being expected.",
@@ -491,8 +491,8 @@ export const worlds: World[] = [
     motion: { breatheScale: [1, 1.06], breatheDuration: 5, drift: 5, pulse: "refract" },
     title: { en: "Community & Culture", es: "Comunidad y Cultura" },
     pitch: {
-      en: "We build a fixed core and a refractive surface — three sentences, two gestures, one acoustic — so the thesis travels intact while expression mutates city by city, partner by partner.",
-      es: "Construimos un núcleo fijo y una superficie refractiva — tres frases, dos gestos, una acústica — para que la tesis viaje intacta mientras la expresión muta ciudad a ciudad, socio a socio.",
+      en: "A fixed core and a refractive surface — the thesis travels intact while the expression mutates city by city.",
+      es: "Un núcleo fijo y una superficie refractiva — la tesis viaja intacta mientras la expresión muta ciudad a ciudad.",
     },
     outcome: {
       en: "The brand carried into rooms it does not own becomes the brand customers describe as inevitable.",
