@@ -53,12 +53,6 @@ h1, h2, h3, p {
   border-radius: 2px;
 }
 
-/* Cinematic selection colour */
-::selection {
-  background: rgba(230, 205, 165, 0.32);
-  color: white;
-}
-
 /* Skip-to-content — visually hidden until focused by keyboard navigation */
 .xn-skip {
   position: fixed;
