@@ -260,7 +260,7 @@ function renderAuth() {
   const tab = state._authTab || "login";
   const msg = el("p", { class: "auth-msg" });
 
-  const nameI = el("input", { class: "auth-f", placeholder: "Usuario", autocomplete: "username" });
+  const nameI = el("input", { class: "auth-f", placeholder: tab === "create" ? "Nombre y apellido" : "Usuario", autocomplete: "username" });
   const passI = el("input", { class: "auth-f", type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
 
   // Selector de color (solo al crear). Se muestran los 8 colores, pero los que
@@ -299,6 +299,9 @@ function renderAuth() {
     if (!chosenColor) { msg.textContent = "No quedan colores de firma libres. Pide a un admin que libere uno."; return; }
     const nm = String(nameI.value || "").trim();
     if (nm.length < 2) { msg.textContent = "El nombre debe tener al menos 2 caracteres."; return; }
+    // Equipo: NOMBRE + al menos un APELLIDO. Se avisa aquí, antes de la ronda de
+    // etiquetas, para no rebotar contra el servidor tras elegirlas (mismo criterio).
+    if (nm.replace(/\s+/g, " ").split(" ").filter(Boolean).length < 2) { msg.textContent = "Escribe tu NOMBRE y un APELLIDO (los dos)."; return; }
     if (String(passI.value || "").length < 4) { msg.textContent = "La contraseña debe tener al menos 4 caracteres."; return; }
     // Ronda de etiquetas: tras nombre y contraseña, cada uno decide qué etiquetas
     // lo definen ANTES de crear la cuenta (se guardan en el registro).
