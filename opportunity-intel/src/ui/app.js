@@ -77,6 +77,16 @@ const ICONS = {
   phone: _svg('<path d="M6.5 4h3l1.4 4-2 1.4a12 12 0 0 0 5.7 5.7l1.4-2 4 1.4v3a2 2 0 0 1-2.2 2A16 16 0 0 1 4.5 6.2 2 2 0 0 1 6.5 4z"/>'),
   id: _svg('<rect x="3" y="5" width="18" height="14" rx="2.4"/><circle cx="9" cy="11" r="2"/><path d="M6.5 16a2.6 2.6 0 0 1 5 0M14.5 10h4M14.5 13.5h4"/>'),
   trash: _svg('<path d="M4 7h16M9.5 7V5.5A1.5 1.5 0 0 1 11 4h2a1.5 1.5 0 0 1 1.5 1.5V7M6.5 7l1 12.5A1.5 1.5 0 0 0 9 21h6a1.5 1.5 0 0 0 1.5-1.4L17.5 7"/>'),
+  // Gadget glyphs — same line-stroke vocabulary as the chrome, so the
+  // gamification strip stops mixing emoji with executive icons.
+  flame: _svg('<path d="M12 3c.4 2.6 2 3.8 3.2 5.4A5 5 0 1 1 7 13.4c0-1.3.5-2.2 1.1-3 .7.9 1.6 1.2 2.4.9C9.6 9.6 10.4 7 12 3z"/>'),
+  bolt: _svg('<path d="M13 3L5.5 13H11l-1 8 8.5-11H13z"/>'),
+  pin: _svg('<path d="M9 4h6l-.8 5 2.8 2.6V14H7v-2.4L9.8 9z"/><path d="M12 14v6"/>'),
+  rocket: _svg('<path d="M14.5 4.2c2.7.9 4.4 2.6 5.3 5.3-2.7 2-5 2.8-7.3 5l-3-3c2.2-2.3 3-4.6 5-7.3z"/><path d="M9 15l-3 3M11 17l-2.2 2.2M7 13l-2.2 2.2"/>'),
+  // Zone glyphs (nav level 1).
+  today: _svg('<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/>'),
+  target: _svg('<path d="M20.8 12a8.8 8.8 0 1 1-4-7.4"/><path d="M8.8 11.6l3 2.8L21 5.6"/>'),
+  book: _svg('<path d="M5 5.6A1.6 1.6 0 0 1 6.6 4H18a1 1 0 0 1 1 1v13.2a1 1 0 0 1-1 1H6.6A1.6 1.6 0 0 0 5 20.8z"/><path d="M9 4v15.8"/>'),
 };
 const icon = (name) => ICONS[name] || "";
 const iconEl = (name, cls = "") => el("span", { class: `ic ${cls}`.trim(), html: icon(name) });
@@ -377,6 +387,7 @@ function render() {
 function goView(view) {
   state.view = view;
   state._resetScroll = true;
+  state._navAnim = true; // anima el indicador activo solo en navegación real
   render();
 }
 
@@ -392,7 +403,7 @@ function muellePulse() {
     title: `${n ? `${n} posit${n === 1 ? "" : "s"} sin ver · ` : ""}Racha: ${days} día${days === 1 ? "" : "s"} seguidos en la app`,
     onClick: () => goView("muelle"),
   }, [
-    el("span", { class: "pulse-flame", text: "🔥" }),
+    iconEl("flame", "pulse-flame"),
     el("span", { class: "pulse-streak", text: String(days) }),
     n ? el("span", { class: "pulse-dot", text: String(n) }) : null,
   ]);
@@ -553,15 +564,15 @@ function openProfile() {
 // → saber. «Saber» reúne lo que el equipo aprende y lo que estudia (antes dos
 // zonas sueltas, Memoria y Formación): menos botones arriba, mismo contenido.
 const ZONES = [
-  { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
-  { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
-  { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
+  { key: "work", label: "Trabajar", icon: "today", views: [["today", "Hoy"]] },
+  { key: "capture", label: "Captar", icon: "radar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
+  { key: "close", label: "Cerrar", icon: "target", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
+  { key: "muelle", label: "Muelle", icon: "pin", views: [["muelle", "Posits"]] },
+  { key: "know", label: "Saber", icon: "book", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
 function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
-  if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", views: [["users", "Usuarios"]] });
+  if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", icon: "id", views: [["users", "Usuarios"]] });
   return z;
 }
 function zoneOfView(view) {
@@ -572,14 +583,16 @@ function zoneOfView(view) {
 function tabs() {
   const zs = zonesForUser();
   const activeZone = zoneOfView(state.view);
+  // Anima el indicador activo SOLO al navegar de verdad, no en re-renders
+  // incidentales (sync, latido del muelle), para que la línea no parpadee.
+  const anim = state._navAnim; state._navAnim = false;
   const zoneBar = el("nav", { class: "zones" }, [
     ...zs.map((z) => el("button", {
       class: `zone ${z.key === activeZone ? "active" : ""}`,
-      text: z.label,
       // Entrar a una zona: si ya estás en una de sus vistas, te quedas; si no,
       // vas a la primera.
       onClick: () => goView(z.views.some(([k]) => k === state.view) ? state.view : z.views[0][0]),
-    })),
+    }, [iconEl(z.icon, "zone-ic"), el("span", { text: z.label })])),
     el("button", { class: "zone zone-cmd", title: "Comandos (⌘K / Ctrl+K)", text: "⌘K", onClick: openCommand }),
   ]);
   const zone = zs.find((z) => z.key === activeZone);
@@ -587,7 +600,7 @@ function tabs() {
     ? el("nav", { class: "subtabs" }, zone.views.map(([key, label]) =>
         el("button", { class: `tab ${state.view === key ? "active" : ""}`, text: label, onClick: () => goView(key) })))
     : null;
-  return el("div", { class: "navwrap" }, [zoneBar, subs]);
+  return el("div", { class: `navwrap${anim ? " anim" : ""}` }, [zoneBar, subs]);
 }
 
 // Paleta de comandos (⌘K): saltar a cualquier vista, buscar una empresa (abre su
@@ -797,9 +810,9 @@ function todayPulseStrip(me) {
   const unread = posits.unread(me);
   const rec = posits.lastRecognition(me);
 
-  const cell = (cls, glyph, big, label, onClick) =>
+  const cell = (cls, iconName, big, label, onClick) =>
     el("button", { class: `tp-cell ${cls}`, onClick }, [
-      el("span", { class: "tp-glyph", text: glyph }),
+      iconEl(iconName, "tp-glyph"),
       el("div", { class: "tp-text" }, [
         el("span", { class: "tp-big", text: String(big) }),
         el("span", { class: "tp-label", text: label }),
@@ -807,13 +820,13 @@ function todayPulseStrip(me) {
     ]);
 
   const cells = [
-    cell("tp-streak", "🔥", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today")),
-    cell("tp-done", "⚡", done, "acciones hoy", () => goView("cards")),
-    cell(`tp-inbox${unread ? " on" : ""}`, "📌", unread, "posits sin ver", () => goView("muelle")),
+    cell("tp-streak", "flame", days, `día${days === 1 ? "" : "s"} de racha`, () => goView("today")),
+    cell("tp-done", "bolt", done, "acciones hoy", () => goView("cards")),
+    cell(`tp-inbox${unread ? " on" : ""}`, "pin", unread, "posits sin ver", () => goView("muelle")),
   ];
   if (rec) {
     cells.push(el("button", { class: "tp-cell tp-rec", title: `${rec.from} te potenció`, onClick: () => goView("muelle") }, [
-      el("span", { class: "tp-glyph", text: rec.glyph || "🚀" }),
+      rec.glyph ? el("span", { class: "tp-glyph tp-glyph-emoji", text: rec.glyph }) : iconEl("rocket", "tp-glyph"),
       el("div", { class: "tp-text" }, [
         el("span", { class: "tp-big tp-rec-from", text: rec.from }),
         el("span", { class: "tp-label", text: "te potencia" }),
@@ -848,7 +861,7 @@ function usersView() {
   const me = auth.currentUser();
   const wrap = el("div", {}, [
     el("h2", { text: "Usuarios y roles" }),
-    el("p", { class: "hint", text: "Cambia el rol de cada miembro. El cambio se aplica en el servidor (no solo aquí): un VIEWER no podrá modificar la mesa aunque manipule su navegador. Los cambios se reflejan en la próxima carga del afectado." }),
+    el("p", { class: "hint", title: "El cambio se aplica en el servidor, no solo aquí: un VIEWER no podrá modificar la mesa aunque manipule su navegador. Se refleja en la próxima carga del afectado.", text: "Cambia el rol de cada miembro · se aplica en el servidor." }),
   ]);
 
   const list = el("div", { class: "users-list" });
@@ -904,7 +917,7 @@ function pipelineView() {
       el("h2", { text: "Embudo de candidatos" }),
       el("div", { class: "pipe-summary" }, [
         el("p", { html: "<b>Aún no hay leads investigados.</b> El piloto de datos reales viene vacío a propósito — un lead solo se añade cuando tiene al menos tres evidencias citadas y verificables." }),
-        el("p", { class: "hint", text: "Rellénalo con los conectores en vivo (node bin/run.mjs --enrich) o con investigación manual siguiendo el protocolo en src/data/researched.js. Cambia el selector de Dataset a ‘Demo’ para explorar el sistema ahora." }),
+        el("p", { class: "hint", title: "Conectores en vivo: node bin/run.mjs --enrich · o investigación manual siguiendo el protocolo en src/data/researched.js.", text: "Aún sin datos reales. Cárgalos con los conectores, o usa el dataset ‘Demo’ para explorar ya." }),
       ]),
     ]);
   }
