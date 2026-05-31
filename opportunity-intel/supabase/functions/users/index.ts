@@ -1,7 +1,9 @@
 // =============================================================================
 // users — Cuentas durables + RBAC (Supabase).
 //
-// Acciones: register, login, me, list, setPassword, setRole.
+// Acciones: register, login, me, list, setPassword, setRole, setAvatar,
+// createInvite + backend de equipo (setTier, setUserTags, setTags, tagCatalog,
+// addTag, removeTag).
 // - Contraseñas: SHA-256(salt + "::" + password), sal por usuario. El cliente
 //   nunca ve los hashes.
 // - Sesión: al register/login se emite un TOKEN opaco (no es la service_role
@@ -9,6 +11,7 @@
 //   servidor resuelve token → usuario/rol y decide permisos.
 // - Roles: admin/editor/viewer/analyst. El primer usuario del workspace nace
 //   admin; el resto editor. setRole es solo-admin y protege al último admin.
+// - Nombres de equipo: SIEMPRE en MAYÚSCULAS y con NOMBRE + APELLIDO (canónico).
 //
 // verify_jwt=false: la publishable no es un JWT; la autenticación es propia.
 // =============================================================================
@@ -119,10 +122,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
     const { action, name, password, color, token, targetName, role, avatar, invite, tags, label, tier } = await req.json().catch(() => ({}));
-    const nm = String(name || "").trim();
+    // Nombres de equipo: SIEMPRE en MAYÚSCULAS, espacios colapsados. Canónico.
+    const nm = String(name || "").trim().replace(/\s+/g, " ").toUpperCase();
     const nameLower = nm.toLowerCase();
 
-    // list: nombres + colores + roles + avatar + etiquetas (no sensible).
+    // list: nombres + colores + roles + avatar + etiquetas + nivel (no sensible).
     if (action === "list") {
       const res = await rest(`connect_users?select=name,color,role,avatar,tags,tier`);
       const rows = await res.json();
@@ -245,6 +249,10 @@ Deno.serve(async (req) => {
     // usuario del workspace, exige una invitación válida (registro privado).
     if (action === "register") {
       if (nm.length < 2) return json({ ok: false, error: "El nombre debe tener al menos 2 caracteres." });
+      // Regla de equipo: NOMBRE + al menos un APELLIDO (dos palabras). En MAYÚSCULAS.
+      if (nm.split(" ").filter(Boolean).length < 2) {
+        return json({ ok: false, error: "Escribe tu NOMBRE y un APELLIDO (los dos)." });
+      }
       if (String(password || "").length < 4) return json({ ok: false, error: "La contraseña debe tener al menos 4 caracteres." });
       const chk = await rest(`connect_users?select=id&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const existing = await chk.json();
