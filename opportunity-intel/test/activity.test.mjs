@@ -1,7 +1,6 @@
 // Tests del feed de actividad (derivado de engagements + CRM): orden temporal,
 // tipos de evento, resolución de nombre de lead, límite y descarte de ruido.
-import { buildActivity } from "../src/activity.js";
-
+import { buildActivity, weeklyDigest } from "../src/activity.js";
 let passed = 0, failed = 0;
 function ok(c, m) { if (c) { passed++; } else { failed++; console.error("FAIL:", m); } }
 function eq(a, b, m) { ok(a === b, `${m} (got ${JSON.stringify(a)}, want ${JSON.stringify(b)})`); }
@@ -67,6 +66,26 @@ const leadName = (id) => ({ L1: "La Casa del Limonero" }[id] || "");
 
 {
   eq(buildActivity({}).length, 0, "sin datos → feed vacío");
+}
+
+// ---- resumen semanal --------------------------------------------------------
+{
+  const NOW = Date.parse("2026-05-10T12:00:00Z");
+  const d = (daysAgo) => new Date(NOW - daysAgo * 86400000).toISOString();
+  const feed = [
+    { at: d(1), by: "Pablo", kind: "critical" },
+    { at: d(2), by: "Pablo", kind: "log" },
+    { at: d(3), by: "Javi", kind: "critical" },
+    { at: d(6), by: "Javi", kind: "crm" },
+    { at: d(10), by: "Pablo", kind: "critical" }, // fuera de la ventana de 7 días
+  ];
+  const w = weeklyDigest(feed, NOW);
+  eq(w.total, 4, "cuenta solo los últimos 7 días");
+  eq(w.critical, 2, "dos retos de crítica esta semana");
+  eq(w.byKind.critical, 2, "desglose por tipo");
+  eq(w.byPerson.Pablo.total, 2, "total por persona (dentro de la ventana)");
+  eq(w.byPerson.Javi.critical, 1, "crítica por persona");
+  eq(weeklyDigest([], NOW).total, 0, "feed vacío → resumen en cero");
 }
 
 console.log(`activity.test: ${passed} passed, ${failed} failed`);

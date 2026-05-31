@@ -1809,3 +1809,22 @@ a.commit-chip:hover { text-decoration: none; filter: brightness(1.15); }
 }
 .crit-weekly .crit-prompt { margin-top: 0; }
 .act-tag.tag-critical { color: var(--accent); border-color: rgba(203,162,74,.35); }
+
+/* Resumen semanal del equipo (cabecera de Actividad) ------------------------- */
+.week-digest {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px;
+  margin: 4px 0 16px; padding: 14px 16px; border-radius: var(--radius);
+  background: var(--panel); border: 1px solid var(--line); box-shadow: var(--hl);
+}
+.week-digest-main { display: flex; gap: 26px; }
+.week-stat { display: flex; flex-direction: column; gap: 2px; }
+.week-n { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; }
+.week-l { font-size: 11px; color: var(--ink-dim); }
+.week-crit .week-n { color: var(--accent); }
+.week-crit.muted .week-n { color: var(--ink-faint); }
+.week-people { display: flex; flex-wrap: wrap; gap: 8px; }
+.week-person {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--ink);
+  background: var(--panel-2); border: 1px solid var(--line); border-radius: 20px; padding: 4px 11px;
+}
+.week-person-crit { color: var(--accent); font-weight: 700; }

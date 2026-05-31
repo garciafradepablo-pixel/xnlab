@@ -53,3 +53,27 @@ export function buildActivity({ engagements = [], tracking = {}, growth = {}, le
     .sort((a, b) => String(b.at).localeCompare(String(a.at)))
     .slice(0, Math.max(0, limit));
 }
+
+/**
+ * Resumen de los últimos 7 días a partir del feed: total de eventos, desglose
+ * por tipo, por persona, y el conteo de retos de pensamiento crítico (destacado
+ * aparte porque es lo que queremos ver crecer).
+ */
+export function weeklyDigest(feed = [], now = Date.now()) {
+  const since = now - 7 * 86400000;
+  const byKind = {}, byPerson = {};
+  let total = 0, critical = 0;
+  for (const x of feed) {
+    const t = Date.parse(x.at);
+    if (!t || t < since) continue;
+    total++;
+    byKind[x.kind] = (byKind[x.kind] || 0) + 1;
+    if (x.kind === "critical") critical++;
+    if (x.by) {
+      const p = byPerson[x.by] || (byPerson[x.by] = { total: 0, critical: 0 });
+      p.total++;
+      if (x.kind === "critical") p.critical++;
+    }
+  }
+  return { total, critical, byKind, byPerson };
+}

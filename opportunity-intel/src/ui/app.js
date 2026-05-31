@@ -53,7 +53,7 @@ import * as auth from "../auth.js";
 import * as presence from "../presence.js";
 import * as realtime from "../realtime.js";
 import { PROJECT_REF, PUBLISHABLE_KEY } from "../statesync.js";
-import { buildActivity } from "../activity.js";
+import { buildActivity, weeklyDigest } from "../activity.js";
 import * as agenda from "../agenda.js";
 import * as growth from "../growth.js";
 import * as xport from "../export.js";
@@ -2243,6 +2243,23 @@ function activityView() {
     return el("div", {}, [head, el("p", { class: "empty", text: "Aún no hay actividad. En cuanto firméis un lead, creéis un proyecto o anotéis en una bitácora, aparecerá aquí." })]);
   }
 
+  const w = weeklyDigest(feed);
+  const people = Object.entries(w.byPerson).sort((a, b) => b[1].total - a[1].total);
+  const digest = el("div", { class: "week-digest" }, [
+    el("div", { class: "week-digest-main" }, [
+      el("div", { class: "week-stat" }, [el("span", { class: "week-n", text: String(w.total) }), el("span", { class: "week-l", text: "esta semana" })]),
+      el("div", { class: `week-stat week-crit ${w.critical ? "" : "muted"}` }, [
+        el("span", { class: "week-n", text: `🧠 ${w.critical}` }),
+        el("span", { class: "week-l", text: "retos de pensamiento crítico" }),
+      ]),
+    ]),
+    people.length ? el("div", { class: "week-people" }, people.map(([name, p]) => el("span", { class: "week-person", title: `${p.total} eventos · ${p.critical} de crítica` }, [
+      el("span", { class: "by-dot", style: `background:${auth.colorOf(name)}` }),
+      `${name} ${p.total}`,
+      p.critical ? el("span", { class: "week-person-crit", text: `🧠${p.critical}` }) : null,
+    ]))) : null,
+  ]);
+
   const rows = feed.map((a) => el("div", { class: "act-row" }, [
     el("span", { class: "act-dot", style: `background:${a.by ? auth.colorOf(a.by) : "var(--line-2)"}`, title: a.by || "" }),
     el("div", { class: "act-body" }, [
@@ -2257,7 +2274,7 @@ function activityView() {
     el("span", { class: "act-when", text: fmtAgo(a.at) }),
   ]));
 
-  return el("div", {}, [head, el("div", { class: "act-feed" }, rows)]);
+  return el("div", {}, [head, digest, el("div", { class: "act-feed" }, rows)]);
 }
 
 // ---- Agenda (personal + común, con vinculación) -----------------------------

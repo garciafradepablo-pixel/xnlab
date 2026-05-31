@@ -320,7 +320,9 @@ capas, todas sobre el canal de sync existente (cero infra nueva, cero deps):
   tarjeta y un aviso «Javi también está aquí — cuidado al editar a la vez».
 - **Actividad del equipo** (`Memoria → Actividad`). Feed cronológico derivado del
   trabajo real (proyectos creados, notas/commits de bitácora, hitos cumplidos,
-  movimientos del CRM), firmado por color. No hay que registrar nada —
+  movimientos del CRM y **retos de pensamiento crítico**), firmado por color. Lo
+  encabeza un **resumen semanal**: eventos de los últimos 7 días, retos de
+  crítica destacados y desglose por persona. No hay que registrar nada —
   [`src/activity.js`](./src/activity.js), puro y testeado.
 - **Sonido de aviso.** Un timbre suave (WebAudio, sin assets) al llegar un
   cambio remoto. Apagado por defecto, con interruptor en la cabecera, recordado
