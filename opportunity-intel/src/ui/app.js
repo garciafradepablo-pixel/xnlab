@@ -915,6 +915,37 @@ function rerenderResults() {
 
 const eurFmt = (n) => `${Number(n || 0).toLocaleString("es-ES")} €`;
 
+// Centro de mando del día: UNA acción ahora (lo más directo) + la ruta del día
+// clicable (te lleva de la mano). Las cifras de motivación las da el pulso debajo.
+function commandCenter(calls) {
+  const top = calls[0];
+  const now = top
+    ? el("div", { class: "cc-now" }, [
+        el("span", { class: "cc-now-lbl", text: "Ahora" }),
+        el("div", { class: "cc-now-main" }, [
+          el("div", { class: "cc-now-co", text: `Llama a ${top.company}` }),
+          el("div", { class: "cc-now-why", text: top.firstLever || top.whyNow || [sectorByKey(top.sector)?.label, top.city].filter(Boolean).join(" · ") || "Tu mejor oportunidad ahora." }),
+        ]),
+        el("button", { class: "btn-primary cc-go", html: icon("phone") + " Abrir y llamar", onClick: () => { state.filters.search = top.company; goView("cards"); } }),
+      ])
+    : el("div", { class: "cc-now cc-now-empty" }, [
+        el("span", { class: "cc-now-lbl", text: "Ahora" }),
+        el("div", { class: "cc-now-main" }, [
+          el("div", { class: "cc-now-co", text: "Nada en cola para llamar" }),
+          el("div", { class: "cc-now-why", text: "Capta empresas y llena el día." }),
+        ]),
+        el("button", { class: "btn-primary cc-go", html: icon("search") + " Captar", onClick: () => goView("search") }),
+      ]);
+  // Ruta del día: el orden natural de trabajo, a un clic cada paso.
+  const steps = [["Llama", "cards", !!top], ["Registra", "crm", false], ["Capta", "search", !top], ["Forma", "training", false]];
+  const route = el("div", { class: "cc-route" }, steps.map(([lbl, view, on], i) =>
+    el("button", { class: `cc-step ${on ? "on" : ""}`, onClick: () => goView(view) }, [
+      el("span", { class: "cc-step-n", text: String(i + 1) }),
+      el("span", { class: "cc-step-l", text: lbl }),
+    ])));
+  return el("section", { class: "command-center" }, [now, route]);
+}
+
 function todayView() {
   const tracking = store.getTracking();
   const opps = state.results ? state.results.all : [];
@@ -929,6 +960,9 @@ function todayView() {
     el("div", { class: "today-greet", text: `${greet}${u ? `, ${u.name}` : ""}` }),
     el("div", { class: "today-sub", text: "Tu día en Connect — a quién llamar y por qué, de un vistazo." }),
   ]));
+
+  // Centro de mando: la acción de ahora + la ruta del día.
+  blocks.push(commandCenter(calls));
 
   // Pulso del pipeline: cuatro cifras que mandan.
   blocks.push(el("div", { class: "pulse" }, [
