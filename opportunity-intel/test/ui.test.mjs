@@ -100,5 +100,30 @@ try {
   }
 } catch (e) { ok(false, "la paleta ⌘K no debe lanzar: " + e.message); }
 
+// ── 7. Navegación por rol: un VIEWER (solo lectura) no ve los accesos de escritura
+try {
+  // Las sub-pestañas solo se pintan para la zona ACTIVA: entra a la zona y lee.
+  const enterZone = (re) => { const z = [...root.querySelectorAll(".zone")].find((n) => re.test(n.textContent)); if (z) z.click(); return z; };
+  const subs = () => [...root.querySelectorAll(".subtabs .tab")].map((n) => n.textContent.trim());
+
+  // Editor (rol por defecto del login de prueba): ve los accesos de escritura.
+  await mount(root);
+  enterZone(/Captar/); ok(subs().some((t) => /Buscar/.test(t)), "editor ve «Buscar» (descubrir) dentro de Captar");
+  enterZone(/Cerrar/); ok(subs().some((t) => /CRM/.test(t)), "editor ve «CRM» (mover el tablero) dentro de Cerrar");
+
+  // Bajamos la sesión a viewer (solo lectura) y re-montamos.
+  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "viewer", token: null }));
+  await mount(root);
+  const zoneLabels = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
+  ok(zoneLabels.some((t) => /Captar/.test(t)), "viewer conserva la zona «Captar» (Oportunidades es lectura)");
+  ok(!zoneLabels.some((t) => /Equipo/.test(t)), "viewer NO ve «Equipo» (no gobierna)");
+  enterZone(/Captar/); ok(!subs().some((t) => /Buscar/.test(t)), "viewer NO ve «Buscar» (no puede descubrir)");
+  enterZone(/Cerrar/); ok(!subs().some((t) => /^CRM$/.test(t)), "viewer NO ve el tablero «CRM» (no puede mover)");
+  ok(root.querySelector(".navwrap") != null, "el shell sigue entero con rol viewer");
+
+  // Restaura la sesión editor para no contaminar nada posterior.
+  globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "editor", token: null }));
+} catch (e) { ok(false, "la navegación por rol no debe lanzar: " + e.message); }
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

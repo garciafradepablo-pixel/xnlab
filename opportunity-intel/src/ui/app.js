@@ -554,15 +554,23 @@ function openProfile() {
 // sub-vistas. Sigue el bucle diario: trabajar → captar → cerrar → hablar (muelle)
 // → saber. «Saber» reúne lo que el equipo aprende y lo que estudia (antes dos
 // zonas sueltas, Memoria y Formación): menos botones arriba, mismo contenido.
+// Cada sub-vista es [clave, etiqueta, capacidad?]. La capacidad opcional la
+// esconde a quien no la tiene: un viewer/analyst (solo lectura) no ve «Buscar»
+// (descubrir) ni el tablero «CRM» (mover) — entra a su mundo sin botones que no
+// puede pulsar. El editor (Javi) las ve todas; el admin (Pablo), además «Equipo».
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
+  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar", "discover"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"]] },
   { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
   { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
 function zonesForUser() {
-  const z = ZONES.map((zz) => ({ ...zz }));
+  // Filtra las sub-vistas que el rol no puede usar; si una zona se queda sin
+  // ninguna, desaparece de la barra (nada de zonas vacías).
+  const z = ZONES
+    .map((zz) => ({ ...zz, views: zz.views.filter(([, , cap]) => !cap || allow(cap)) }))
+    .filter((zz) => zz.views.length);
   if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", views: [["users", "Usuarios"]] });
   return z;
 }
