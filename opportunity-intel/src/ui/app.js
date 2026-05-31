@@ -53,11 +53,20 @@ import { autoProgress, AUTO_BAR } from "../autopilot.js";
 import { synthesize } from "../synthesis.js";
 import { pendingCronLeads, claimCronLeads } from "../cronleads.js";
 import { can, isWriter, roleLabel, ROLES, ROLE_LABEL } from "../roles.js";
+import { getCatalog, cacheCatalog, labelMap, teamByTag } from "../teamtags.js";
+import * as chat from "../messaging.js";
+import { buildLeaderboard } from "../productivity.js";
+import { remoteCreateShare, remoteLoadShare } from "../statesync.js";
+
+// Modo PRUEBA (solo lectura, sin sesión): cuando se abre un enlace ?preview=…
+// el que mira no tiene cuenta. Mientras esté activo, la app se bloquea en
+// lectura aunque alguien manipule el cliente. { scope, company, companyName }.
+let previewMode = null;
 
 // Atajo de permisos del usuario en sesión. La UI oculta lo que no puedes hacer
 // (UX); la seguridad real la imponen las Edge Functions (403). No te fíes solo
-// de esto.
-const allow = (action) => can(auth.currentRole(), action);
+// de esto. En modo prueba, todo es lectura.
+const allow = (action) => previewMode ? (action === "read" || action === "stats") : can(auth.currentRole(), action);
 
 // — Iconos de línea (stroke), nivel ejecutivo: reemplazan a los emojis. —
 const _svg = (p, vb = "0 0 24 24") =>
@@ -92,6 +101,10 @@ let root;
 
 export async function mount(rootEl) {
   root = rootEl;
+  // Enlace de PRUEBA en solo-lectura: ?preview=TOKEN. Sin sesión ni registro.
+  let previewTok = null;
+  try { previewTok = new URLSearchParams(location.search).get("preview"); } catch { /* */ }
+  if (previewTok) { await previewMount(previewTok); return; }
   // Enlace de invitación: ?invite=Nombre → abre directo en "crear usuario".
   try { const inv = new URLSearchParams(location.search).get("invite"); if (inv) { state._invite = inv; if (!auth.currentUser()) state._authTab = "create"; } } catch { /* */ }
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
@@ -123,6 +136,42 @@ export async function mount(rootEl) {
   // badge/controles. Después trae la mesa compartida. Ambos best-effort.
   auth.refreshSession().then((r) => { if (r && r.ok) render(); }).catch(() => {});
   store.startSharedSync().then((r) => { if (r && r.ok) recompute().then(render); }).catch(() => {});
+}
+
+// Modo PRUEBA: abre un enlace compartido en solo-lectura, sin sesión. Trae el
+// estado del servidor (no empuja nada nunca), lo pinta bloqueado y, si el enlace
+// apunta a una empresa, abre su ficha directamente. El que mira no se registra.
+async function previewMount(token) {
+  clear(root);
+  root.appendChild(el("div", { class: "auth-screen" }, [
+    el("div", { class: "auth-card" }, [
+      el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· vista de prueba</span>' }),
+      el("p", { class: "auth-tagline", text: "Abriendo la vista compartida…" }),
+    ]),
+  ]));
+  let r;
+  try { r = await remoteLoadShare(token); } catch { r = null; }
+  if (!r || !r.ok) {
+    clear(root);
+    root.appendChild(el("div", { class: "auth-screen" }, [
+      el("div", { class: "auth-card" }, [
+        el("div", { class: "auth-logo", html: 'CONNECT' }),
+        el("p", { class: "auth-msg", text: (r && r.error) || "Este enlace de prueba no es válido o ha caducado." }),
+      ]),
+    ]));
+    return;
+  }
+  previewMode = { scope: r.scope || "workspace", company: r.company || null, companyName: r.companyName || null };
+  // Hidrata el estado compartido en local SIN empujar (merge no destructivo).
+  try { if (r.data) store.importState(r.data, { replace: false }); } catch { /* */ }
+  state.view = "cards";
+  await recompute();
+  render();
+  // Enlace a una ficha concreta: ábrela directamente.
+  if (previewMode.scope === "company" && previewMode.company) {
+    const lead = (state.results?.all || []).find((o) => o.id === previewMode.company);
+    if (lead) openCase(lead.id);
+  }
 }
 
 // —— Indicador discreto de sincronización ————————————————————————————————————
@@ -192,11 +241,12 @@ function renderAuth() {
   const doCreate = async () => {
     msg.textContent = "";
     if (!chosenColor) { msg.textContent = "No quedan colores de firma libres. Pide a un admin que libere uno."; return; }
-    busy(true);
-    const r = await auth.createUserAsync(nameI.value, passI.value, chosenColor, state._invite);
-    if (!r.ok) { busy(false, "Crear usuario y entrar"); msg.textContent = r.error; return; }
-    await auth.loginAsync(nameI.value, passI.value);
-    mount(root);
+    const nm = String(nameI.value || "").trim();
+    if (nm.length < 2) { msg.textContent = "El nombre debe tener al menos 2 caracteres."; return; }
+    if (String(passI.value || "").length < 4) { msg.textContent = "La contraseña debe tener al menos 4 caracteres."; return; }
+    // Ronda de etiquetas: tras nombre y contraseña, cada uno decide qué etiquetas
+    // lo definen ANTES de crear la cuenta (se guardan en el registro).
+    renderTagRound({ name: nm, password: passI.value, color: chosenColor, invite: state._invite });
   };
 
   const primary = el("button", { class: "btn-primary auth-go", text: tab === "login" ? "Entrar" : "Crear usuario y entrar" });
@@ -218,6 +268,55 @@ function renderAuth() {
       swatches,
     ]) : null,
     primary, msg, switcher,
+  ]);
+  root.appendChild(el("div", { class: "auth-screen" }, [card]));
+}
+
+// Selector de etiquetas (chips multi-selección). `selected` es un Set de slugs
+// que muta in situ; `onChange` permite reaccionar (p. ej. autoguardar). Reusado
+// por la ronda de registro y por el perfil.
+function tagPickerChips(catalog, selected, onChange) {
+  const chips = el("div", { class: "tag-pick" });
+  const paint = () => {
+    clear(chips);
+    const list = (catalog && catalog.length) ? catalog : getCatalog();
+    for (const t of list) {
+      const on = selected.has(t.slug);
+      const b = el("button", { class: `tag-chip ${on ? "on" : ""}`, type: "button", text: t.label });
+      b.addEventListener("click", () => { on ? selected.delete(t.slug) : selected.add(t.slug); paint(); onChange && onChange(); });
+      chips.appendChild(b);
+    }
+    if (!list.length) chips.appendChild(el("p", { class: "config-note", text: "Aún no hay etiquetas en el catálogo." }));
+  };
+  paint();
+  return { chips, repaint: paint };
+}
+
+// Ronda de etiquetas: tras nombre + contraseña, cada uno decide qué etiquetas lo
+// definen. Crea la cuenta CON esas etiquetas y entra. Mandatorio pasar por aquí,
+// pero se puede entrar sin marcar ninguna (revisables luego desde el perfil).
+function renderTagRound(creds) {
+  clear(root);
+  const selected = new Set();
+  const msg = el("p", { class: "auth-msg" });
+  const { chips } = tagPickerChips(getCatalog(), selected);
+
+  const enter = el("button", { class: "btn-primary auth-go", text: "Entrar" });
+  const busy = (on) => { enter.disabled = on; enter.textContent = on ? "Creando tu usuario…" : "Entrar"; };
+  enter.addEventListener("click", async () => {
+    busy(true); msg.textContent = "";
+    const r = await auth.createUserAsync(creds.name, creds.password, creds.color, creds.invite, [...selected]);
+    if (!r.ok) { busy(false); msg.textContent = r.error; return; }
+    await auth.loginAsync(creds.name, creds.password);
+    mount(root);
+  });
+  const back = el("button", { class: "auth-switch", text: "← Volver", onClick: () => { state._authTab = "create"; renderAuth(); } });
+
+  const card = el("div", { class: "auth-card auth-tags" }, [
+    el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· tu perfil</span>' }),
+    el("p", { class: "auth-tagline", text: `Hola, ${creds.name}. ¿Qué etiquetas te definen?` }),
+    el("p", { class: "config-note", text: "Marca todas las que encajen — puedes ser varias a la vez (p. ej. Dirección + RRHH + Psicología). Así el equipo ve de un vistazo qué perfiles tiene. Podrás cambiarlas luego desde tu perfil." }),
+    chips, enter, msg, back,
   ]);
   root.appendChild(el("div", { class: "auth-screen" }, [card]));
 }
@@ -314,7 +413,8 @@ function render() {
   ]);
   cfg.open = state._cfgOpen ?? false;
   cfg.addEventListener("toggle", () => { state._cfgOpen = cfg.open; });
-  main.appendChild(cfg);
+  if (previewMode) main.appendChild(previewBanner()); // aviso "solo lectura"
+  else main.appendChild(cfg);
   main.appendChild(viewArea());
   scroller.appendChild(main);
   root.appendChild(scroller);
@@ -366,6 +466,12 @@ function syncBadge() {
 
 // Chip del usuario en sesión: inicial sobre su color de firma + cerrar sesión.
 function userChip() {
+  if (previewMode) {
+    return el("span", { class: "user-chip preview-chip", title: "Estás viendo una vista de prueba en solo lectura. Para operar, pide acceso a un admin." }, [
+      el("span", { class: "role-badge role-viewer", text: "PRUEBA" }),
+      el("span", { class: "user-name", text: "Solo lectura" }),
+    ]);
+  }
   const u = auth.currentUser();
   if (!u) return el("span");
   const dot = el("span", { class: "user-dot", style: `background:${u.color}`, text: u.avatar || u.name[0].toUpperCase() });
@@ -384,6 +490,22 @@ function getUserNotes(name) { try { return localStorage.getItem(notesKey(name)) 
 function setUserNotes(name, v) { try { localStorage.setItem(notesKey(name), v); } catch { /* */ } }
 
 const PROFILE_EMOJIS = ["◆", "✦", "★", "▲", "●", "◇", "✧", "◈", "❖", "⬢", "⬡", "⚡", "△", "□", "○", "✕"];
+
+// Pinta un enlace de PRUEBA (?preview=TOKEN) con botón de copiar. Reusado por el
+// perfil (toda la app) y por la ficha (una empresa).
+function renderShareLink(box, token) {
+  clear(box);
+  const base = String(location.href || "").split("?")[0].split("#")[0];
+  const link = `${base}?preview=${encodeURIComponent(token)}`;
+  const inp = el("input", { class: "prof-link", value: link, readonly: "" });
+  const copy = el("button", { class: "btn", text: "Copiar enlace" });
+  copy.addEventListener("click", () => {
+    const done = () => { copy.textContent = "✓ Copiado"; setTimeout(() => (copy.textContent = "Copiar enlace"), 1400); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(link).then(done).catch(done); else done();
+  });
+  box.appendChild(el("p", { class: "config-note", text: "Solo lectura · sin registro · caduca en 30 días." }));
+  box.appendChild(el("div", { class: "prof-linkrow" }, [inp, copy]));
+}
 
 // Perfil del usuario: avatar (emoji), notas privadas, contraseña e invitación.
 // Más personal y más privado, sin foto que suba a ningún sitio.
@@ -425,12 +547,40 @@ function openProfile() {
     inviteBox.appendChild(el("p", { class: "config-note", text: "Enlace de un solo uso · caduca en 14 días." }));
     inviteBox.appendChild(el("div", { class: "prof-linkrow" }, [linkInput, copyL]));
   };
+  // Posición de la invitación: Pablo decide ANTES de copiar el enlace qué rol
+  // de acceso abre (el código generado lleva ese rol incrustado).
+  const inviteRole = el("select", { class: "lead-f invite-role" }, ROLES.map((r) =>
+    el("option", { value: r, selected: r === "editor", text: ROLE_LABEL[r] })));
   const genBtn = el("button", { class: "btn-primary", text: "Generar invitación", onClick: async () => {
     genBtn.disabled = true; genBtn.textContent = "Generando…";
-    const r = await auth.createInvite("editor");
+    const r = await auth.createInvite(inviteRole.value);
     genBtn.disabled = false; genBtn.textContent = "Generar otra invitación";
     if (r.ok && r.code) renderInviteLink(r.code);
     else inviteBox.appendChild(el("p", { class: "sec-msg err", text: r.error || "No se pudo." }));
+  } });
+
+  // Tus etiquetas: el usuario revisa/ajusta las que lo definen (autoguardado).
+  const myTags = new Set(auth.getTags() || []);
+  const tagStatus = el("span", { class: "role-status" });
+  const saveTags = async () => {
+    tagStatus.textContent = "Guardando…";
+    const r = await auth.setTags([...myTags]);
+    tagStatus.textContent = r.ok ? "✓" : (r.error || "Error");
+    setTimeout(() => { if (tagStatus.textContent === "✓") tagStatus.textContent = ""; }, 1500);
+  };
+  const tagPick = tagPickerChips(getCatalog(), myTags, saveTags);
+  auth.tagCatalog().then((r) => { if (r && r.ok && Array.isArray(r.tags)) { cacheCatalog(r.tags); tagPick.repaint(); } }).catch(() => {});
+
+  // Compartir vista de prueba (toda la app) — la pueden generar los roles con
+  // permiso de escritura, sin pedir permiso a nadie y sin que el que mira se
+  // registre. Enlace de solo lectura.
+  const shareBox = el("div", { class: "prof-invitebox" });
+  const shareBtn = el("button", { class: "btn", text: "Generar enlace de prueba", onClick: async () => {
+    shareBtn.disabled = true; shareBtn.textContent = "Generando…";
+    let r; try { r = await remoteCreateShare(auth.getToken(), "workspace"); } catch { r = null; }
+    shareBtn.disabled = false; shareBtn.textContent = "Generar otro enlace";
+    if (r && r.ok && r.token) renderShareLink(shareBox, r.token);
+    else shareBox.appendChild(el("p", { class: "sec-msg err", text: (r && r.error) || "No se pudo (sin conexión)." }));
   } });
 
   overlay.appendChild(el("div", { class: "pb-panel prof-panel" }, [
@@ -443,16 +593,27 @@ function openProfile() {
     ]),
     el("div", { class: "prof-sec" }, [el("h4", { text: "Tu avatar" }), picker]),
     el("div", { class: "prof-sec" }, [
+      el("h4", {}, [el("span", { text: "Tus etiquetas " }), tagStatus]),
+      el("p", { class: "config-note", text: "Las que te definen. Puedes llevar varias. El equipo las ve de un vistazo." }),
+      tagPick.chips,
+    ]),
+    el("div", { class: "prof-sec" }, [
       el("h4", { text: "Tus notas privadas" }),
       el("p", { class: "config-note", text: "Solo en este dispositivo. No se comparten ni suben al servidor." }),
       notes,
     ]),
+    isWriter(u.role) ? el("div", { class: "prof-sec" }, [
+      el("h4", { text: "Compartir vista de prueba" }),
+      el("p", { class: "config-note", text: "Enlace de solo lectura de TODA la app — para enseñarla sin que la otra persona se registre. No pide permiso a nadie." }),
+      shareBtn, shareBox,
+    ]) : null,
     el("div", { class: "prof-sec" }, [securitySection()]),
     el("div", { class: "prof-sec" }, [
       el("h4", { text: "Invitar a alguien" }),
       allow("manage_roles")
         ? el("div", {}, [
-            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Genera un enlace de un solo uso." }),
+            el("p", { class: "config-note", text: "Registro cerrado: solo entra quien tenga una invitación tuya. Elige la posición (rol de acceso) y genera el enlace — el código lleva ese rol." }),
+            el("div", { class: "invite-row" }, [el("label", { class: "invite-lbl", text: "Posición:" }), inviteRole]),
             genBtn, inviteBox,
           ])
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
@@ -474,8 +635,16 @@ const ZONES = [
   { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
 ];
 function zonesForUser() {
+  // En modo prueba (solo lectura, sin sesión): solo mirar oportunidades y ranking.
+  if (previewMode) {
+    return [{ key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["table", "Ranking"]] }];
+  }
   const z = ZONES.map((zz) => ({ ...zz }));
-  if (allow("manage_roles")) z.push({ key: "team", label: "Equipo", views: [["users", "Usuarios"]] });
+  // Zona de equipo: chat general, apuntes de mejora, privados y el marcador de
+  // productividad para todos; la gestión de personas/roles/etiquetas solo admin.
+  const teamViews = [["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["leaderboard", "Productividad"]];
+  if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
+  z.push({ key: "team", label: "Equipo", views: teamViews });
   return z;
 }
 function zoneOfView(view) {
@@ -690,6 +859,10 @@ function viewArea() {
   else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
+  else if (state.view === "chat") area.appendChild(chatView("general"));
+  else if (state.view === "board") area.appendChild(chatView("mejoras"));
+  else if (state.view === "dms") area.appendChild(dmsView());
+  else if (state.view === "leaderboard") area.appendChild(leaderboardView());
   else area.appendChild(learningView());
   return area;
 }
@@ -703,31 +876,50 @@ function usersView() {
   // Cinturón y tirantes: aunque la pestaña esté oculta, si se navega a "users"
   // sin permiso, no se muestra nada operable.
   if (!allow("manage_roles")) {
-    return el("div", {}, [el("h2", { text: "Usuarios" }), el("p", { class: "ro-notice", text: "Solo un ADMIN puede gestionar usuarios y roles." })]);
+    return el("div", {}, [el("h2", { text: "Personas" }), el("p", { class: "ro-notice", text: "Solo un ADMIN puede gestionar personas, roles y etiquetas." })]);
   }
   const me = auth.currentUser();
   const wrap = el("div", {}, [
-    el("h2", { text: "Usuarios y roles" }),
-    el("p", { class: "hint", text: "Cambia el rol de cada miembro. El cambio se aplica en el servidor (no solo aquí): un VIEWER no podrá modificar la mesa aunque manipule su navegador. Los cambios se reflejan en la próxima carga del afectado." }),
+    el("h2", { text: "Personas del equipo" }),
+    el("p", { class: "hint", text: "De un vistazo: quién es quién, qué etiquetas lo definen y qué rol tiene. Cambia el rol de cada miembro — el cambio se aplica en el servidor (un VIEWER no podrá modificar la mesa aunque manipule su navegador)." }),
   ]);
+
+  // ── Ojeada del equipo por etiqueta (cuántos de cada perfil) ────────────────
+  const overview = el("div", { class: "tag-overview" });
+  const paintOverview = () => {
+    clear(overview);
+    const users = auth.getUsers().filter((u) => !u.colorOnly || u.role);
+    const summary = teamByTag(users, getCatalog());
+    if (!summary.length) { overview.appendChild(el("p", { class: "hint", text: "Aún nadie ha elegido etiquetas." })); return; }
+    for (const t of summary) overview.appendChild(el("button", {
+      class: "tag-stat", title: t.people.join(", "),
+      onClick: () => { state._tagFilter = state._tagFilter === t.slug ? null : t.slug; renderList(); paintOverview(); },
+    }, [
+      el("span", { class: `tag-stat-l ${state._tagFilter === t.slug ? "on" : ""}`, text: t.label }),
+      el("span", { class: "tag-stat-n", text: String(t.count) }),
+    ]));
+  };
+  wrap.appendChild(el("div", { class: "team-sec" }, [el("h4", { text: "Perfiles del equipo" }), overview]));
 
   const list = el("div", { class: "users-list" });
   wrap.appendChild(list);
 
   const renderList = () => {
     clear(list);
-    const users = auth.getUsers()
-      .filter((u) => !u.colorOnly || u.role) // muestra cuentas reales (con rol conocido)
+    const lm = labelMap(getCatalog());
+    let users = auth.getUsers()
+      .filter((u) => !u.colorOnly || u.role)
       .sort((a, b) => a.name.localeCompare(b.name));
-    if (!users.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay otras cuentas." })); return; }
+    if (state._tagFilter) users = users.filter((u) => (u.tags || []).includes(state._tagFilter));
+    if (!users.length) { list.appendChild(el("p", { class: "hint", text: state._tagFilter ? "Nadie con esa etiqueta." : "Aún no hay otras cuentas." })); return; }
     for (const u of users) {
       const role = u.role || "editor";
-      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.name[0] || "?").toUpperCase() });
+      const dot = el("span", { class: "user-dot", style: `background:${u.color || "#4a9eff"}`, text: (u.avatar || u.name[0] || "?").toString().toUpperCase().slice(0, 2) });
       const sel = el("select", { class: "lead-f role-select" }, ROLES.map((r) =>
         el("option", { value: r, selected: r === role, text: ROLE_LABEL[r] })
       ));
       const isMe = me && norm(u.name) === norm(me.name);
-      sel.disabled = isMe; // no te cambias el rol a ti mismo desde aquí (evita autobloqueo)
+      sel.disabled = isMe;
       const status = el("span", { class: "role-status" });
       sel.addEventListener("change", async () => {
         const newRole = sel.value;
@@ -736,20 +928,273 @@ function usersView() {
         if (r.ok) { status.textContent = "✓"; setTimeout(() => (status.textContent = ""), 1500); }
         else { status.textContent = r.error || "Error"; sel.value = role; }
       });
+      const tags = el("div", { class: "user-tags" }, (u.tags || []).length
+        ? (u.tags || []).map((s) => el("span", { class: "tag-mini", text: lm.get(s) || s }))
+        : [el("span", { class: "tag-none", text: "sin etiquetas" })]);
       list.appendChild(el("div", { class: "user-row" }, [
-        dot,
-        el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
-        el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
-        sel,
-        status,
+        el("div", { class: "user-row-main" }, [
+          dot,
+          el("span", { class: "user-row-name", text: u.name + (isMe ? " (tú)" : "") }),
+          el("span", { class: `role-badge role-${role}`, text: roleLabel(role) }),
+          sel,
+          status,
+        ]),
+        tags,
       ]));
     }
   };
   renderList();
 
-  // Trae la lista fresca del servidor (colores + roles) y repinta.
-  auth.syncRemoteColors().then(renderList).catch(() => {});
+  // ── Catálogo de etiquetas (el admin lo amplía) ─────────────────────────────
+  const catBox = el("div", { class: "cat-list" });
+  const paintCat = () => {
+    clear(catBox);
+    for (const t of getCatalog()) {
+      catBox.appendChild(el("span", { class: "cat-chip" }, [
+        el("span", { text: t.label }),
+        el("button", {
+          class: "cat-x", title: "Quitar del catálogo", text: "✕",
+          onClick: async () => {
+            if (!confirm(`¿Quitar "${t.label}" del catálogo? (no borra la etiqueta de quien ya la tenga)`)) return;
+            const r = await auth.removeCatalogTag(t.slug);
+            if (r.ok) await refreshCatalog(); else alert(r.error || "No se pudo.");
+          },
+        }),
+      ]));
+    }
+  };
+  const newTagI = el("input", { class: "auth-f cat-input", placeholder: "Nueva etiqueta (p. ej. Legal)" });
+  const addBtn = el("button", { class: "btn", text: "Añadir", onClick: async () => {
+    const v = String(newTagI.value || "").trim();
+    if (!v) return;
+    const r = await auth.addCatalogTag(v);
+    if (r.ok) { newTagI.value = ""; await refreshCatalog(); } else alert(r.error || "No se pudo.");
+  } });
+  async function refreshCatalog() {
+    const r = await auth.tagCatalog();
+    if (r && r.ok && Array.isArray(r.tags)) cacheCatalog(r.tags);
+    paintCat(); paintOverview(); renderList();
+  }
+  paintCat();
+  wrap.appendChild(el("div", { class: "team-sec" }, [
+    el("h4", { text: "Catálogo de etiquetas" }),
+    el("p", { class: "config-note", text: "Estas son las etiquetas que cada uno puede elegir para definirse. Amplíalo si falta un perfil." }),
+    catBox,
+    el("div", { class: "cat-add" }, [newTagI, addBtn]),
+  ]));
+
+  // ── Supervisión de privados (solo admin) ───────────────────────────────────
+  let supervLoaded = false;
+  const superv = el("div", { class: "superv-list" });
+  const paintSuperv = async () => {
+    supervLoaded = true;
+    clear(superv);
+    superv.appendChild(el("p", { class: "config-note", text: "Cargando conversaciones…" }));
+    const threads = await chat.adminThreads(auth.getToken());
+    clear(superv);
+    if (!threads.length) { superv.appendChild(el("p", { class: "hint", text: "No hay privados todavía." })); return; }
+    for (const t of threads) {
+      const who = (t.between || []).join(" ↔ ");
+      superv.appendChild(el("button", { class: "superv-row", onClick: () => openConversation(t.channel, `Privado · ${who}`) }, [
+        el("span", { class: "superv-who", text: who }),
+        el("span", { class: "superv-last", text: t.last || "" }),
+      ]));
+    }
+  };
+  const supervDetails = el("details", { class: "team-sec superv-sec" }, [
+    el("summary", { text: "Supervisión de conversaciones privadas" }),
+    el("p", { class: "config-note", text: "Como admin puedes abrir cualquier privado del equipo. Úsalo con criterio." }),
+    superv,
+  ]);
+  supervDetails.addEventListener("toggle", () => { if (supervDetails.open && !supervLoaded) paintSuperv(); });
+  wrap.appendChild(supervDetails);
+
+  // Trae lista fresca (colores/roles/etiquetas) y catálogo del servidor; repinta.
+  auth.syncRemoteColors().then(() => { renderList(); paintOverview(); }).catch(() => {});
+  refreshCatalog().catch(() => {});
   return wrap;
+}
+
+// ---- Mensajería interna (chat general · mejoras · privados) ------------------
+
+function fmtTime(iso) {
+  try { return new Date(iso).toLocaleString("es-ES", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }); }
+  catch { return ""; }
+}
+
+// Lista de mensajes teñida por autor (color de firma). El cuerpo va como texto
+// (escapado por el DOM), nunca como HTML.
+function messageList(messages) {
+  const me = auth.currentUser();
+  if (!messages || !messages.length) return el("p", { class: "hint", text: "Aún no hay mensajes. Rompe el hielo." });
+  return el("div", { class: "msg-list" }, messages.map((m) => {
+    const mine = me && norm(m.from_lower || m.from_name) === norm(me.name);
+    const color = auth.colorOf(m.from_name) || "#4a9eff";
+    return el("div", { class: `msg ${mine ? "mine" : ""}` }, [
+      el("div", { class: "msg-meta" }, [
+        el("span", { class: "msg-dot", style: `background:${color}` }),
+        el("span", { class: "msg-from", text: m.from_name }),
+        el("span", { class: "msg-time", text: fmtTime(m.created_at) }),
+      ]),
+      el("div", { class: "msg-body", text: m.body }),
+    ]);
+  }));
+}
+
+// Compositor reutilizable: textarea + enviar (⌘/Ctrl+Enter) + actualizar.
+function composer(placeholder, onSend, onRefresh) {
+  const input = el("textarea", { class: "chat-input", placeholder });
+  const send = el("button", { class: "btn-primary", text: "Enviar" });
+  const doSend = async () => {
+    const body = String(input.value || "").trim();
+    if (!body) return;
+    send.disabled = true;
+    const ok = await onSend(body);
+    send.disabled = false;
+    if (ok) input.value = "";
+  };
+  send.addEventListener("click", doSend);
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault?.(); doSend(); } });
+  return el("div", { class: "chat-compose" }, [
+    input,
+    el("div", { class: "chat-actions" }, [
+      el("button", { class: "btn-ghost", text: "↻ Actualizar", onClick: onRefresh }),
+      send,
+    ]),
+  ]);
+}
+
+function chatView(channel) {
+  const meta = {
+    general: { h: "Chat general", sub: "Todo el equipo. Lo que se dice aquí lo ve todo el mundo." },
+    mejoras: { h: "Apuntes y mejoras", sub: "Comentarios de mejora interna: ideas para que la herramienta y el trabajo vayan a mejor. Quedan registrados para no perderlos." },
+  }[channel] || { h: "Chat", sub: "" };
+  const wrap = el("div", {}, [el("h2", { text: meta.h }), el("p", { class: "hint", text: meta.sub })]);
+  const box = el("div", { class: "chat-box" });
+  wrap.appendChild(box);
+  const load = async () => {
+    const r = await chat.listMessages(auth.getToken(), { channel });
+    clear(box);
+    if (r && r.ok) { box.appendChild(messageList(r.messages)); requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; }); }
+    else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudieron cargar los mensajes." }));
+  };
+  wrap.appendChild(composer(
+    channel === "mejoras" ? "Escribe una idea de mejora…" : "Escribe un mensaje…",
+    async (body) => { const r = await chat.sendMessage(auth.getToken(), { channel, body }); if (r && r.ok) { await load(); return true; } alert((r && r.error) || "No se pudo enviar."); return false; },
+    load,
+  ));
+  load();
+  return wrap;
+}
+
+function dmsView() {
+  const me = auth.currentUser();
+  const wrap = el("div", {}, [
+    el("h2", { text: "Privados" }),
+    el("p", { class: "hint", text: "Mensajería privada 1:1 entre trabajadores. Solo tú y la otra persona lo veis (un admin puede supervisar)." }),
+  ]);
+  const layout = el("div", { class: "dm-layout" });
+  const people = el("div", { class: "dm-people" });
+  const thread = el("div", { class: "dm-thread" }, [el("p", { class: "hint", text: "Elige a alguien para empezar." })]);
+  layout.appendChild(people);
+  layout.appendChild(thread);
+  wrap.appendChild(layout);
+
+  const others = auth.getUsers()
+    .filter((u) => (!u.colorOnly || u.role) && me && norm(u.name) !== norm(me.name))
+    .sort((a, b) => a.name.localeCompare(b.name));
+
+  const openThread = async (other) => {
+    clear(thread);
+    thread.appendChild(el("div", { class: "dm-head", text: `Con ${other.name}` }));
+    const box = el("div", { class: "chat-box" });
+    thread.appendChild(box);
+    const load = async () => {
+      const r = await chat.listMessages(auth.getToken(), { to: other.name });
+      clear(box);
+      if (r && r.ok) { box.appendChild(messageList(r.messages)); requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; }); }
+      else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudo cargar." }));
+    };
+    thread.appendChild(composer(
+      `Mensaje para ${other.name}…`,
+      async (body) => { const r = await chat.sendMessage(auth.getToken(), { to: other.name, body }); if (r && r.ok) { await load(); return true; } alert((r && r.error) || "No se pudo enviar."); return false; },
+      load,
+    ));
+    await load();
+  };
+
+  if (!others.length) people.appendChild(el("p", { class: "hint", text: "No hay otras personas todavía." }));
+  for (const o of others) {
+    people.appendChild(el("button", { class: "dm-person", onClick: () => openThread(o) }, [
+      el("span", { class: "user-dot", style: `background:${o.color || "#4a9eff"}`, text: (o.name[0] || "?").toUpperCase() }),
+      el("span", { text: o.name }),
+    ]));
+  }
+  return wrap;
+}
+
+// Conversación en una capa (supervisión del admin / lectura puntual).
+function openConversation(channel, title) {
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => overlay.remove();
+  const box = el("div", { class: "chat-box superv-box" });
+  const load = async () => {
+    const r = await chat.listMessages(auth.getToken(), { channel });
+    clear(box);
+    if (r && r.ok) box.appendChild(messageList(r.messages));
+    else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudo cargar." }));
+  };
+  overlay.appendChild(el("div", { class: "pb-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", { class: "prof-name", text: title || "Conversación" }),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    box,
+  ]));
+  document.body.appendChild(overlay);
+  load();
+}
+
+// ---- Productividad / competitividad interna ---------------------------------
+
+function leaderboardView() {
+  const wrap = el("div", {}, [
+    el("h2", { text: "Productividad del equipo" }),
+    el("p", { class: "hint", text: "La batalla real: quién mueve, reúne y cierra. Sale de lo que cada uno firma en la mesa compartida (cambios de estado, resultados) y de la mensajería interna. Premia el resultado, no el ruido." }),
+  ]);
+  const board = el("div", { class: "board" });
+  wrap.appendChild(board);
+  const paint = (stats) => {
+    clear(board);
+    const users = auth.getUsers().filter((u) => !u.colorOnly || u.role).map((u) => ({ name: u.name, color: u.color, avatar: u.avatar }));
+    const rows = buildLeaderboard(store.getTracking(), store.getLearning(), users, stats || {});
+    if (!rows.length) { board.appendChild(el("p", { class: "hint", text: "Aún no hay actividad que medir." })); return; }
+    const max = rows[0].score || 1;
+    rows.forEach((r, i) => {
+      board.appendChild(el("div", { class: `board-row ${i === 0 && r.score > 0 ? "lead" : ""}` }, [
+        el("span", { class: "board-rank", text: `#${i + 1}` }),
+        el("span", { class: "user-dot", style: `background:${r.color || "#4a9eff"}`, text: (r.avatar || r.name[0] || "?").toString().toUpperCase().slice(0, 2) }),
+        el("span", { class: "board-name", text: r.name }),
+        el("div", { class: "board-bar-wrap" }, [el("div", { class: "board-bar", style: `width:${Math.max(4, Math.round((r.score / max) * 100))}%` })]),
+        el("span", { class: "board-score", text: String(r.score) }),
+        el("div", { class: "board-detail", text: `${r.won} cierres · ${r.meetings} reuniones · ${r.interested} interesados · ${r.worked} tocadas · ${r.messages} msgs` }),
+      ]));
+    });
+  };
+  paint({});
+  chat.messageStats(auth.getToken()).then(paint).catch(() => {});
+  return wrap;
+}
+
+// Aviso de modo prueba (solo lectura) en lo alto del contenido.
+function previewBanner() {
+  const txt = previewMode && previewMode.scope === "company" && previewMode.companyName
+    ? `Vista de prueba de ${previewMode.companyName} · solo lectura.`
+    : "Vista de prueba · solo lectura. Estás viendo Connect sin cuenta.";
+  return el("div", { class: "preview-banner" }, [
+    el("span", { class: "role-badge role-viewer", text: "PRUEBA" }),
+    el("span", { text: txt }),
+  ]);
 }
 
 // Helper local de normalización de nombres (igual criterio que auth.js).
@@ -1401,9 +1846,32 @@ function openCase(id) {
   loadMomentum(lead, momentumPanel, rebuild); // automático: detecta el momento en prensa
   loadFreshness(lead, freshPanel, rebuild); // automático: lee su web y sube la nota
 
+  // Compartir esta ficha en solo-lectura (sin registro). Solo roles con escritura
+  // y fuera del modo prueba.
+  let shareBtn = null;
+  if (!previewMode && isWriter(auth.currentRole())) {
+    shareBtn = el("button", { class: "case-share", title: "Compartir esta empresa en solo lectura (sin registro)", text: "Compartir" });
+    shareBtn.addEventListener("click", async () => {
+      shareBtn.disabled = true; shareBtn.textContent = "Generando…";
+      let r; try { r = await remoteCreateShare(auth.getToken(), "company", lead.id, lead.company || ""); } catch { r = null; }
+      shareBtn.disabled = false; shareBtn.textContent = "Compartir";
+      if (r && r.ok && r.token) {
+        const box = el("div", { class: "case-sharebox" });
+        renderShareLink(box, r.token);
+        const wrap = el("div", { class: "case-share-overlay", onClick: (e) => { if (e.target === wrap) wrap.remove(); } });
+        wrap.appendChild(el("div", { class: "pb-panel" }, [
+          el("div", { class: "pb-head" }, [el("div", { class: "prof-name", text: `Compartir ${lead.company || "empresa"}` }), el("button", { class: "pb-x", text: "✕", onClick: () => wrap.remove() })]),
+          box,
+        ]));
+        document.body.appendChild(wrap);
+      } else alert((r && r.error) || "No se pudo generar el enlace.");
+    });
+  }
+
   const bar = el("div", { class: "case-bar" }, [
     el("button", { class: "case-back", text: "← Volver", onClick: close }),
     el("div", { class: "case-brand" }, [whaleMark(), el("span", { class: "case-brand-t", html: 'CONNECT <i>· de la señal al valor</i>' })]),
+    shareBtn,
     el("span", { class: "case-rank", text: `#${lead.ranking ?? "—"}` }),
   ]);
   const foot = el("div", { class: "case-foot" }, [

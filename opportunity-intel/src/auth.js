@@ -113,13 +113,14 @@ export function login(name, password) {
 // Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
 // sesión persista y se pueda entrar sin red la próxima vez en este navegador.
 // Guarda también rol y token de sesión devueltos por el servidor.
-function cacheUser(name, color, password, role, token, avatar) {
+function cacheUser(name, color, password, role, token, avatar, tags) {
   const prev = getUsers().find((u) => norm(u.name) === norm(name));
   const users = getUsers().filter((u) => norm(u.name) !== norm(name));
   users.push({
     name, color, avatar: avatar ?? prev?.avatar ?? null, hash: hash(password),
     role: role ? normalizeRole(role) : DEFAULT_ROLE,
     token: token || null,
+    tags: Array.isArray(tags) ? tags : (prev?.tags ?? []),
     createdAt: new Date().toISOString(), remote: true,
   });
   write(USERS_KEY, users);
@@ -130,15 +131,15 @@ function cacheUser(name, color, password, role, token, avatar) {
  * local. Si el servidor no responde, cae al modo local para no bloquear.
  * @returns {Promise<{ok, error?}>}
  */
-export async function createUserAsync(name, password, color, invite) {
+export async function createUserAsync(name, password, color, invite, tags) {
   const n = String(name || "").trim();
   if (n.length < 2) return { ok: false, error: "El nombre debe tener al menos 2 caracteres." };
   if (String(password || "").length < 4) return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
   const finalColor = color || nextFreeColor();
   try {
-    const r = await remote.remoteRegister(n, password, finalColor, invite);
+    const r = await remote.remoteRegister(n, password, finalColor, invite, tags || []);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
-    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token);
+    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, null, r.user.tags || tags || []);
     return { ok: true };
   } catch {
     // Sin red: crea al menos en local (se sincronizará cuando vuelva la red).
@@ -164,7 +165,7 @@ export async function loginAsync(name, password) {
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
-      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar);
+      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.tags || []);
       write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
       return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
@@ -219,8 +220,8 @@ export async function syncRemoteColors() {
     const byName = new Map(users.map((u) => [norm(u.name), u]));
     for (const r of list) {
       const ex = byName.get(norm(r.name));
-      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; } // color/rol/avatar: el servidor manda
-      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, colorOnly: true }); // para teñir/badge
+      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; if (Array.isArray(r.tags)) ex.tags = r.tags; } // color/rol/avatar/etiquetas: el servidor manda
+      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, tags: Array.isArray(r.tags) ? r.tags : [], colorOnly: true }); // para teñir/badge/ojeada
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
@@ -255,7 +256,13 @@ export function currentUser() {
   if (!s) return null;
   const u = getUsers().find((x) => norm(x.name) === norm(s.name));
   if (!u) return null;
-  return { name: u.name, color: u.color, avatar: u.avatar || null, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+  return { name: u.name, color: u.color, avatar: u.avatar || null, tags: Array.isArray(u.tags) ? u.tags : [], role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+}
+
+/** Etiquetas de equipo del usuario en sesión (slugs). [] si no hay sesión. */
+export function getTags() {
+  const u = currentUser();
+  return u ? (u.tags || []) : [];
 }
 
 /** Rol del usuario en sesión (admin/editor/viewer/analyst). viewer si no hay sesión. */
@@ -285,7 +292,7 @@ export async function refreshSession() {
       write(SESSION_KEY, { ...s, role });
       const users = getUsers();
       const u = users.find((x) => norm(x.name) === norm(s.name));
-      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; write(USERS_KEY, users); }
+      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; if (Array.isArray(r.user.tags)) u.tags = r.user.tags; write(USERS_KEY, users); }
       return { ok: true, role };
     }
     return { ok: false };
@@ -334,4 +341,50 @@ export async function setUserRole(targetName, role) {
 export function colorOf(name) {
   const u = getUsers().find((x) => norm(x.name) === norm(name));
   return u ? u.color : null;
+}
+
+// —— Etiquetas de equipo ———————————————————————————————————————————————————————
+
+/** Fija las etiquetas (slugs) que definen al usuario en sesión. Server-first;
+ *  refleja en local para la ojeada offline. {ok, tags?, error?} */
+export async function setTags(tags) {
+  const list = Array.isArray(tags) ? tags : [];
+  // Refleja ya en local (para el perfil/insignias), gane o no la red.
+  const u = currentUser();
+  if (u) {
+    const users = getUsers();
+    const me = users.find((x) => norm(x.name) === norm(u.name));
+    if (me) { me.tags = list; write(USERS_KEY, users); }
+  }
+  const token = getToken();
+  if (!token) return { ok: true, tags: list, local: true };
+  try {
+    const r = await remote.remoteSetTags(token, list);
+    if (r && r.ok) return { ok: true, tags: r.tags || list };
+    return { ok: false, error: (r && r.error) || "No se pudieron guardar las etiquetas." };
+  } catch { return { ok: true, tags: list, local: true }; }
+}
+
+/** Trae el catálogo de etiquetas del servidor. {ok, tags:[{slug,label}]} */
+export async function tagCatalog() {
+  const token = getToken();
+  if (!token) return { ok: false, tags: [] };
+  try { return await remote.remoteTagCatalog(token); }
+  catch { return { ok: false, tags: [] }; }
+}
+
+/** Amplía el catálogo (solo admin; el servidor refuerza con 403). */
+export async function addCatalogTag(label) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
+  try { return await remote.remoteAddTag(token, label); }
+  catch { return { ok: false, error: "Sin conexión con el servidor." }; }
+}
+
+/** Quita una etiqueta del catálogo (solo admin; el servidor refuerza). */
+export async function removeCatalogTag(label) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada." };
+  try { return await remote.remoteRemoveTag(token, label); }
+  catch { return { ok: false, error: "Sin conexión con el servidor." }; }
 }

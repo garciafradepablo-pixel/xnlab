@@ -63,8 +63,66 @@ async function userByToken(token: string) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, workspace, data, rev, token } = await req.json().catch(() => ({}));
+    const { action, workspace, data, rev, token, scope, company, companyName, share } = await req.json().catch(() => ({}));
     const ws = String(workspace || "default").slice(0, 64);
+
+    function randHex(n: number): string {
+      const a = new Uint8Array(n); crypto.getRandomValues(a);
+      return [...a].map((b) => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    // createShare: un rol con permiso de escritura (admin/editor) genera un
+    // enlace de PRUEBA en solo-lectura — sin pedir permiso y sin que el que mira
+    // necesite registrarse. scope: 'workspace' (toda la app) | 'company' (ficha).
+    if (action === "createShare") {
+      const user = await userByToken(String(token || ""));
+      if (!user) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (!CAN_WRITE.has(user.role)) {
+        return json({ ok: false, error: "Tu rol no permite compartir vistas de prueba." }, 403);
+      }
+      const sc = scope === "company" ? "company" : "workspace";
+      const tok = randHex(16);
+      const expires_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(); // 30 días
+      const ins = await rest(`connect_shares`, {
+        method: "POST", headers: { Prefer: "return=minimal" },
+        body: JSON.stringify({
+          token: tok, scope: sc, workspace: ws,
+          company: sc === "company" ? String(company || "").slice(0, 120) || null : null,
+          company_name: sc === "company" ? String(companyName || "").slice(0, 160) || null : null,
+          created_by: user.name || null, expires_at,
+        }),
+      });
+      if (!ins.ok) {
+        const detail = await ins.text();
+        return json({ ok: false, error: "No se pudo crear el enlace.", detail }, 500);
+      }
+      return json({ ok: true, token: tok, scope: sc, expires_at });
+    }
+
+    // loadShare: SIN sesión. Valida el token de prueba y devuelve el documento
+    // compartido en SOLO LECTURA + el foco (scope/company). No emite token de
+    // escritura: por aquí no se puede mutar nada.
+    if (action === "loadShare") {
+      const sh = String(share || "").trim();
+      if (!sh) return json({ ok: false, error: "Falta el enlace." }, 400);
+      const sr = await rest(`connect_shares?select=scope,company,company_name,workspace,expires_at&token=eq.${encodeURIComponent(sh)}`);
+      const srows = await sr.json();
+      const srow = Array.isArray(srows) ? srows[0] : null;
+      if (!srow) return json({ ok: false, error: "Enlace no válido." }, 404);
+      if (srow.expires_at && new Date(srow.expires_at) < new Date()) return json({ ok: false, error: "El enlace ha caducado." }, 410);
+      const sws = String(srow.workspace || "default").slice(0, 64);
+      const res = await rest(`connect_state?select=data,rev&workspace=eq.${encodeURIComponent(sws)}`);
+      const rows = await res.json();
+      const row = Array.isArray(rows) ? rows[0] : null;
+      return json({
+        ok: true, readOnly: true,
+        scope: srow.scope || "workspace",
+        company: srow.company || null,
+        companyName: srow.company_name || null,
+        data: row ? row.data : null,
+        rev: row ? row.rev : 0,
+      });
+    }
 
     // load: cualquier sesión válida puede LEER (viewer incluido).
     if (action === "load") {

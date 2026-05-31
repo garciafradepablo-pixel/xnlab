@@ -29,9 +29,30 @@ async function call(action, payload) {
   return res.json();
 }
 
-/** Registra una cuenta (requiere invitación salvo el primer usuario). */
-export function remoteRegister(name, password, color, invite) {
-  return call("register", { name, password, color, invite });
+/** Registra una cuenta (requiere invitación salvo el primer usuario). Las
+ *  etiquetas las elige el usuario en la ronda del registro. */
+export function remoteRegister(name, password, color, invite, tags) {
+  return call("register", { name, password, color, invite, tags: tags || [] });
+}
+
+/** Catálogo de etiquetas de equipo (slug/label). Requiere sesión válida. */
+export function remoteTagCatalog(token) {
+  return call("tagCatalog", { token });
+}
+
+/** Fija las etiquetas del propio usuario (multi). Requiere sesión válida. */
+export function remoteSetTags(token, tags) {
+  return call("setTags", { token, tags: tags || [] });
+}
+
+/** Amplía el catálogo de etiquetas (solo admin; el servidor refuerza). */
+export function remoteAddTag(token, label) {
+  return call("addTag", { token, label });
+}
+
+/** Quita una etiqueta del catálogo (solo admin; el servidor refuerza). */
+export function remoteRemoveTag(token, label) {
+  return call("removeTag", { token, label });
 }
 
 /** Genera un código de invitación (solo admin; el servidor refuerza). */

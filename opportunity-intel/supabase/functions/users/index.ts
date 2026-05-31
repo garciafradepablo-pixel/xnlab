@@ -30,6 +30,30 @@ const json = (body: unknown, status = 200) =>
 const ROLES = ["admin", "editor", "viewer", "analyst"];
 const normRole = (r: string) => (ROLES.includes(r) ? r : "viewer");
 
+// Catálogo de etiquetas de equipo (slugs vivos). Se valida lo que el usuario
+// elige contra el catálogo para no guardar etiquetas inventadas.
+async function catalogSlugs(): Promise<Set<string>> {
+  const res = await rest(`connect_team_tags?select=slug`);
+  const rows = await res.json();
+  return new Set((Array.isArray(rows) ? rows : []).map((r: any) => String(r.slug)));
+}
+// Limpia una lista de etiquetas: minúsculas, únicas, presentes en el catálogo,
+// tope de 24. Si no se puede leer el catálogo, se acepta tal cual (degradado).
+async function sanitizeTags(tags: unknown): Promise<string[]> {
+  if (!Array.isArray(tags)) return [];
+  const want = [...new Set(tags.map((t) => String(t || "").trim().toLowerCase()).filter(Boolean))].slice(0, 24);
+  if (!want.length) return [];
+  try {
+    const cat = await catalogSlugs();
+    return cat.size ? want.filter((t) => cat.has(t)) : want;
+  } catch {
+    return want;
+  }
+}
+const slugify = (s: string) =>
+  String(s || "").trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40);
+
 // Caducidad de sesión: un token más viejo que esto deja de valer y exige
 // re-login. Limita la ventana de un token filtrado.
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días
@@ -60,7 +84,7 @@ async function rest(path: string, init: RequestInit = {}) {
 
 async function userByToken(token: string) {
   if (!token) return null;
-  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,token_at&token=eq.${encodeURIComponent(token)}`);
+  const res = await rest(`connect_users?select=id,name,name_lower,color,role,avatar,tags,token_at&token=eq.${encodeURIComponent(token)}`);
   const rows = await res.json();
   const u = Array.isArray(rows) && rows[0] ? rows[0] : null;
   if (!u || tokenExpired(u.token_at)) return null; // sesión caducada → re-login
@@ -79,15 +103,65 @@ async function issueToken(id: string): Promise<string> {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   try {
-    const { action, name, password, color, token, targetName, role, avatar, invite } = await req.json().catch(() => ({}));
+    const { action, name, password, color, token, targetName, role, avatar, invite, tags, label } = await req.json().catch(() => ({}));
     const nm = String(name || "").trim();
     const nameLower = nm.toLowerCase();
 
-    // list: nombres + colores + roles + avatar (no sensible).
+    // list: nombres + colores + roles + avatar + etiquetas (no sensible).
     if (action === "list") {
-      const res = await rest(`connect_users?select=name,color,role,avatar`);
+      const res = await rest(`connect_users?select=name,color,role,avatar,tags`);
       const rows = await res.json();
       return json({ ok: true, users: Array.isArray(rows) ? rows : [] });
+    }
+
+    // tagCatalog: catálogo de etiquetas de equipo. Cualquier sesión válida lo lee.
+    if (action === "tagCatalog") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const res = await rest(`connect_team_tags?select=slug,label&order=label.asc`);
+      const rows = await res.json();
+      return json({ ok: true, tags: Array.isArray(rows) ? rows : [] });
+    }
+
+    // addTag: SOLO admin. Amplía el catálogo de etiquetas de equipo.
+    if (action === "addTag") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN amplía el catálogo." }, 403);
+      const lbl = String(label || "").trim().slice(0, 40);
+      const slug = slugify(lbl);
+      if (!slug) return json({ ok: false, error: "Etiqueta no válida." }, 400);
+      const up = await rest(`connect_team_tags?on_conflict=slug`, {
+        method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+        body: JSON.stringify({ slug, label: lbl, created_by: caller.name || null }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudo añadir la etiqueta." }, 500);
+      return json({ ok: true, tag: { slug, label: lbl } });
+    }
+
+    // removeTag: SOLO admin. Quita una etiqueta del catálogo (no toca a quien ya
+    // la tuviera; queda como histórico hasta que cada uno revise sus etiquetas).
+    if (action === "removeTag") {
+      const caller = await userByToken(String(token || ""));
+      if (!caller) return json({ ok: false, error: "Sesión no válida." }, 401);
+      if (caller.role !== "admin") return json({ ok: false, error: "Solo un ADMIN edita el catálogo." }, 403);
+      const slug = slugify(String(label || ""));
+      if (!slug) return json({ ok: false, error: "Etiqueta no válida." }, 400);
+      const del = await rest(`connect_team_tags?slug=eq.${encodeURIComponent(slug)}`, { method: "DELETE", headers: { Prefer: "return=minimal" } });
+      if (!del.ok) return json({ ok: false, error: "No se pudo quitar la etiqueta." }, 500);
+      return json({ ok: true });
+    }
+
+    // setTags: el propio usuario fija las etiquetas que lo definen (multi).
+    if (action === "setTags") {
+      const u = await userByToken(String(token || ""));
+      if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
+      const clean = await sanitizeTags(tags);
+      const up = await rest(`connect_users?id=eq.${encodeURIComponent(u.id)}`, {
+        method: "PATCH", body: JSON.stringify({ tags: clean }),
+      });
+      if (!up.ok) return json({ ok: false, error: "No se pudieron guardar las etiquetas." }, 500);
+      return json({ ok: true, tags: clean });
     }
 
     // setAvatar: el propio usuario (sesión válida) fija su emoji/avatar.
@@ -144,10 +218,11 @@ Deno.serve(async (req) => {
       const salt = randHex(16);
       const pass_hash = await sha256(`${salt}::${password}`);
       const newRole = firstUser ? "admin" : (inviteRole || "editor");
+      const cleanTags = await sanitizeTags(tags); // ronda de etiquetas al registrarse
       const ins = await rest(`connect_users`, {
         method: "POST",
         headers: { Prefer: "return=representation" },
-        body: JSON.stringify({ name: nm, name_lower: nameLower, color: color || "#4a9eff", pass_hash, salt, role: newRole }),
+        body: JSON.stringify({ name: nm, name_lower: nameLower, color: color || "#4a9eff", pass_hash, salt, role: newRole, tags: cleanTags }),
       });
       if (!ins.ok) {
         const t = await ins.text();
@@ -161,26 +236,26 @@ Deno.serve(async (req) => {
       }
       const row = (await ins.json())[0];
       const tok = await issueToken(row.id);
-      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, token: tok } });
+      return json({ ok: true, user: { name: row.name, color: row.color, role: row.role, avatar: null, tags: row.tags || [], token: tok } });
     }
 
     // login: verifica, emite token, devuelve rol.
     if (action === "login") {
-      const res = await rest(`connect_users?select=id,name,color,role,avatar,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
+      const res = await rest(`connect_users?select=id,name,color,role,avatar,tags,pass_hash,salt&name_lower=eq.${encodeURIComponent(nameLower)}`);
       const rows = await res.json();
       const u = Array.isArray(rows) ? rows[0] : null;
       if (!u) return json({ ok: false, error: "Usuario no encontrado." });
       const h = await sha256(`${u.salt}::${password}`);
       if (h !== u.pass_hash) return json({ ok: false, error: "Contraseña incorrecta." });
       const tok = await issueToken(u.id);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, token: tok } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, tags: u.tags || [], token: tok } });
     }
 
     // me: valida un token y devuelve el usuario+rol (fuente de verdad del rol).
     if (action === "me") {
       const u = await userByToken(String(token || ""));
       if (!u) return json({ ok: false, error: "Sesión no válida." }, 401);
-      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null } });
+      return json({ ok: true, user: { name: u.name, color: u.color, role: u.role, avatar: u.avatar || null, tags: u.tags || [] } });
     }
 
     // setPassword: el propio usuario (sesión válida) cambia su contraseña. Sal

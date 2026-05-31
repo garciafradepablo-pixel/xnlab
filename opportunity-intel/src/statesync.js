@@ -51,3 +51,21 @@ export function remoteLoadState(token, workspace = "default") {
 export function remoteSaveState(data, rev, token, workspace = "default") {
   return call("save", { workspace, data, rev, token });
 }
+
+/**
+ * Crea un enlace de PRUEBA en solo-lectura (lo pueden generar los roles con
+ * permiso de escritura). scope: "workspace" (toda la app) | "company" (ficha).
+ * @returns {Promise<{ok, token?, scope?, expires_at?, error?}>}
+ */
+export function remoteCreateShare(token, scope, company, companyName, workspace = "default") {
+  return call("createShare", { token, scope, company, companyName, workspace });
+}
+
+/**
+ * Abre un enlace de prueba SIN sesión: devuelve el estado compartido en lectura
+ * y el foco (scope/company). El que mira no necesita registro ni cuenta.
+ * @returns {Promise<{ok, readOnly?, scope?, company?, companyName?, data?, rev?, error?}>}
+ */
+export function remoteLoadShare(share) {
+  return call("loadShare", { share });
+}
