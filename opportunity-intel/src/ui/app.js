@@ -521,9 +521,9 @@ function header() {
     el("div", { class: "brand" }, [
       el("div", { class: "brand-lock" }, [
         whaleMark(),
-        el("span", { class: "logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+        el("span", { class: "logo", html: 'CONNECT' }),
       ]),
-      el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
+      el("span", { class: "tagline", text: "Inteligencia de oportunidades — capta y selecciona clientes" }),
     ]),
     el("div", { class: "head-actions" }, [
       state.dataset !== "researched"
