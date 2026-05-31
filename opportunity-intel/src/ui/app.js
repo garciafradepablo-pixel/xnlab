@@ -2121,7 +2121,6 @@ function todayCall(o, i, track) {
     el("div", { class: "tc-main" }, [
       el("div", { class: "tc-line" }, [
         el("span", { class: "tc-name", text: o.company }),
-        el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : "01" }),
         el("span", { class: "tc-conf", title: "Confianza", text: String(s.confidence) }),
         st !== "not_called" ? el("span", { class: "tc-status", text: STATUS_LABELS[st] }) : null,
       ]),
@@ -2252,7 +2251,7 @@ function tableView() {
 function buildTable() {
   const rows = visibleOpps();
   const tracking = store.getTracking();
-  const head = ["#", "Empresa", "Sector", "Ciudad", "Clase", "Conf", "Evid", "Conv", "Reun", "Cierre", "Econ", "Recom", "Estado"];
+  const head = ["#", "Empresa", "Sector", "Ciudad", "Conf", "Evid", "Conv", "Reun", "Cierre", "Econ", "Recom", "Estado"];
   const table = el("table", { class: "rank-table" }, [
     el("thead", {}, el("tr", {}, head.map((h) => el("th", { text: h })))),
     el("tbody", {}, rows.map((o) => {
@@ -2263,7 +2262,6 @@ function buildTable() {
         el("td", { class: "td-company", "data-k": "Empresa", text: o.company }),
         el("td", { "data-k": "Sector", text: sectorByKey(o.sector)?.label || o.sector }),
         el("td", { "data-k": "Ciudad", text: o.city }),
-        el("td", { "data-k": "Clase" }, el("span", { class: `badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : s.classification === "01" ? "01" : s.classification === "unqualified" ? "?" : "—" })),
         el("td", { class: "num strong", "data-k": "Conf", text: String(s.confidence) }),
         el("td", { class: "num", "data-k": "Evid", text: String(s.evidence) }),
         el("td", { class: "num", "data-k": "Conv", text: String(s.conversation) }),
@@ -2412,7 +2410,6 @@ function topPicks() {
       }, [
         el("span", { class: "tp-score", text: String(s.confidence) }),
         el("span", { class: "tp-name", text: o.company }),
-        el("span", { class: `tp-badge badge-${s.classification}`, text: s.classification === "xn" ? "XN" : "01" }),
         st !== "not_called" ? el("span", { class: "tp-st", text: STATUS_LABELS[st] }) : null,
       ]);
     })),
