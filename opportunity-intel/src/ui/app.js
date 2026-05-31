@@ -1547,7 +1547,7 @@ function topPicks() {
   const tracking = store.getTracking();
   return el("div", { class: "top-picks" }, [
     el("div", { class: "tp-head" }, [
-      el("span", { class: "tp-bolt", text: "⚡" }),
+      iconEl("bolt", "tp-bolt"),
       el("span", { class: "tp-title", text: "Para llamar ya" }),
       el("span", { class: "tp-sub", text: "las mejores, de mayor a menor puntuación" }),
     ]),

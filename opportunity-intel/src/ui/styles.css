@@ -627,7 +627,8 @@ output { font-size: 12px; color: var(--accent); }
 /* ---- Top picks (franja "para llamar ya") ---- */
 .top-picks { background: linear-gradient(180deg, rgba(201,162,39,.10), rgba(201,162,39,.02)); border: 1px solid rgba(201,162,39,.3); border-radius: 12px; padding: 12px 14px; margin-bottom: 16px; }
 .tp-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 10px; }
-.tp-bolt { font-size: 15px; }
+.tp-bolt { color: var(--accent); display: inline-flex; }
+.tp-bolt svg { width: 16px; height: 16px; }
 .tp-title { font-size: 14px; font-weight: 800; letter-spacing: .3px; color: var(--ink); }
 .tp-sub { font-size: 12px; color: var(--ink-dim); }
 .tp-list { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -1155,7 +1156,8 @@ output { font-size: 12px; color: var(--accent); }
    2) Cursor "no permitido" coherente en cualquier botón deshabilitado.
    3) Respeto a quien pide menos movimiento: corta animaciones en bucle
       (la cabecera "neuronal", el pulso del agente) y transiciones largas. */
-:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; border-radius: 4px; }
+/* Foco coherente: el anillo ámbar base se define más abajo (junto a
+   ::selection). Aquí solo los ajustes de offset específicos. */
 .swatch:focus-visible { outline-offset: 3px; }
 .tab:focus-visible { outline-offset: -2px; }
 button:disabled { cursor: not-allowed; }
