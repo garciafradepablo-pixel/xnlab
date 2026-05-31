@@ -150,7 +150,8 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .prof-notes:focus { outline: none; border-color: var(--accent); }
 .prof-linkrow { display: flex; gap: 8px; }
 .prof-link { flex: 1; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink-dim); border-radius: 8px; padding: 8px 10px; font-size: 12px; }
-.prof-foot { padding-top: 14px; border-top: 1px solid var(--line); }
+.prof-foot { padding-top: 14px; border-top: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.prof-ver { font-size: 11px; color: var(--ink-faint); letter-spacing: .02em; }
 .auth-invite { text-align: center; font-size: 13px; color: var(--accent); background: rgba(201,162,39,.08); border: 1px solid rgba(201,162,39,.3); border-radius: 9px; padding: 8px 10px; margin: 0 0 6px; }
 
 /* ---- Piloto automático ---- */

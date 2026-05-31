@@ -414,7 +414,6 @@ function header() {
       muellePulse(),
       userChip(),
       syncBadge(),
-      el("span", { class: "ver-tag", title: "Versión publicada (última actualización)", text: pubLabel || "actualizando…" }),
     ]),
   ]);
 }
@@ -428,7 +427,9 @@ function setPublishedVersion(v) {
   pubLabel = isNaN(d.getTime())
     ? `v · ${String(v).slice(0, 16)}`
     : `actualizado ${d.toLocaleString("es-ES", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}`;
-  if (root) { const n = root.querySelector(".ver-tag"); if (n) n.textContent = pubLabel; }
+  // La versión vive ahora en el menú de perfil (cabecera más calmada): si está
+  // abierto, refréscalo en sitio.
+  if (typeof document !== "undefined") { const n = document.body.querySelector?.(".prof-ver"); if (n) n.textContent = pubLabel; }
 }
 
 // Indicador discreto del estado de sincronización con el servidor compartido.
@@ -539,6 +540,7 @@ function openProfile() {
         : el("p", { class: "config-note", text: "El registro es por invitación. Pide a un admin (PABLO/JAVI) que te genere el enlace." }),
     ]),
     el("div", { class: "prof-foot" }, [
+      el("span", { class: "prof-ver", title: "Versión publicada que estás usando", text: pubLabel || "comprobando versión…" }),
       el("button", { class: "btn-danger", text: "Cerrar sesión", onClick: () => { if (confirm(`¿Cerrar sesión de ${u.name}?`)) { auth.logout(); close(); mount(root); } } }),
     ]),
   ]));
