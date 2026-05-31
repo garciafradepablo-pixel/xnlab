@@ -11,6 +11,7 @@ const KEY = "sb_publishable_GtToYg33N8bT7T6O3OEmQw_Wu_hEvkS";
 
 const URL_DRIVE = BASE ? `${BASE}/drive` : "";
 const URL_PRESENCE = BASE ? `${BASE}/presence` : "";
+const URL_ACTIVITY = BASE ? `${BASE}/activity` : "";
 
 async function post(url, body) {
   // Resiliente: una caída de red NUNCA lanza (devuelve un objeto limpio). Así la
@@ -38,4 +39,10 @@ export function remoteDrive(token, payload) {
  *  ("beat"|"roster") y, en beat, el estado y la actividad. */
 export function remotePresence(token, payload) {
   return post(URL_PRESENCE, { token, ...(payload || {}) });
+}
+
+/** Feed de actividad: traza append-only del equipo. El payload lleva la acción
+ *  ("emit"|"feed") y, en emit, el verbo/objeto/meta. El autor lo pone el servidor. */
+export function remoteActivity(token, payload) {
+  return post(URL_ACTIVITY, { token, ...(payload || {}) });
 }

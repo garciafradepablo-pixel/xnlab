@@ -59,6 +59,7 @@ import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatS
 import { buildLeaderboard } from "../productivity.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
+import * as activity from "../activity.js";
 import { remoteCreateShare, remoteLoadShare } from "../statesync.js";
 
 // Modo PRUEBA (solo lectura, sin sesión): cuando se abre un enlace ?preview=…
@@ -651,7 +652,7 @@ function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
   // Zona de equipo: quién está ahora, chat general, apuntes de mejora, privados
   // y el marcador de productividad para todos; gestión de personas solo admin.
-  const teamViews = [["presence", "Ahora"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
+  const teamViews = [["presence", "Ahora"], ["feed", "Feed"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
   if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
   z.push({ key: "team", label: "Equipo", views: teamViews });
   return z;
@@ -874,6 +875,7 @@ function viewArea() {
   else if (state.view === "dms") area.appendChild(dmsView());
   else if (state.view === "drive") area.appendChild(driveView());
   else if (state.view === "presence") area.appendChild(presenceView());
+  else if (state.view === "feed") area.appendChild(activityView());
   else if (state.view === "leaderboard") area.appendChild(leaderboardView());
   else area.appendChild(learningView());
   return area;
@@ -1222,6 +1224,8 @@ function driveView() {
       const put = await fetch(sign.url, { method: "PUT", headers: { "Content-Type": sign.contentType || file.type || "application/octet-stream" }, body: file });
       if (!put.ok) throw new Error("La subida falló.");
       status.textContent = `✓ ${file.name} subido.`; status.classList.add("ok");
+      const folderLabel = (FOLDERS.find((f) => f.slug === state._driveFolder) || {}).label;
+      activity.logActivity("file_up", file.name, folderLabel ? { folder: folderLabel } : null);
       await load();
     } catch (e) {
       status.textContent = String(e.message || e); status.classList.add("err");
@@ -1415,6 +1419,51 @@ function presenceView() {
     if (mine === presenceGen && state.view === "presence") setTimeout(load, 15000); // refresco suave en vivo
   };
   list.appendChild(el("p", { class: "hint", text: "Cargando…" }));
+  load();
+  return wrap;
+}
+
+// ---- Feed de actividad: la traza honesta del equipo -------------------------
+
+let feedGen = 0; // corta el refresco de una vista que ya no está montada
+function activityView() {
+  const mine = ++feedGen;
+  const wrap = el("section", { class: "feed-view" });
+  wrap.appendChild(el("div", { class: "view-head" }, [
+    el("h2", { text: "Actividad del equipo" }),
+    el("p", { class: "hint", text: "La traza honesta de qué pasa en Connect: tareas hechas, archivos subidos, leads nuevos. Quién hizo qué, y cuándo." }),
+  ]));
+  const listWrap = el("div", { class: "feed-list" });
+  wrap.appendChild(listWrap);
+
+  const paint = (feed) => {
+    clear(listWrap);
+    const groups = activity.groupByDay(feed, Date.now());
+    if (!groups.length) { listWrap.appendChild(el("p", { class: "hint", text: "Aún no hay actividad registrada. En cuanto el equipo trabaje, aparecerá aquí." })); return; }
+    for (const g of groups) {
+      listWrap.appendChild(el("div", { class: "feed-day", text: g.label }));
+      for (const ev of g.events) {
+        const m = activity.verbMeta(ev.verb);
+        const color = auth.colorOf(ev.actor) || "#4a9eff";
+        listWrap.appendChild(el("div", { class: "feed-row" }, [
+          el("span", { class: "feed-glyph", style: `border-color:${color}`, text: m.glyph }),
+          el("div", { class: "feed-body" }, [
+            el("span", { class: "feed-text", text: activity.describe(ev) }),
+            el("span", { class: "feed-time", text: activity.relativeTime(ev.created_at || ev.at) }),
+          ]),
+        ]));
+      }
+    }
+  };
+
+  const load = async () => {
+    const r = await activity.fetchFeed();
+    if (mine !== feedGen || state.view !== "feed") return; // la vista cambió: corta el refresco
+    if (!r || !r.ok) { clear(listWrap); listWrap.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la actividad." })); }
+    else paint(r.feed || []);
+    if (mine === feedGen && state.view === "feed") setTimeout(load, 20000); // refresco suave
+  };
+  listWrap.appendChild(el("p", { class: "hint", text: "Cargando…" }));
   load();
   return wrap;
 }
@@ -1708,7 +1757,7 @@ function tasksView() {
               class: `task-chip st-${t.status}`,
               title: "Cambiar estado",
               text: tasks.STATUS_LABELS[t.status],
-              onClick: canWrite ? () => { store.setTaskStatus(t.id, tasks.nextStatus(t.status)); paint(); } : null,
+              onClick: canWrite ? () => { advanceTask(t); paint(); } : null,
             }),
             el("span", { class: "brief-task", text: t.title }),
           ]))));
@@ -1753,6 +1802,7 @@ function tasksView() {
       const t = tasks.makeTask({ title: input.value, assignee: who.value, by: me ? me.name : null });
       if (!t) { input.focus(); return; }
       store.upsertTask(t);
+      activity.logActivity("task_new", t.title);
       input.value = "";
       paint();
       input.focus();
@@ -1772,12 +1822,19 @@ function tasksView() {
 }
 
 // Una fila de tarea: estado (clic para avanzar), título, responsable y borrar.
+// Avanza el estado de una tarea y, si llega a "hecho", lo deja en el feed.
+function advanceTask(t) {
+  const next = tasks.nextStatus(t.status);
+  store.setTaskStatus(t.id, next);
+  if (next === "done") activity.logActivity("task_done", t.title);
+}
+
 function taskRow(t, canWrite, repaint) {
   const statusBtn = el("button", {
     class: `task-chip st-${t.status}`,
     title: canWrite ? "Cambiar estado" : tasks.STATUS_LABELS[t.status],
     text: tasks.STATUS_LABELS[t.status],
-    onClick: canWrite ? () => { store.setTaskStatus(t.id, tasks.nextStatus(t.status)); repaint(); } : null,
+    onClick: canWrite ? () => { advanceTask(t); repaint(); } : null,
   });
   const kids = [
     statusBtn,
