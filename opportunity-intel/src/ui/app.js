@@ -288,7 +288,7 @@ function renderAuth() {
 
   const card = el("div", { class: "auth-card" }, [
     el("div", { class: "auth-whale" }, [whaleMark()]),
-    el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+    el("div", { class: "auth-logo", html: 'CONNECT <span class="logo-sub">· XNLAB</span>' }),
     el("p", { class: "auth-kicker", text: "Inteligencia de oportunidades · de la señal al chorro" }),
     state._invite ? el("p", { class: "auth-invite", text: "Tienes una invitación a Connect — crea tu usuario abajo." }) : null,
     el("p", { class: "auth-tagline", text: tab === "login" ? "Entra para continuar" : "Crea tu usuario y elige tu color de firma" }),
@@ -469,9 +469,9 @@ function header() {
     el("div", { class: "brand" }, [
       el("div", { class: "brand-lock" }, [
         whaleMark(),
-        el("span", { class: "logo", html: 'CONNECT <span class="logo-sub">· 01 ↔ XN</span>' }),
+        el("span", { class: "logo", html: 'CONNECT <span class="logo-sub">· XNLAB</span>' }),
       ]),
-      el("span", { class: "tagline", text: "El árbol que conecta 01 y XN — capta y selecciona clientes" }),
+      el("span", { class: "tagline", text: "La ventana interna de XNLAB — ve la oportunidad y conecta clientes y talento" }),
     ]),
     el("div", { class: "head-actions" }, [
       state.dataset !== "researched"
