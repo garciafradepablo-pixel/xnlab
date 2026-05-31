@@ -74,7 +74,7 @@ try {
 // ── 5. Recorrer TODAS las zonas y sus subpestañas sin que nada lance ─────────
 try {
   const zoneEls = root.querySelectorAll(".zone");
-  ok(zoneEls.length >= 4, "hay al menos 4 zonas (Trabajar/Captar/Cerrar/Memoria)");
+  ok(zoneEls.length >= 4, "hay al menos 4 zonas (Trabajar/Captar/Cerrar/Muelle/Saber)");
   for (const z of zoneEls) {
     if (/⌘K/.test(z.textContent)) continue; // el botón de comandos se prueba aparte
     z.click();

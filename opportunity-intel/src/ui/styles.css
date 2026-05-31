@@ -1726,3 +1726,9 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 .tp-rec { background: linear-gradient(180deg, rgba(155,128,240,.10), transparent 70%), var(--panel);
   border-color: rgba(155,128,240,.35); }
 .tp-rec .tp-big { color: var(--xn); }
+
+/* El marcador (KPIs de pipeline) vive al final de Hoy: la acción manda arriba,
+   las cifras acompañan. Encabezado discreto y con aire para separarlo del trabajo. */
+.today-h2-quiet { margin-top: 30px; color: var(--ink-dim); font-size: 13px;
+  text-transform: uppercase; letter-spacing: .08em; font-weight: 600;
+  border-top: 1px solid var(--line); padding-top: 22px; }

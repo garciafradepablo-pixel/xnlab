@@ -548,13 +548,16 @@ function openProfile() {
 // Navegación premium en DOS niveles: pocas zonas grandes arriba (la decisión de
 // "en qué estoy") y las vistas de cada zona debajo. Menos superficie, más
 // dirección. La paleta ⌘K salta a cualquier sitio sin tocar el ratón.
+// Navegación en dos niveles: ZONAS (verbo dominante del trabajo) y, dentro,
+// sub-vistas. Sigue el bucle diario: trabajar → captar → cerrar → hablar (muelle)
+// → saber. «Saber» reúne lo que el equipo aprende y lo que estudia (antes dos
+// zonas sueltas, Memoria y Formación): menos botones arriba, mismo contenido.
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar"]] },
   { key: "close", label: "Cerrar", views: [["crm", "CRM"], ["pipeline", "Embudo"]] },
   { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
-  { key: "memory", label: "Memoria", views: [["learning", "Aprendizaje"]] },
-  { key: "training", label: "Formación", views: [["training", "Dossiers"]] },
+  { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
 function zonesForUser() {
   const z = ZONES.map((zz) => ({ ...zz }));
@@ -1115,20 +1118,6 @@ function todayView() {
   // Centro de mando: la acción de ahora + la ruta del día.
   blocks.push(commandCenter(calls));
 
-  // Pulso del pipeline: cuatro cifras que mandan.
-  blocks.push(el("div", { class: "pulse" }, [
-    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
-    pulseKpi(pulse.total, "oportunidades vivas"),
-    pulseKpi(pulse.pending, "por llamar"),
-    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
-  ]));
-  blocks.push(el("div", { class: "pulse-split" }, [
-    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
-    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
-    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
-    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
-  ]));
-
   // Las llamadas de hoy.
   blocks.push(el("h2", { class: "today-h2", text: "Las 3 llamadas de hoy" }));
   if (!calls.length) {
@@ -1144,6 +1133,23 @@ function todayView() {
     blocks.push(el("h2", { class: "today-h2", text: `Seguimientos para hoy · ${due.length}` }));
     blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
   }
+
+  // El marcador, al final: primero el trabajo del día, luego cómo va todo. Las
+  // cifras son referencia (sirven sobre todo a la dirección), no el titular —
+  // la acción manda arriba, el pulso del pipeline acompaña abajo.
+  blocks.push(el("h2", { class: "today-h2 today-h2-quiet", text: "El marcador" }));
+  blocks.push(el("div", { class: "pulse" }, [
+    pulseKpi(pulse.meetings, "diagnósticos agendados", true),
+    pulseKpi(pulse.total, "oportunidades vivas"),
+    pulseKpi(pulse.pending, "por llamar"),
+    pulseKpi(eurFmt(pulse.valueTotal), "cartera potencial"),
+  ]));
+  blocks.push(el("div", { class: "pulse-split" }, [
+    el("span", { class: "ps ps-won", html: `<b>✓ Firmado</b> ${pulse.won} · ${esc(eurFmt(pulse.wonValue))}` }),
+    pulse.proposals ? el("span", { class: "ps ps-prop", html: `<b>Propuestas</b> ${pulse.proposals} · ${esc(eurFmt(pulse.proposalValue))}` }) : null,
+    el("span", { class: "ps ps-01", html: `<b>01</b> ${pulse.o1} · ${esc(eurFmt(pulse.value01))}` }),
+    el("span", { class: "ps ps-xn", html: `<b>XN</b> ${pulse.xn} · ${esc(eurFmt(pulse.valueXn))}` }),
+  ]));
 
   return el("div", { class: "today" }, blocks);
 }
