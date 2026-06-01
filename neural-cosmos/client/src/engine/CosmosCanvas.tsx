@@ -10,6 +10,7 @@ import Effects from "./Effects";
 
 export default function CosmosCanvas() {
   const lowPower = useUniverse((s) => s.lowPower);
+  const bloom = useUniverse((s) => s.bloom);
   return (
     <Canvas
       style={{ position: "absolute", inset: 0, touchAction: "none" }}
@@ -18,8 +19,8 @@ export default function CosmosCanvas() {
       camera={{ position: [0, 6, 34], fov: 55, near: 0.1, far: 400 }}
     >
       <Scene />
-      {/* Bloom only where the GPU can afford it. */}
-      {!lowPower && <Effects />}
+      {/* Bloom is opt-in (Settings) so the base scene always renders. */}
+      {bloom && !lowPower && <Effects />}
       <AdaptiveDpr pixelated />
       <Preload all />
     </Canvas>

@@ -12,6 +12,7 @@ import HistoryPanel from "./ui/HistoryPanel";
 import SettingsPanel from "./ui/SettingsPanel";
 import AtlasConsole from "./ui/AtlasConsole";
 import Compass from "./ui/Compass";
+import ErrorBoundary from "./ui/ErrorBoundary";
 import { useUniverse } from "./store/universe";
 import { t } from "./ui/strings";
 import type { Panel } from "./ui/panels";
@@ -32,7 +33,11 @@ export default function App() {
 
   return (
     <>
-      {status !== "error" && <CosmosCanvas />}
+      {status !== "error" && (
+        <ErrorBoundary>
+          <CosmosCanvas />
+        </ErrorBoundary>
+      )}
       {status === "ready" && <div className="vignette" aria-hidden />}
 
       {(status === "loading" || status === "idle") && (

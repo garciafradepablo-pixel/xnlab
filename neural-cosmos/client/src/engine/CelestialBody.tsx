@@ -20,6 +20,7 @@ import BlackHoleInfall from "./BlackHoleInfall";
 import GalaxyArms from "./GalaxyArms";
 import Constellation from "./Constellation";
 import SystemOrbit from "./SystemOrbit";
+import AnimalConstellation from "./AnimalConstellation";
 import type { AnimalArchetype } from "../types/domain";
 
 const LONG_PRESS_MS = 480;
@@ -135,6 +136,14 @@ export default function CelestialBody({
   const isBlackHole = entity.state === "blackhole";
   const isNebula = entity.state === "nebula";
   const dim = entity.state === "absorbed";
+  const hasAnimal = entity.archetype.animal !== "none";
+  // a soft node ring for established bodies (like the design's circled nodes)
+  const showRing = !isNebula && !isBlackHole && entity.state !== "absorbed";
+  const worldPos = useMemo(
+    () =>
+      new THREE.Vector3(entity.position.x, entity.position.y, entity.position.z),
+    [entity.position.x, entity.position.y, entity.position.z],
+  );
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
@@ -276,7 +285,34 @@ export default function CelestialBody({
         </mesh>
       )}
 
-      {/* archetype nebula / particle storm — energy, never a logo */}
+      {/* soft node ring (the design's circled nodes) */}
+      {showRing && (
+        <Billboard>
+          <mesh>
+            <ringGeometry args={[radius * 1.35, radius * 1.42, 64]} />
+            <meshBasicMaterial
+              color={color}
+              transparent
+              opacity={0.3}
+              side={THREE.DoubleSide}
+              depthWrite={false}
+              blending={THREE.AdditiveBlending}
+            />
+          </mesh>
+        </Billboard>
+      )}
+
+      {/* archetype animal as a constellation (energy, never a logo) */}
+      {hasAnimal && (
+        <AnimalConstellation
+          animal={entity.archetype.animal}
+          color={color}
+          radius={radius}
+          worldPos={worldPos}
+        />
+      )}
+
+      {/* ambient archetype nebula / particle storm */}
       <points ref={nebulaRef}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[nebula, 3]} />

@@ -14,6 +14,8 @@ export default function SettingsPanel({
   const setLang = useUniverse((s) => s.setLang);
   const lowPower = useUniverse((s) => s.lowPower);
   const setLowPower = useUniverse((s) => s.setLowPower);
+  const bloom = useUniverse((s) => s.bloom);
+  const setBloom = useUniverse((s) => s.setBloom);
 
   return (
     <BottomSheet open={open} onClose={onClose} title={t("navSettings", lang)}>
@@ -48,6 +50,24 @@ export default function SettingsPanel({
             onClick={() => setLowPower(true)}
           >
             {t("performance", lang)}
+          </button>
+        </div>
+      </div>
+      <div className="field">
+        <span className="label">{t("bloom", lang)}</span>
+        <div className="chips">
+          <button
+            className={`chip ${bloom ? "active" : ""}`}
+            onClick={() => setBloom(true)}
+            disabled={lowPower}
+          >
+            On
+          </button>
+          <button
+            className={`chip ${!bloom ? "active" : ""}`}
+            onClick={() => setBloom(false)}
+          >
+            Off
           </button>
         </div>
       </div>

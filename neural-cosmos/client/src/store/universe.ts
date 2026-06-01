@@ -66,6 +66,7 @@ interface UniverseState {
   breadcrumbs: Crumb[]; // zoom trail (root … current)
   inspectorOpen: boolean;
   lowPower: boolean; // degrade effects on weak devices
+  bloom: boolean; // optional post-processing glow (off by default for safety)
 
   // ── Atlas (Phase 9) ───────────────────────────────────────────────────────
   atlasOpen: boolean;
@@ -86,6 +87,7 @@ interface UniverseState {
   setWeaveType: (t: ThreadType) => void;
   setInspectorOpen: (open: boolean) => void;
   setLowPower: (v: boolean) => void;
+  setBloom: (v: boolean) => void;
 
   // ── entity mutations ────────────────────────────────────────────────────
   addEntity: (patch: Partial<Entity> & { name: string }) => Promise<void>;
@@ -144,6 +146,7 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   lowPower:
     typeof navigator !== "undefined" &&
     (navigator.hardwareConcurrency ?? 8) <= 4,
+  bloom: false,
 
   atlasOpen: false,
   atlasUniverseId: null,
@@ -250,6 +253,9 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   },
   setLowPower(lowPower) {
     set({ lowPower });
+  },
+  setBloom(bloom) {
+    set({ bloom });
   },
 
   async addEntity(patch) {
