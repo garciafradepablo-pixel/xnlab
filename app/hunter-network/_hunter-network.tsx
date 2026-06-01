@@ -55,6 +55,10 @@ export default function HunterNetworkPage() {
       >
         <Dust count={8} opacity={0.06} />
 
+        {/* Cinematic depth — a soft warm bloom behind the hero, off-centre.
+            Pure decoration; sits under the content, never intercepts clicks. */}
+        <div aria-hidden style={{ position: "absolute", top: "-6%", left: "-12%", width: "min(640px,70vw)", height: "min(640px,70vw)", background: `radial-gradient(circle, ${VIVID},0.12) 0%, ${ACCENT},0.05) 35%, transparent 68%)`, filter: "blur(20px)", pointerEvents: "none", zIndex: 0 }} />
+
         <LiveStatusStrip t={t} />
 
         {/* Hero — same edge for both audiences */}
@@ -94,9 +98,16 @@ export default function HunterNetworkPage() {
         {/* Dominant CTA — the page must give one obvious action. */}
         <R delay={0.34}>
           <div style={{ marginTop: "clamp(28px,3.4vw,44px)", display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
-            <a href="#apply" style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "1rem clamp(1.6rem,3.4vw,2.8rem)", fontSize: "clamp(11px,0.9vw,13px)", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#1a0d04", background: `linear-gradient(100deg, ${VIVID},1) 0%, ${ACCENT},1) 100%)`, border: "none", borderRadius: 100, textDecoration: "none", boxShadow: `0 8px 40px ${VIVID},0.35)`, whiteSpace: "nowrap" }}>
-              {audience === "hunter" ? t.ctaHunter : t.ctaCompany} →
-            </a>
+            <motion.a
+              href="#apply"
+              whileHover={{ scale: 1.025, boxShadow: `0 10px 52px ${VIVID},0.5)` }}
+              whileTap={{ scale: 0.98 }}
+              transition={{ type: "spring", stiffness: 320, damping: 22 }}
+              style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "1.05rem clamp(1.7rem,3.6vw,3rem)", fontSize: "clamp(11px,0.9vw,13px)", fontWeight: 600, letterSpacing: "0.16em", textTransform: "uppercase", color: "#1a0d04", background: `linear-gradient(100deg, ${VIVID},1) 0%, ${ACCENT},1) 100%)`, border: "none", borderRadius: 100, textDecoration: "none", boxShadow: `0 8px 40px ${VIVID},0.35)`, whiteSpace: "nowrap" }}
+            >
+              {audience === "hunter" ? t.ctaHunter : t.ctaCompany}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+            </motion.a>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", letterSpacing: "0.01em" }}>{t.ctaNote}</span>
           </div>
         </R>
@@ -420,21 +431,61 @@ function CompanyEnquiry({ lang, t }: { lang: Lang; t: Copy }) {
 // Shared pieces
 // ============================================================================
 
+// Thin-stroke line icons — premium register, no emoji. 20px, currentColor, so
+// they inherit the node's accent. Drawn minimal on purpose.
+function HNIcon({ name, size = 20 }: { name: JourneyIcon; size?: number }) {
+  const common = { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.4, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  switch (name) {
+    case "train": // mortarboard
+      return (<svg {...common}><path d="M12 4 2 9l10 5 10-5-10-5Z" /><path d="M5 11v5c0 1 3 2.5 7 2.5s7-1.5 7-2.5v-5" /></svg>);
+    case "evaluate": // soundwave / call
+      return (<svg {...common}><path d="M3 12h2M7 8v8M11 5v14M15 9v6M19 11v2M21 12h0" /></svg>);
+    case "match": // target
+      return (<svg {...common}><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3.5" /></svg>);
+    case "work": // briefcase
+      return (<svg {...common}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18" /></svg>);
+    case "agenda": // calendar
+      return (<svg {...common}><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M3 9h18M8 3v4M16 3v4" /></svg>);
+    case "pay": // rising graph
+      return (<svg {...common}><path d="M3 17l5-5 4 3 8-8" /><path d="M21 7v5M21 7h-5" /></svg>);
+  }
+}
+
 // The one-minute promise: the full member journey as a scannable row. Each
 // node is a stage of what HN does for a hunter — train, evaluate, real work,
 // agenda, pay by performance. The deep machinery (courses, exam, agenda,
 // time-tracking) lives in the member portal; here it reads as the promise.
 function JourneyRow({ t }: { t: Copy }) {
   return (
-    <div style={{ marginTop: "clamp(28px,3.4vw,44px)", display: "flex", flexWrap: "wrap", gap: "clamp(8px,1vw,12px)", alignItems: "stretch" }}>
+    <div style={{ marginTop: "clamp(30px,3.6vw,46px)", display: "flex", flexWrap: "wrap", gap: "clamp(8px,1vw,12px)", alignItems: "stretch" }}>
       {t.journey.map((j, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 4, padding: "clamp(12px,1.4vw,16px) clamp(14px,1.6vw,18px)", borderRadius: 12, border: `1px solid ${VIVID},0.22)`, background: `${VIVID},0.05)`, minWidth: 110 }}>
-            <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden>{j.icon}</span>
-            <span style={{ fontSize: "clamp(0.8rem,0.95vw,0.9rem)", fontWeight: 500, color: "white", letterSpacing: "-0.005em" }}>{j.title}</span>
-            <span style={{ fontSize: 11, lineHeight: 1.35, color: "rgba(255,255,255,0.5)", fontWeight: 300 }}>{j.sub}</span>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 9,
+              padding: "clamp(14px,1.5vw,18px) clamp(15px,1.7vw,19px)",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "linear-gradient(160deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))",
+              minWidth: 124,
+            }}
+          >
+            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 30, height: 30, borderRadius: 9, color: `${VIVID},0.95)`, background: `${VIVID},0.08)`, border: `1px solid ${VIVID},0.2)` }} aria-hidden>
+              <HNIcon name={j.icon} />
+            </span>
+            <span style={{ display: "flex", alignItems: "baseline", gap: 6 }}>
+              <span style={{ fontSize: 9, fontVariantNumeric: "tabular-nums", letterSpacing: "0.1em", color: `${VIVID},0.6)` }}>{String(i + 1).padStart(2, "0")}</span>
+              <span style={{ fontSize: "clamp(0.82rem,0.98vw,0.94rem)", fontWeight: 500, color: "white", letterSpacing: "-0.005em" }}>{j.title}</span>
+            </span>
+            <span style={{ fontSize: 11, lineHeight: 1.4, color: "rgba(255,255,255,0.52)", fontWeight: 300 }}>{j.sub}</span>
           </div>
-          {i < t.journey.length - 1 && <span aria-hidden style={{ color: `${VIVID},0.5)`, fontSize: 14 }} className="hn-journey-arrow">→</span>}
+          {i < t.journey.length - 1 && (
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={`${VIVID},0.45)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="hn-journey-arrow" aria-hidden>
+              <path d="M5 12h14M13 6l6 6-6 6" />
+            </svg>
+          )}
         </div>
       ))}
       <style>{`@media (max-width:680px){.hn-journey-arrow{display:none}}`}</style>
@@ -607,6 +658,7 @@ const twoCol: React.CSSProperties = { display: "grid", gridTemplateColumns: "rep
 
 type Step = { num: string; title: string; body: string };
 type Level = { name: string; access: string };
+type JourneyIcon = "train" | "evaluate" | "match" | "work" | "agenda" | "pay";
 
 type Copy = {
   back: string;
@@ -616,7 +668,7 @@ type Copy = {
   lead: string;
   statusLabel: string;
   pulse: string[];
-  journey: { icon: string; title: string; sub: string }[];
+  journey: { icon: JourneyIcon; title: string; sub: string }[];
   ctaHunter: string;
   ctaCompany: string;
   ctaNote: string;
@@ -683,12 +735,12 @@ const en: Copy = {
     "Brand-risk sellers held back from real brands.",
   ],
   journey: [
-    { icon: "🎓", title: "Train", sub: "Sales training on the platform." },
-    { icon: "🎧", title: "Evaluate", sub: "A real test call, scored." },
-    { icon: "🎯", title: "Get matched", sub: "By your sales sector." },
-    { icon: "💼", title: "Real work", sub: "Campaigns, not promises." },
-    { icon: "📅", title: "Your agenda", sub: "Shifts and calls, organised." },
-    { icon: "📈", title: "Get paid", sub: "By performance." },
+    { icon: "train", title: "Train", sub: "Sales training on the platform." },
+    { icon: "evaluate", title: "Evaluate", sub: "A real test call, scored." },
+    { icon: "match", title: "Get matched", sub: "By your sales sector." },
+    { icon: "work", title: "Real work", sub: "Campaigns, not promises." },
+    { icon: "agenda", title: "Your agenda", sub: "Shifts and calls, organised." },
+    { icon: "pay", title: "Get paid", sub: "By performance." },
   ],
   ctaHunter: "Start your evaluation",
   ctaCompany: "Book a discovery call",
@@ -804,12 +856,12 @@ const es: Copy = {
     "Vendedores de riesgo apartados de marcas reales.",
   ],
   journey: [
-    { icon: "🎓", title: "Fórmate", sub: "Formación de ventas en la plataforma." },
-    { icon: "🎧", title: "Evalúate", sub: "Una llamada de prueba, puntuada." },
-    { icon: "🎯", title: "Encaja", sub: "Por tu sector de venta." },
-    { icon: "💼", title: "Trabajo real", sub: "Campañas, no promesas." },
-    { icon: "📅", title: "Tu agenda", sub: "Jornadas y llamadas, organizadas." },
-    { icon: "📈", title: "Cobra", sub: "Por rendimiento." },
+    { icon: "train", title: "Fórmate", sub: "Formación de ventas en la plataforma." },
+    { icon: "evaluate", title: "Evalúate", sub: "Una llamada de prueba, puntuada." },
+    { icon: "match", title: "Encaja", sub: "Por tu sector de venta." },
+    { icon: "work", title: "Trabajo real", sub: "Campañas, no promesas." },
+    { icon: "agenda", title: "Tu agenda", sub: "Jornadas y llamadas, organizadas." },
+    { icon: "pay", title: "Cobra", sub: "Por rendimiento." },
   ],
   ctaHunter: "Empieza tu evaluación",
   ctaCompany: "Reserva una llamada",
