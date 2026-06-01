@@ -254,6 +254,20 @@ function updateSyncBadge(s) {
   node.style.display = label ? "" : "none";
 }
 
+// ---- Estado vacío unificado -------------------------------------------------
+// Un solo componente para todos los "aún no hay nada / nada coincide". Da un
+// tono coherente en cada vista: un icono tenue, una línea clara y, opcional, una
+// acción. Antes cada vista pintaba su propio vacío con clases y pesos distintos.
+//   emptyNote("Aún no hay tareas.", { icon: "✓", action: {label, onClick} })
+function emptyNote(text, opts = {}) {
+  const kids = [];
+  if (opts.icon !== null) kids.push(el("div", { class: "empty-ic", text: opts.icon || "◍" }));
+  kids.push(el("p", { class: "empty-line", text }));
+  if (opts.sub) kids.push(el("p", { class: "empty-sub", text: opts.sub }));
+  if (opts.action) kids.push(el("button", { class: "btn", text: opts.action.label, onClick: opts.action.onClick }));
+  return el("div", { class: `empty-note${opts.compact ? " empty-note-sm" : ""}` }, kids);
+}
+
 // ---- Puerta de acceso (login / crear usuario) ------------------------------
 function renderAuth() {
   clear(root);
@@ -1281,7 +1295,7 @@ function fmtTime(iso) {
 // (escapado por el DOM), nunca como HTML.
 function messageList(messages) {
   const me = auth.currentUser();
-  if (!messages || !messages.length) return el("p", { class: "hint", text: "Aún no hay mensajes. Rompe el hielo." });
+  if (!messages || !messages.length) return emptyNote("Aún no hay mensajes.", { icon: "💬", sub: "Rompe el hielo.", compact: true });
   return el("div", { class: "msg-list" }, messages.map((m) => {
     const mine = me && norm(m.from_lower || m.from_name) === norm(me.name);
     const color = auth.colorOf(m.from_name) || "#4a9eff";
@@ -1377,7 +1391,7 @@ function driveView() {
     clear(list);
     if (!r || !r.ok) { list.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la carpeta." })); return; }
     const files = r.files || [];
-    if (!files.length) { list.appendChild(el("p", { class: "hint", text: "Aún no hay archivos en esta carpeta." })); return; }
+    if (!files.length) { list.appendChild(emptyNote("Aún no hay archivos en esta carpeta.", { icon: "📁", compact: true })); return; }
     for (const f of files) list.appendChild(driveRow(f, token, load));
   };
 
@@ -1610,7 +1624,7 @@ function activityView() {
   const paint = (feed) => {
     clear(listWrap);
     const groups = activity.groupByDay(feed, Date.now());
-    if (!groups.length) { listWrap.appendChild(el("p", { class: "hint", text: "Aún no hay actividad registrada. En cuanto el equipo trabaje, aparecerá aquí." })); return; }
+    if (!groups.length) { listWrap.appendChild(emptyNote("Aún no hay actividad registrada.", { icon: "✦", sub: "En cuanto el equipo trabaje, aparecerá aquí." })); return; }
     for (const g of groups) {
       listWrap.appendChild(el("div", { class: "feed-day", text: g.label }));
       for (const ev of g.events) {
@@ -1652,7 +1666,7 @@ function leaderboardView() {
     clear(board);
     const users = auth.getUsers().filter((u) => !u.colorOnly || u.role).map((u) => ({ name: u.name, color: u.color, avatar: u.avatar }));
     const rows = buildLeaderboard(store.getTracking(), store.getLearning(), users, stats || {});
-    if (!rows.length) { board.appendChild(el("p", { class: "hint", text: "Todavía no hay nada que medir. En cuanto el equipo se mueva, el marcador se llena." })); return; }
+    if (!rows.length) { board.appendChild(emptyNote("Todavía no hay nada que medir.", { icon: "▲", sub: "En cuanto el equipo se mueva, el marcador se llena." })); return; }
     const max = rows[0].score || 1;
     rows.forEach((r, i) => {
       board.appendChild(el("div", { class: `board-row ${i === 0 && r.score > 0 ? "lead" : ""}` }, [
@@ -1916,7 +1930,7 @@ function todayView() {
   // Las llamadas de hoy.
   blocks.push(el("h2", { class: "today-h2", text: "Las 3 llamadas de hoy" }));
   if (!calls.length) {
-    blocks.push(el("p", { class: "today-empty", text: "No hay oportunidades vivas todavía. Ve a Oportunidades y lanza una tanda para llenar el día." }));
+    blocks.push(emptyNote("No hay oportunidades vivas todavía.", { icon: "☀", sub: "Ve a Oportunidades y lanza una tanda para llenar el día.", action: { label: "Ir a Oportunidades", onClick: () => goView("cards") } }));
     blocks.push(el("button", { class: "btn-primary", text: "Ir a Oportunidades", onClick: () => goView("cards") }));
   } else {
     blocks.push(el("ol", { class: "today-calls" }, calls.map((o, i) => todayCall(o, i, tracking[o.id] || {}))));
@@ -2001,7 +2015,7 @@ function tasksView() {
     board.appendChild(el("h2", { class: "today-h2", text: `El reparto · ${counts.open} abiertas` }));
 
     if (!all.length) {
-      board.appendChild(el("p", { class: "today-empty", text: "Aún no hay tareas. Crea la primera arriba y asígnala a quien la lleva." }));
+      board.appendChild(emptyNote("Aún no hay tareas.", { icon: "✓", sub: "Crea la primera arriba y asígnala a quien la lleva." }));
       return;
     }
 
@@ -2547,7 +2561,7 @@ function agendaView() {
   wrap.appendChild(head);
 
   if (!subject) {
-    wrap.appendChild(el("p", { class: "ag-empty", text: "No hay usuarios todavía. Crea tu usuario para empezar a repartir llamadas." }));
+    wrap.appendChild(emptyNote("No hay usuarios todavía.", { icon: "👥", sub: "Crea tu usuario para empezar a repartir llamadas." }));
     return wrap;
   }
 
@@ -2613,7 +2627,7 @@ function agendaView() {
 
   // — Desglose por ronda / día —
   if (!mine.length) {
-    wrap.appendChild(el("p", { class: "ag-empty", text: canWrite ? `Aún no hay llamadas asignadas a ${subject}. Usa "Asignar la tanda de Mallorca" para montar su semana, o asigna leads desde cada ficha.` : `${subject} no tiene llamadas asignadas todavía.` }));
+    wrap.appendChild(emptyNote(`${canWrite ? "Aún no hay" : `${subject} no tiene`} llamadas asignadas${canWrite ? ` a ${subject}` : " todavía"}.`, { icon: "📞", sub: canWrite ? 'Usa "Asignar la tanda de Mallorca" para montar su semana, o asigna leads desde cada ficha.' : undefined }));
     return wrap;
   }
   const scheduled = mine.filter((o) => tracking[o.id]?.scheduledFor);
@@ -2929,13 +2943,15 @@ function buildCards() {
   if (!rows.length) {
     const f = state.filters;
     const filtering = f.search || f.sector !== "all" || f.city !== "all" || f.classification !== "all" || f.priority !== "all" || f.minEvidence || f.minConfidence || f.minEvStrength;
-    return el("div", { class: "empty-state" }, [
-      el("p", { class: "empty", text: filtering ? "Ningún candidato coincide con los filtros actuales (puede que un filtro esté ocultando leads)." : "Aún no hay oportunidades. Pulsa ⚡ Nueva tanda de leads para captar." }),
-      filtering ? el("button", { class: "btn", text: "✕ Limpiar filtros", onClick: () => {
-        state.filters = { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" };
-        render();
-      } }) : null,
-    ]);
+    return filtering
+      ? emptyNote("Ningún candidato coincide con los filtros actuales.", {
+          icon: "⌕", sub: "Puede que un filtro esté ocultando leads.",
+          action: { label: "✕ Limpiar filtros", onClick: () => {
+            state.filters = { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" };
+            render();
+          } },
+        })
+      : emptyNote("Aún no hay oportunidades.", { icon: "⚡", sub: "Pulsa ⚡ Nueva tanda de leads para captar." });
   }
   const f = state.filters;
   const cards = (arr) => el("div", { class: "cards" }, arr.map((o) => renderCard(o, tracking[o.id], handlers)));
@@ -2948,7 +2964,7 @@ function buildCards() {
     const o1Leads = rows.filter((o) => o.scores.classification === "01");
     const wrap = el("div", {});
     wrap.appendChild(el("h2", { class: "cartera-h", text: `Leads XN · Altas carteras · ${xnLeads.length}` }));
-    wrap.appendChild(xnLeads.length ? cards(xnLeads) : el("p", { class: "empty", text: "Sin leads XN ahora mismo." }));
+    wrap.appendChild(xnLeads.length ? cards(xnLeads) : emptyNote("Sin leads XN ahora mismo.", { icon: "◇", compact: true }));
     if (o1Leads.length) {
       // Si no hay XN, abrimos la carpeta de entrada: no tendría sentido dejar
       // todo lo que hay plegado bajo un "Sin leads XN".
