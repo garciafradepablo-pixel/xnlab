@@ -1,8 +1,14 @@
 /**
- * The floating HUD: top bar (wordmark, zoom breadcrumbs, language) and a bottom
- * toolbar (navigate / move / weave modes + new body + legend). Minimal, plegable,
- * never covers the canvas. Dispatches only store actions.
+ * The floating HUD: top bar (wordmark, zoom breadcrumbs, language), a contextual
+ * weave-type picker (only while threading), and a bottom toolbar (navigate /
+ * move / weave / recenter + new body + legend). Minimal, plegable, never covers
+ * the canvas. Dispatches only store actions.
  */
+import {
+  THREAD_COLORS,
+  THREAD_LABELS,
+  THREAD_TYPES,
+} from "../types/domain";
 import { useUniverse } from "../store/universe";
 import { t } from "./strings";
 
@@ -19,6 +25,9 @@ export default function HUD({
   const setMode = useUniverse((s) => s.setMode);
   const crumbs = useUniverse((s) => s.breadcrumbs);
   const goToCrumb = useUniverse((s) => s.goToCrumb);
+  const weaveType = useUniverse((s) => s.weaveType);
+  const setWeaveType = useUniverse((s) => s.setWeaveType);
+  const setFocus = useUniverse((s) => s.setFocus);
 
   const hint =
     mode === "weave"
@@ -26,6 +35,13 @@ export default function HUD({
       : mode === "move"
         ? t("moveHint", lang)
         : t("navHint", lang);
+
+  const recenter = () => {
+    const es = useUniverse.getState().entities;
+    const core =
+      es.find((e) => e.state === "galaxy") ?? es[0];
+    setFocus(core ? core.id : null);
+  };
 
   return (
     <>
@@ -56,6 +72,24 @@ export default function HUD({
         </button>
       </div>
 
+      {/* contextual: pick the meaning of the thread you're about to weave */}
+      {mode === "weave" && (
+        <div className="weave-picker" role="listbox" aria-label="thread meaning">
+          {THREAD_TYPES.map((type) => (
+            <button
+              key={type}
+              className={`weave-chip ${weaveType === type ? "active" : ""}`}
+              onClick={() => setWeaveType(type)}
+              aria-selected={weaveType === type}
+              title={THREAD_LABELS[type][lang]}
+            >
+              <span className="swatch" style={{ color: THREAD_COLORS[type] }} />
+              {THREAD_LABELS[type][lang]}
+            </button>
+          ))}
+        </div>
+      )}
+
       <div className="hint">{hint}</div>
 
       <div className="hud-bottom">
@@ -80,6 +114,10 @@ export default function HUD({
           >
             <span className="ico">⟿</span>
             {t("weave", lang)}
+          </button>
+          <button className="tool" onClick={recenter} title={t("recenter", lang)}>
+            <span className="ico">◎</span>
+            {t("recenter", lang)}
           </button>
           <button className="tool primary" onClick={openAdd}>
             <span className="ico">＋</span>

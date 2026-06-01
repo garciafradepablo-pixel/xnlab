@@ -4,9 +4,12 @@
  */
 import { Canvas } from "@react-three/fiber";
 import { AdaptiveDpr, Preload } from "@react-three/drei";
+import { useUniverse } from "../store/universe";
 import Scene from "./Scene";
+import Effects from "./Effects";
 
 export default function CosmosCanvas() {
+  const lowPower = useUniverse((s) => s.lowPower);
   return (
     <Canvas
       style={{ position: "absolute", inset: 0, touchAction: "none" }}
@@ -15,6 +18,8 @@ export default function CosmosCanvas() {
       camera={{ position: [0, 6, 34], fov: 55, near: 0.1, far: 400 }}
     >
       <Scene />
+      {/* Bloom only where the GPU can afford it. */}
+      {!lowPower && <Effects />}
       <AdaptiveDpr pixelated />
       <Preload all />
     </Canvas>

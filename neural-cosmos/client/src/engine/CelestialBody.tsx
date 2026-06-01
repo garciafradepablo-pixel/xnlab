@@ -17,19 +17,61 @@ import { useUniverse } from "../store/universe";
 import { glowTexture, particleTexture } from "./textures";
 import { useControlsGate } from "./controls-context";
 import BlackHoleInfall from "./BlackHoleInfall";
+import GalaxyArms from "./GalaxyArms";
+import type { AnimalArchetype } from "../types/domain";
 
 const LONG_PRESS_MS = 480;
 const TAP_MAX_MS = 260;
 
-function nebulaCloud(count: number, radius: number): Float32Array {
+/**
+ * Archetype cloud. The animal is energy, never a logo — it only biases the shape
+ * of the particle cloud so it *insinuates* itself when you zoom close:
+ *   eagle → wide, wing-spread disk · bull → dense, low, charging mass
+ *   wolf  → coiled, prowling spiral · lion → broad maned halo
+ */
+function nebulaCloud(
+  count: number,
+  radius: number,
+  animal: AnimalArchetype,
+): Float32Array {
   const arr = new Float32Array(count * 3);
   for (let i = 0; i < count; i++) {
-    const r = radius * Math.cbrt(Math.random());
+    const u = Math.random();
+    const r = radius * Math.cbrt(u);
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.acos(2 * Math.random() - 1);
-    arr[i * 3] = r * Math.sin(phi) * Math.cos(theta);
-    arr[i * 3 + 1] = r * Math.sin(phi) * Math.sin(theta) * 0.7;
-    arr[i * 3 + 2] = r * Math.cos(phi);
+    let x = r * Math.sin(phi) * Math.cos(theta);
+    let y = r * Math.sin(phi) * Math.sin(theta);
+    let z = r * Math.cos(phi);
+    switch (animal) {
+      case "eagle": // spread wings: wide on X, thin on Y
+        x *= 1.9;
+        y *= 0.45;
+        break;
+      case "bull": // heavy, forward, low-slung mass
+        x *= 1.2;
+        y = y * 0.7 - radius * 0.3;
+        z *= 1.3;
+        break;
+      case "wolf": // coiled — twist around Y by height
+        {
+          const a = y * 0.6;
+          const nx = x * Math.cos(a) - z * Math.sin(a);
+          z = x * Math.sin(a) + z * Math.cos(a);
+          x = nx * 1.1;
+        }
+        break;
+      case "lion": // broad maned halo
+        x *= 1.3;
+        y *= 1.1;
+        z *= 1.3;
+        break;
+      default:
+        y *= 0.7;
+    }
+    arr[i * 3] = x;
+    arr[i * 3 + 1] = y;
+    arr[i * 3 + 2] = z;
   }
   return arr;
 }
@@ -72,7 +114,12 @@ export default function CelestialBody({
   const glow = useMemo(() => glowTexture(), []);
   const pTex = useMemo(() => particleTexture(), []);
   const nebula = useMemo(
-    () => nebulaCloud(entity.archetype.animal === "none" ? 60 : 140, radius * 1.7),
+    () =>
+      nebulaCloud(
+        entity.archetype.animal === "none" ? 70 : 170,
+        radius * 1.7,
+        entity.archetype.animal,
+      ),
     [entity.archetype.animal, radius],
   );
   const seed = useMemo(() => {
@@ -243,6 +290,9 @@ export default function CelestialBody({
           blending={THREE.AdditiveBlending}
         />
       </points>
+
+      {/* galaxy: spiral arms + particle storm */}
+      {isGalaxy && <GalaxyArms radius={radius} color={color} />}
 
       {/* system: an orbiting body to read "produces subentities" */}
       {isSystem && (

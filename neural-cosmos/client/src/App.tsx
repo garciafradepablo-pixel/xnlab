@@ -26,6 +26,7 @@ export default function App() {
     <>
       {/* Canvas mounts once the first load succeeds (entities are present). */}
       {status !== "error" && <CosmosCanvas />}
+      {status === "ready" && <div className="vignette" aria-hidden />}
 
       {(status === "loading" || status === "idle") && (
         <div className="centered">

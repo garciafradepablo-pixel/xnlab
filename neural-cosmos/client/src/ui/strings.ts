@@ -8,6 +8,7 @@ const S = {
   weave: { en: "Weave", es: "Tejer" },
   add: { en: "New body", es: "Cuerpo nuevo" },
   legend: { en: "Legend", es: "Leyenda" },
+  recenter: { en: "Recenter", es: "Recentrar" },
   inspector: { en: "Inspector", es: "Inspector" },
   loading: { en: "Forming the cosmos…", es: "Formando el cosmos…" },
   retry: { en: "Retry", es: "Reintentar" },

@@ -172,6 +172,22 @@ export default function Inspector() {
                   <span className="swatch" style={{ color: c }} />
                 </button>
               ))}
+              {/* free pick — any colour, not just the palette */}
+              <label
+                className="chip color-pick"
+                style={{ color: entity.archetype.color }}
+              >
+                <span className="swatch" style={{ color: entity.archetype.color }} />
+                <input
+                  type="color"
+                  value={entity.archetype.color}
+                  onChange={(e) =>
+                    patchEntity(entity.id, {
+                      archetype: { ...entity.archetype, color: e.target.value },
+                    })
+                  }
+                />
+              </label>
             </div>
           </div>
           <div className="field">
