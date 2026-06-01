@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Isolated sub-projects (own toolchains):
+    "opportunity-intel/**",
+    "neural-cosmos/**",
   ]),
 ]);
 
