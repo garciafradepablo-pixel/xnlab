@@ -337,7 +337,7 @@ function HunterApplication({ lang, t }: { lang: Lang; t: Copy }) {
   return (
     <div id="apply" style={{ marginTop: "clamp(64px,8vw,120px)" }}>
       {submitted ? (
-        <Success badge={f.successBadge} h={f.successH} body={f.successBody} again={f.again} onAgain={() => { setSubmitted(false); setV({ ...v, experience: "" }); }} />
+        <Success badge={f.successBadge} h={f.successH} body={f.successBody} again={f.again} onAgain={() => { setSubmitted(false); setV({ ...v, experience: "" }); }} extra={<ReserveEvaluation email={v.email} lang={lang} t={t} />} />
       ) : (
         <form className="hn-form" onSubmit={onSubmit} noValidate style={formStyle}>
           <FormHead eyebrow={f.formEyebrow} h={f.formH} lead={f.formLead} />
@@ -658,7 +658,7 @@ function FormError({ error, mailto, cta }: { error: string | null; mailto: strin
   );
 }
 
-function Success({ badge, h, body, again, onAgain }: { badge: string; h: string; body: string; again: string; onAgain: () => void }) {
+function Success({ badge, h, body, again, onAgain, extra }: { badge: string; h: string; body: string; again: string; onAgain: () => void; extra?: React.ReactNode }) {
   return (
     <div style={{ borderTop: `1px solid ${ACCENT},0.25)`, paddingTop: "clamp(28px,3.4vw,44px)" }}>
       <div style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "0.45rem 0.9rem", border: `1px solid ${ACCENT},0.5)`, borderRadius: 999, background: `${ACCENT},0.06)`, color: `${ACCENT},0.92)`, fontSize: 10, fontWeight: 500, letterSpacing: "0.32em", textTransform: "uppercase", marginBottom: "clamp(20px,2.6vw,32px)" }}>
@@ -667,7 +667,66 @@ function Success({ badge, h, body, again, onAgain }: { badge: string; h: string;
       </div>
       <h2 style={{ fontFamily: serif, fontStyle: "italic", fontSize: "clamp(1.8rem,3.4vw,2.8rem)", lineHeight: 1.05, letterSpacing: "-0.02em", color: "white", textShadow: tsS, margin: 0 }}>{h}</h2>
       <p style={{ marginTop: "clamp(16px,2vw,24px)", fontSize: "clamp(0.98rem,1.2vw,1.1rem)", lineHeight: 1.7, color: "rgba(255,255,255,0.74)", fontWeight: 300, maxWidth: 580 }}>{body}</p>
+      {extra}
       <button type="button" onClick={onAgain} style={{ marginTop: "clamp(28px,3vw,40px)", background: "none", border: "none", padding: 0, cursor: "pointer", fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", fontFamily: "inherit" }}>{again} →</button>
+    </div>
+  );
+}
+
+// Reserve-evaluation step, shown after a hunter applies. The application is
+// free; this is the optional NEXT step — securing a place in the Commercial
+// Access Evaluation, which may carry an access fee. Framing matters (language
+// discipline): you are not paying to work, you are securing an evaluation slot,
+// and the fee unlocks the evaluation only — never campaign access.
+//
+// Calls POST /api/hunter-network/checkout. If billing isn't configured the
+// endpoint answers 503 `billing_not_configured` and we fall back to "the studio
+// will send you the link" — nothing breaks, no card is touched.
+function ReserveEvaluation({ email, lang, t }: { email: string; lang: Lang; t: Copy }) {
+  const [state, setState] = useState<"idle" | "loading" | "manual">("idle");
+  const r = t.reserve;
+
+  const onReserve = async () => {
+    setState("loading");
+    try {
+      const res = await fetch("/api/hunter-network/checkout", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ email, lang }),
+      });
+      const data = (await res.json()) as { ok: boolean; url?: string };
+      if (data.ok && data.url) {
+        window.location.href = data.url; // hosted Stripe Checkout
+        return;
+      }
+      setState("manual"); // billing not configured → studio sends the link
+    } catch {
+      setState("manual");
+    }
+  };
+
+  return (
+    <div style={{ marginTop: "clamp(26px,3vw,38px)", padding: "clamp(20px,2.4vw,30px)", borderRadius: 16, border: `1px solid ${VIVID},0.28)`, background: `linear-gradient(150deg, ${VIVID},0.06), rgba(255,255,255,0.015))` }}>
+      <p style={{ ...labelStyle, color: `${VIVID},0.8)`, marginBottom: 12 }}>{r.eyebrow}</p>
+      <p style={{ margin: "0 0 clamp(18px,2.2vw,26px)", fontSize: "clamp(0.95rem,1.14vw,1.05rem)", lineHeight: 1.65, color: "rgba(255,255,255,0.72)", fontWeight: 300, maxWidth: 560 }}>
+        {state === "manual" ? r.manual : r.body}
+      </p>
+      {state !== "manual" && (
+        <motion.button
+          type="button"
+          className="hn-focus"
+          onClick={onReserve}
+          disabled={state === "loading"}
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          transition={{ type: "spring", stiffness: 320, damping: 22 }}
+          style={{ display: "inline-flex", alignItems: "center", gap: 10, padding: "0.95rem clamp(1.5rem,3.2vw,2.6rem)", fontSize: "clamp(10px,0.85vw,12px)", fontWeight: 600, letterSpacing: "0.18em", textTransform: "uppercase", color: "#1a0d04", background: `linear-gradient(100deg, ${VIVID},1), ${ACCENT},1))`, border: "none", borderRadius: 100, cursor: state === "loading" ? "wait" : "pointer", opacity: state === "loading" ? 0.7 : 1, whiteSpace: "nowrap" }}
+        >
+          {state === "loading" ? r.loading : r.cta}
+          {state !== "loading" && <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>}
+        </motion.button>
+      )}
+      <p style={{ margin: "clamp(14px,1.6vw,18px) 0 0", fontSize: 11, lineHeight: 1.6, color: "rgba(255,255,255,0.4)", maxWidth: 520 }}>{r.fineprint}</p>
     </div>
   );
 }
@@ -701,6 +760,7 @@ type Copy = {
   ctaHunter: string;
   ctaCompany: string;
   ctaNote: string;
+  reserve: { eyebrow: string; body: string; cta: string; loading: string; manual: string; fineprint: string };
   audienceLabel: string;
   audience: Record<Audience, { title: string; sub: string }>;
   principleLabel: string;
@@ -775,6 +835,14 @@ const en: Copy = {
   ctaHunter: "Start your evaluation",
   ctaCompany: "Book a discovery call",
   ctaNote: "Free to apply. Two minutes.",
+  reserve: {
+    eyebrow: "Next step · secure your evaluation",
+    body: "Your application is free. The next step is the Commercial Access Evaluation — a set of scored test calls. Securing your place carries a one-time access fee. It unlocks the evaluation only; it does not buy campaign access, and it never will.",
+    cta: "Secure my evaluation place",
+    loading: "Opening secure checkout…",
+    manual: "We could not open checkout right now. No problem — the studio will send you a secure link to secure your evaluation place once your application is reviewed.",
+    fineprint: "Payment is processed securely by Stripe. The fee unlocks the evaluation, not campaigns. Performance is what earns campaign access.",
+  },
   audienceLabel: "Choose your side",
   audience: {
     hunter: { title: "I sell", sub: "Apply to be evaluated and represent campaigns." },
@@ -897,6 +965,14 @@ const es: Copy = {
   ctaHunter: "Empieza tu evaluación",
   ctaCompany: "Reserva una llamada",
   ctaNote: "Solicitar es gratis. Dos minutos.",
+  reserve: {
+    eyebrow: "Siguiente paso · reserva tu evaluación",
+    body: "Tu candidatura es gratis. El siguiente paso es la Evaluación de Acceso Comercial — un conjunto de llamadas de prueba puntuadas. Reservar tu plaza lleva una tarifa de acceso única. Desbloquea la evaluación, no compra acceso a campañas, y nunca lo hará.",
+    cta: "Reservar mi plaza de evaluación",
+    loading: "Abriendo pago seguro…",
+    manual: "No hemos podido abrir el pago ahora mismo. Sin problema — el estudio te enviará un enlace seguro para reservar tu plaza de evaluación cuando se revise tu candidatura.",
+    fineprint: "El pago lo procesa Stripe de forma segura. La tarifa desbloquea la evaluación, no las campañas. El acceso a campañas se gana por rendimiento.",
+  },
   audienceLabel: "Elige tu lado",
   audience: {
     hunter: { title: "Vendo", sub: "Solicita ser evaluado y representar campañas." },
