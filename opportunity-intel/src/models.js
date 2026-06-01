@@ -222,8 +222,8 @@ export const SECTORS = [
 export const SECTOR_BY_KEY = Object.fromEntries(SECTORS.map((s) => [s.key, s]));
 
 export const CLASSIFICATIONS = {
-  "01": "01 Agency",
-  xn: "XN LAB",
+  "01": "Aportaciones extra 01",
+  xn: "XN · Altas carteras",
   unqualified: "Por evaluar",
   discard: "No merece llamada",
 };
