@@ -59,6 +59,19 @@ async function main() {
     }),
   );
 
+  // Replace a universe's contents from an exported snapshot (JSON import).
+  app.post(
+    "/api/universe/:id/import",
+    h(async (req, res) => {
+      const { entities, threads } = req.body ?? {};
+      if (!Array.isArray(entities) || !Array.isArray(threads))
+        return res
+          .status(400)
+          .json({ error: "entities[] and threads[] required" });
+      res.json(await repo.importUniverse(req.params.id, { entities, threads }));
+    }),
+  );
+
   app.post(
     "/api/entities/:id/child-universe",
     h(async (req, res) =>

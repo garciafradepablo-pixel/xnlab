@@ -11,14 +11,10 @@ import {
 } from "../types/domain";
 import { useUniverse } from "../store/universe";
 import { t } from "./strings";
+import SearchBox from "./SearchBox";
+import type { Panel } from "./panels";
 
-export default function HUD({
-  openLegend,
-  openAdd,
-}: {
-  openLegend: () => void;
-  openAdd: () => void;
-}) {
+export default function HUD({ openPanel }: { openPanel: (p: Panel) => void }) {
   const lang = useUniverse((s) => s.lang);
   const setLang = useUniverse((s) => s.setLang);
   const mode = useUniverse((s) => s.mode);
@@ -49,20 +45,7 @@ export default function HUD({
         <span className="wordmark">
           NEURAL<span className="dot">·</span>COSMOS
         </span>
-        <nav className="crumbs" aria-label="zoom trail">
-          {crumbs.map((c, i) => (
-            <span key={c.universeId} style={{ display: "contents" }}>
-              {i > 0 && <span className="crumb-sep">›</span>}
-              <button
-                className={`crumb ${i === crumbs.length - 1 ? "current" : ""}`}
-                onClick={() => goToCrumb(i)}
-                disabled={i === crumbs.length - 1}
-              >
-                {c.name}
-              </button>
-            </span>
-          ))}
-        </nav>
+        <SearchBox />
         <button
           className="lang-toggle"
           onClick={() => setLang(lang === "es" ? "en" : "es")}
@@ -71,6 +54,21 @@ export default function HUD({
           {lang === "es" ? "EN" : "ES"}
         </button>
       </div>
+
+      <nav className="hud-crumbs" aria-label="zoom trail">
+        {crumbs.map((c, i) => (
+          <span key={c.universeId} style={{ display: "contents" }}>
+            {i > 0 && <span className="crumb-sep">›</span>}
+            <button
+              className={`crumb ${i === crumbs.length - 1 ? "current" : ""}`}
+              onClick={() => goToCrumb(i)}
+              disabled={i === crumbs.length - 1}
+            >
+              {c.name}
+            </button>
+          </span>
+        ))}
+      </nav>
 
       {/* contextual: pick the meaning of the thread you're about to weave */}
       {mode === "weave" && (
@@ -119,11 +117,11 @@ export default function HUD({
             <span className="ico">◎</span>
             {t("recenter", lang)}
           </button>
-          <button className="tool primary" onClick={openAdd}>
+          <button className="tool primary" onClick={() => openPanel("add")}>
             <span className="ico">＋</span>
             {t("add", lang)}
           </button>
-          <button className="tool" onClick={openLegend}>
+          <button className="tool" onClick={() => openPanel("legend")}>
             <span className="ico">☰</span>
             {t("legend", lang)}
           </button>

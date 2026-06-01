@@ -238,6 +238,53 @@ export async function createPrismaRepo(): Promise<Repo> {
       await prisma.thread.delete({ where: { id } }).catch(() => undefined);
     },
 
+    async importUniverse(universeId, payload) {
+      const snap = await snapshot(universeId);
+      if (!snap) throw new Error("universe not found");
+      const ids = new Set((payload.entities ?? []).map((e) => e.id));
+      await prisma.$transaction([
+        prisma.thread.deleteMany({ where: { universeId } }),
+        prisma.entity.deleteMany({ where: { universeId } }),
+        ...(payload.entities ?? []).map((e) =>
+          prisma.entity.create({
+            data: {
+              id: e.id,
+              universeId,
+              name: e.name,
+              kind: e.kind,
+              state: e.state,
+              archetype: e.archetype as any,
+              position: e.position as any,
+              sizeHint: e.sizeHint ?? null,
+              parentEntityId: e.parentEntityId ?? null,
+              childUniverseId: e.childUniverseId ?? null,
+              region: e.region ?? null,
+              meta: (e.meta ?? {}) as any,
+              docs: (e.docs ?? []) as any,
+              decisions: (e.decisions ?? []) as any,
+              history: (e.history ?? []) as any,
+            },
+          }),
+        ),
+        ...(payload.threads ?? [])
+          .filter((t) => ids.has(t.fromId) && ids.has(t.toId))
+          .map((t) =>
+            prisma.thread.create({
+              data: {
+                id: t.id,
+                universeId,
+                fromId: t.fromId,
+                toId: t.toId,
+                type: t.type,
+                seed: t.seed ?? 0,
+                label: t.label ?? null,
+              },
+            }),
+          ),
+      ]);
+      return (await snapshot(universeId))!;
+    },
+
     async listAnalyses(universeId) {
       const rows = await prisma.atlasAnalysis.findMany({
         where: { universeId },

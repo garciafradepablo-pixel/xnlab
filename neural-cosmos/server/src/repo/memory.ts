@@ -176,6 +176,44 @@ export class MemoryRepo implements Repo {
     return { childUniverseId: u.id };
   }
 
+  async importUniverse(
+    universeId: string,
+    payload: { entities: Entity[]; threads: Thread[] },
+  ): Promise<UniverseSnapshot> {
+    const u = this.universe(universeId);
+    if (!u) throw new Error("universe not found");
+    // drop current contents of this universe
+    this.state.entities = this.state.entities.filter(
+      (e) => e.universeId !== universeId,
+    );
+    this.state.threads = this.state.threads.filter(
+      (t) => t.universeId !== universeId,
+    );
+    // insert provided entities (force universeId, fill defaults)
+    const ids = new Set((payload.entities ?? []).map((e) => e.id));
+    for (const e of payload.entities ?? []) {
+      this.state.entities.push({
+        ...e,
+        universeId,
+        meta: e.meta ?? emptyMeta(),
+        docs: e.docs ?? [],
+        decisions: e.decisions ?? [],
+        history: e.history ?? [],
+        createdAt: e.createdAt ?? nowISO(),
+        updatedAt: nowISO(),
+      });
+    }
+    // insert threads whose endpoints survived the import
+    for (const t of payload.threads ?? []) {
+      if (ids.has(t.fromId) && ids.has(t.toId)) {
+        this.state.threads.push({ ...t, universeId });
+      }
+    }
+    this.touch(universeId);
+    this.flush();
+    return this.snapshot(u);
+  }
+
   async listAnalyses(universeId: string): Promise<AtlasAnalysis[]> {
     return this.state.analyses.filter((a) => a.universeId === universeId);
   }

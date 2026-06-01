@@ -26,6 +26,12 @@ export interface Repo {
   /** Create (or return existing) child universe for an entity. */
   ensureChildUniverse(entityId: string): Promise<{ childUniverseId: string }>;
 
+  /** Replace a universe's entities + threads wholesale (JSON import). */
+  importUniverse(
+    universeId: string,
+    payload: { entities: Entity[]; threads: Thread[] },
+  ): Promise<UniverseSnapshot>;
+
   // ── Atlas analyses (Phase 9) ──────────────────────────────────────────────
   listAnalyses(universeId: string): Promise<AtlasAnalysis[]>;
   addAnalyses(

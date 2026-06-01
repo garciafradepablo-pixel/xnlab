@@ -108,6 +108,18 @@ export function setAnalysisStatus(
   }).then((r) => json<AtlasAnalysis>(r));
 }
 
+/** Replace the current universe's contents from an exported snapshot. */
+export function importUniverse(
+  universeId: string,
+  payload: { entities: Entity[]; threads: Thread[] },
+): Promise<UniverseSnapshot> {
+  return fetch(`${BASE}/universe/${universeId}/import`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(payload),
+  }).then((r) => json<UniverseSnapshot>(r));
+}
+
 /** Create a child universe for an entity (infinite zoom) and return its id. */
 export function ensureChildUniverse(
   entityId: string,

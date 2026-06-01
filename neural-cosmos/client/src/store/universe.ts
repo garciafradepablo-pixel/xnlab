@@ -20,6 +20,7 @@ import {
   type Thread,
   type ThreadType,
   type Universe,
+  type UniverseSnapshot,
   type Vec3,
   stageIndex,
 } from "../types/domain";
@@ -104,6 +105,13 @@ interface UniverseState {
   // ── threads ───────────────────────────────────────────────────────────────
   tapForWeave: (id: string) => void;
   removeThread: (id: string) => void;
+
+  // ── import / export ───────────────────────────────────────────────────────
+  exportSnapshot: () => UniverseSnapshot | null;
+  importIntoCurrent: (payload: {
+    entities: Entity[];
+    threads: Thread[];
+  }) => Promise<void>;
 
   // ── Atlas ─────────────────────────────────────────────────────────────────
   openAtlas: (universeId: string) => Promise<void>;
@@ -384,6 +392,32 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   removeThread(id) {
     set((s) => ({ threads: s.threads.filter((t) => t.id !== id) }));
     api.deleteThread(id).catch((e) => set({ error: (e as Error).message }));
+  },
+
+  exportSnapshot() {
+    const { universe, entities, threads } = get();
+    if (!universe) return null;
+    return { universe, entities, threads };
+  },
+
+  async importIntoCurrent(payload) {
+    const u = get().universe;
+    if (!u) return;
+    set({ status: "loading", error: null });
+    try {
+      const snap = await api.importUniverse(u.id, payload);
+      set({
+        universe: snap.universe,
+        entities: snap.entities,
+        threads: snap.threads,
+        status: "ready",
+        selectedId: null,
+        focusId: null,
+        inspectorOpen: false,
+      });
+    } catch (e) {
+      set({ status: "ready", error: (e as Error).message });
+    }
   },
 
   async openAtlas(universeId) {
