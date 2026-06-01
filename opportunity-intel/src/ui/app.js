@@ -30,6 +30,7 @@ import {
 import * as store from "../store.js";
 import { failureReason } from "../diagnosis.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
+import { personality } from "../personality.js";
 import { buildLead } from "../newlead.js";
 import { allSectors, sectorByKey, addCustomSector, getCustomSectors, removeCustomSector } from "../customsectors.js";
 import {
@@ -2702,6 +2703,35 @@ async function maybeSeedStarterPlan() {
   } catch { /* nunca bloquea el arranque */ }
 }
 
+// Personalidad de la empresa: animal + aura + elemento + símbolo, y un ESQUEMA
+// de palabras clave para encarar la llamada (adaptable, no un guión). Lo deriva
+// personality.js de forma determinista del sector/subsector/encaje.
+function personalityPanel(lead) {
+  const p = personality(lead);
+  return el("section", { class: `pers-panel aura-${p.aura.tone}`, style: `--aura:${p.auraHue}` }, [
+    el("div", { class: "pers-head" }, [
+      el("span", { class: "pers-animal", text: p.animal.emoji }),
+      el("div", { class: "pers-id" }, [
+        el("div", { class: "pers-name" }, [
+          el("span", { text: p.animal.name }),
+          el("span", { class: "pers-sym", text: ` · ${p.animal.symbol}` }),
+        ]),
+        el("div", { class: "pers-trait", text: p.animal.trait }),
+      ]),
+      el("span", { class: `pers-aura tone-${p.aura.tone}`, title: p.aura.note, text: p.aura.label }),
+    ]),
+    el("div", { class: "pers-meta" }, [
+      el("span", { class: "pers-el", text: `${p.elementEmoji} ${p.element}` }),
+      el("span", { class: "pers-sector", text: p.sectorLabel }),
+      el("span", { class: "pers-note", text: p.aura.note }),
+    ]),
+    el("div", { class: "pers-kw-wrap" }, [
+      el("span", { class: "pers-kw-label", text: "Para encarar la llamada · esquema, no guión" }),
+      el("div", { class: "pers-kw" }, p.keywords.map((k) => el("span", { class: "pers-kw-chip", text: k }))),
+    ]),
+  ]);
+}
+
 function openCase(id) {
   let lead = (state.results?.all || []).find((o) => o.id === id);
   if (!lead) return;
@@ -2717,6 +2747,7 @@ function openCase(id) {
   const freshPanel = el("div", { class: "case-fresh" }); // medición automática de su web
   const cardWrap = el("div", {});
   body.appendChild(synthWrap);
+  body.appendChild(personalityPanel(lead)); // quién es la empresa: animal, aura, esquema de llamada
   body.appendChild(assignmentBar(id, rebuild)); // responsable · día · ronda
   // Momento + web lado a lado en ancho: la ficha llega antes al guion y la acción.
   body.appendChild(el("div", { class: "case-signals" }, [momentumPanel, freshPanel]));
