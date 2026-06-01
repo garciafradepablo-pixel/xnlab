@@ -14,7 +14,7 @@
 
 import { TENSION_TYPES } from "./models.js";
 
-const brandOf = (cls) => (cls === "xn" ? "XN · Altas carteras" : "Aportaciones extra 01");
+const brandOf = (cls) => (cls === "xn" ? "XN LAB" : "01 Agency");
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // Ventanas de duración e intensidad SIN número económico (lo permite la marca:

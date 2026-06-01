@@ -2005,38 +2005,6 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
   margin-top: 28px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: var(--panel-soft);
-}
-.extra-01 > .extra-01-sum {
-  cursor: pointer;
-  list-style: none;
-  padding: 12px 16px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: .2px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.extra-01 > .extra-01-sum::-webkit-details-marker { display: none; }
-.extra-01 > .extra-01-sum::before {
-  content: "▸";
-  color: var(--accent);
-  transition: transform .15s ease;
-}
-.extra-01[open] > .extra-01-sum::before { transform: rotate(90deg); }
-.extra-01[open] > .extra-01-sum { border-bottom: 1px solid var(--line); }
-.extra-01 > *:not(.extra-01-sum) { margin-left: 16px; margin-right: 16px; }
-.extra-01 > h3, .extra-01 > h4 { color: var(--muted); }
-.extra-01 > :last-child { margin-bottom: 16px; }
-
-/* ---- Carpeta "Aportaciones extra 01" --------------------------------------
-   Los leads 01 viven plegados bajo la cartera principal (XN · altas carteras).
-   Lee como una carpeta: cerrada por defecto, se abre con un clic. */
-.extra-01 {
-  margin-top: 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
   background: var(--panel-2);
 }
 .extra-01 > .extra-01-sum {

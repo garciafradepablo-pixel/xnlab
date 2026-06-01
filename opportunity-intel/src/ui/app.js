@@ -2938,7 +2938,27 @@ function buildCards() {
       } }) : null,
     ]);
   }
-  return el("div", { class: "cards" }, rows.map((o) => renderCard(o, tracking[o.id], handlers)));
+  const f = state.filters;
+  const cards = (arr) => el("div", { class: "cards" }, arr.map((o) => renderCard(o, tracking[o.id], handlers)));
+
+  // Por defecto (sin filtro de clase) la cartera principal son los leads XN
+  // (altas carteras); los leads 01 se recogen aparte en una carpeta plegable
+  // "Aportaciones extra 01". Con filtro de clase, se muestra la lista tal cual.
+  if (f.classification === "all") {
+    const xnLeads = rows.filter((o) => o.scores.classification === "xn");
+    const o1Leads = rows.filter((o) => o.scores.classification === "01");
+    const wrap = el("div", {});
+    wrap.appendChild(el("h2", { class: "cartera-h", text: `Leads XN · Altas carteras · ${xnLeads.length}` }));
+    wrap.appendChild(xnLeads.length ? cards(xnLeads) : el("p", { class: "empty", text: "Sin leads XN ahora mismo." }));
+    if (o1Leads.length) {
+      const folder = el("details", { class: "extra-01" });
+      folder.appendChild(el("summary", { class: "extra-01-sum", text: `Aportaciones extra 01 · ${o1Leads.length}` }));
+      folder.appendChild(cards(o1Leads));
+      wrap.appendChild(folder);
+    }
+    return wrap;
+  }
+  return cards(rows);
 }
 
 // ---- CRM view (tablero por estado de llamada) -------------------------------
