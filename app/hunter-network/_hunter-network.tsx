@@ -45,6 +45,20 @@ export default function HunterNetworkPage() {
     >
       <HNHeader lang={lang} setLang={setLang} t={t} />
 
+      {/* Page-scoped polish: smooth anchor scroll, a visible keyboard focus
+          ring on every interactive element, and full respect for reduced
+          motion (kills the heartbeat + transitions for users who ask). */}
+      <style>{`
+        html { scroll-behavior: smooth; }
+        .hn-focus:focus-visible { outline: 2px solid rgba(255,138,76,0.9); outline-offset: 3px; border-radius: 4px; }
+        .hn-form input:focus-visible, .hn-form textarea:focus-visible { outline: none; }
+        .hn-form input::placeholder, .hn-form textarea::placeholder { color: rgba(255,255,255,0.3); }
+        @media (prefers-reduced-motion: reduce) {
+          html { scroll-behavior: auto; }
+          .hn-pulse-dot { animation: none !important; }
+        }
+      `}</style>
+
       <section
         style={{
           position: "relative",
@@ -95,11 +109,24 @@ export default function HunterNetworkPage() {
           </R>
         )}
 
+        {/* Trust signals — three quiet proofs, read in a glance, both audiences. */}
+        <R delay={0.31}>
+          <div style={{ marginTop: "clamp(22px,2.6vw,34px)", display: "flex", flexWrap: "wrap", gap: "clamp(14px,2vw,28px)" }}>
+            {t.trust.map((s, i) => (
+              <span key={i} style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: "clamp(11px,1vw,12.5px)", color: "rgba(255,255,255,0.55)", letterSpacing: "0.01em" }}>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={`${ACCENT},0.85)`} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M20 6 9 17l-5-5" /></svg>
+                {s}
+              </span>
+            ))}
+          </div>
+        </R>
+
         {/* Dominant CTA — the page must give one obvious action. */}
         <R delay={0.34}>
           <div style={{ marginTop: "clamp(28px,3.4vw,44px)", display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
             <motion.a
               href="#apply"
+              className="hn-focus"
               whileHover={{ scale: 1.025, boxShadow: `0 10px 52px ${VIVID},0.5)` }}
               whileTap={{ scale: 0.98 }}
               transition={{ type: "spring", stiffness: 320, damping: 22 }}
@@ -146,7 +173,7 @@ function LiveStatusStrip({ t }: { t: Copy }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: "clamp(26px,3.2vw,40px)", flexWrap: "wrap" }}>
       <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-        <span aria-hidden style={{ width: 7, height: 7, borderRadius: 999, background: "#7fd0a0", boxShadow: "0 0 10px rgba(127,208,160,0.7)", animation: "hnpulse 1.6s infinite" }} />
+        <span aria-hidden className="hn-pulse-dot" style={{ width: 7, height: 7, borderRadius: 999, background: "#7fd0a0", boxShadow: "0 0 10px rgba(127,208,160,0.7)", animation: "hnpulse 1.6s infinite" }} />
         <span style={{ fontSize: 10, fontWeight: 500, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(127,208,160,0.9)" }}>{t.statusLabel}</span>
       </span>
       <span aria-hidden style={{ width: 1, height: 12, background: "rgba(255,255,255,0.14)" }} />
@@ -181,6 +208,7 @@ function AudienceSelector({ audience, setAudience, t }: { audience: Audience; se
             <button
               key={a}
               type="button"
+              className="hn-focus"
               onClick={() => setAudience(a)}
               aria-pressed={on}
               style={{
@@ -311,7 +339,7 @@ function HunterApplication({ lang, t }: { lang: Lang; t: Copy }) {
       {submitted ? (
         <Success badge={f.successBadge} h={f.successH} body={f.successBody} again={f.again} onAgain={() => { setSubmitted(false); setV({ ...v, experience: "" }); }} />
       ) : (
-        <form onSubmit={onSubmit} noValidate style={formStyle}>
+        <form className="hn-form" onSubmit={onSubmit} noValidate style={formStyle}>
           <FormHead eyebrow={f.formEyebrow} h={f.formH} lead={f.formLead} />
           <div style={twoCol}>
             <Field id="hn-name" label={f.nameLabel}><input id="hn-name" type="text" value={v.name} onChange={(e) => setV({ ...v, name: e.target.value })} placeholder={f.namePlaceholder} autoComplete="name" style={fieldStyle} onFocus={focusOn} onBlur={focusOff} /></Field>
@@ -405,7 +433,7 @@ function CompanyEnquiry({ lang, t }: { lang: Lang; t: Copy }) {
       {submitted ? (
         <Success badge={f.successBadge} h={f.successH} body={f.successBody} again={f.again} onAgain={() => { setSubmitted(false); setV({ ...v, offer: "" }); }} />
       ) : (
-        <form onSubmit={onSubmit} noValidate style={formStyle}>
+        <form className="hn-form" onSubmit={onSubmit} noValidate style={formStyle}>
           <FormHead eyebrow={f.formEyebrow} h={f.formH} lead={f.formLead} />
           <div style={twoCol}>
             <Field id="co-company" label={f.companyLabel}><input id="co-company" type="text" value={v.company} onChange={(e) => setV({ ...v, company: e.target.value })} placeholder={f.companyPlaceholder} autoComplete="organization" required style={fieldStyle} onFocus={focusOn} onBlur={focusOff} /></Field>
@@ -578,7 +606,7 @@ function HNHeader({ lang, setLang, t }: { lang: Lang; setLang: (l: Lang) => void
       <nav style={{ maxWidth: 1600, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", height: 64, padding: "0 clamp(20px,5vw,56px)" }}>
         <WordmarkLink />
         <Link href="/" style={{ fontSize: 11, letterSpacing: "0.22em", textTransform: "uppercase", color: "rgba(255,255,255,0.55)", textDecoration: "none" }}>{t.back}</Link>
-        <button onClick={() => setLang(lang === "en" ? "es" : "en")} aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
+        <button className="hn-focus" onClick={() => setLang(lang === "en" ? "es" : "en")} aria-label={lang === "en" ? "Switch to Spanish" : "Cambiar a inglés"} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, letterSpacing: "0.18em", textTransform: "uppercase", background: "none", border: "none", padding: 0, cursor: "pointer" }}>
           <span style={{ color: lang === "en" ? "white" : "rgba(255,255,255,0.35)" }}>EN</span>
           <span style={{ color: "rgba(255,255,255,0.25)" }}>·</span>
           <span style={{ color: lang === "es" ? "white" : "rgba(255,255,255,0.35)" }}>ES</span>
@@ -615,7 +643,7 @@ function SubmitRow({ fineprint, label, disabled }: { fineprint: string; label: s
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "clamp(20px,3vw,40px)", flexWrap: "wrap", marginTop: "clamp(32px,4vw,48px)" }}>
       <p style={{ fontSize: 11, lineHeight: 1.7, color: "rgba(255,255,255,0.42)", maxWidth: 520, margin: 0 }}>{fineprint}</p>
-      <motion.button type="submit" disabled={disabled} whileTap={{ scale: 0.98 }} style={{ padding: "0.95rem clamp(1.4rem,3vw,2.6rem)", fontSize: "clamp(10px,0.85vw,12px)", fontWeight: 500, letterSpacing: "0.28em", textTransform: "uppercase", color: "#060606", background: "white", border: "none", borderRadius: 100, cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap", opacity: disabled ? 0.55 : 1, transition: "opacity 0.3s" }}>{label}</motion.button>
+      <motion.button type="submit" className="hn-focus" disabled={disabled} whileTap={{ scale: 0.98 }} style={{ padding: "0.95rem clamp(1.4rem,3vw,2.6rem)", fontSize: "clamp(10px,0.85vw,12px)", fontWeight: 500, letterSpacing: "0.28em", textTransform: "uppercase", color: "#060606", background: "white", border: "none", borderRadius: 100, cursor: disabled ? "not-allowed" : "pointer", whiteSpace: "nowrap", opacity: disabled ? 0.55 : 1, transition: "opacity 0.3s" }}>{label}</motion.button>
     </div>
   );
 }
@@ -668,6 +696,7 @@ type Copy = {
   lead: string;
   statusLabel: string;
   pulse: string[];
+  trust: string[];
   journey: { icon: JourneyIcon; title: string; sub: string }[];
   ctaHunter: string;
   ctaCompany: string;
@@ -734,6 +763,7 @@ const en: Copy = {
     "Campaigns matched to performance level.",
     "Brand-risk sellers held back from real brands.",
   ],
+  trust: ["Evaluated, not just hired", "Brand-safe by design", "Access earned by performance"],
   journey: [
     { icon: "train", title: "Train", sub: "Sales training on the platform." },
     { icon: "evaluate", title: "Evaluate", sub: "A real test call, scored." },
@@ -855,6 +885,7 @@ const es: Copy = {
     "Campañas asignadas según nivel de rendimiento.",
     "Vendedores de riesgo apartados de marcas reales.",
   ],
+  trust: ["Evaluados, no solo contratados", "Seguros para la marca por diseño", "Acceso ganado por rendimiento"],
   journey: [
     { icon: "train", title: "Fórmate", sub: "Formación de ventas en la plataforma." },
     { icon: "evaluate", title: "Evalúate", sub: "Una llamada de prueba, puntuada." },
