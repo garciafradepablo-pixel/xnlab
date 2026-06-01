@@ -2,9 +2,10 @@
 // users — Cuentas durables + RBAC (Supabase). FUNCIÓN UNIÓN.
 //
 // Reconcilia dos modelos que vivían en ramas distintas:
-//   · Privacidad: el nombre real (NOMBRE + APELLIDO) y el email solo los ve el
-//     ADMIN. El resto del equipo se ve por APODO (aka) + foto/emoji + color.
-//     Cada uno edita su aka/email/foto desde su perfil (setProfile).
+//   · Identidad: el equipo se ve por NOMBRE REAL (decisión de Pablo) — todos ven
+//     nombre y apellido del resto. El email queda solo-admin (dato de contacto).
+//     El apodo (aka), la foto y el color son alias/adorno; cada uno los edita en
+//     su perfil (setProfile).
 //   · Equipo: etiquetas (tags) y nivel jerárquico (tier) por persona, con
 //     catálogo de etiquetas y backend de administración.
 //
@@ -151,22 +152,20 @@ Deno.serve(async (req) => {
     const nm = String(name || "").trim().replace(/\s+/g, " ").toUpperCase();
     const nameLower = nm.toLowerCase();
 
-    // list: identidad del equipo. PRIVACIDAD: solo el ADMIN ve nombre real y
-    // email; el resto ve a los demás por su APODO (aka) + foto/emoji + color.
-    // Las etiquetas (tags) y el nivel (tier) se entregan a todos (no son datos
-    // sensibles y la vista de equipo los pinta).
+    // list: identidad del equipo. El equipo se ve por NOMBRE REAL (decisión de
+    // Pablo): todos ven el nombre y apellido del resto. El email se mantiene
+    // solo-admin (es dato de contacto, no de identidad visible). El apodo (aka)
+    // se sigue entregando como alias secundario donde la UI quiera mostrarlo.
     if (action === "list") {
       const caller = await userByToken(String(token || ""));
       const isAdmin = caller?.role === "admin";
       const res = await rest(`connect_users?select=name,aka,email,color,role,avatar,photo,tags,tier`);
       const rows = await res.json();
       const list = (Array.isArray(rows) ? rows : []).map((u: any) => {
-        const display = u.aka || firstName(u.name) || u.name;
+        const alias = u.aka || firstName(u.name) || u.name;
         const common = { color: u.color, role: u.role, avatar: u.avatar || null, photo: u.photo || null, tags: u.tags || [], tier: u.tier ?? 2 };
-        return isAdmin
-          ? { name: u.name, aka: display, email: u.email || null, ...common }
-          // No-admin: el "name" que se entrega ya ES el apodo (la app nunca ve el real).
-          : { name: display, aka: display, ...common };
+        // Nombre real para todos; email solo para el admin.
+        return { name: u.name, aka: alias, email: isAdmin ? (u.email || null) : null, ...common };
       });
       return json({ ok: true, users: list });
     }
