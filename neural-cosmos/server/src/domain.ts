@@ -31,6 +31,35 @@ export interface HistoryEvent {
   createdAt: string;
 }
 
+/** Operational metadata (mirrors client EntityMeta). */
+export interface EntityMeta {
+  status: string;
+  role: string;
+  description: string;
+  purpose: string;
+  tags: string[];
+  priority: string;
+  potential: string;
+  risk: string;
+  createdBy: string;
+  imageUrl?: string;
+  symbol?: string;
+}
+
+export function emptyMeta(): EntityMeta {
+  return {
+    status: "idea",
+    role: "",
+    description: "",
+    purpose: "",
+    tags: [],
+    priority: "medium",
+    potential: "medium",
+    risk: "medium",
+    createdBy: "",
+  };
+}
+
 export interface Entity {
   id: string;
   universeId: string;
@@ -44,6 +73,7 @@ export interface Entity {
   childUniverseId?: string | null;
   region?: string | null;
   notes?: string;
+  meta: EntityMeta;
   docs: EntityDoc[];
   decisions: EntityDecision[];
   history: HistoryEvent[];

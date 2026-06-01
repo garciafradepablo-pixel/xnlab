@@ -1,6 +1,8 @@
 import {
+  ENTITY_STATUSES,
   STAGES,
   STATE_LABELS,
+  STATUS_META,
   THREAD_COLORS,
   THREAD_LABELS,
   THREAD_TYPES,
@@ -20,7 +22,7 @@ export default function Legend({
   return (
     <BottomSheet open={open} onClose={onClose} title={t("legend", lang)}>
       <div className="field">
-        <span className="label">{t("threadMeaning", lang)}</span>
+        <span className="label">{t("connectionTypes", lang)}</span>
         <div className="list">
           {THREAD_TYPES.map((type) => (
             <div key={type} className="row">
@@ -30,6 +32,19 @@ export default function Legend({
           ))}
         </div>
       </div>
+
+      <div className="field">
+        <span className="label">{t("statesLegend", lang)}</span>
+        <div className="chips">
+          {ENTITY_STATUSES.map((s) => (
+            <span key={s} className="chip">
+              <span className="swatch" style={{ color: STATUS_META[s].color }} />
+              {STATUS_META[s][lang]}
+            </span>
+          ))}
+        </div>
+      </div>
+
       <div className="field">
         <span className="label">{t("lifecycle", lang)}</span>
         <div className="chips">

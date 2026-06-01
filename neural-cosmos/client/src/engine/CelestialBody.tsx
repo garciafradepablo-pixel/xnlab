@@ -350,6 +350,9 @@ export default function CelestialBody({
       >
         <div className={`body-label ${selected ? "is-selected" : ""}`}>
           {entity.name}
+          {entity.meta?.role && (
+            <span className="body-label-role">{entity.meta.role}</span>
+          )}
         </div>
       </Html>
     </group>

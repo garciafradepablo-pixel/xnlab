@@ -33,33 +33,48 @@ export const LIFE_STATES: readonly LifeState[] = [
   "blackhole",
 ];
 
-/** Connection semantics — each carries a meaning and a colour. */
+/**
+ * Connection semantics — "Tipos de conexión" from the design. Each carries a
+ * meaning and a colour. Order matches the legend in the reference.
+ */
 export const THREAD_TYPES = [
-  "information", // blue
-  "capital", // green
-  "creativity", // purple
-  "control", // gold
-  "critical", // red — critical dependency
-  "open", // white — open relationship
+  "activation", // flujo de activación
+  "data", // flujo de datos
+  "capital", // flujo de capital
+  "creative", // necesidad creativa
+  "commercial", // flujo comercial
+  "intelligence", // flujo de inteligencia
+  "derivation", // derivación de producto
+  "absorption", // absorción
+  "dependency", // dependencia
+  "feedback", // bucle de retroalimentación
 ] as const;
 export type ThreadType = (typeof THREAD_TYPES)[number];
 
 export const THREAD_COLORS: Record<ThreadType, string> = {
-  information: "#4ea6ff",
-  capital: "#3ddc84",
-  creativity: "#b06cff",
-  control: "#ffcf5c",
-  critical: "#ff5470",
-  open: "#f2f2ff",
+  activation: "#2fe6e6",
+  data: "#4ea6ff",
+  capital: "#ffd23f",
+  creative: "#ff5470",
+  commercial: "#ff8a3c",
+  intelligence: "#3ddc84",
+  derivation: "#c9a24a",
+  absorption: "#ff6a1f",
+  dependency: "#b06cff",
+  feedback: "#8a6cff",
 };
 
 export const THREAD_LABELS: Record<ThreadType, { en: string; es: string }> = {
-  information: { en: "Information", es: "Información" },
-  capital: { en: "Capital", es: "Capital" },
-  creativity: { en: "Creativity", es: "Creatividad" },
-  control: { en: "Control", es: "Control" },
-  critical: { en: "Critical dependency", es: "Dependencia crítica" },
-  open: { en: "Open relationship", es: "Relación abierta" },
+  activation: { en: "Activation flow", es: "Flujo de activación" },
+  data: { en: "Data flow", es: "Flujo de datos" },
+  capital: { en: "Capital flow", es: "Flujo de capital" },
+  creative: { en: "Creative need", es: "Necesidad creativa" },
+  commercial: { en: "Commercial flow", es: "Flujo comercial" },
+  intelligence: { en: "Intelligence flow", es: "Flujo de inteligencia" },
+  derivation: { en: "Product derivation", es: "Derivación de producto" },
+  absorption: { en: "Absorption", es: "Absorción" },
+  dependency: { en: "Dependency", es: "Dependencia" },
+  feedback: { en: "Feedback loop", es: "Bucle de retroalimentación" },
 };
 
 /**
@@ -79,6 +94,81 @@ export interface Archetype {
   color: string;
   /** Free-text energy signature, e.g. "cosmic storms", "stellar dust". */
   energy: string;
+}
+
+/**
+ * Business status — "Leyenda de estados" from the design. Distinct from the
+ * cosmic `state` (which drives the 3D form): this is the operational status
+ * shown as a badge / dot.
+ */
+export const ENTITY_STATUSES = [
+  "idea",
+  "uncreated",
+  "design",
+  "development",
+  "active",
+  "testing",
+  "blocked",
+  "archived",
+  "absorbed",
+] as const;
+export type EntityStatus = (typeof ENTITY_STATUSES)[number];
+
+export const STATUS_META: Record<
+  EntityStatus,
+  { en: string; es: string; color: string }
+> = {
+  idea: { en: "Idea", es: "Idea", color: "#7e8bbd" },
+  uncreated: { en: "Not created", es: "No creado", color: "#4a4f6e" },
+  design: { en: "In design", es: "En diseño", color: "#8a6cff" },
+  development: { en: "In development", es: "En desarrollo", color: "#b06cff" },
+  active: { en: "Active", es: "Activo", color: "#3ddc84" },
+  testing: { en: "In testing", es: "En pruebas", color: "#ffd23f" },
+  blocked: { en: "Blocked", es: "Bloqueado", color: "#ff5470" },
+  archived: { en: "Archived", es: "Archivado", color: "#ff8a3c" },
+  absorbed: { en: "Absorbed", es: "Absorbido", color: "#6a5a8a" },
+};
+
+export type Grade = "low" | "medium" | "high" | "very-high";
+
+export const GRADE_LABELS: Record<Grade, { en: string; es: string }> = {
+  low: { en: "Low", es: "Bajo" },
+  medium: { en: "Medium", es: "Medio" },
+  high: { en: "High", es: "Alto" },
+  "very-high": { en: "Very high", es: "Muy alto" },
+};
+
+/**
+ * Operational metadata mirroring the inspector in the design: description,
+ * function/purpose, tags, status, priority/potential/risk, author, and the
+ * optional archetype image + symbol ("Cambiar imagen" / "Símbolo").
+ */
+export interface EntityMeta {
+  status: EntityStatus;
+  role: string; // short subtitle under the name, e.g. "Creatividad"
+  description: string;
+  purpose: string; // "Función"
+  tags: string[];
+  priority: Grade;
+  potential: Grade;
+  risk: Grade;
+  createdBy: string;
+  imageUrl?: string;
+  symbol?: string;
+}
+
+export function emptyMeta(): EntityMeta {
+  return {
+    status: "idea",
+    role: "",
+    description: "",
+    purpose: "",
+    tags: [],
+    priority: "medium",
+    potential: "medium",
+    risk: "medium",
+    createdBy: "",
+  };
 }
 
 /** Kinds of celestial entity the cosmos can hold. */
@@ -141,6 +231,8 @@ export interface Entity {
   /** Atlas regions / structural tag, e.g. "success" | "parity" | "failure". */
   region?: string | null;
   notes?: string;
+  /** Operational metadata (status, function, tags, priority…). */
+  meta: EntityMeta;
   docs: EntityDoc[];
   decisions: EntityDecision[];
   history: HistoryEvent[];

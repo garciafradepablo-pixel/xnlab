@@ -14,6 +14,7 @@ import type {
   UniverseSnapshot,
   WorldState,
 } from "../domain.js";
+import { emptyMeta } from "../domain.js";
 import { buildSeed } from "../seed-data.js";
 import type { Repo } from "./types.js";
 
@@ -29,6 +30,9 @@ export class MemoryRepo implements Repo {
       this.state = JSON.parse(readFileSync(file, "utf8")) as WorldState;
       // migrate files written before Atlas analyses existed
       if (!this.state.analyses) this.state.analyses = [];
+      // migrate entities written before operational metadata existed
+      for (const e of this.state.entities)
+        if (!e.meta) e.meta = emptyMeta();
     } else {
       this.state = buildSeed();
       this.flush();
@@ -90,6 +94,7 @@ export class MemoryRepo implements Repo {
       parentEntityId: patch.parentEntityId ?? null,
       childUniverseId: patch.childUniverseId ?? null,
       region: patch.region ?? null,
+      meta: patch.meta ?? emptyMeta(),
       docs: patch.docs ?? [],
       decisions: patch.decisions ?? [],
       history: patch.history ?? [

@@ -7,11 +7,13 @@
 import type {
   Archetype,
   Entity,
+  EntityMeta,
   Thread,
   Universe,
   Vec3,
   WorldState,
 } from "./domain.js";
+import { emptyMeta } from "./domain.js";
 
 const T = "2026-01-01T00:00:00.000Z";
 
@@ -43,6 +45,7 @@ function entity(
     childUniverseId?: string;
     sizeHint?: number;
     region?: string;
+    meta?: Partial<EntityMeta>;
   } = {},
 ): Entity {
   return {
@@ -61,6 +64,7 @@ function entity(
     parentEntityId: null,
     childUniverseId: opts.childUniverseId ?? null,
     region: opts.region ?? null,
+    meta: { ...emptyMeta(), createdBy: "Pablo", ...opts.meta },
     docs: [],
     decisions: [],
     history: [{ id: `${id}-h0`, kind: "created", message: "seeded", createdAt: T }],
@@ -112,9 +116,21 @@ export function buildSeed(): WorldState {
     entity("e-01", root.id, "01", {
       kind: "company",
       state: "galaxy",
-      archetype: { animal: "none", color: "#f2f2ff", energy: "the core" },
+      archetype: { animal: "lion", color: "#f2c14e", energy: "the core" },
       position: { x: 0, y: 0, z: 0 },
       sizeHint: 3.4, // enormous: generates every ecosystem
+      meta: {
+        status: "active",
+        role: "Núcleo",
+        description:
+          "Agencia digital B2B que entra en empresas, detecta necesidades y activa soluciones internas.",
+        purpose:
+          "Detectar necesidades de negocio y orquestar el ecosistema que las resuelve.",
+        tags: ["núcleo", "b2b", "orquestación"],
+        priority: "high",
+        potential: "very-high",
+        risk: "medium",
+      },
     }),
     entity("e-xnlab", root.id, "XNLAB", {
       kind: "company",
@@ -122,6 +138,18 @@ export function buildSeed(): WorldState {
       archetype: { animal: "eagle", color: "#b06cff", energy: "violet constellations" },
       position: { x: -17, y: 4, z: -7 },
       childUniverseId: uXnlab.id,
+      meta: {
+        status: "development",
+        role: "Creatividad",
+        description:
+          "Rama creativa que adopta las necesidades creativas detectadas por 01.",
+        purpose:
+          "Desarrolla soluciones creativas, branding, contenido, experiencias y sistemas visuales para todo el ecosistema.",
+        tags: ["creatividad", "diseño", "contenido", "branding"],
+        priority: "high",
+        potential: "very-high",
+        risk: "medium",
+      },
     }),
     entity("e-connect", root.id, "Connect", {
       kind: "connector",
@@ -129,6 +157,16 @@ export function buildSeed(): WorldState {
       archetype: { animal: "wolf", color: "#4ea6ff", energy: "neural mist" },
       position: { x: 15, y: 6, z: -11 },
       childUniverseId: uConnect.id,
+      meta: {
+        status: "active",
+        role: "Comunicación · Operación",
+        description: "Galaxia de comunicación y operación del ecosistema.",
+        purpose: "Conectar y operar los flujos de comunicación entre nodos.",
+        tags: ["comunicación", "operación"],
+        priority: "high",
+        potential: "high",
+        risk: "low",
+      },
     }),
     entity("e-xcap", root.id, "XCAP", {
       kind: "financial",
@@ -136,13 +174,33 @@ export function buildSeed(): WorldState {
       archetype: { animal: "bull", color: "#ff5470", energy: "cosmic storms" },
       position: { x: -13, y: -7, z: 13 },
       childUniverseId: uXcap.id,
+      meta: {
+        status: "active",
+        role: "Finanzas · Inversión",
+        description: "Galaxia financiera y de inversión.",
+        purpose: "Capital, inversión y disciplina financiera del ecosistema.",
+        tags: ["finanzas", "inversión", "capital"],
+        priority: "high",
+        potential: "high",
+        risk: "high",
+      },
     }),
     entity("e-hunter", root.id, "Hunter Network", {
       kind: "flow",
       state: "galaxy",
-      archetype: { animal: "none", color: "#3ddc84", energy: "tracking fields" },
+      archetype: { animal: "wolf", color: "#3ddc84", energy: "tracking fields" },
       position: { x: 17, y: -4, z: 9 },
       childUniverseId: uHunter.id,
+      meta: {
+        status: "development",
+        role: "Captación Comercial",
+        description: "Galaxia comercial de captación y análisis.",
+        purpose: "Detectar y captar oportunidades comerciales.",
+        tags: ["comercial", "captación", "ventas"],
+        priority: "medium",
+        potential: "high",
+        risk: "medium",
+      },
     }),
     entity("e-atlas", root.id, "Atlas", {
       kind: "intelligence",
@@ -150,18 +208,30 @@ export function buildSeed(): WorldState {
       archetype: { animal: "lion", color: "#ffcf5c", energy: "golden stellar dust" },
       position: { x: 0, y: 11, z: 17 },
       childUniverseId: uAtlas.id,
+      meta: {
+        status: "active",
+        role: "Inteligencia Empresarial",
+        description:
+          "Fuerza de inteligencia: estudia empresas superiores, iguales e inferiores.",
+        purpose:
+          "Generar hipótesis, alertas, oportunidades, premortems y recomendaciones.",
+        tags: ["inteligencia", "análisis", "estrategia"],
+        priority: "high",
+        potential: "very-high",
+        risk: "low",
+      },
     }),
   );
 
   // ── root threads (01 ↔ galaxies, with the right meaning) ──────────────────
   threads.push(
-    thread("t-01-xnlab", root.id, "e-01", "e-xnlab", "creativity", 1.2),
-    thread("t-01-connect", root.id, "e-01", "e-connect", "information", 2.7),
+    thread("t-01-xnlab", root.id, "e-01", "e-xnlab", "creative", 1.2),
+    thread("t-01-connect", root.id, "e-01", "e-connect", "data", 2.7),
     thread("t-01-xcap", root.id, "e-01", "e-xcap", "capital", 0.5),
-    thread("t-01-hunter", root.id, "e-01", "e-hunter", "capital", 3.1),
-    thread("t-01-atlas", root.id, "e-01", "e-atlas", "control", 1.9),
+    thread("t-01-hunter", root.id, "e-01", "e-hunter", "commercial", 3.1),
+    thread("t-01-atlas", root.id, "e-01", "e-atlas", "intelligence", 1.9),
     // XCAP is a critical dependency back into 01
-    thread("t-xcap-01", root.id, "e-xcap", "e-01", "critical", 2.2),
+    thread("t-xcap-01", root.id, "e-xcap", "e-01", "dependency", 2.2),
   );
 
   // ── XNLAB inner cosmos ─────────────────────────────────────────────────────

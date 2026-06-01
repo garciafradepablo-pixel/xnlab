@@ -130,7 +130,7 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   selectedId: null,
   focusId: null,
   weaveFromId: null,
-  weaveType: "information",
+  weaveType: "data",
   breadcrumbs: [],
   inspectorOpen: false,
   lowPower:

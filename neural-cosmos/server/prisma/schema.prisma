@@ -54,6 +54,9 @@ model Entity {
   region         String?
   notes          String?
 
+  // operational metadata (status, role, purpose, tags, priority…) as one blob
+  meta           Json     @default("{}")
+
   // strategic memory — arrays of small records
   docs           Json     @default("[]")
   decisions      Json     @default("[]")

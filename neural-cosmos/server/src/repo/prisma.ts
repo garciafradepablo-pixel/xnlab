@@ -11,6 +11,7 @@ import type {
   Universe,
   UniverseSnapshot,
 } from "../domain.js";
+import { emptyMeta } from "../domain.js";
 import { buildSeed } from "../seed-data.js";
 import { DEV_OWNER, type Repo } from "./types.js";
 
@@ -31,6 +32,7 @@ function toEntity(row: any): Entity {
     childUniverseId: row.childUniverseId,
     region: row.region,
     notes: row.notes ?? undefined,
+    meta: { ...emptyMeta(), ...(row.meta ?? {}) },
     docs: row.docs ?? [],
     decisions: row.decisions ?? [],
     history: row.history ?? [],
@@ -115,6 +117,7 @@ export async function createPrismaRepo(): Promise<Repo> {
             parentEntityId: e.parentEntityId ?? null,
             childUniverseId: e.childUniverseId ?? null,
             region: e.region ?? null,
+            meta: e.meta as any,
             docs: e.docs as any,
             decisions: e.decisions as any,
             history: e.history as any,
@@ -166,6 +169,7 @@ export async function createPrismaRepo(): Promise<Repo> {
           parentEntityId: patch.parentEntityId ?? null,
           childUniverseId: patch.childUniverseId ?? null,
           region: patch.region ?? null,
+          meta: (patch.meta ?? emptyMeta()) as any,
           docs: (patch.docs ?? []) as any,
           decisions: (patch.decisions ?? []) as any,
           history: (patch.history ?? [
@@ -207,6 +211,7 @@ export async function createPrismaRepo(): Promise<Repo> {
           }),
           ...(safe.region !== undefined && { region: safe.region }),
           ...(safe.notes !== undefined && { notes: safe.notes }),
+          ...(safe.meta !== undefined && { meta: safe.meta as any }),
           ...(safe.docs !== undefined && { docs: safe.docs as any }),
           ...(safe.decisions !== undefined && { decisions: safe.decisions as any }),
           ...(safe.history !== undefined && { history: safe.history as any }),
