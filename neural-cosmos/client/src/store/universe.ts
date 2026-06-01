@@ -27,6 +27,7 @@ import {
 
 export type Mode = "navigate" | "weave" | "move";
 export type Lang = "en" | "es";
+export type View = "galaxy" | "oracle";
 
 interface Crumb {
   universeId: string;
@@ -59,6 +60,7 @@ interface UniverseState {
   // ── view / interaction ──────────────────────────────────────────────────
   mode: Mode;
   lang: Lang;
+  view: View;
   selectedId: string | null;
   focusId: string | null; // entity the camera should ease toward
   weaveFromId: string | null; // first endpoint while weaving
@@ -83,6 +85,7 @@ interface UniverseState {
   select: (id: string | null) => void;
   setMode: (m: Mode) => void;
   setLang: (l: Lang) => void;
+  setView: (v: View) => void;
   setFocus: (id: string | null) => void;
   setWeaveType: (t: ThreadType) => void;
   setInspectorOpen: (open: boolean) => void;
@@ -137,6 +140,7 @@ export const useUniverse = create<UniverseState>((set, get) => ({
 
   mode: "navigate",
   lang: "es",
+  view: "galaxy",
   selectedId: null,
   focusId: null,
   weaveFromId: null,
@@ -241,6 +245,9 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   },
   setLang(lang) {
     set({ lang });
+  },
+  setView(view) {
+    set({ view });
   },
   setFocus(focusId) {
     set({ focusId });

@@ -116,6 +116,8 @@ const S = {
   allDocuments: { en: "All documents", es: "Todos los documentos" },
   allHistory: { en: "All history", es: "Todo el historial" },
   bloom: { en: "Bloom glow", es: "Resplandor (bloom)" },
+  viewGalaxy: { en: "Galaxy", es: "Galaxia" },
+  viewOracle: { en: "Oracle", es: "Oráculo" },
 } as const;
 
 export type StringKey = keyof typeof S;

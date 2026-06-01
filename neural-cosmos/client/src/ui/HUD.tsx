@@ -21,6 +21,8 @@ export default function HUD({ openPanel }: { openPanel: (p: Panel) => void }) {
   const setMode = useUniverse((s) => s.setMode);
   const crumbs = useUniverse((s) => s.breadcrumbs);
   const goToCrumb = useUniverse((s) => s.goToCrumb);
+  const view = useUniverse((s) => s.view);
+  const setView = useUniverse((s) => s.setView);
   const weaveType = useUniverse((s) => s.weaveType);
   const setWeaveType = useUniverse((s) => s.setWeaveType);
   const setFocus = useUniverse((s) => s.setFocus);
@@ -46,6 +48,26 @@ export default function HUD({ openPanel }: { openPanel: (p: Panel) => void }) {
           NEURAL<span className="dot">·</span>COSMOS
         </span>
         <SearchBox />
+        <div className="view-toggle" role="tablist" aria-label="view">
+          <button
+            role="tab"
+            aria-selected={view === "galaxy"}
+            className={`view-tab ${view === "galaxy" ? "active" : ""}`}
+            onClick={() => setView("galaxy")}
+          >
+            <span className="vt-ico">✦</span>
+            <span className="vt-label">{t("viewGalaxy", lang)}</span>
+          </button>
+          <button
+            role="tab"
+            aria-selected={view === "oracle"}
+            className={`view-tab ${view === "oracle" ? "active" : ""}`}
+            onClick={() => setView("oracle")}
+          >
+            <span className="vt-ico">◬</span>
+            <span className="vt-label">{t("viewOracle", lang)}</span>
+          </button>
+        </div>
         <button
           className="lang-toggle"
           onClick={() => setLang(lang === "es" ? "en" : "es")}

@@ -102,6 +102,77 @@
   min-width: 36px;
 }
 
+/* galaxy / oracle view switch */
+.view-toggle {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+}
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  min-height: 34px;
+}
+.view-tab.active {
+  background: rgba(176, 108, 255, 0.2);
+  color: var(--ink);
+  box-shadow: 0 0 14px rgba(176, 108, 255, 0.25);
+}
+
+/* oracle constellation labels */
+.oracle-label {
+  font-family: var(--font-display);
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  text-align: center;
+  white-space: nowrap;
+  text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+  transform: translateY(-50%);
+  user-select: none;
+}
+.oracle-label.is-selected {
+  color: var(--ink);
+  text-shadow: 0 0 14px var(--accent);
+}
+.oracle-label-role {
+  display: block;
+  font-size: 8px;
+  letter-spacing: 0.1em;
+  color: var(--ink-dim);
+  text-transform: none;
+  margin-top: 2px;
+}
+
+.vt-ico {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* keep the toggle from crowding the phone top bar — icon only */
+@media (max-width: 600px) {
+  .view-tab {
+    padding: 6px 9px;
+    gap: 0;
+  }
+  .vt-label {
+    display: none;
+  }
+}
+
 /* ── bottom toolbar ────────────────────────────────────────────────────── */
 .hud-bottom {
   position: absolute;
