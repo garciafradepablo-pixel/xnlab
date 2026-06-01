@@ -18,6 +18,8 @@ import { glowTexture, particleTexture } from "./textures";
 import { useControlsGate } from "./controls-context";
 import BlackHoleInfall from "./BlackHoleInfall";
 import GalaxyArms from "./GalaxyArms";
+import Constellation from "./Constellation";
+import SystemOrbit from "./SystemOrbit";
 import type { AnimalArchetype } from "../types/domain";
 
 const LONG_PRESS_MS = 480;
@@ -294,16 +296,12 @@ export default function CelestialBody({
       {/* galaxy: spiral arms + particle storm */}
       {isGalaxy && <GalaxyArms radius={radius} color={color} />}
 
-      {/* system: an orbiting body to read "produces subentities" */}
-      {isSystem && (
-        <mesh position={[radius * 2.2, 0, 0]}>
-          <sphereGeometry args={[radius * 0.22, 16, 16]} />
-          <meshStandardMaterial
-            color={color}
-            emissive={color}
-            emissiveIntensity={1}
-          />
-        </mesh>
+      {/* system: bodies orbiting → "produces subentities" */}
+      {isSystem && <SystemOrbit radius={radius} color={color} />}
+
+      {/* constellation: nodes joined by light */}
+      {entity.state === "constellation" && (
+        <Constellation radius={radius} color={color} />
       )}
 
       {/* black hole: rotating accretion disk + infalling suction */}
