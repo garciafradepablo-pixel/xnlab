@@ -1,0 +1,14 @@
+{
+  "name": "neural-cosmos",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Neural Cosmos — a living business universe in 3D.",
+  "scripts": {
+    "dev": "(npm --prefix server run dev &) && npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "dev:client": "npm --prefix client run dev",
+    "build": "npm --prefix client run build && npm --prefix server run build",
+    "typecheck": "npm --prefix client run typecheck && npm --prefix server run typecheck",
+    "install:all": "npm --prefix server install && npm --prefix client install"
+  }
+}

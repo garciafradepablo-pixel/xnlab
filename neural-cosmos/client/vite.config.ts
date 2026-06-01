@@ -7,6 +7,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    host: true, // listen on all interfaces so the container port can be forwarded
     proxy: {
       // dev API. Override by editing this target if your server runs elsewhere.
       "/api": {

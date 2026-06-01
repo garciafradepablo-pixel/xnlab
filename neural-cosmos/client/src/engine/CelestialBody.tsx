@@ -16,6 +16,7 @@ import type { Entity } from "../types/domain";
 import { useUniverse } from "../store/universe";
 import { glowTexture, particleTexture } from "./textures";
 import { useControlsGate } from "./controls-context";
+import BlackHoleInfall from "./BlackHoleInfall";
 
 const LONG_PRESS_MS = 480;
 const TAP_MAX_MS = 260;
@@ -255,21 +256,24 @@ export default function CelestialBody({
         </mesh>
       )}
 
-      {/* black hole: rotating accretion disk */}
+      {/* black hole: rotating accretion disk + infalling suction */}
       {isBlackHole && (
-        <Billboard>
-          <mesh ref={diskRef}>
-            <ringGeometry args={[radius * 1.3, radius * 3.2, 48]} />
-            <meshBasicMaterial
-              color="#ff9a3c"
-              transparent
-              opacity={0.65}
-              side={THREE.DoubleSide}
-              depthWrite={false}
-              blending={THREE.AdditiveBlending}
-            />
-          </mesh>
-        </Billboard>
+        <>
+          <Billboard>
+            <mesh ref={diskRef}>
+              <ringGeometry args={[radius * 1.3, radius * 3.2, 48]} />
+              <meshBasicMaterial
+                color="#ff9a3c"
+                transparent
+                opacity={0.65}
+                side={THREE.DoubleSide}
+                depthWrite={false}
+                blending={THREE.AdditiveBlending}
+              />
+            </mesh>
+          </Billboard>
+          <BlackHoleInfall radius={radius} />
+        </>
       )}
 
       {/* selection / pending-weave ring */}
