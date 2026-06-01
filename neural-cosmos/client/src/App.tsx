@@ -4,6 +4,8 @@ import HUD from "./ui/HUD";
 import Inspector from "./ui/Inspector";
 import Legend from "./ui/Legend";
 import AddEntity from "./ui/AddEntity";
+import AtlasConsole from "./ui/AtlasConsole";
+import Compass from "./ui/Compass";
 import { useUniverse } from "./store/universe";
 import { t } from "./ui/strings";
 import "./ui/ui.css";
@@ -47,7 +49,9 @@ export default function App() {
             openLegend={() => setSheet("legend")}
             openAdd={() => setSheet("add")}
           />
+          <Compass />
           <Inspector />
+          <AtlasConsole />
           <Legend open={sheet === "legend"} onClose={() => setSheet("none")} />
           <AddEntity open={sheet === "add"} onClose={() => setSheet("none")} />
         </>

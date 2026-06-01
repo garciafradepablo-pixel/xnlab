@@ -54,4 +54,9 @@ with tap-select + bottom-sheet inspector (3), neural threads with travelling
 pulses and a weave mode (4), lifecycle advance/retreat + archetype nebulae + color
 editor (5), black-hole absorption / rebirth (6), infinite zoom into child cosmoses
 with breadcrumbs (7), per-entity documents / decisions / history persisted to the
-backend (8), and Atlas intelligence-region scaffolding (9).
+backend (8), and Atlas intelligence scaffolding (9) — four navigable regions
+(Success / Parity / Failure / Black hole) plus a pluggable analysis provider
+(`server/src/atlas/provider.ts`): a heuristic stub ships now and emits
+hypotheses / alerts / opportunities / premortems / recommendations; a real model
+swaps in behind the same interface without touching the API or storage. A 3D
+gizmo plus an N/S/E/O + depth compass keep movement strategic.

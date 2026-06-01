@@ -163,6 +163,77 @@
   text-overflow: ellipsis;
 }
 
+/* ── orientation compass (top-right) ───────────────────────────────────── */
+.compass {
+  position: absolute;
+  top: calc(var(--safe-t) + 56px);
+  right: calc(var(--safe-r) + 12px);
+  z-index: 28;
+  width: 56px;
+  height: 56px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--panel);
+  backdrop-filter: blur(8px);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.compass-dial {
+  position: absolute;
+  inset: 0;
+  font-family: var(--font-display);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  transition: transform 0.08s linear;
+}
+.compass-dial span {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--ink-dim);
+}
+.compass-dial .c-n {
+  top: 3px;
+  color: var(--accent);
+}
+.compass-dial .c-s {
+  bottom: 3px;
+}
+.compass-dial .c-e {
+  right: 4px;
+  top: 50%;
+  left: auto;
+  transform: translateY(-50%);
+}
+.compass-dial .c-o {
+  left: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.compass-depth {
+  position: absolute;
+  right: -9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 28px;
+  border-radius: 2px;
+  background: var(--line);
+  overflow: visible;
+}
+.compass-depth-tick {
+  position: absolute;
+  left: -1px;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
 /* ── bottom sheet (mobile) / side panel (desktop) ──────────────────────── */
 .sheet-backdrop {
   position: absolute;

@@ -5,11 +5,13 @@
 import express from "express";
 import cors from "cors";
 import { makeRepo } from "./repo/index.js";
+import { makeAtlasProvider } from "./atlas/provider.js";
 
 const PORT = Number(process.env.PORT ?? 4020);
 
 async function main() {
   const repo = await makeRepo();
+  const atlas = makeAtlasProvider();
   const app = express();
   app.use(cors());
   app.use(express.json({ limit: "2mb" }));
@@ -79,6 +81,60 @@ async function main() {
     h(async (req, res) => {
       await repo.deleteThread(req.params.id);
       res.status(204).end();
+    }),
+  );
+
+  // ── Atlas — intelligence scaffolding (Phase 9) ────────────────────────────
+  app.get(
+    "/api/universe/:id/atlas",
+    h(async (req, res) => res.json(await repo.listAnalyses(req.params.id))),
+  );
+
+  // Generate analyses for a universe via the (pluggable) provider, persist them.
+  app.post(
+    "/api/universe/:id/atlas/generate",
+    h(async (req, res) => {
+      const snap = await repo.getSnapshot(req.params.id);
+      if (!snap) return res.status(404).json({ error: "universe not found" });
+      const drafts = await atlas.generate({
+        universeId: req.params.id,
+        entities: snap.entities,
+        threads: snap.threads,
+      });
+      const created = await repo.addAnalyses(req.params.id, drafts);
+      res.status(201).json({ provider: atlas.name, created });
+    }),
+  );
+
+  // Manual analysis (human-authored).
+  app.post(
+    "/api/universe/:id/atlas/analyses",
+    h(async (req, res) => {
+      const b = req.body ?? {};
+      if (!b.kind || !b.title)
+        return res.status(400).json({ error: "kind and title required" });
+      const [created] = await repo.addAnalyses(req.params.id, [
+        {
+          kind: b.kind,
+          region: b.region ?? "parity",
+          tier: b.tier ?? "parity",
+          subject: b.subject ?? "",
+          title: b.title,
+          body: b.body ?? "",
+          status: "open",
+          source: "manual",
+        },
+      ]);
+      res.status(201).json(created);
+    }),
+  );
+
+  app.patch(
+    "/api/atlas/analyses/:id",
+    h(async (req, res) => {
+      const updated = await repo.updateAnalysis(req.params.id, req.body ?? {});
+      if (!updated) return res.status(404).json({ error: "analysis not found" });
+      res.json(updated);
     }),
   );
 

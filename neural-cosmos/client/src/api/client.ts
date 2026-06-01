@@ -2,7 +2,12 @@
  * Thin REST client. The dev server proxies /api → :4020 (see vite.config.ts),
  * so everything is same-origin relative.
  */
-import type { Entity, Thread, UniverseSnapshot } from "../types/domain";
+import type {
+  AtlasAnalysis,
+  Entity,
+  Thread,
+  UniverseSnapshot,
+} from "../types/domain";
 
 const BASE = "/api";
 
@@ -63,6 +68,44 @@ export function deleteThread(id: string): Promise<void> {
   return fetch(`${BASE}/threads/${id}`, { method: "DELETE" }).then(() =>
     undefined,
   );
+}
+
+// ── Atlas (Phase 9) ─────────────────────────────────────────────────────────
+
+export function listAtlas(universeId: string): Promise<AtlasAnalysis[]> {
+  return fetch(`${BASE}/universe/${universeId}/atlas`).then((r) =>
+    json<AtlasAnalysis[]>(r),
+  );
+}
+
+export function generateAtlas(
+  universeId: string,
+): Promise<{ provider: string; created: AtlasAnalysis[] }> {
+  return fetch(`${BASE}/universe/${universeId}/atlas/generate`, {
+    method: "POST",
+  }).then((r) => json<{ provider: string; created: AtlasAnalysis[] }>(r));
+}
+
+export function addAnalysis(
+  universeId: string,
+  patch: Partial<AtlasAnalysis> & { kind: string; title: string },
+): Promise<AtlasAnalysis> {
+  return fetch(`${BASE}/universe/${universeId}/atlas/analyses`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(patch),
+  }).then((r) => json<AtlasAnalysis>(r));
+}
+
+export function setAnalysisStatus(
+  id: string,
+  status: AtlasAnalysis["status"],
+): Promise<AtlasAnalysis> {
+  return fetch(`${BASE}/atlas/analyses/${id}`, {
+    method: "PATCH",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ status }),
+  }).then((r) => json<AtlasAnalysis>(r));
 }
 
 /** Create a child universe for an entity (infinite zoom) and return its id. */

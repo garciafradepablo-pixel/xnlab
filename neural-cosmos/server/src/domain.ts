@@ -77,10 +77,39 @@ export interface UniverseSnapshot {
   threads: Thread[];
 }
 
+/**
+ * Atlas — intelligence force. It studies superior / parity / inferior companies
+ * and produces these. Generation is pluggable (see atlas/provider): a heuristic
+ * stub ships now; a real model can replace it later without touching storage.
+ */
+export type AtlasKind =
+  | "hypothesis"
+  | "alert"
+  | "opportunity"
+  | "premortem"
+  | "recommendation";
+export type AtlasTier = "superior" | "parity" | "inferior";
+export type AtlasRegion = "success" | "parity" | "failure" | "blackhole";
+
+export interface AtlasAnalysis {
+  id: string;
+  universeId: string;
+  kind: AtlasKind;
+  region: AtlasRegion;
+  tier: AtlasTier;
+  subject: string;
+  title: string;
+  body: string;
+  status: "open" | "acted" | "dismissed";
+  source: "model" | "manual" | "heuristic";
+  createdAt: string;
+}
+
 /** The full owner state (all nested universes), used by the memory repo. */
 export interface WorldState {
   rootUniverseId: string;
   universes: Universe[];
   entities: Entity[];
   threads: Thread[];
+  analyses: AtlasAnalysis[];
 }

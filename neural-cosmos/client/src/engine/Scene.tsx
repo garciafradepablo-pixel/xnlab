@@ -11,6 +11,7 @@ import * as THREE from "three";
 import { useUniverse } from "../store/universe";
 import { computeRadius } from "../store/derive";
 import { ControlsContext } from "./controls-context";
+import { heading } from "./heading";
 import Starfield from "./Starfield";
 import CelestialBody from "./CelestialBody";
 import NeuralThread from "./NeuralThread";
@@ -40,6 +41,18 @@ function FocusRig() {
       camera.position.lerp(controls.target.clone().add(dir), 0.04);
     }
     controls.update();
+  });
+  return null;
+}
+
+/** Publishes camera yaw/pitch each frame for the DOM compass to read. */
+function HeadingProbe() {
+  const camera = useThree((s) => s.camera);
+  const dir = useRef(new THREE.Vector3());
+  useFrame(() => {
+    camera.getWorldDirection(dir.current);
+    heading.yaw = Math.atan2(dir.current.x, dir.current.z);
+    heading.pitch = Math.asin(THREE.MathUtils.clamp(dir.current.y, -1, 1));
   });
   return null;
 }
@@ -109,6 +122,7 @@ export default function Scene() {
         touches={{ ONE: THREE.TOUCH.ROTATE, TWO: THREE.TOUCH.DOLLY_PAN }}
       />
       <FocusRig />
+      <HeadingProbe />
 
       <GizmoHelper alignment="bottom-left" margin={[64, 96]}>
         <GizmoViewport

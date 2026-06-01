@@ -55,6 +55,23 @@ const S = {
     en: "Atlas — intelligence force. Regions ready for analysis.",
     es: "Atlas — fuerza de inteligencia. Regiones listas para análisis.",
   },
+  atlasConsole: { en: "Atlas console", es: "Consola Atlas" },
+  openAtlas: { en: "Open Atlas console", es: "Abrir consola Atlas" },
+  generate: { en: "Generate analysis", es: "Generar análisis" },
+  generating: { en: "Studying…", es: "Estudiando…" },
+  noAnalyses: {
+    en: "No analyses yet. Generate to populate the regions.",
+    es: "Sin análisis aún. Genera para poblar las regiones.",
+  },
+  acted: { en: "Acted", es: "Actuado" },
+  dismiss: { en: "Dismiss", es: "Descartar" },
+  reopen: { en: "Reopen", es: "Reabrir" },
+  generatedBy: { en: "via", es: "vía" },
+  scaffoldNote: {
+    en: "Heuristic stub — a model plugs in here later.",
+    es: "Andamiaje heurístico — aquí se enchufa un modelo después.",
+  },
+  subject: { en: "Subject", es: "Sujeto" },
 } as const;
 
 export type StringKey = keyof typeof S;

@@ -233,6 +233,79 @@ export async function createPrismaRepo(): Promise<Repo> {
       await prisma.thread.delete({ where: { id } }).catch(() => undefined);
     },
 
+    async listAnalyses(universeId) {
+      const rows = await prisma.atlasAnalysis.findMany({
+        where: { universeId },
+        orderBy: { createdAt: "desc" },
+      });
+      return rows.map((r: any) => ({
+        id: r.id,
+        universeId: r.universeId,
+        kind: r.kind,
+        region: r.region,
+        tier: r.tier,
+        subject: r.subject,
+        title: r.title,
+        body: r.body,
+        status: r.status,
+        source: r.source,
+        createdAt: iso(r.createdAt),
+      }));
+    },
+
+    async addAnalyses(universeId, drafts) {
+      const created = await prisma.$transaction(
+        drafts.map((d) =>
+          prisma.atlasAnalysis.create({
+            data: {
+              universeId,
+              kind: d.kind,
+              region: d.region,
+              tier: d.tier,
+              subject: d.subject,
+              title: d.title,
+              body: d.body,
+              status: d.status,
+              source: d.source,
+            },
+          }),
+        ),
+      );
+      return created.map((r: any) => ({
+        id: r.id,
+        universeId: r.universeId,
+        kind: r.kind,
+        region: r.region,
+        tier: r.tier,
+        subject: r.subject,
+        title: r.title,
+        body: r.body,
+        status: r.status,
+        source: r.source,
+        createdAt: iso(r.createdAt),
+      }));
+    },
+
+    async updateAnalysis(id, patch) {
+      const r = await prisma.atlasAnalysis
+        .update({ where: { id }, data: { ...(patch.status && { status: patch.status }) } })
+        .catch(() => null);
+      if (!r) return null;
+      return {
+        id: r.id,
+        universeId: r.universeId,
+        kind: r.kind,
+        region: r.region,
+        tier: r.tier,
+        subject: r.subject,
+        title: r.title,
+        body: r.body,
+        status: r.status,
+        source: r.source,
+        createdAt: iso(r.createdAt),
+      };
+    },
+
     async ensureChildUniverse(entityId) {
       const e = await prisma.entity.findUnique({ where: { id: entityId } });
       if (!e) throw new Error("entity not found");

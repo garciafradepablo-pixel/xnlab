@@ -7,6 +7,7 @@ import { randomUUID } from "node:crypto";
 import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
 import { dirname } from "node:path";
 import type {
+  AtlasAnalysis,
   Entity,
   Thread,
   Universe,
@@ -26,6 +27,8 @@ export class MemoryRepo implements Repo {
     this.file = file;
     if (existsSync(file)) {
       this.state = JSON.parse(readFileSync(file, "utf8")) as WorldState;
+      // migrate files written before Atlas analyses existed
+      if (!this.state.analyses) this.state.analyses = [];
     } else {
       this.state = buildSeed();
       this.flush();
@@ -166,5 +169,35 @@ export class MemoryRepo implements Repo {
     e.updatedAt = nowISO();
     this.flush();
     return { childUniverseId: u.id };
+  }
+
+  async listAnalyses(universeId: string): Promise<AtlasAnalysis[]> {
+    return this.state.analyses.filter((a) => a.universeId === universeId);
+  }
+
+  async addAnalyses(
+    universeId: string,
+    drafts: Omit<AtlasAnalysis, "id" | "universeId" | "createdAt">[],
+  ): Promise<AtlasAnalysis[]> {
+    const created = drafts.map((d) => ({
+      ...d,
+      id: `a_${randomUUID()}`,
+      universeId,
+      createdAt: nowISO(),
+    }));
+    this.state.analyses.push(...created);
+    this.flush();
+    return created;
+  }
+
+  async updateAnalysis(
+    id: string,
+    patch: Partial<Pick<AtlasAnalysis, "status">>,
+  ): Promise<AtlasAnalysis | null> {
+    const a = this.state.analyses.find((x) => x.id === id);
+    if (!a) return null;
+    if (patch.status) a.status = patch.status;
+    this.flush();
+    return a;
   }
 }

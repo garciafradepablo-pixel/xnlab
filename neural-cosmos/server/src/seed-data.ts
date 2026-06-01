@@ -226,14 +226,21 @@ export function buildSeed(): WorldState {
       kind: "intelligence",
       state: "constellation",
       archetype: { animal: "none", color: "#3ddc84", energy: "what works" },
-      position: { x: -10, y: 3, z: -4 },
+      position: { x: -11, y: 3, z: -4 },
       region: "success",
+    }),
+    entity("e-at-parity", uAtlas.id, "Parity", {
+      kind: "intelligence",
+      state: "constellation",
+      archetype: { animal: "none", color: "#9aa0c8", energy: "the field" },
+      position: { x: 0, y: 4, z: -9 },
+      region: "parity",
     }),
     entity("e-at-failure", uAtlas.id, "Failure", {
       kind: "intelligence",
       state: "constellation",
       archetype: { animal: "none", color: "#ff5470", energy: "what breaks" },
-      position: { x: 10, y: 3, z: -4 },
+      position: { x: 11, y: 3, z: -4 },
       region: "failure",
     }),
     entity("e-at-blackhole", uAtlas.id, "Black Hole", {
@@ -250,5 +257,6 @@ export function buildSeed(): WorldState {
     universes,
     entities,
     threads,
+    analyses: [],
   };
 }

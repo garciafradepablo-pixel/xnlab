@@ -180,6 +180,58 @@ export interface UniverseSnapshot {
   threads: Thread[];
 }
 
+// ── Atlas — intelligence force (Phase 9) ──────────────────────────────────
+
+export const ATLAS_KINDS = [
+  "hypothesis",
+  "alert",
+  "opportunity",
+  "premortem",
+  "recommendation",
+] as const;
+export type AtlasKind = (typeof ATLAS_KINDS)[number];
+
+export type AtlasTier = "superior" | "parity" | "inferior";
+export type AtlasRegion = "success" | "parity" | "failure" | "blackhole";
+
+export interface AtlasAnalysis {
+  id: string;
+  universeId: string;
+  kind: AtlasKind;
+  region: AtlasRegion;
+  tier: AtlasTier;
+  subject: string;
+  title: string;
+  body: string;
+  status: "open" | "acted" | "dismissed";
+  source: "model" | "manual" | "heuristic";
+  createdAt: string;
+}
+
+export const ATLAS_KIND_LABELS: Record<AtlasKind, { en: string; es: string }> = {
+  hypothesis: { en: "Hypothesis", es: "Hipótesis" },
+  alert: { en: "Alert", es: "Alerta" },
+  opportunity: { en: "Opportunity", es: "Oportunidad" },
+  premortem: { en: "Premortem", es: "Premortem" },
+  recommendation: { en: "Recommendation", es: "Recomendación" },
+};
+
+export const ATLAS_REGION_LABELS: Record<
+  AtlasRegion,
+  { en: string; es: string; color: string }
+> = {
+  success: { en: "Success", es: "Éxito", color: "#3ddc84" },
+  parity: { en: "Parity", es: "Paridad", color: "#9aa0c8" },
+  failure: { en: "Failure", es: "Fallo", color: "#ff5470" },
+  blackhole: { en: "Black hole", es: "Agujero negro", color: "#b06cff" },
+};
+
+export const ATLAS_TIER_LABELS: Record<AtlasTier, { en: string; es: string }> = {
+  superior: { en: "Superior", es: "Superior" },
+  parity: { en: "Parity", es: "Igual" },
+  inferior: { en: "Inferior", es: "Inferior" },
+};
+
 // ── derived helpers (pure) ────────────────────────────────────────────────
 
 /** Stage index, or -1 for special states. */

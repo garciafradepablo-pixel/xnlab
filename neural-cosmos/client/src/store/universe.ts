@@ -10,6 +10,8 @@ import { create } from "zustand";
 import * as api from "../api/client";
 import {
   STAGES,
+  type AtlasAnalysis,
+  type AtlasKind,
   type Entity,
   type EntityDecision,
   type EntityDoc,
@@ -64,6 +66,12 @@ interface UniverseState {
   inspectorOpen: boolean;
   lowPower: boolean; // degrade effects on weak devices
 
+  // ── Atlas (Phase 9) ───────────────────────────────────────────────────────
+  atlasOpen: boolean;
+  atlasUniverseId: string | null;
+  atlasBusy: boolean;
+  atlas: AtlasAnalysis[];
+
   // ── lifecycle ─────────────────────────────────────────────────────────────
   loadRoot: () => Promise<void>;
   enterChildUniverse: (entityId: string) => Promise<void>;
@@ -97,6 +105,15 @@ interface UniverseState {
   tapForWeave: (id: string) => void;
   removeThread: (id: string) => void;
 
+  // ── Atlas ─────────────────────────────────────────────────────────────────
+  openAtlas: (universeId: string) => Promise<void>;
+  closeAtlas: () => void;
+  generateAtlas: () => Promise<void>;
+  addAnalysis: (
+    a: { kind: AtlasKind; title: string } & Partial<AtlasAnalysis>,
+  ) => Promise<void>;
+  setAnalysisStatus: (id: string, status: AtlasAnalysis["status"]) => void;
+
   // internal
   _entity: (id: string) => Entity | undefined;
 }
@@ -119,6 +136,11 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   lowPower:
     typeof navigator !== "undefined" &&
     (navigator.hardwareConcurrency ?? 8) <= 4,
+
+  atlasOpen: false,
+  atlasUniverseId: null,
+  atlasBusy: false,
+  atlas: [],
 
   _entity: (id) => get().entities.find((e) => e.id === id),
 
@@ -362,6 +384,52 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   removeThread(id) {
     set((s) => ({ threads: s.threads.filter((t) => t.id !== id) }));
     api.deleteThread(id).catch((e) => set({ error: (e as Error).message }));
+  },
+
+  async openAtlas(universeId) {
+    set({ atlasOpen: true, atlasUniverseId: universeId, atlasBusy: true });
+    try {
+      const list = await api.listAtlas(universeId);
+      set({ atlas: list, atlasBusy: false });
+    } catch (e) {
+      set({ atlasBusy: false, error: (e as Error).message });
+    }
+  },
+
+  closeAtlas() {
+    set({ atlasOpen: false });
+  },
+
+  async generateAtlas() {
+    const id = get().atlasUniverseId;
+    if (!id) return;
+    set({ atlasBusy: true });
+    try {
+      const { created } = await api.generateAtlas(id);
+      set((s) => ({ atlas: [...created, ...s.atlas], atlasBusy: false }));
+    } catch (e) {
+      set({ atlasBusy: false, error: (e as Error).message });
+    }
+  },
+
+  async addAnalysis(a) {
+    const id = get().atlasUniverseId;
+    if (!id) return;
+    try {
+      const created = await api.addAnalysis(id, a);
+      set((s) => ({ atlas: [created, ...s.atlas] }));
+    } catch (e) {
+      set({ error: (e as Error).message });
+    }
+  },
+
+  setAnalysisStatus(id, status) {
+    set((s) => ({
+      atlas: s.atlas.map((a) => (a.id === id ? { ...a, status } : a)),
+    }));
+    api
+      .setAnalysisStatus(id, status)
+      .catch((e) => set({ error: (e as Error).message }));
   },
 }));
 

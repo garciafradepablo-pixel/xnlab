@@ -37,6 +37,7 @@ export default function Inspector() {
   const rebirth = useUniverse((s) => s.rebirth);
   const addDoc = useUniverse((s) => s.addDoc);
   const addDecision = useUniverse((s) => s.addDecision);
+  const openAtlas = useUniverse((s) => s.openAtlas);
 
   const [tab, setTab] = useState<Tab>("details");
   const [docTitle, setDocTitle] = useState("");
@@ -82,7 +83,20 @@ export default function Inspector() {
             </span>
           </div>
 
-          {isAtlas && <p className="meta">{t("atlasHint", lang)}</p>}
+          {isAtlas && (
+            <>
+              <p className="meta">{t("atlasHint", lang)}</p>
+              <button
+                className="btn primary"
+                onClick={() => {
+                  const uid = useUniverse.getState().universe?.id;
+                  if (uid) openAtlas(uid);
+                }}
+              >
+                ◎ {t("openAtlas", lang)}
+              </button>
+            </>
+          )}
 
           {/* life-cycle */}
           <div className="field">

@@ -1,4 +1,5 @@
 import type {
+  AtlasAnalysis,
   Entity,
   Thread,
   UniverseSnapshot,
@@ -24,6 +25,17 @@ export interface Repo {
 
   /** Create (or return existing) child universe for an entity. */
   ensureChildUniverse(entityId: string): Promise<{ childUniverseId: string }>;
+
+  // ── Atlas analyses (Phase 9) ──────────────────────────────────────────────
+  listAnalyses(universeId: string): Promise<AtlasAnalysis[]>;
+  addAnalyses(
+    universeId: string,
+    drafts: Omit<AtlasAnalysis, "id" | "universeId" | "createdAt">[],
+  ): Promise<AtlasAnalysis[]>;
+  updateAnalysis(
+    id: string,
+    patch: Partial<Pick<AtlasAnalysis, "status">>,
+  ): Promise<AtlasAnalysis | null>;
 }
 
 export const DEV_OWNER = "owner_dev";
