@@ -68,8 +68,8 @@ const HEAD = `<meta charset="utf-8">
 <meta name="robots" content="noindex, nofollow">
 <meta name="theme-color" content="#0e0f12">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="01 · XN LAB">
-<title>01 · XN LAB — Inteligencia de Oportunidades</title>`;
+<meta name="apple-mobile-web-app-title" content="CONNECT">
+<title>CONNECT — Inteligencia de Oportunidades</title>`;
 
 /** HTML de la app de un solo archivo. */
 export function buildAppHtml() {
@@ -122,7 +122,7 @@ ${HEAD}
 </head>
 <body>
 <div id="boot">
-  <div class="logo">01 · XN LAB</div>
+  <div class="logo">CONNECT</div>
   <div class="spin"></div>
   <div class="msg" id="bootmsg">Buscando la última versión…</div>
   <button id="useoffline" style="display:none">Usar versión guardada</button>

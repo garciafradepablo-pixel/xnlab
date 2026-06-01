@@ -985,7 +985,6 @@ function viewArea() {
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
-  else if (state.view === "connector") area.appendChild(connectorView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
   else if (state.view === "chat") area.appendChild(chatView("general"));
@@ -2919,7 +2918,7 @@ function freshCard(r, kind) {
     freshMetric(r.generator || "—", "tecnología", "neutral"),
   ]);
   const children = [head, metrics, el("p", { class: "fresh-note", text: r.note || "" })];
-  if (lever) children.push(el("div", { class: "fresh-lever", text: "⚡ Palanca de venta: su presencia digital no acompaña a su momento — entrada natural para 01/XN." }));
+  if (lever) children.push(el("div", { class: "fresh-lever", text: "⚡ Palanca de venta: su presencia digital no acompaña a su momento — entrada natural para una colaboración." }));
   return el("div", { class: `case-fresh-card ${lever ? "lever" : "fresh-ok"}` }, children);
 }
 
@@ -2951,7 +2950,10 @@ function buildCards() {
     wrap.appendChild(el("h2", { class: "cartera-h", text: `Leads XN · Altas carteras · ${xnLeads.length}` }));
     wrap.appendChild(xnLeads.length ? cards(xnLeads) : el("p", { class: "empty", text: "Sin leads XN ahora mismo." }));
     if (o1Leads.length) {
+      // Si no hay XN, abrimos la carpeta de entrada: no tendría sentido dejar
+      // todo lo que hay plegado bajo un "Sin leads XN".
       const folder = el("details", { class: "extra-01" });
+      if (!xnLeads.length) folder.setAttribute("open", "");
       folder.appendChild(el("summary", { class: "extra-01-sum", text: `Aportaciones extra 01 · ${o1Leads.length}` }));
       folder.appendChild(cards(o1Leads));
       wrap.appendChild(folder);
@@ -3917,86 +3919,6 @@ function addLeadForm() {
     el("div", { class: "add-actions" }, [save, msg]),
     el("p", { class: "hint", text: "* Nombre y momento son lo mínimo. Con una URL de fuente del momento, el lead puntúa más alto. El resto de huecos los confirmas luego desde la ficha (Verificación)." }),
   ]);
-}
-
-// ---- Conector 01 ↔ XN -------------------------------------------------------
-// El corazón del sistema: reparte cada oportunidad entre 01 Agency (ticket
-// 1.500–5.000 €) y XN LAB (transformación 8.000 €+), con el valor de cada
-// cartera, el porqué del reparto y el traspaso entre casas.
-
-function connectorView() {
-  const all = (state.results?.all || []).filter((o) => o.scores.classification !== "discard");
-  const o1 = all.filter((o) => o.scores.classification === "01");
-  const xn = all.filter((o) => o.scores.classification === "xn");
-
-  // Valor potencial de cada cartera = suma del ticket sugerido por lead.
-  const ticketOf = (o) => OFFER_LADDER[o.suggestedOfferKey]?.price || 0;
-  const sum = (arr) => arr.reduce((s, o) => s + ticketOf(o), 0);
-  const eur = (n) => `${n.toLocaleString("es-ES")} €`;
-
-  const blocks = [el("h2", { text: "Conector 01 ↔ XN LAB" })];
-  blocks.push(el("p", { class: "hint", text: "Cada oportunidad se reparte según el alcance del primer movimiento: 01 Agency capta y ejecuta (1.500–5.000 €); XN LAB transforma (8.000 €+). Aquí ves las dos carteras, su valor potencial y por qué cae cada lead donde cae." }));
-
-  // Cabecera con las dos casas y su valor.
-  blocks.push(el("div", { class: "conn-houses" }, [
-    el("div", { class: "conn-house house-01" }, [
-      el("div", { class: "conn-h-name", text: "01 Agency" }),
-      el("div", { class: "conn-h-n", text: String(o1.length) }),
-      el("div", { class: "conn-h-sub", text: `${eur(sum(o1))} potencial · ticket 1.500–5.000 €` }),
-    ]),
-    el("div", { class: "conn-arrow", text: "↔", title: "Traspaso entre casas" }),
-    el("div", { class: "conn-house house-xn" }, [
-      el("div", { class: "conn-h-name", text: "XN LAB" }),
-      el("div", { class: "conn-h-n", text: String(xn.length) }),
-      el("div", { class: "conn-h-sub", text: `${eur(sum(xn))} potencial · transformación 8.000 €+` }),
-    ]),
-  ]));
-
-  blocks.push(el("div", { class: "conn-total", html: `Valor potencial combinado del pipeline: <b>${eur(sum(all))}</b> en ${all.length} oportunidades.` }));
-
-  // Dos columnas con los leads de cada casa, con su oferta y el porqué.
-  const column = (title, leads, cls) => el("div", { class: `conn-col conn-col-${cls}` }, [
-    el("h3", { text: `${title} (${leads.length})` }),
-    leads.length ? el("div", { class: "conn-leads" }, leads.map((o) => {
-      const offer = OFFER_LADDER[o.suggestedOfferKey];
-      const why = connectorReason(o);
-      return el("div", { class: "conn-lead", onClick: () => { state.filters.search = o.company; goView("cards"); } }, [
-        el("div", { class: "conn-lead-top" }, [
-          el("span", { class: "conn-lead-name", text: o.company }),
-          el("span", { class: `conn-lead-score conf-${o.scores.confidence >= 75 ? "hot" : o.scores.confidence >= 58 ? "warm" : "cool"}`, text: String(o.scores.confidence) }),
-        ]),
-        el("div", { class: "conn-lead-offer", text: offer ? `${offer.label} · ${eur(offer.price)}` : "—" }),
-        el("div", { class: "conn-lead-why", text: why }),
-      ]);
-    })) : el("p", { class: "empty", text: "Sin leads en esta cartera ahora mismo." }),
-  ]);
-
-  blocks.push(el("div", { class: "conn-cols" }, [
-    column("01 Agency — captar y ejecutar", o1, "01"),
-    column("XN LAB — transformar", xn, "xn"),
-  ]));
-
-  // Candidatos a traspaso: 01 muy fuertes que rozan XN (handoff explícito).
-  const handoff = o1.filter((o) => o.scores.confidence >= 80 && o.scores.economicPotential === "very high");
-  if (handoff.length) {
-    blocks.push(el("div", { class: "sec" }, [
-      el("h4", { text: "Candidatos a escalar de 01 → XN" }),
-      el("p", { class: "hint", text: "Leads de 01 con confianza alta y capacidad económica muy alta: si el primer proyecto va bien, son candidatos a una transformación XN." }),
-      el("ul", { class: "bullets" }, handoff.map((o) => el("li", { text: `${o.company} — ${o.scores.confidence} · ${o.city}` }))),
-    ]));
-  }
-
-  return el("div", {}, blocks);
-}
-
-// Por qué cae un lead en su casa (texto corto y defendible).
-function connectorReason(o) {
-  const s = o.scores;
-  if (s.classification === "xn") {
-    return `Transformación integral: capacidad ${s.economicPotential}, confianza ${s.confidence}. El primer movimiento ya es de alcance XN.`;
-  }
-  const svc = matchServices(o, { max: 1 })[0];
-  return svc ? `Primer movimiento 01: ${svc.name}. Punto de entrada accionable y de ticket medio.` : `Encaje 01: proyecto acotado de ticket medio.`;
 }
 
 // ---- Learning loop view -----------------------------------------------------

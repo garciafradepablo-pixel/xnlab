@@ -581,8 +581,6 @@ output { font-size: 12px; color: var(--accent); }
 .num { text-align: right; font-variant-numeric: tabular-nums; font-family: var(--mono); }
 .num.strong { color: var(--accent); font-weight: 700; }
 .badge { font-size: 11px; font-weight: 700; padding: 2px 7px; border-radius: 5px; }
-.badge-xn { background: rgba(139,123,216,.18); color: var(--xn); }
-.badge-01 { background: rgba(74,158,255,.18); color: var(--o1); }
 .badge-discard { color: var(--ink-dim); }
 
 /* ---- Top picks (franja "para llamar ya") ---- */
@@ -599,7 +597,6 @@ output { font-size: 12px; color: var(--accent); }
 .tp-hot .tp-score { background: rgba(63,185,80,.25); color: var(--green); }
 .tp-warm .tp-score { background: rgba(212,167,44,.25); color: var(--yellow); }
 .tp-name { font-size: 13px; font-weight: 600; color: var(--ink); }
-.tp-badge { font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 5px; }
 .tp-st { font-size: 11px; color: var(--ink-dim); border-left: 1px solid var(--line); padding-left: 8px; }
 
 /* ============================ HIGH-IMPACT CARD ============================ */
@@ -886,36 +883,6 @@ output { font-size: 12px; color: var(--accent); }
 .ul-del { background: transparent; border: 1px solid var(--line); color: var(--ink-dim); border-radius: 6px; padding: 2px 8px; cursor: pointer; }
 .ul-del:hover { color: var(--red); border-color: var(--red); }
 
-/* ---- Conector 01 ↔ XN ---- */
-.conn-houses { display: flex; align-items: stretch; gap: 12px; margin: 14px 0; }
-.conn-house { flex: 1; border: 1px solid var(--line); border-radius: 12px; padding: 16px; text-align: center; }
-.house-01 { border-color: rgba(74,158,255,.4); background: rgba(74,158,255,.06); }
-.house-xn { border-color: rgba(139,123,216,.4); background: rgba(139,123,216,.06); }
-.conn-h-name { font-size: 14px; font-weight: 800; letter-spacing: .5px; }
-.house-01 .conn-h-name { color: var(--o1); }
-.house-xn .conn-h-name { color: var(--xn); }
-.conn-h-n { font-size: 34px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.conn-h-sub { font-size: 11px; color: var(--ink-dim); }
-.conn-arrow { display: flex; align-items: center; font-size: 24px; color: var(--accent); }
-.conn-total { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; font-size: 13px; }
-.conn-total b { color: var(--accent); font-size: 15px; }
-.conn-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.conn-col { border: 1px solid var(--line); border-radius: 12px; padding: 12px; }
-.conn-col-01 { border-top: 3px solid var(--o1); }
-.conn-col-xn { border-top: 3px solid var(--xn); }
-.conn-col h3 { font-size: 13px; margin-bottom: 10px; }
-.conn-leads { display: flex; flex-direction: column; gap: 8px; }
-.conn-lead { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 9px 10px; cursor: pointer; transition: border-color .1s; }
-.conn-lead:hover { border-color: var(--accent); }
-.conn-lead-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-.conn-lead-name { font-size: 13px; font-weight: 600; }
-.conn-lead-score { font-size: 13px; font-weight: 800; font-variant-numeric: tabular-nums; }
-.conn-lead-score.conf-hot { color: var(--green); }
-.conn-lead-score.conf-warm { color: var(--yellow); }
-.conn-lead-score.conf-cool { color: var(--ink-dim); }
-.conn-lead-offer { font-size: 12px; color: var(--accent); margin: 3px 0; }
-.conn-lead-why { font-size: 11.5px; color: var(--ink-dim); line-height: 1.4; }
-
 /* ---- Zona de datos (reset blindado) ---- */
 .danger-zone { margin-top: 18px; padding-top: 14px; border-top: 1px dashed var(--line); display: flex; flex-direction: column; gap: 8px; }
 .danger-zone h4 { color: var(--ink-dim); }
@@ -1054,12 +1021,6 @@ output { font-size: 12px; color: var(--accent); }
   /* Top picks y chips no se salen */
   .tp-list { gap: 6px; }
   .c-tags { gap: 5px; }
-
-  /* Conector 01↔XN: cabecera y columnas apiladas */
-  .conn-cols { grid-template-columns: 1fr; }
-  .conn-houses { flex-direction: row; }
-  .conn-house { padding: 12px 8px; }
-  .conn-h-n { font-size: 26px; }
 
   /* Hoy: KPIs en 2 columnas, llamada con acciones a lo ancho */
   .today-greet { font-size: 22px; }
@@ -1355,7 +1316,7 @@ button:disabled { cursor: not-allowed; }
 .view > * { animation: riseIn .34s cubic-bezier(.2,.8,.2,1) both; }
 
 /* Entrada escalonada de tarjetas y filas (las primeras, sin recargar al scrollear). */
-.cards > .card, .today-calls > .tc, .crm-card, .conn-lead, .discover-card, .nicho {
+.cards > .card, .today-calls > .tc, .crm-card, .discover-card, .nicho {
   animation: riseIn .36s cubic-bezier(.2,.8,.2,1) both;
 }
 .cards > .card:nth-child(1), .today-calls > .tc:nth-child(1) { animation-delay: .02s; }
@@ -1372,8 +1333,8 @@ button:disabled { cursor: not-allowed; }
 .pulse > .kpi:nth-child(4) { animation: riseIn .4s cubic-bezier(.2,.8,.2,1) both; animation-delay: .20s; }
 
 /* Pressable: todo lo clicable cede al pulsar (tacto físico tipo iOS). */
-.card, .tc, .crm-card, .conn-lead, .zone, .tab, .q, .kpi, .idea-chip { will-change: transform; }
-.card:active, .tc:active, .crm-card:active, .conn-lead:active { transform: scale(.992); }
+.card, .tc, .crm-card, .zone, .tab, .q, .kpi, .idea-chip { will-change: transform; }
+.card:active, .tc:active, .crm-card:active { transform: scale(.992); }
 
 /* Aviso efímero (toast) — captación nocturna, sincronización, etc. */
 .flash { position: fixed; left: 50%; bottom: 28px; transform: translate(-50%, 16px);
@@ -1725,8 +1686,8 @@ button:disabled { cursor: not-allowed; }
 
 /* Score en listas/tablas/CRM */
 .tp-hot .tp-score { background: rgba(239,106,69,.22); color: #f57953; }
-.conn-lead-score.conf-hot, .crm-card-conf.conf-hot { color: #f57953; }
-.conn-lead-score.conf-cool, .crm-card-conf.conf-cool { color: #74b6ec; }
+.crm-card-conf.conf-hot { color: #f57953; }
+.crm-card-conf.conf-cool { color: #74b6ec; }
 
 /* Recomendación 'llamar ya' = urgencia, no verde */
 .reco-hot { color: #f57953; border-color: rgba(239,106,69,.45); }
