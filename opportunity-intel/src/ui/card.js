@@ -65,7 +65,7 @@ function ctLink(label, href, title) {
   return el("a", { class: "ct-link", href, target: "_blank", rel: "noopener", title: title || label, text: label });
 }
 
-const classLabel = (c) => (c === "xn" ? "XN LAB" : c === "01" ? "01 Agency" : "Descartar");
+const classLabel = (c) => (c === "xn" ? "Profunda" : c === "01" ? "Ágil" : "Descartar");
 
 // Score → colour band (drives the ring + accents).
 function band(score) {
@@ -173,7 +173,7 @@ function reasoningLine(opp) {
   const greens = FILTERS.filter((f) => (opp.signals?.[f.key]?.level) === "green").map((f) => f.label.toLowerCase());
   const grises = FILTERS.filter((f) => (opp.signals?.[f.key]?.level || "grey") === "grey").map((f) => f.label.toLowerCase());
   const cls = s.classification;
-  const casa = cls === "xn" ? "una transformación XN LAB" : cls === "01" ? "un proyecto 01 Agency" : cls === "unqualified" ? "un prospecto a enriquecer" : "un descarte";
+  const casa = cls === "xn" ? "una transformación de fondo" : cls === "01" ? "un proyecto de entrada ágil" : cls === "unqualified" ? "un prospecto a enriquecer" : "un descarte";
   const fuerte = greens.length ? `Veo fuerza en ${greens.slice(0, 3).join(", ")}.` : "Aún no veo señales fuertes confirmadas.";
   const falta = grises.length ? ` Me falta confirmar ${grises.slice(0, 3).join(", ")}.` : "";
   const verdict = ` Lo leo como ${casa} (confianza ${s.confidence}).`;
@@ -374,7 +374,7 @@ export function renderCard(opp, record, handlers = {}) {
         ]),
         el("div", { class: "svc-list" }, services.map((sv) =>
           el("div", { class: `svc svc-${sv.house}`, title: `${sv.solves}\n→ ${sv.produces}\nMotivo: ${sv.reasons.join(" · ")}` }, [
-            el("span", { class: `svc-house svc-house-${sv.house}`, text: sv.house === "xn" ? "XN" : "01" }),
+            el("span", { class: `svc-house svc-house-${sv.house}`, text: sv.house === "xn" ? "Profunda" : "Ágil" }),
             el("span", { class: "svc-name", text: sv.name }),
             el("span", { class: "svc-ticket", text: ticketLabel(SERVICE_BY_ID[sv.id]) }),
           ])

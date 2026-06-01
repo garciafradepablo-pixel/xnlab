@@ -21,7 +21,8 @@ const SECTOR_VOICE = {
   realestate: "inmobiliario de lujo", growth: "marcas en crecimiento",
 };
 
-const brandOf = (cls) => (cls === "xn" ? "XN LAB" : "01 Agency");
+// 01 es la agencia paraguas; toda llamada se hace en su nombre.
+const brandOf = (_cls) => "01";
 const firstName = (opp) => {
   const n = opp?.decisionMaker?.name || "";
   return n ? n.trim().split(/\s+/)[0] : "Hola";
@@ -93,7 +94,7 @@ export function buildPlaybook(opp, opts = {}) {
     { k: "Empresa", v: [opp?.company, opp?.subsector || SECTOR_VOICE[opp?.sector], opp?.city].filter(Boolean).join(" · ") },
     moment ? { k: "Momento", v: moment } : { k: "Momento", v: "Por confirmar antes de llamar", weak: true },
     tensions.length ? { k: "Tensión", v: tensions.join(" · ") } : { k: "Tensión", v: "Por verificar in situ (web / reseñas)", weak: true },
-    { k: "Encaje", v: (cls === "xn" ? "XN LAB — transformación de fondo" : "01 Agency — captación y ejecución") + (top ? ` · ${top.name}` : "") },
+    { k: "Encaje", v: (cls === "xn" ? "Transformación de fondo" : "Captación y ejecución ágil") + (top ? ` · ${top.name}` : "") },
     opp?.decisionMaker?.name
       ? { k: "Decisor", v: `${opp.decisionMaker.name}${opp.decisionMaker.role ? ` (${opp.decisionMaker.role})` : ""}` }
       : { k: "Decisor", v: "Por identificar", weak: true },

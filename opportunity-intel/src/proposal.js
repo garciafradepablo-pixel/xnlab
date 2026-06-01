@@ -14,7 +14,9 @@
 
 import { TENSION_TYPES } from "./models.js";
 
-const brandOf = (cls) => (cls === "xn" ? "XN LAB" : "01 Agency");
+// 01 es la agencia paraguas que firma toda colaboración (envuelve los servicios).
+// El alcance interno (cls 01/xn) no cambia la marca cara al cliente.
+const brandOf = (_cls) => "01";
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // Ventanas de duración e intensidad SIN número económico (lo permite la marca:

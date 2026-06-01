@@ -103,7 +103,7 @@ export function toJSON(opps, tracking = {}) {
 
 export function toCallSheet(opps) {
   const lines = [];
-  lines.push("01 AGENCY / XN LAB — HOJA DE LLAMADAS");
+  lines.push("CONNECT — HOJA DE LLAMADAS");
   lines.push(`Generada ${new Date().toLocaleString("es-ES")}`);
   lines.push("=".repeat(60));
   opps.forEach((o) => {
@@ -178,7 +178,7 @@ export function exportPDF(opps) {
     })
     .join("");
   w.document.write(`<!doctype html><html lang="es"><head><meta charset="utf-8">
-    <title>01 / XN LAB — Top ${opps.length} oportunidades</title>
+    <title>CONNECT — Top ${opps.length} oportunidades</title>
     <style>
       body{font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:32px;}
       h1{font-size:20px;border-bottom:2px solid #111;padding-bottom:8px;}
@@ -188,7 +188,7 @@ export function exportPDF(opps) {
       .scores{font-size:12px;color:#333;background:#f4f4f4;padding:6px 8px;border-radius:4px;}
       p{margin:6px 0;}
     </style></head><body>
-    <h1>01 Agency / XN LAB — Top ${opps.length} oportunidades</h1>
+    <h1>CONNECT — Top ${opps.length} oportunidades</h1>
     <p>Generada ${new Date().toLocaleString("es-ES")}</p>
     ${rows}
     <script>window.onload=()=>window.print();</script>

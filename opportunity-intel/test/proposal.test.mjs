@@ -19,7 +19,7 @@ const lead01 = { company: "Bar Nuria", city: "Sitges", scores: { classification:
 
 // 1. Estructura y marca correctas.
 const pXN = buildProposal(leadXN, { service: { name: "Transformación de marca", solves: "una identidad que no acompaña", produces: "un sistema de marca nuevo" } });
-ok(/Grupo Lumen/.test(pXN.title) && /XN LAB/.test(pXN.title), "título lleva empresa y marca XN");
+ok(/Grupo Lumen/.test(pXN.title) && /01/.test(pXN.title), "título lleva empresa y la marca paraguas 01");
 ok(pXN.sections.length >= 4, "compone varias secciones");
 ok(/diagn[oó]stico/i.test(pXN.cta), "el cierre agenda el diagnóstico (métrica norte)");
 

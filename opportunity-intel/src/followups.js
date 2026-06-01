@@ -18,7 +18,7 @@ const H = 3600000;
 const CADENCE = {
   no_answer: [
     { afterH: 3,  channel: "Teléfono", action: "Reintentar en otra franja", script: "Llama a otra hora del día: si fue por la mañana, prueba a media tarde." },
-    { afterH: 24, channel: "WhatsApp", action: "Mensaje breve con el motivo", script: "«Hola [nombre], te llamé desde [01/XN]. Quería comentarte una idea concreta sobre [su web/su momento]. ¿Cuándo te viene bien 10 min?»" },
+    { afterH: 24, channel: "WhatsApp", action: "Mensaje breve con el motivo", script: "«Hola [nombre], te llamé desde 01. Quería comentarte una idea concreta sobre [su web/su momento]. ¿Cuándo te viene bien 10 min?»" },
     { afterH: 72, channel: "Email",    action: "Email con una observación de valor", script: "Asunto corto + una observación real sobre su web o su momento, y una sola pregunta de cierre. Sin adjuntos, sin presión." },
   ],
   called: [

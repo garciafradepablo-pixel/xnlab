@@ -110,7 +110,7 @@ export const FILTERS = [
     key: "actionableLever",
     label: "Palanca accionable",
     weight: 0.1,
-    question: "¿Puede 01/XN señalar un primer movimiento claro?",
+    question: "¿Podemos señalar un primer movimiento claro?",
     increases:
       "Reposicionamiento evidente, landing, arquitectura web, embudo de captación, reparación SEO, sistema de marca, automatización de intake, narrativa comercial.",
     decreases:
@@ -160,7 +160,7 @@ export const FILTERS = [
     key: "strategicFit",
     label: "Encaje estratégico",
     weight: 0.07,
-    question: "¿El tipo de empresa con la que 01/XN debería trabajar?",
+    question: "¿Es el tipo de empresa con la que deberíamos trabajar?",
     increases:
       "Sector premium o en crecimiento, caso de éxito atractivo, universo de marca limpio, negocio serio y ético, escalable.",
     decreases:
@@ -221,9 +221,12 @@ export const SECTORS = [
 ];
 export const SECTOR_BY_KEY = Object.fromEntries(SECTORS.map((s) => [s.key, s]));
 
+// Clase = ALCANCE del primer movimiento, no "casa". Los leads no pertenecen a
+// ninguna marca: son oportunidades. "Ágil" = entrada acotada; "Profunda" =
+// transformación de fondo. (Las claves 01/xn son plumbing interno del motor.)
 export const CLASSIFICATIONS = {
-  "01": "Aportaciones extra 01",
-  xn: "XN · Altas carteras",
+  "01": "Ágil",
+  xn: "Profunda",
   unqualified: "Por evaluar",
   discard: "No merece llamada",
 };
@@ -285,11 +288,13 @@ export const TENSION_TYPES = {
 // Suggested offer ladder. NOTE: this is an INTERNAL sales tool — prices are
 // intentional here. (The public XNLAB brand site forbids published pricing;
 // that rule governs public surfaces, not this internal instrument.)
+// owner: alcance interno del motor ("01" = entrada ágil, "xn" = transformación
+// profunda). NO es marca: el lead no pertenece a ninguna casa.
 export const OFFER_LADDER = {
-  audit: { label: "01 Brand/Web Audit", price: 1500, owner: "01" },
-  reposition: { label: "01 Repositioning + Landing Page", price: 3000, owner: "01" },
-  web_funnel: { label: "01 Web + Funnel + Automation", price: 5000, owner: "01" },
-  xn_transformation: { label: "XN LAB Strategic Transformation", price: 8000, owner: "xn" },
+  audit: { label: "Auditoría de marca y web", price: 1500, owner: "01" },
+  reposition: { label: "Reposicionamiento + Landing", price: 3000, owner: "01" },
+  web_funnel: { label: "Web + Funnel + Automatización", price: 5000, owner: "01" },
+  xn_transformation: { label: "Transformación estratégica", price: 8000, owner: "xn" },
 };
 
 // Pipeline stages, in order.
@@ -310,5 +315,5 @@ export const DEFAULT_CONFIG = {
   finalCount: 20,
   conservatism: 0.8, // 0 = aggressive, 1 = maximally conservative
   minScore: 45,
-  xnThreshold: 68, // confidence at/above which a very-high-economic lead becomes XN LAB
+  xnThreshold: 68, // confianza a partir de la cual un lead de alta economía pasa a alcance "profundo"
 };

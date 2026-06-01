@@ -962,7 +962,7 @@ function configPanel() {
       field("Nº final de leads", finalCount),
       field("Conservadurismo", el("div", {}, [conservSlider, conservOut])),
       field("Puntuación mínima", minScore),
-      field("Umbral 01 → XN LAB (confianza)", xnThr),
+      field("Umbral ágil → profunda (confianza)", xnThr),
       el("p", { class: "config-note", text: "El conservadurismo mezcla el motor 80/20 por defecto: más alto = más rojo/gris tratado como 'probablemente no'." }),
     ]),
     securitySection(),
@@ -1845,7 +1845,7 @@ function filterBar() {
     el("input", { type: "search", placeholder: "Buscar empresa / ciudad / decisor…", value: f.search, onInput: (e) => { f.search = e.target.value; rerenderResults(); } }),
     sel("sector", [opt("all", "Todos los sectores", f.sector === "all"), ...allSectors().map((s) => opt(s.key, s.label, f.sector === s.key))]),
     sel("city", [opt("all", "Todas las ciudades", f.city === "all"), ...cities.map((c) => opt(c, c, f.city === c))]),
-    sel("classification", [opt("all", "Todas (XN + extra 01)", f.classification === "all"), ...Object.entries(CLASSIFICATIONS).map(([k, v]) => opt(k, v, f.classification === k))]),
+    sel("classification", [opt("all", "Todas las clases", f.classification === "all"), ...Object.entries(CLASSIFICATIONS).map(([k, v]) => opt(k, v, f.classification === k))]),
     sel("priority", [opt("all", "Cualquier prioridad", f.priority === "all"), opt("high", "Prioridad alta", f.priority === "high"), opt("medium", "Media", f.priority === "medium"), opt("low", "Baja", f.priority === "low")]),
     el("label", { class: "minev" }, [
       el("span", { text: "Mín. evidencias" }),
@@ -2971,30 +2971,10 @@ function buildCards() {
         })
       : emptyNote("Aún no hay oportunidades.", { icon: "⚡", sub: "Pulsa ⚡ Nueva tanda de leads para captar." });
   }
-  const f = state.filters;
-  const cards = (arr) => el("div", { class: "cards" }, arr.map((o) => renderCard(o, tracking[o.id], handlers)));
-
-  // Por defecto (sin filtro de clase) la cartera principal son los leads XN
-  // (altas carteras); los leads 01 se recogen aparte en una carpeta plegable
-  // "Aportaciones extra 01". Con filtro de clase, se muestra la lista tal cual.
-  if (f.classification === "all") {
-    const xnLeads = rows.filter((o) => o.scores.classification === "xn");
-    const o1Leads = rows.filter((o) => o.scores.classification === "01");
-    const wrap = el("div", {});
-    wrap.appendChild(el("h2", { class: "cartera-h", text: `Leads XN · Altas carteras · ${xnLeads.length}` }));
-    wrap.appendChild(xnLeads.length ? cards(xnLeads) : emptyNote("Sin leads XN ahora mismo.", { icon: "◇", compact: true }));
-    if (o1Leads.length) {
-      // Si no hay XN, abrimos la carpeta de entrada: no tendría sentido dejar
-      // todo lo que hay plegado bajo un "Sin leads XN".
-      const folder = el("details", { class: "extra-01" });
-      if (!xnLeads.length) folder.setAttribute("open", "");
-      folder.appendChild(el("summary", { class: "extra-01-sum", text: `Aportaciones extra 01 · ${o1Leads.length}` }));
-      folder.appendChild(cards(o1Leads));
-      wrap.appendChild(folder);
-    }
-    return wrap;
-  }
-  return cards(rows);
+  // Los leads no tienen "casa": son oportunidades que Connect detecta. Una sola
+  // lista, ordenada por el motor. (El split 01/XN como dos carteras se retiró:
+  // 01 es la agencia paraguas, no una categoría de lead.)
+  return el("div", { class: "cards" }, rows.map((o) => renderCard(o, tracking[o.id], handlers)));
 }
 
 // ---- CRM view (tablero por estado de llamada) -------------------------------
