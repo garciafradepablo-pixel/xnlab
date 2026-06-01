@@ -268,6 +268,24 @@ function emptyNote(text, opts = {}) {
   return el("div", { class: `empty-note${opts.compact ? " empty-note-sm" : ""}` }, kids);
 }
 
+// Estado de CARGA con spinner: en vez de un "Cargando…" plano que parece colgado,
+// un giro tenue + texto. Mismo registro visual que emptyNote.
+function loadingNote(text = "Cargando…", opts = {}) {
+  return el("div", { class: `empty-note${opts.compact ? " empty-note-sm" : ""} loading-note` }, [
+    el("div", { class: "spinner", "aria-hidden": "true" }),
+    el("p", { class: "empty-line", text }),
+  ]);
+}
+
+// Estado de ERROR con reintento: un error de red deja de ser un callejón sin
+// salida — si se pasa onRetry, ofrece "Reintentar". Mismo molde que emptyNote.
+function errorNote(text, onRetry, opts = {}) {
+  return emptyNote(text || "No se pudo cargar.", {
+    icon: "⚠", compact: opts.compact,
+    action: onRetry ? { label: "Reintentar", onClick: onRetry } : undefined,
+  });
+}
+
 // ---- Puerta de acceso (login / crear usuario) ------------------------------
 function renderAuth() {
   clear(root);
@@ -1258,10 +1276,10 @@ function usersView() {
   const paintSuperv = async () => {
     supervLoaded = true;
     clear(superv);
-    superv.appendChild(el("p", { class: "config-note", text: "Cargando conversaciones…" }));
+    superv.appendChild(loadingNote("Cargando conversaciones…", { compact: true }));
     const threads = await chat.adminThreads(auth.getToken());
     clear(superv);
-    if (!threads.length) { superv.appendChild(el("p", { class: "hint", text: "No hay privados todavía." })); return; }
+    if (!threads.length) { superv.appendChild(emptyNote("No hay privados todavía.", { icon: "🔒", compact: true })); return; }
     for (const t of threads) {
       const who = (t.between || []).join(" ↔ ");
       superv.appendChild(el("button", { class: "superv-row", onClick: () => openConversation(t.channel, `Privado · ${who}`) }, [
@@ -1345,7 +1363,7 @@ function chatView(channel) {
     const r = await chat.listMessages(auth.getToken(), { channel });
     clear(box);
     if (r && r.ok) { box.appendChild(messageList(r.messages)); requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; }); }
-    else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudieron cargar los mensajes." }));
+    else box.appendChild(errorNote((r && r.error) || "No se pudieron cargar los mensajes.", load, { compact: true }));
   };
   wrap.appendChild(composer(
     meta.ph,
@@ -1386,10 +1404,10 @@ function driveView() {
 
   const load = async () => {
     clear(list);
-    list.appendChild(el("p", { class: "hint", text: "Cargando…" }));
+    list.appendChild(loadingNote("Cargando…", { compact: true }));
     const r = await listFiles(token, state._driveFolder);
     clear(list);
-    if (!r || !r.ok) { list.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la carpeta." })); return; }
+    if (!r || !r.ok) { list.appendChild(errorNote((r && r.error) || "No se pudo cargar la carpeta.", load, { compact: true })); return; }
     const files = r.files || [];
     if (!files.length) { list.appendChild(emptyNote("Aún no hay archivos en esta carpeta.", { icon: "📁", compact: true })); return; }
     for (const f of files) list.appendChild(driveRow(f, token, load));
@@ -1488,7 +1506,7 @@ function dmsView() {
       const r = await chat.listMessages(auth.getToken(), { to: other.name });
       clear(box);
       if (r && r.ok) { box.appendChild(messageList(r.messages)); requestAnimationFrame(() => { box.scrollTop = box.scrollHeight; }); }
-      else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudo cargar." }));
+      else box.appendChild(errorNote((r && r.error) || "No se pudo cargar.", load, { compact: true }));
     };
     thread.appendChild(composer(
       `Mensaje para ${other.name}…`,
@@ -1517,7 +1535,7 @@ function openConversation(channel, title) {
     const r = await chat.listMessages(auth.getToken(), { channel });
     clear(box);
     if (r && r.ok) box.appendChild(messageList(r.messages));
-    else box.appendChild(el("p", { class: "ro-notice", text: (r && r.error) || "No se pudo cargar." }));
+    else box.appendChild(errorNote((r && r.error) || "No se pudo cargar.", load, { compact: true }));
   };
   overlay.appendChild(el("div", { class: "pb-panel" }, [
     el("div", { class: "pb-head" }, [
@@ -1599,11 +1617,11 @@ function presenceView() {
   const load = async () => {
     const r = await presence.fetchRoster();
     if (mine !== presenceGen || state.view !== "presence") return; // la vista cambió: corta el refresco
-    if (!r || !r.ok) { clear(list); list.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la presencia." })); }
+    if (!r || !r.ok) { clear(list); list.appendChild(errorNote((r && r.error) || "No se pudo cargar la presencia.", load, { compact: true })); }
     else paint(presence.buildRoster(r.roster || [], team, Date.now(), me ? me.name : ""));
     if (mine === presenceGen && state.view === "presence") setTimeout(load, 15000); // refresco suave en vivo
   };
-  list.appendChild(el("p", { class: "hint", text: "Cargando…" }));
+  list.appendChild(loadingNote("Cargando…", { compact: true }));
   load();
   return wrap;
 }
@@ -1644,11 +1662,11 @@ function activityView() {
   const load = async () => {
     const r = await activity.fetchFeed();
     if (mine !== feedGen || state.view !== "feed") return; // la vista cambió: corta el refresco
-    if (!r || !r.ok) { clear(listWrap); listWrap.appendChild(el("p", { class: "hint", text: (r && r.error) || "No se pudo cargar la actividad." })); }
+    if (!r || !r.ok) { clear(listWrap); listWrap.appendChild(errorNote((r && r.error) || "No se pudo cargar la actividad.", load)); }
     else paint(r.feed || []);
     if (mine === feedGen && state.view === "feed") setTimeout(load, 20000); // refresco suave
   };
-  listWrap.appendChild(el("p", { class: "hint", text: "Cargando…" }));
+  listWrap.appendChild(loadingNote());
   load();
   return wrap;
 }
