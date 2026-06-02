@@ -1,10 +1,14 @@
 /**
- * The archetype animal as a luminous, illustrated glyph billboarded onto the
- * body, with a faint 3D star-dust halo around it for volume. The glyph stays
- * legible from any orbit angle (it billboards), twinkles softly, and brightens
- * as the camera nears — it is the entity's signature, always readable.
+ * The archetype animal as a luminous NEBULA billboarded onto the body, with a
+ * faint 3D star-dust halo around it for volume. The glyph stays legible from any
+ * orbit angle (it billboards), twinkles softly, and brightens as the camera
+ * nears — it is the entity's signature, always readable.
+ *
+ * By default the nebula is generated procedurally (animal-art). If the entity
+ * carries its own image (meta.imageUrl) we use that instead — a bespoke
+ * illustrated nebula — keeping the procedural one as the fallback.
  */
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Billboard } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
@@ -22,18 +26,50 @@ export default function AnimalGlyph({
   color,
   radius,
   worldPos,
+  imageUrl,
 }: {
   animal: string;
   color: string;
   radius: number;
   worldPos: THREE.Vector3;
+  imageUrl?: string;
 }) {
   const camera = useThree((s) => s.camera);
-  const art = useMemo(() => animalArtTexture(animal, color), [animal, color]);
+  const nebula = useMemo(() => animalArtTexture(animal, color), [animal, color]);
   const dot = useMemo(() => particleTexture(), []);
   const planeRef = useRef<THREE.Mesh>(null);
   const dustRef = useRef<THREE.Points>(null);
 
+  // optional bespoke image overrides the procedural nebula
+  const [image, setImage] = useState<THREE.Texture | null>(null);
+  useEffect(() => {
+    if (!imageUrl) {
+      setImage(null);
+      return;
+    }
+    let alive = true;
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+    loader.load(
+      imageUrl,
+      (tex) => {
+        if (!alive) {
+          tex.dispose();
+          return;
+        }
+        tex.colorSpace = THREE.SRGBColorSpace;
+        tex.anisotropy = 4;
+        setImage(tex);
+      },
+      undefined,
+      () => alive && setImage(null),
+    );
+    return () => {
+      alive = false;
+    };
+  }, [imageUrl]);
+
+  const texture = image ?? nebula;
   const shape = ANIMAL_SHAPES[animal];
   const size = radius * 6.6;
   const phase = useMemo(() => Math.abs(worldPos.x * 1.7 + worldPos.z), [worldPos]);
@@ -67,10 +103,10 @@ export default function AnimalGlyph({
     if (planeRef.current)
       (planeRef.current.material as THREE.MeshBasicMaterial).opacity = vis * twinkle;
     if (dustRef.current)
-      (dustRef.current.material as THREE.PointsMaterial).opacity = vis * 0.5 * twinkle;
+      (dustRef.current.material as THREE.PointsMaterial).opacity = vis * 0.4 * twinkle;
   });
 
-  if (!art) return null;
+  if (!texture) return null;
 
   return (
     <>
@@ -78,7 +114,7 @@ export default function AnimalGlyph({
         <mesh ref={planeRef}>
           <planeGeometry args={[size, size]} />
           <meshBasicMaterial
-            map={art}
+            map={texture}
             transparent
             opacity={0.9}
             depthWrite={false}
@@ -87,21 +123,23 @@ export default function AnimalGlyph({
           />
         </mesh>
       </Billboard>
-      <points ref={dustRef}>
-        <bufferGeometry>
-          <bufferAttribute attach="attributes-position" args={[dust, 3]} />
-        </bufferGeometry>
-        <pointsMaterial
-          size={radius * 0.34}
-          map={dot}
-          color={color}
-          transparent
-          opacity={0.4}
-          depthWrite={false}
-          sizeAttenuation
-          blending={THREE.AdditiveBlending}
-        />
-      </points>
+      {!image && (
+        <points ref={dustRef}>
+          <bufferGeometry>
+            <bufferAttribute attach="attributes-position" args={[dust, 3]} />
+          </bufferGeometry>
+          <pointsMaterial
+            size={radius * 0.34}
+            map={dot}
+            color={color}
+            transparent
+            opacity={0.4}
+            depthWrite={false}
+            sizeAttenuation
+            blending={THREE.AdditiveBlending}
+          />
+        </points>
+      )}
     </>
   );
 }

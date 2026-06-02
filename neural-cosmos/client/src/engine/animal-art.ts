@@ -1,66 +1,79 @@
 /**
- * Procedural animal ART (not stick-figures): each archetype is rendered as a
- * luminous, illustrated glyph on a high-resolution canvas and cached as a
- * texture. We reuse the recognisable stroke skeletons from `animal-shapes`, but
- * draw them as smoothed, glowing curves with bloom halos and bright "named"
- * stars at the joints — so the eagle/wolf/bull/lion read as illustrated
- * constellation creatures, tinted to each entity's signature colour.
+ * Procedural animal NEBULAS. Each archetype is rendered as a luminous nebula in
+ * the shape of the creature — a soft, blurred cloud of coloured light with a
+ * faint defining ridge, fine star-dust grain, and bright constellation stars at
+ * the joints. No hard "neon" outlines: the animal reads as cosmic gas and stars,
+ * tinted to the entity's signature colour (eagle/wolf/bull/lion).
  *
- * The texture is billboarded onto a plane in the scene (see AnimalGlyph), so it
- * parallaxes and twinkles within the 3D cosmos rather than reading as flat art.
+ * Drawn additively over opaque black so it composites cleanly with the scene's
+ * AdditiveBlending (black contributes nothing, only the glow shows). Cached per
+ * `animal:color`, then billboarded into the cosmos by AnimalGlyph.
+ *
+ * This is the in-engine default; an entity may override it with its own image
+ * (meta.imageUrl) for a bespoke illustrated nebula.
  */
 import * as THREE from "three";
 import { ANIMAL_SHAPES, type Stroke } from "./animal-shapes";
 
 const SIZE = 512;
-const cache = new Map<string, THREE.CanvasTexture>();
-
-// normalised art extents (a touch beyond the figure bounds, for padding)
+const PAD = 56;
 const SPAN_X = 3.1;
 const SPAN_Y = 2.3;
+const cache = new Map<string, THREE.CanvasTexture>();
 
-function lighten(hex: string, t: number): string {
-  return "#" + new THREE.Color(hex).lerp(new THREE.Color("#ffffff"), t).getHexString();
-}
-function rgba(hex: string, a: number): string {
+type RGB = [number, number, number];
+
+function toRGB(hex: string): RGB {
   const c = new THREE.Color(hex);
-  return `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${a})`;
+  return [c.r * 255, c.g * 255, c.b * 255];
+}
+function lighten([r, g, b]: RGB, t: number): RGB {
+  return [r + (255 - r) * t, g + (255 - g) * t, b + (255 - b) * t];
+}
+function css([r, g, b]: RGB, a: number): string {
+  return `rgba(${Math.round(r)},${Math.round(g)},${Math.round(b)},${a})`;
+}
+function rnd(s: number): number {
+  const x = Math.sin(s * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
 }
 
-function drawSmooth(
-  ctx: CanvasRenderingContext2D,
-  pts: Stroke,
-  X: (n: number) => number,
-  Y: (n: number) => number,
-): void {
-  if (pts.length < 2) return;
-  ctx.beginPath();
-  ctx.moveTo(X(pts[0][0]), Y(pts[0][1]));
+function qbez(p0: number[], c: number[], p1: number[], t: number): number[] {
+  const u = 1 - t;
+  return [
+    u * u * p0[0] + 2 * u * t * c[0] + t * t * p1[0],
+    u * u * p0[1] + 2 * u * t * c[1] + t * t * p1[1],
+  ];
+}
+
+/** Sample a stroke into a dense, smoothed polyline (same smoothing as drawn). */
+function sampleStroke(pts: Stroke): number[][] {
+  const STEP = 24;
+  const out: number[][] = [];
+  if (pts.length < 2) return out;
   if (pts.length === 2) {
-    ctx.lineTo(X(pts[1][0]), Y(pts[1][1]));
-    ctx.stroke();
-    return;
-  }
-  // quadratic smoothing through the vertices → organic, illustrated curves
-  for (let i = 1; i < pts.length - 1; i++) {
-    const x0 = X(pts[i][0]);
-    const y0 = Y(pts[i][1]);
-    const x1 = X(pts[i + 1][0]);
-    const y1 = Y(pts[i + 1][1]);
-    ctx.quadraticCurveTo(x0, y0, (x0 + x1) / 2, (y0 + y1) / 2);
+    for (let i = 0; i <= STEP; i++) {
+      const t = i / STEP;
+      out.push([
+        pts[0][0] + (pts[1][0] - pts[0][0]) * t,
+        pts[0][1] + (pts[1][1] - pts[0][1]) * t,
+      ]);
+    }
+    return out;
   }
   const n = pts.length - 1;
-  ctx.quadraticCurveTo(X(pts[n - 1][0]), Y(pts[n - 1][1]), X(pts[n][0]), Y(pts[n][1]));
-  ctx.stroke();
-}
-
-function drawStrokes(
-  ctx: CanvasRenderingContext2D,
-  strokes: Stroke[],
-  X: (n: number) => number,
-  Y: (n: number) => number,
-): void {
-  for (const s of strokes) drawSmooth(ctx, s, X, Y);
+  let start = pts[0] as number[];
+  out.push(start);
+  for (let i = 1; i <= n - 1; i++) {
+    const c = pts[i] as number[];
+    const end =
+      i === n - 1
+        ? (pts[n] as number[])
+        : [(pts[i][0] + pts[i + 1][0]) / 2, (pts[i][1] + pts[i + 1][1]) / 2];
+    for (let s = 1; s <= STEP; s++) out.push(qbez(start, c, end, s / STEP));
+    start = end;
+  }
+  return out;
 }
 
 export function animalArtTexture(animal: string, color: string): THREE.CanvasTexture | null {
@@ -70,62 +83,82 @@ export function animalArtTexture(animal: string, color: string): THREE.CanvasTex
   const hit = cache.get(key);
   if (hit) return hit;
 
-  const c = document.createElement("canvas");
-  c.width = c.height = SIZE;
-  const ctx = c.getContext("2d")!;
-  const pad = 60;
-  const sc = Math.min((SIZE - pad * 2) / SPAN_X, (SIZE - pad * 2) / SPAN_Y);
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = SIZE;
+  const ctx = canvas.getContext("2d")!;
+  // opaque black base → additive scene blending shows only the glow
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(0, 0, SIZE, SIZE);
+  ctx.globalCompositeOperation = "lighter";
+
+  const sc = Math.min((SIZE - PAD * 2) / SPAN_X, (SIZE - PAD * 2) / SPAN_Y);
   const X = (nx: number) => SIZE / 2 + nx * sc;
   const Y = (ny: number) => SIZE / 2 - ny * sc;
 
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  const base = toRGB(color);
+  const ridge = lighten(base, 0.25);
+  const ridgeHot = lighten(base, 0.55);
+  const dustCol = lighten(base, 0.4);
 
-  // 1 — soft bloom underlay (wide, blurred, faint)
-  ctx.save();
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 30;
-  ctx.strokeStyle = color;
-  ctx.globalAlpha = 0.45;
-  ctx.lineWidth = 11;
-  drawStrokes(ctx, shape.strokes, X, Y);
-  // 2 — mid glow
-  ctx.shadowBlur = 16;
-  ctx.globalAlpha = 0.7;
-  ctx.lineWidth = 5.5;
-  drawStrokes(ctx, shape.strokes, X, Y);
-  ctx.restore();
+  // soft, gaussian-ish additive disc
+  const soft = (x: number, y: number, radius: number, rgb: RGB, intensity: number) => {
+    if (radius < 0.5) radius = 0.5;
+    const g = ctx.createRadialGradient(x, y, 0, x, y, radius);
+    g.addColorStop(0, css(rgb, intensity));
+    g.addColorStop(0.5, css(rgb, intensity * 0.4));
+    g.addColorStop(1, css(rgb, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
+  };
 
-  // 3 — crisp near-white core line
-  ctx.save();
-  ctx.strokeStyle = lighten(color, 0.55);
-  ctx.globalAlpha = 0.95;
-  ctx.lineWidth = 2.2;
-  drawStrokes(ctx, shape.strokes, X, Y);
-  ctx.restore();
+  const samples = shape.strokes.map(sampleStroke);
 
-  // 4 — bright "named" stars at every vertex
+  // 1 — soft nebula body (wide clouds merge into volume)
+  for (const sp of samples)
+    for (const p of sp) {
+      soft(X(p[0]), Y(p[1]), sc * 0.43, base, 0.008);
+      soft(X(p[0]), Y(p[1]), sc * 0.25, base, 0.014);
+      soft(X(p[0]), Y(p[1]), sc * 0.124, base, 0.024);
+    }
+  // 1b — soft (blurred) core ridge → definition without hard neon
+  for (const sp of samples)
+    for (const p of sp) {
+      soft(X(p[0]), Y(p[1]), sc * 0.052, ridge, 0.085);
+      soft(X(p[0]), Y(p[1]), sc * 0.025, ridgeHot, 0.16);
+    }
+  // 2 — fine star-dust grain scattered through the cloud
+  let seed = 1;
+  for (const sp of samples)
+    for (let j = 0; j < sp.length; j += 2) {
+      const p = sp[j];
+      for (let k = 0; k < 2; k++) {
+        seed++;
+        const ang = rnd(seed * 1.3) * Math.PI * 2;
+        const rad = rnd(seed * 2.7) * sc * 0.165;
+        const b = 0.25 + 0.5 * rnd(seed * 3.9);
+        soft(X(p[0]) + Math.cos(ang) * rad, Y(p[1]) + Math.sin(ang) * rad, sc * 0.012, dustCol, b);
+      }
+    }
+  // 3 — bright constellation stars at the joints (white core + soft halo)
   const seen = new Set<string>();
-  for (const stroke of shape.strokes) {
+  let si = 0;
+  for (const stroke of shape.strokes)
     for (const [nx, ny] of stroke) {
       const k = `${nx},${ny}`;
       if (seen.has(k)) continue;
       seen.add(k);
+      si++;
+      const big = 1 + 1.5 * rnd(si * 5.1);
       const x = X(nx);
       const y = Y(ny);
-      const r = 13;
-      const g = ctx.createRadialGradient(x, y, 0, x, y, r);
-      g.addColorStop(0, "rgba(255,255,255,0.98)");
-      g.addColorStop(0.35, rgba(color, 0.85));
-      g.addColorStop(1, rgba(color, 0));
-      ctx.fillStyle = g;
-      ctx.beginPath();
-      ctx.arc(x, y, r, 0, Math.PI * 2);
-      ctx.fill();
+      soft(x, y, sc * 0.207 * big, base, 0.16);
+      soft(x, y, sc * 0.035 * big, ridgeHot, 0.6);
+      soft(x, y, sc * 0.0155 * big, [255, 255, 255], 0.98);
     }
-  }
 
-  const tex = new THREE.CanvasTexture(c);
+  const tex = new THREE.CanvasTexture(canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 4;
   cache.set(key, tex);

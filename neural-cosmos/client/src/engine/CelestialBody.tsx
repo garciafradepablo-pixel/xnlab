@@ -309,6 +309,7 @@ export default function CelestialBody({
           color={color}
           radius={radius}
           worldPos={worldPos}
+          imageUrl={entity.meta?.imageUrl}
         />
       )}
 
