@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import CosmosCanvas from "./engine/CosmosCanvas";
 import HUD from "./ui/HUD";
 import Sidebar from "./ui/Sidebar";
-import BottomDock from "./ui/BottomDock";
-import ConnectionLegend from "./ui/ConnectionLegend";
 import Inspector from "./ui/Inspector";
 import Legend from "./ui/Legend";
 import AddEntity from "./ui/AddEntity";
@@ -61,9 +59,7 @@ export default function App() {
         <>
           <Sidebar panel={panel} openPanel={setPanel} />
           <HUD openPanel={setPanel} />
-          <ConnectionLegend />
           <Compass />
-          <BottomDock openPanel={setPanel} />
 
           <Inspector />
           <AtlasConsole />

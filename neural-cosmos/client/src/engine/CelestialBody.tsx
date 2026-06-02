@@ -254,15 +254,16 @@ export default function CelestialBody({
       onPointerUp={onUp}
       onPointerCancel={onUp}
     >
-      {/* additive halo (fake bloom) */}
+      {/* additive halo (fake bloom) — kept tight so bodies read as points,
+          not washed-out blobs */}
       <Billboard>
-        <mesh scale={radius * (selected ? 6 : 4.4)}>
+        <mesh scale={radius * (selected ? 3.2 : 2.4)}>
           <planeGeometry args={[1, 1]} />
           <meshBasicMaterial
             map={glow}
             color={color}
             transparent
-            opacity={dim ? 0.12 : isNebula ? 0.28 : 0.5}
+            opacity={dim ? 0.1 : isNebula ? 0.16 : 0.32}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />

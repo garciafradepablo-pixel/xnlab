@@ -23,7 +23,7 @@ export default function GalaxyArms({
   const lowPower = useUniverse((s) => s.lowPower);
   const tex = useMemo(() => particleTexture(), []);
   const count = lowPower ? 320 : 800;
-  const maxR = radius * 4.2;
+  const maxR = radius * 3.4;
 
   const positions = useMemo(() => {
     const arr = new Float32Array(count * 3);
@@ -57,7 +57,7 @@ export default function GalaxyArms({
         map={tex}
         color={color}
         transparent
-        opacity={0.55}
+        opacity={0.42}
         depthWrite={false}
         sizeAttenuation
         blending={THREE.AdditiveBlending}
