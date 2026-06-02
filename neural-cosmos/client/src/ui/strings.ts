@@ -84,6 +84,8 @@ const S = {
   risk: { en: "Risk", es: "Riesgo" },
   createdBy: { en: "Created by", es: "Creado por" },
   changeImage: { en: "Change image", es: "Cambiar imagen" },
+  uploadImage: { en: "Upload image", es: "Subir imagen" },
+  removeImage: { en: "Remove image", es: "Quitar imagen" },
   imageUrl: { en: "Image URL", es: "URL de imagen" },
   symbol: { en: "Symbol", es: "Símbolo" },
   animal: { en: "Animal", es: "Animal" },

@@ -778,6 +778,7 @@ textarea {
 
 /* archetype image block — "Cambiar imagen" */
 .inspector-image {
+  position: relative;
   width: 100%;
   aspect-ratio: 16 / 10;
   border: 1px solid var(--line);
@@ -787,10 +788,32 @@ textarea {
   justify-content: center;
   overflow: hidden;
 }
+.inspector-image:hover {
+  border-color: var(--ink-dim);
+}
 .inspector-image-empty {
   font-size: 13px;
   letter-spacing: 0.22em;
   color: var(--ink-dim);
+}
+.inspector-image-cta {
+  position: absolute;
+  bottom: 8px;
+  right: 10px;
+  padding: 4px 9px;
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink);
+  background: rgba(8, 10, 22, 0.62);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+}
+.btn.sm {
+  padding: 6px 12px;
+  font-size: 11px;
 }
 
 /* colour · animal · symbol row */
