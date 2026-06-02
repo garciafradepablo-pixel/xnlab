@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.*
+*.tsbuildinfo
+.DS_Store
+# local dev persistence for the JSON-file fallback repo
+server/.data/

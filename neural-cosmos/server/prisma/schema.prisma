@@ -1,0 +1,108 @@
+// Neural Cosmos — persistence schema (PostgreSQL).
+//
+// The universe is stored per owner so it loads on any device. Universes nest
+// recursively: an Entity may point at a child Universe (infinite zoom), and a
+// Universe remembers the Entity it lives inside. Those two links are kept as
+// plain ids (not FK relations) to keep the recursion cycle simple.
+//
+// `version` + timestamps are here for optimistic concurrency / future sync.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Universe {
+  id              String   @id @default(cuid())
+  ownerId         String
+  name            String
+  isRoot          Boolean  @default(false)
+  parentEntityId  String? // the entity this cosmos lives inside, if any
+  version         Int      @default(1)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  entities Entity[]
+  threads  Thread[]
+  analyses AtlasAnalysis[]
+
+  @@index([ownerId])
+  @@index([parentEntityId])
+}
+
+model Entity {
+  id             String   @id @default(cuid())
+  universeId     String
+  universe       Universe @relation(fields: [universeId], references: [id], onDelete: Cascade)
+
+  name           String
+  kind           String   @default("company")
+  state          String   @default("nebula")
+
+  // archetype (animal / colour / energy) kept as one JSON blob
+  archetype      Json
+  // position { x, y, z }
+  position       Json
+
+  sizeHint       Float?
+  parentEntityId String?
+  childUniverseId String? // recursive: this entity's inner cosmos
+  region         String?
+  notes          String?
+
+  // operational metadata (status, role, purpose, tags, priority…) as one blob
+  meta           Json     @default("{}")
+
+  // strategic memory — arrays of small records
+  docs           Json     @default("[]")
+  decisions      Json     @default("[]")
+  history        Json     @default("[]")
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([universeId])
+  @@index([childUniverseId])
+}
+
+model Thread {
+  id         String   @id @default(cuid())
+  universeId String
+  universe   Universe @relation(fields: [universeId], references: [id], onDelete: Cascade)
+
+  fromId     String
+  toId       String
+  type       String   @default("information")
+  seed       Float    @default(0)
+  label      String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([universeId])
+}
+
+// Atlas analyses — hypotheses / alerts / opportunities / premortems /
+// recommendations. Generation is pluggable (see src/atlas/provider.ts).
+model AtlasAnalysis {
+  id         String   @id @default(cuid())
+  universeId String
+  universe   Universe @relation(fields: [universeId], references: [id], onDelete: Cascade)
+
+  kind    String
+  region  String
+  tier    String
+  subject String
+  title   String
+  body    String
+  status  String @default("open")
+  source  String @default("heuristic")
+
+  createdAt DateTime @default(now())
+
+  @@index([universeId])
+}
