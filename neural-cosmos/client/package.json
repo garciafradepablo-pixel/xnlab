@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:static": "tsc --noEmit && VITE_STATIC=1 vite build --base=/xnlab/neural-cosmos/",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit"
   },
@@ -24,6 +25,7 @@
     "@types/three": "^0.176.0",
     "@vitejs/plugin-react": "^4.4.1",
     "typescript": "^5.8.3",
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-pwa": "^1.3.0"
   }
 }

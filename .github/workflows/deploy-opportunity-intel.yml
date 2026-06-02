@@ -13,6 +13,7 @@ on:
       - claude/opportunity-intelligence-app-vxWfo
     paths:
       - "opportunity-intel/**"
+      - "neural-cosmos/**"
       - ".github/workflows/deploy-opportunity-intel.yml"
   workflow_dispatch: {}
 
@@ -70,6 +71,18 @@ jobs:
           node bin/run.mjs --dataset researched --final 20 --out _site/leads --quiet
           # Marca de versión para ver cuándo se actualizó.
           node -e "console.log(new Date().toISOString())" > _site/VERSION.txt
+
+      # 4) Neural Cosmos — static, installable PWA published under /neural-cosmos.
+      #    Guarded with continue-on-error so a failure here can NEVER block the
+      #    Opportunity Intel deploy (its mobile URL stays safe).
+      - name: Build Neural Cosmos (static PWA)
+        continue-on-error: true
+        working-directory: neural-cosmos/client
+        run: |
+          npm install --no-audit --no-fund
+          npm run build:static
+          mkdir -p "$GITHUB_WORKSPACE/opportunity-intel/_site/neural-cosmos"
+          cp -r dist/. "$GITHUB_WORKSPACE/opportunity-intel/_site/neural-cosmos/"
 
       - uses: actions/upload-pages-artifact@v3
         with:
