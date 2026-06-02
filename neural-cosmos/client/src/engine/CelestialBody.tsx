@@ -148,10 +148,12 @@ export default function CelestialBody({
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     if (coreRef.current) {
-      // protostar flickers; everything breathes a little
+      // protostar flickers; everything breathes a little. When the body wears an
+      // animal constellation, the core shrinks to a bright nucleus so the figure
+      // — not a plastic sphere — is what you read.
       const flick = entity.state === "protostar" ? 0.15 * Math.sin(t * 6 + seed * 9) : 0;
       const breathe = 1 + 0.03 * Math.sin(t * 1.3 + seed * 6) + flick;
-      coreRef.current.scale.setScalar(breathe);
+      coreRef.current.scale.setScalar(breathe * (hasAnimal ? 0.4 : 1));
     }
     if (nebulaRef.current) {
       nebulaRef.current.rotation.y = t * 0.05 + seed * 6;
