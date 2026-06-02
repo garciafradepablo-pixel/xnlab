@@ -1,10 +1,10 @@
 /**
  * Hand-authored "constellations" for each archetype animal — drawn as STROKES
  * (ordered polylines), the way a real star chart joins stars into a figure.
- * The art generator (animal-art) turns these strokes into a luminous NEBULA —
- * a soft blurred cloud with a defining ridge, star-dust and bright stars at the
- * joints — and the glyph (AnimalGlyph) billboards it into the scene, so the
- * animal reads as cosmic gas and stars rather than a stick figure.
+ * AnimalGlyph turns these strokes into a true 3D NEBULA — a volumetric point
+ * cloud with depth in Z plus bright stars at the joints — so the animal reads as
+ * cosmic gas you can orbit. animal-art renders a flat 2D version of the same for
+ * UI thumbnails (cards, inspector).
  *
  * Coordinates are normalised ~[-1.4, 1.4] (x, right) × [-1, 1] (y, up); the
  * renderer scales them to the body and adds gentle z-depth for volume. Each
