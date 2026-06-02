@@ -17,6 +17,13 @@ export default defineConfig({
         globPatterns: ["**/*.{js,css,html,svg,woff2}"],
         maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // three.js is large
         navigateFallback: "index.html",
+        // always serve the freshest deploy from the host: the new worker takes
+        // control the moment it installs (no waiting for every tab to close),
+        // stale caches are purged, and the page auto-reloads (registerType
+        // autoUpdate). Opening the URL is enough — no manual hard-refresh.
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
       },
       manifest: {
         name: "Neural Cosmos",
