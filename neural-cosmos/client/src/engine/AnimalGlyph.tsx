@@ -43,6 +43,7 @@ export default function AnimalGlyph({
 
   const cloudRef = useRef<THREE.Points>(null);
   const starRef = useRef<THREE.Points>(null);
+  const lineRef = useRef<THREE.LineSegments>(null);
   const planeRef = useRef<THREE.Mesh>(null);
 
   const phase = useMemo(() => Math.abs(worldPos.x * 1.7 + worldPos.z), [worldPos]);
@@ -77,9 +78,16 @@ export default function AnimalGlyph({
     };
   }, [imageUrl]);
 
-  // volumetric point cloud: dense diffuse body + bright joint stars, with Z depth
-  const { body, stars } = useMemo(() => {
-    if (!shape) return { body: new Float32Array(0), stars: new Float32Array(0) };
+  // volumetric point cloud: dense diffuse body + bright joint stars + the
+  // constellation lines that join the stars into the figure (the zodiac read),
+  // all with Z depth so it has volume when you orbit.
+  const { body, stars, lines } = useMemo(() => {
+    if (!shape)
+      return {
+        body: new Float32Array(0),
+        stars: new Float32Array(0),
+        lines: new Float32Array(0),
+      };
     const scale = radius * 2.4;
     const sxy = scale * 0.05; // skeleton fuzz in plane
     const zs = scale * 0.22; // depth → real volume when orbiting
@@ -112,19 +120,35 @@ export default function AnimalGlyph({
         j++;
         stars.push(nx * scale, ny * scale, gauss(j * 5.9) * zs);
       }
-    return { body: new Float32Array(body), stars: new Float32Array(stars) };
+    // constellation skeleton: a glowing line per stroke segment (kept near the
+    // plane so the figure stays legible head-on, the cloud carries the depth)
+    const lines: number[] = [];
+    for (const stroke of shape.strokes)
+      for (let s = 0; s < stroke.length - 1; s++) {
+        const [ax, ay] = stroke[s];
+        const [bx, by] = stroke[s + 1];
+        lines.push(ax * scale, ay * scale, 0, bx * scale, by * scale, 0);
+      }
+    return {
+      body: new Float32Array(body),
+      stars: new Float32Array(stars),
+      lines: new Float32Array(lines),
+    };
   }, [shape, radius]);
 
   useFrame((state) => {
     const t = state.clock.elapsedTime;
     const d = camera.position.distanceTo(worldPos);
     const close = THREE.MathUtils.clamp(1 - (d - radius * 4) / 60, 0, 1);
-    const vis = 0.5 + 0.5 * close;
+    // the figure is the body's signature → readable from afar, richer up close
+    const vis = 0.82 + 0.18 * close;
     const twinkle = 0.85 + 0.15 * Math.sin(t * 2 + phase);
     if (cloudRef.current)
-      (cloudRef.current.material as THREE.PointsMaterial).opacity = vis * 0.34 * twinkle;
+      (cloudRef.current.material as THREE.PointsMaterial).opacity = vis * 0.42 * twinkle;
+    if (lineRef.current)
+      (lineRef.current.material as THREE.LineBasicMaterial).opacity = vis * 0.6 * twinkle;
     if (starRef.current)
-      (starRef.current.material as THREE.PointsMaterial).opacity = vis * 0.95 * twinkle;
+      (starRef.current.material as THREE.PointsMaterial).opacity = vis * 0.98 * twinkle;
     if (planeRef.current)
       (planeRef.current.material as THREE.MeshBasicMaterial).opacity = vis * twinkle;
   });
@@ -169,6 +193,19 @@ export default function AnimalGlyph({
           toneMapped={false}
         />
       </points>
+      <lineSegments ref={lineRef}>
+        <bufferGeometry>
+          <bufferAttribute attach="attributes-position" args={[lines, 3]} />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color={starColor}
+          transparent
+          opacity={0.6}
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </lineSegments>
       <points ref={starRef}>
         <bufferGeometry>
           <bufferAttribute attach="attributes-position" args={[stars, 3]} />
