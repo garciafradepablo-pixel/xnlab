@@ -120,6 +120,8 @@ const S = {
   bloom: { en: "Bloom glow", es: "Resplandor (bloom)" },
   viewGalaxy: { en: "Galaxy", es: "Galaxia" },
   viewOracle: { en: "Oracle", es: "Oráculo" },
+  view3d: { en: "3D view", es: "Vista 3D" },
+  galaxyTitle: { en: "Neural Galaxy", es: "Neural Galaxy" },
 } as const;
 
 export type StringKey = keyof typeof S;

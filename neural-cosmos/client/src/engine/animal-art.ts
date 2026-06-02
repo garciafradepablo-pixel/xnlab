@@ -164,3 +164,20 @@ export function animalArtTexture(animal: string, color: string): THREE.CanvasTex
   cache.set(key, tex);
   return tex;
 }
+
+const urlCache = new Map<string, string>();
+
+/**
+ * The same nebula as a data URL, for 2D UI thumbnails (node cards, inspector).
+ * Returns null for `none`/unknown archetypes.
+ */
+export function animalArtDataURL(animal: string, color: string): string | null {
+  const key = `${animal}:${color}`;
+  const hit = urlCache.get(key);
+  if (hit) return hit;
+  const tex = animalArtTexture(animal, color);
+  if (!tex) return null;
+  const url = (tex.image as HTMLCanvasElement).toDataURL("image/webp", 0.9);
+  urlCache.set(key, url);
+  return url;
+}

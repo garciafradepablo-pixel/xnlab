@@ -3,9 +3,10 @@
  * Hidden on mobile, where the floating toolbar already covers core actions.
  */
 import { useRef } from "react";
-import { STATUS_META } from "../types/domain";
+import { ENTITY_STATUSES, STATUS_META } from "../types/domain";
 import { useUniverse } from "../store/universe";
 import { t } from "./strings";
+import NebulaThumb from "./NebulaThumb";
 import type { Panel } from "./panels";
 
 export default function BottomDock({
@@ -17,6 +18,8 @@ export default function BottomDock({
   const entities = useUniverse((s) => s.entities);
   const select = useUniverse((s) => s.select);
   const setMode = useUniverse((s) => s.setMode);
+  const setFocus = useUniverse((s) => s.setFocus);
+  const setView = useUniverse((s) => s.setView);
   const openAtlas = useUniverse((s) => s.openAtlas);
   const exportSnapshot = useUniverse((s) => s.exportSnapshot);
   const importIntoCurrent = useUniverse((s) => s.importIntoCurrent);
@@ -79,6 +82,19 @@ export default function BottomDock({
                   className="dock-card-accent"
                   style={{ background: e.archetype.color }}
                 />
+                <span
+                  className="dock-card-art"
+                  style={{
+                    background: `radial-gradient(120% 120% at 50% 30%, ${e.archetype.color}26, transparent 70%)`,
+                  }}
+                >
+                  <NebulaThumb
+                    className="dock-card-img"
+                    animal={e.archetype.animal}
+                    color={e.archetype.color}
+                    src={e.meta.imageUrl}
+                  />
+                </span>
                 <span className="dock-card-name">{e.name}</span>
                 {e.meta.role && <span className="meta">{e.meta.role}</span>}
                 <span className="status-badge small" style={{ color: st.color, borderColor: st.color }}>
@@ -115,6 +131,37 @@ export default function BottomDock({
           onChange={onImportFile}
         />
       </div>
+
+      <div className="dock-legend">
+        <span className="label">{t("statesLegend", lang)}</span>
+        <div className="dock-legend-grid">
+          {ENTITY_STATUSES.map((s) => (
+            <span key={s} className="dock-legend-item">
+              <span className="status-dot" style={{ background: STATUS_META[s].color }} />
+              {STATUS_META[s][lang]}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      <button
+        className="dock-view"
+        onClick={() => {
+          const core = entities.find((e) => e.state === "galaxy") ?? entities[0];
+          if (core) {
+            select(core.id);
+            setFocus(core.id);
+          }
+          setView("galaxy");
+        }}
+      >
+        <span className="label">{t("view3d", lang)}</span>
+        <span className="dock-view-stage" aria-hidden>
+          <span className="dock-view-orbit" />
+          <span className="dock-view-core" />
+        </span>
+        <span className="dock-view-cta">{t("enter", lang)}</span>
+      </button>
     </div>
   );
 }

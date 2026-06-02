@@ -48,16 +48,34 @@
 .hud-top > * {
   pointer-events: auto;
 }
-.wordmark {
-  font-family: var(--font-display);
-  font-size: 13px;
-  letter-spacing: 0.22em;
+.galaxy-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
   white-space: nowrap;
+  min-width: 0;
+}
+.galaxy-title-name {
+  font-family: var(--font-display);
+  font-size: 16px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   text-shadow: 0 0 18px rgba(176, 108, 255, 0.45);
 }
-.wordmark .dot {
-  color: var(--accent);
-  text-shadow: 0 0 12px var(--accent);
+.galaxy-title-sub {
+  font-size: 9.5px;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+@media (max-width: 600px) {
+  .galaxy-title-name {
+    font-size: 13px;
+    letter-spacing: 0.12em;
+  }
+  .galaxy-title-sub {
+    display: none;
+  }
 }
 
 /* breadcrumbs */
@@ -462,6 +480,89 @@
   font-size: 13px;
   letter-spacing: 0.04em;
 }
+.dock-card-art {
+  display: block;
+  width: 100%;
+  height: 74px;
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 2px;
+}
+.dock-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+/* status legend block in the dock */
+.dock-legend {
+  min-width: 150px;
+  border-left: 1px solid var(--line);
+  padding-left: 16px;
+}
+.dock-legend-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  margin-top: 8px;
+}
+.dock-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  color: var(--ink-dim);
+  white-space: nowrap;
+}
+/* Vista 3D mini */
+.dock-view {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  width: 132px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 10px 12px;
+  text-align: left;
+}
+.dock-view:hover {
+  border-color: var(--ink-dim);
+}
+.dock-view-stage {
+  position: relative;
+  flex: 1;
+  min-height: 48px;
+  border-radius: 10px;
+  background:
+    radial-gradient(60% 60% at 50% 50%, rgba(176, 108, 255, 0.18), transparent 70%),
+    #05060f;
+  overflow: hidden;
+}
+.dock-view-orbit {
+  position: absolute;
+  inset: 14% 10%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  transform: rotate(-16deg);
+}
+.dock-view-core {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 12px;
+  height: 12px;
+  margin: -6px 0 0 -6px;
+  border-radius: 50%;
+  background: #ffcf5c;
+  box-shadow: 0 0 14px 3px rgba(255, 207, 92, 0.7);
+}
+.dock-view-cta {
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
 .dock-actions {
   display: flex;
   flex-direction: column;
@@ -485,6 +586,49 @@
 .dock-action:hover {
   color: var(--ink);
   background: rgba(255, 255, 255, 0.04);
+}
+
+/* ── persistent "Tipos de conexión" legend (desktop, floats top-left) ───── */
+.conn-legend {
+  display: none;
+  position: absolute;
+  top: calc(var(--safe-t) + 96px);
+  left: calc(var(--rail) + 20px);
+  z-index: 28;
+  flex-direction: column;
+  gap: 10px;
+  width: 200px;
+  padding: 14px 16px;
+  background: rgba(8, 9, 20, 0.66);
+  backdrop-filter: blur(16px);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+}
+.conn-legend-title {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.conn-legend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.conn-legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink);
+}
+.conn-legend-line {
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  flex: none;
+  box-shadow: 0 0 8px currentColor;
 }
 
 /* ── orientation compass (top-right) ───────────────────────────────────── */
@@ -1028,6 +1172,10 @@ textarea {
     padding: 14px 24px calc(14px + var(--safe-b));
     background: linear-gradient(to top, rgba(4, 4, 10, 0.96), rgba(4, 4, 10, 0.6));
     border-top: 1px solid var(--line);
+  }
+  /* persistent connection legend appears on desktop */
+  .conn-legend {
+    display: flex;
   }
   /* don't let the right-docked sheet hide behind the dock */
   .sheet {

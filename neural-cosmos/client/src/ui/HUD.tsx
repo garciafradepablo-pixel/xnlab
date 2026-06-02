@@ -44,8 +44,9 @@ export default function HUD({ openPanel }: { openPanel: (p: Panel) => void }) {
   return (
     <>
       <div className="hud-top">
-        <span className="wordmark">
-          NEURAL<span className="dot">·</span>COSMOS
+        <span className="galaxy-title">
+          <span className="galaxy-title-name">{t("galaxyTitle", lang)}</span>
+          <span className="galaxy-title-sub">{t("subtitle", lang)}</span>
         </span>
         <SearchBox />
         <div className="view-toggle" role="tablist" aria-label="view">
