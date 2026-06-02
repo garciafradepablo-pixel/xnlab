@@ -53,14 +53,14 @@ const en = {
     ],
     discoveryLabel: "How an engagement begins",
     discovery:
-      "Discoveries are extended by the studio, not requested. Forty-five minutes, by invitation, recorded by the studio and never published. If we both recognise the work, a partner-signed proposal follows within seven days.",
+      "Discovery is extended, not requested. Forty-five minutes, by invitation, recorded and never published. If we both recognise the work, a partner-signed proposal in seven days.",
     referral:
-      "Most new conversations arrive through an existing brand. A CEO, a CMO, a founder, a programme director. A line of context — who pointed you, what you have read of ours — helps the studio reply with weight.",
+      "Most new conversations arrive through introduction — a CEO, a CMO, a founder, a programme director. A line of context (who pointed you, what you have read of ours) helps the studio reply with weight.",
   },
   dossier: {
     eyebrow: "Not ready to write yet",
     title: "Request the studio dossier.",
-    body: "A short document. How the studio operates, the six surfaces we work across, a ledger of recent engagements. Sent personally by the studio.",
+    body: "A short document. How the studio operates, the six surfaces, a ledger of recent engagements. Sent personally.",
     cta: "Request the dossier",
   },
   reading: {
@@ -115,14 +115,14 @@ const es = {
     ],
     discoveryLabel: "Cómo se abre un encargo",
     discovery:
-      "El discovery lo extiende el estudio, no se solicita. Cuarenta y cinco minutos, por invitación, grabado por el estudio y nunca publicado. Si los dos reconocemos el trabajo, llega una propuesta firmada por un socio en siete días.",
+      "El discovery se extiende, no se solicita. Cuarenta y cinco minutos, por invitación, grabado y nunca publicado. Si los dos reconocemos el trabajo, propuesta firmada por un socio en siete días.",
     referral:
-      "La mayoría de conversaciones nuevas llegan por recomendación de una marca activa. Un CEO, un CMO, un fundador, un director de programa. Una línea de contexto — quién te apuntó, qué has leído nuestro — ayuda al estudio a responder con peso.",
+      "La mayoría de conversaciones nuevas llegan por presentación — un CEO, un CMO, un fundador, un director de programa. Una línea de contexto (quién te apuntó, qué has leído nuestro) ayuda al estudio a responder con peso.",
   },
   dossier: {
     eyebrow: "Aún no es momento de escribir",
     title: "Pide el dossier del estudio.",
-    body: "Un documento corto. Cómo opera el estudio, las seis superficies en las que trabajamos, un registro de los encargos recientes. Lo envía el estudio en persona.",
+    body: "Un documento corto. Cómo opera el estudio, las seis superficies, un registro de los encargos recientes. Enviado en persona.",
     cta: "Pedir el dossier",
   },
   reading: {
