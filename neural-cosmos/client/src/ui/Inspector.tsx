@@ -15,7 +15,6 @@ import {
   STATUS_META,
   THREAD_COLORS,
   THREAD_LABELS,
-  type AnimalArchetype,
   type EntityKind,
   type EntityMeta,
   type EntityStatus,
@@ -24,10 +23,9 @@ import {
 } from "../types/domain";
 import { useUniverse } from "../store/universe";
 import BottomSheet from "./BottomSheet";
+import ArchetypePicker from "./ArchetypePicker";
 import { t } from "./strings";
 
-const ANIMALS: AnimalArchetype[] = ["none", "bull", "lion", "wolf", "eagle"];
-const PALETTE = ["#b06cff", "#4ea6ff", "#3ddc84", "#ffcf5c", "#ff5470", "#f2f2ff"];
 const GRADES_3: Grade[] = ["low", "medium", "high"];
 const GRADES_4: Grade[] = ["low", "medium", "high", "very-high"];
 type Tab = "info" | "connections" | "docs" | "history";
@@ -161,67 +159,26 @@ export default function Inspector() {
         </button>
       )}
 
-      {/* colour · animal · symbol */}
-      <div className="trio">
-        <div className="field">
-          <span className="label">{t("color", lang)}</span>
-          <div className="chips">
-            {PALETTE.map((c) => (
-              <button
-                key={c}
-                className={`chip ${entity.archetype.color === c ? "active" : ""}`}
-                onClick={() =>
-                  patchEntity(entity.id, {
-                    archetype: { ...entity.archetype, color: c },
-                  })
-                }
-              >
-                <span className="swatch" style={{ color: c }} />
-              </button>
-            ))}
-            <label className="chip color-pick" style={{ color: entity.archetype.color }}>
-              <span className="swatch" style={{ color: entity.archetype.color }} />
-              <input
-                type="color"
-                value={entity.archetype.color}
-                onChange={(e) =>
-                  patchEntity(entity.id, {
-                    archetype: { ...entity.archetype, color: e.target.value },
-                  })
-                }
-              />
-            </label>
-          </div>
-        </div>
-        <div className="field">
-          <span className="label">{t("animal", lang)}</span>
-          <select
-            value={entity.archetype.animal}
-            onChange={(e) =>
-              patchEntity(entity.id, {
-                archetype: {
-                  ...entity.archetype,
-                  animal: e.target.value as AnimalArchetype,
-                },
-              })
-            }
-          >
-            {ANIMALS.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <span className="label">{t("symbol", lang)}</span>
-          <input
-            value={meta.symbol ?? ""}
-            maxLength={3}
-            onChange={(e) => patchMeta({ symbol: e.target.value || undefined })}
-          />
-        </div>
-      </div>
+      {/* archetype — pick a mana colour and a creature, character-select style,
+          changeable at any time */}
+      <ArchetypePicker
+        animal={entity.archetype.animal}
+        color={entity.archetype.color}
+        onColor={(c) =>
+          patchEntity(entity.id, { archetype: { ...entity.archetype, color: c } })
+        }
+        onAnimal={(a) =>
+          patchEntity(entity.id, { archetype: { ...entity.archetype, animal: a } })
+        }
+      />
+      <label className="field">
+        <span className="label">{t("symbol", lang)}</span>
+        <input
+          value={meta.symbol ?? ""}
+          maxLength={3}
+          onChange={(e) => patchMeta({ symbol: e.target.value || undefined })}
+        />
+      </label>
 
       <div className="tabbar">
         {(

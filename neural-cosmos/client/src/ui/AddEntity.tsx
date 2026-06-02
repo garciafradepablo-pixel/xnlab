@@ -6,17 +6,8 @@ import {
 } from "../types/domain";
 import { useUniverse } from "../store/universe";
 import BottomSheet from "./BottomSheet";
+import ArchetypePicker from "./ArchetypePicker";
 import { t } from "./strings";
-
-const ANIMALS: AnimalArchetype[] = ["none", "bull", "lion", "wolf", "eagle"];
-const PALETTE = [
-  "#b06cff",
-  "#4ea6ff",
-  "#3ddc84",
-  "#ffcf5c",
-  "#ff5470",
-  "#f2f2ff",
-];
 
 export default function AddEntity({
   open,
@@ -31,7 +22,7 @@ export default function AddEntity({
   const [name, setName] = useState("");
   const [kind, setKind] = useState<EntityKind>("company");
   const [animal, setAnimal] = useState<AnimalArchetype>("none");
-  const [color, setColor] = useState(PALETTE[0]);
+  const [color, setColor] = useState("#b06cff");
 
   const submit = () => {
     if (!name.trim()) return;
@@ -97,35 +88,12 @@ export default function AddEntity({
           ))}
         </div>
       </div>
-      <div className="field">
-        <span className="label">{t("archetype", lang)}</span>
-        <div className="chips">
-          {ANIMALS.map((a) => (
-            <button
-              key={a}
-              className={`chip ${animal === a ? "active" : ""}`}
-              onClick={() => setAnimal(a)}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="field">
-        <span className="label">{t("color", lang)}</span>
-        <div className="chips">
-          {PALETTE.map((c) => (
-            <button
-              key={c}
-              className={`chip ${color === c ? "active" : ""}`}
-              onClick={() => setColor(c)}
-            >
-              <span className="swatch" style={{ color: c }} />
-              {c}
-            </button>
-          ))}
-        </div>
-      </div>
+      <ArchetypePicker
+        animal={animal}
+        color={color}
+        onAnimal={setAnimal}
+        onColor={setColor}
+      />
     </BottomSheet>
   );
 }
