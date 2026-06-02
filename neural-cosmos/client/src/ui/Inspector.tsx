@@ -5,7 +5,7 @@
  * status / priority / potential / risk grid, lifecycle, decisions), Conexiones,
  * Documentos, Historial. Dispatches only store actions.
  */
-import { useState } from "react";
+import { useState, type ChangeEvent } from "react";
 import {
   ENTITY_STATUSES,
   GRADE_LABELS,
@@ -76,6 +76,33 @@ export default function Inspector() {
   const patchMeta = (m: Partial<EntityMeta>) =>
     patchEntity(entity.id, { meta: { ...meta, ...m } });
 
+  // upload a local image file → downscaled, compressed data URL (no hosting,
+  // and small enough to persist in localStorage alongside the rest of the world)
+  const onImageFile = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 768;
+        const scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+        canvas.getContext("2d")?.drawImage(img, 0, 0, w, h);
+        let url = canvas.toDataURL("image/webp", 0.85);
+        if (!url.startsWith("data:image/webp")) url = canvas.toDataURL("image/png");
+        patchMeta({ imageUrl: url });
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  };
+
   const connections = threads.filter(
     (t) => t.fromId === entity.id || t.toId === entity.id,
   );
@@ -99,10 +126,12 @@ export default function Inspector() {
         </span>
       </div>
 
-      {/* archetype image — "Cambiar imagen" */}
-      <div
+      {/* archetype image — "Cambiar imagen": click to upload, or paste a URL */}
+      <label
         className="inspector-image"
+        title={t("uploadImage", lang)}
         style={{
+          cursor: "pointer",
           background: meta.imageUrl
             ? `center/cover no-repeat url("${meta.imageUrl}")`
             : `radial-gradient(120% 120% at 50% 35%, ${entity.archetype.color}33, transparent 70%)`,
@@ -115,15 +144,22 @@ export default function Inspector() {
               : entity.archetype.animal.toUpperCase()}
           </span>
         )}
-      </div>
+        <span className="inspector-image-cta">{t("changeImage", lang)}</span>
+        <input type="file" accept="image/*" hidden onChange={onImageFile} />
+      </label>
       <label className="field">
-        <span className="label">{t("changeImage", lang)}</span>
+        <span className="label">{t("imageUrl", lang)}</span>
         <input
           placeholder="https://…"
-          value={meta.imageUrl ?? ""}
+          value={meta.imageUrl?.startsWith("data:") ? "" : meta.imageUrl ?? ""}
           onChange={(e) => patchMeta({ imageUrl: e.target.value || undefined })}
         />
       </label>
+      {meta.imageUrl && (
+        <button className="btn ghost sm" onClick={() => patchMeta({ imageUrl: undefined })}>
+          {t("removeImage", lang)}
+        </button>
+      )}
 
       {/* colour · animal · symbol */}
       <div className="trio">

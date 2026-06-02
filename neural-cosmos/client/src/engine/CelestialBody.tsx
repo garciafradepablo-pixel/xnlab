@@ -20,7 +20,7 @@ import BlackHoleInfall from "./BlackHoleInfall";
 import GalaxyArms from "./GalaxyArms";
 import Constellation from "./Constellation";
 import SystemOrbit from "./SystemOrbit";
-import AnimalConstellation from "./AnimalConstellation";
+import AnimalGlyph from "./AnimalGlyph";
 import type { AnimalArchetype } from "../types/domain";
 
 const LONG_PRESS_MS = 480;
@@ -302,13 +302,14 @@ export default function CelestialBody({
         </Billboard>
       )}
 
-      {/* archetype animal as a constellation (energy, never a logo) */}
+      {/* archetype animal as a luminous illustrated glyph */}
       {hasAnimal && (
-        <AnimalConstellation
+        <AnimalGlyph
           animal={entity.archetype.animal}
           color={color}
           radius={radius}
           worldPos={worldPos}
+          imageUrl={entity.meta?.imageUrl}
         />
       )}
 
