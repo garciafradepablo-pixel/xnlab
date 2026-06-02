@@ -89,7 +89,7 @@ export default function AnimalGlyph({
         lines: new Float32Array(0),
       };
     const scale = radius * 2.4;
-    const sxy = scale * 0.05; // skeleton fuzz in plane
+    const sxy = scale * 0.075; // skeleton fuzz in plane — soft gas, not a wire
     const zs = scale * 0.22; // depth → real volume when orbiting
     const body: number[] = [];
     let i = 1;
@@ -97,12 +97,13 @@ export default function AnimalGlyph({
       for (let s = 0; s < stroke.length - 1; s++) {
         const [ax, ay] = stroke[s];
         const [bx, by] = stroke[s + 1];
-        const steps = Math.max(2, Math.round(Math.hypot(bx - ax, by - ay) * 26));
+        const steps = Math.max(3, Math.round(Math.hypot(bx - ax, by - ay) * 32));
         for (let t = 0; t < steps; t++) {
           const f = t / steps;
           const x = (ax + (bx - ax) * f) * scale;
           const y = (ay + (by - ay) * f) * scale;
-          for (let k = 0; k < 3; k++) {
+          // a denser, softer drift around the skeleton → reads as luminous gas
+          for (let k = 0; k < 4; k++) {
             i++;
             body.push(x + gauss(i) * sxy * 2, y + gauss(i * 2.1) * sxy * 2, gauss(i * 3.7) * zs * 2);
           }
@@ -144,9 +145,9 @@ export default function AnimalGlyph({
     const vis = 0.82 + 0.18 * close;
     const twinkle = 0.85 + 0.15 * Math.sin(t * 2 + phase);
     if (cloudRef.current)
-      (cloudRef.current.material as THREE.PointsMaterial).opacity = vis * 0.42 * twinkle;
+      (cloudRef.current.material as THREE.PointsMaterial).opacity = vis * 0.5 * twinkle;
     if (lineRef.current)
-      (lineRef.current.material as THREE.LineBasicMaterial).opacity = vis * 0.6 * twinkle;
+      (lineRef.current.material as THREE.LineBasicMaterial).opacity = vis * 0.22 * twinkle;
     if (starRef.current)
       (starRef.current.material as THREE.PointsMaterial).opacity = vis * 0.98 * twinkle;
     if (planeRef.current)
@@ -182,11 +183,11 @@ export default function AnimalGlyph({
           <bufferAttribute attach="attributes-position" args={[body, 3]} />
         </bufferGeometry>
         <pointsMaterial
-          size={radius * 0.5}
+          size={radius * 0.36}
           map={dot}
           color={color}
           transparent
-          opacity={0.34}
+          opacity={0.5}
           depthWrite={false}
           sizeAttenuation
           blending={THREE.AdditiveBlending}
@@ -198,9 +199,9 @@ export default function AnimalGlyph({
           <bufferAttribute attach="attributes-position" args={[lines, 3]} />
         </bufferGeometry>
         <lineBasicMaterial
-          color={starColor}
+          color={color}
           transparent
-          opacity={0.6}
+          opacity={0.22}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
           toneMapped={false}
@@ -211,7 +212,7 @@ export default function AnimalGlyph({
           <bufferAttribute attach="attributes-position" args={[stars, 3]} />
         </bufferGeometry>
         <pointsMaterial
-          size={radius * 0.9}
+          size={radius * 0.6}
           map={dot}
           color={starColor}
           transparent
