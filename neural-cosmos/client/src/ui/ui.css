@@ -1166,3 +1166,94 @@ textarea {
     z-index: 50;
   }
 }
+
+/* ── archetype picker — MTG colour wheel + creature select ──────────────── */
+.archetype-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.mana-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.mana-swatch {
+  position: relative;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(
+    circle at 35% 30%,
+    color-mix(in srgb, var(--mana) 80%, #fff 20%),
+    var(--mana) 72%
+  );
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #0a0a12;
+  cursor: pointer;
+}
+.mana-swatch .mana-letter {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.mana-swatch.active {
+  box-shadow: 0 0 0 2px #04040a, 0 0 0 4px var(--mana), 0 0 16px var(--mana);
+}
+.mana-swatch.custom {
+  overflow: hidden;
+}
+.mana-swatch.custom input[type="color"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  border: none;
+  padding: 0;
+}
+
+.archetype-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(74px, 1fr));
+  gap: 8px;
+}
+.arch-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px 6px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+}
+.arch-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+.arch-card.active {
+  border-color: var(--mana);
+  background: color-mix(in srgb, var(--mana) 14%, transparent);
+  box-shadow: inset 0 0 0 1px var(--mana), 0 0 18px -4px var(--mana);
+}
+.arch-glyph {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--mana) 60%, transparent));
+}
+.arch-name {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--ink-dim);
+  text-transform: uppercase;
+}
+.arch-card.active .arch-name {
+  color: var(--ink);
+}

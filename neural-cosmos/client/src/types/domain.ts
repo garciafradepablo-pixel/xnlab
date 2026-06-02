@@ -82,11 +82,67 @@ export const THREAD_LABELS: Record<ThreadType, { en: string; es: string }> = {
  * cosmic fog / particle storms when you zoom close.
  */
 export type AnimalArchetype =
-  | "bull"
+  | "none"
+  | "eagle"
   | "lion"
   | "wolf"
-  | "eagle"
-  | "none";
+  | "bull"
+  | "ram"
+  | "stag"
+  | "bear"
+  | "serpent"
+  | "dragon"
+  | "raven"
+  | "scorpion"
+  | "fish";
+
+/** The pickable bestiary (order = how it reads in the character-select grid). */
+export const ANIMALS: AnimalArchetype[] = [
+  "none",
+  "eagle",
+  "lion",
+  "wolf",
+  "bull",
+  "ram",
+  "stag",
+  "bear",
+  "serpent",
+  "dragon",
+  "raven",
+  "scorpion",
+  "fish",
+];
+
+export const ANIMAL_LABELS: Record<AnimalArchetype, { en: string; es: string }> = {
+  none: { en: "None", es: "Ninguno" },
+  eagle: { en: "Eagle", es: "Águila" },
+  lion: { en: "Lion", es: "León" },
+  wolf: { en: "Wolf", es: "Lobo" },
+  bull: { en: "Bull", es: "Toro" },
+  ram: { en: "Ram", es: "Carnero" },
+  stag: { en: "Stag", es: "Ciervo" },
+  bear: { en: "Bear", es: "Oso" },
+  serpent: { en: "Serpent", es: "Serpiente" },
+  dragon: { en: "Dragon", es: "Dragón" },
+  raven: { en: "Raven", es: "Cuervo" },
+  scorpion: { en: "Scorpion", es: "Escorpión" },
+  fish: { en: "Fish", es: "Pez" },
+};
+
+/**
+ * The Magic: The Gathering colour identity, mapped to the cosmos glow palette.
+ * The hexes match the ones already in use so existing bodies keep their colour;
+ * the mana letter (W/U/B/R/G + Gold/Colorless) just adds the MTG read.
+ */
+export const MANA: { key: string; hex: string; name: { en: string; es: string } }[] = [
+  { key: "W", hex: "#f2f2ff", name: { en: "White", es: "Blanco" } },
+  { key: "U", hex: "#4ea6ff", name: { en: "Blue", es: "Azul" } },
+  { key: "B", hex: "#b06cff", name: { en: "Black", es: "Negro" } },
+  { key: "R", hex: "#ff5470", name: { en: "Red", es: "Rojo" } },
+  { key: "G", hex: "#3ddc84", name: { en: "Green", es: "Verde" } },
+  { key: "M", hex: "#ffcf5c", name: { en: "Gold", es: "Oro" } },
+  { key: "C", hex: "#b9c2d6", name: { en: "Colorless", es: "Incoloro" } },
+];
 
 export interface Archetype {
   animal: AnimalArchetype;
