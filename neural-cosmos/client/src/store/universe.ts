@@ -68,7 +68,7 @@ interface UniverseState {
   breadcrumbs: Crumb[]; // zoom trail (root … current)
   inspectorOpen: boolean;
   lowPower: boolean; // degrade effects on weak devices
-  bloom: boolean; // optional post-processing glow (off by default for safety)
+  bloom: boolean; // cinematic post-processing (on by default; off auto on weak devices)
 
   // ── Atlas (Phase 9) ───────────────────────────────────────────────────────
   atlasOpen: boolean;
@@ -150,7 +150,7 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   lowPower:
     typeof navigator !== "undefined" &&
     (navigator.hardwareConcurrency ?? 8) <= 4,
-  bloom: false,
+  bloom: true,
 
   atlasOpen: false,
   atlasUniverseId: null,

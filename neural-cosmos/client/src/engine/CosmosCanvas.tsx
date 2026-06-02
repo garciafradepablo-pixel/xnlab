@@ -17,7 +17,12 @@ export default function CosmosCanvas() {
     <Canvas
       style={{ position: "absolute", inset: 0, touchAction: "none" }}
       dpr={[1, 2]}
-      gl={{ antialias: true, powerPreference: "high-performance", alpha: false }}
+      gl={{
+        antialias: true,
+        powerPreference: "high-performance",
+        alpha: false,
+        toneMappingExposure: 1.15,
+      }}
       camera={{ position: [0, 6, 34], fov: 55, near: 0.1, far: 400 }}
     >
       {view === "oracle" ? <OracleScene /> : <Scene />}

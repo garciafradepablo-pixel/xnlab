@@ -80,7 +80,7 @@ export default function Scene() {
   return (
     <ControlsContext.Provider value={gate}>
       <color attach="background" args={["#04040a"]} />
-      <fog attach="fog" args={["#06060f", 35, 130]} />
+      <fog attach="fog" args={["#06060f", 60, 280]} />
 
       <ambientLight intensity={0.35} />
       <pointLight position={[0, 0, 0]} intensity={1.2} distance={120} decay={1.4} />
