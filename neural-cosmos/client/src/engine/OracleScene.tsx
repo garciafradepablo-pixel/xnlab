@@ -13,7 +13,7 @@ import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { useUniverse } from "../store/universe";
 import { glowTexture } from "./textures";
-import AnimalConstellation from "./AnimalConstellation";
+import AnimalGlyph from "./AnimalGlyph";
 import Constellation from "./Constellation";
 import Starfield from "./Starfield";
 
@@ -81,7 +81,7 @@ function OracleBody({
       </Billboard>
 
       {hasAnimal ? (
-        <AnimalConstellation animal={animal} color={color} radius={r} worldPos={pos} />
+        <AnimalGlyph animal={animal} color={color} radius={r} worldPos={pos} />
       ) : (
         <Constellation radius={r * 0.7} color={color} />
       )}

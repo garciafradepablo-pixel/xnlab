@@ -1,9 +1,10 @@
 /**
  * Hand-authored "constellations" for each archetype animal — drawn as STROKES
  * (ordered polylines), the way a real star chart joins stars into a figure.
- * The renderer (AnimalConstellation) joins each stroke with light lines, places
- * a bright star at every vertex, and scatters fine star-dust along the strokes
- * so the animal reads as a luminous constellation rather than a stick figure.
+ * The art generator (animal-art) joins each stroke with smoothed glowing curves,
+ * places a bright star at every vertex, and the glyph (AnimalGlyph) billboards
+ * it into the scene — so the animal reads as a luminous illustrated creature
+ * rather than a stick figure.
  *
  * Coordinates are normalised ~[-1.4, 1.4] (x, right) × [-1, 1] (y, up); the
  * renderer scales them to the body and adds gentle z-depth for volume. Each
@@ -34,7 +35,7 @@ const eagle: AnimalShape = {
     // right wing — trailing edge back to the chest
     [[1.28, 0.84], [0.92, 0.48], [0.56, 0.28], [0.14, 0.2]],
     // tail fan
-    [[-0.18, -0.82], [0, -0.48], [0.18, -0.82]],
+    [[-0.28, -0.88], [0, -0.46], [0.28, -0.88]],
     // talons
     [[-0.12, -0.2], [-0.18, -0.5]],
     [[0.12, -0.2], [0.18, -0.5]],
@@ -89,16 +90,16 @@ const bull: AnimalShape = {
 // ── LION — left profile, full mane, tufted tail ──────────────────────────────
 const lion: AnimalShape = {
   strokes: [
-    // mane: a shaggy ring around the head
+    // mane: a shaggy spiked ring around the head, with ear tufts
     [
-      [-0.45, 0.62], [-0.78, 0.66], [-1.02, 0.45], [-1.08, 0.12],
-      [-1.0, -0.18], [-0.78, -0.32], [-0.5, -0.28], [-0.34, -0.05],
-      [-0.32, 0.28], [-0.45, 0.62],
+      [-0.34, 0.5], [-0.5, 0.8], [-0.62, 0.5], [-0.78, 0.76], [-0.96, 0.5],
+      [-1.08, 0.2], [-1.14, -0.08], [-1.0, -0.3], [-0.78, -0.36],
+      [-0.52, -0.26], [-0.36, -0.04], [-0.3, 0.24], [-0.34, 0.5],
     ],
     // muzzle poking out of the mane
-    [[-0.9, 0.15], [-1.04, 0.05], [-0.98, -0.1]],
+    [[-0.92, 0.12], [-1.08, 0.05], [-1.05, -0.1], [-0.92, -0.13]],
     // topline: nape → back → loin → rump → tail base
-    [[-0.34, 0.4], [0.1, 0.38], [0.55, 0.34], [0.88, 0.3], [0.98, 0.28]],
+    [[-0.3, 0.36], [0.12, 0.36], [0.56, 0.32], [0.88, 0.3], [0.98, 0.28]],
     // tail arcing back and down to the tuft
     [[0.98, 0.28], [1.2, 0.12], [1.32, -0.12], [1.44, -0.3], [1.3, -0.42]],
     // chest → belly → flank
