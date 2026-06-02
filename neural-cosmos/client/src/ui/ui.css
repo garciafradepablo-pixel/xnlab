@@ -781,12 +781,36 @@
   font-size: 14px;
 }
 .sheet-body {
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  /* let the panel own vertical drags instead of the canvas (touch-action:none
+     lives on <body>), and stop scroll chaining back into the 3D gestures */
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   padding: 14px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+.sheet-body {
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent) transparent;
+}
+.sheet-body::-webkit-scrollbar {
+  width: 9px;
+}
+.sheet-body::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--accent2), var(--accent));
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 6px;
+}
+.sheet-body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--accent), var(--accent2));
+  background-clip: padding-box;
 }
 .sheet-foot {
   border-top: 1px solid var(--line);
