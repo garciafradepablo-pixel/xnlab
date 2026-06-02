@@ -1088,9 +1088,10 @@ textarea {
   .sheet-backdrop {
     display: none;
   }
-  /* the sidebar + dock take over from the floating toolbar on desktop */
+  /* the floating toolbar stays on desktop too (centered in the canvas, clear
+     of the rail) — the sidebar handles navigation, the toolbar handles modes */
   .hud-bottom {
-    display: none;
+    padding-left: calc(var(--rail) + 12px);
   }
 
   .sidebar {
@@ -1161,23 +1162,6 @@ textarea {
     left: calc(var(--rail) + 16px);
   }
 
-  .dock {
-    display: flex;
-    gap: 18px;
-    position: absolute;
-    left: var(--rail);
-    right: 0;
-    bottom: 0;
-    z-index: 32;
-    padding: 14px 24px calc(14px + var(--safe-b));
-    background: linear-gradient(to top, rgba(4, 4, 10, 0.96), rgba(4, 4, 10, 0.6));
-    border-top: 1px solid var(--line);
-  }
-  /* persistent connection legend appears on desktop */
-  .conn-legend {
-    display: flex;
-  }
-  /* don't let the right-docked sheet hide behind the dock */
   .sheet {
     z-index: 50;
   }

@@ -118,6 +118,7 @@ const S = {
   allDocuments: { en: "All documents", es: "Todos los documentos" },
   allHistory: { en: "All history", es: "Todo el historial" },
   bloom: { en: "Bloom glow", es: "Resplandor (bloom)" },
+  data: { en: "Data", es: "Datos" },
   viewGalaxy: { en: "Galaxy", es: "Galaxia" },
   viewOracle: { en: "Oracle", es: "Oráculo" },
   view3d: { en: "3D view", es: "Vista 3D" },
