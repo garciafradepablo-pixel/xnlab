@@ -9,6 +9,7 @@ const S = {
   add: { en: "New body", es: "Cuerpo nuevo" },
   legend: { en: "Legend", es: "Leyenda" },
   recenter: { en: "Recenter", es: "Recentrar" },
+  focus: { en: "Focus", es: "Foco" },
   inspector: { en: "Inspector", es: "Inspector" },
   loading: { en: "Forming the cosmos…", es: "Formando el cosmos…" },
   retry: { en: "Retry", es: "Reintentar" },

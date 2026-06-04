@@ -26,6 +26,8 @@ export default function HUD({ openPanel }: { openPanel: (p: Panel) => void }) {
   const weaveType = useUniverse((s) => s.weaveType);
   const setWeaveType = useUniverse((s) => s.setWeaveType);
   const setFocus = useUniverse((s) => s.setFocus);
+  const focusMode = useUniverse((s) => s.focusMode);
+  const toggleFocusMode = useUniverse((s) => s.toggleFocusMode);
 
   const hint =
     mode === "weave"
@@ -139,6 +141,15 @@ export default function HUD({ openPanel }: { openPanel: (p: Panel) => void }) {
           <button className="tool" onClick={recenter} title={t("recenter", lang)}>
             <span className="ico">◎</span>
             {t("recenter", lang)}
+          </button>
+          <button
+            className={`tool ${focusMode ? "active" : ""}`}
+            onClick={toggleFocusMode}
+            title={t("focus", lang)}
+            aria-pressed={focusMode}
+          >
+            <span className="ico">◉</span>
+            {t("focus", lang)}
           </button>
           <button className="tool primary" onClick={() => openPanel("add")}>
             <span className="ico">＋</span>
