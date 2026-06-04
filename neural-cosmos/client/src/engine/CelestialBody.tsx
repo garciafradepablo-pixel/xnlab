@@ -83,9 +83,13 @@ function nebulaCloud(
 export default function CelestialBody({
   entity,
   radius,
+  neighbor = false,
+  faded = false,
 }: {
   entity: Entity;
   radius: number;
+  neighbor?: boolean;
+  faded?: boolean;
 }) {
   const camera = useThree((s) => s.camera);
   const { setOrbitEnabled } = useControlsGate();
@@ -137,6 +141,8 @@ export default function CelestialBody({
   const isBlackHole = entity.state === "blackhole";
   const isNebula = entity.state === "nebula";
   const dim = entity.state === "absorbed";
+  // when another node is selected, unrelated bodies recede into the background
+  const fade = faded ? 0.22 : 1;
   const hasAnimal = entity.archetype.animal !== "none";
   // a soft node ring for established bodies (like the design's circled nodes)
   const showRing = !isNebula && !isBlackHole && entity.state !== "absorbed";
@@ -164,7 +170,8 @@ export default function CelestialBody({
       );
       const close = THREE.MathUtils.clamp(1 - (d - radius * 3) / 30, 0, 1);
       const mat = nebulaRef.current.material as THREE.PointsMaterial;
-      mat.opacity = (entity.archetype.animal === "none" ? 0.18 : 0.5) * close;
+      mat.opacity =
+        (entity.archetype.animal === "none" ? 0.18 : 0.5) * close * fade;
     }
     if (diskRef.current) diskRef.current.rotation.z = t * 0.6;
   });
@@ -266,7 +273,7 @@ export default function CelestialBody({
             map={glow}
             color={color}
             transparent
-            opacity={dim ? 0.1 : isNebula ? 0.16 : 0.32}
+            opacity={(dim ? 0.1 : isNebula ? 0.16 : 0.32) * fade}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />
@@ -284,7 +291,7 @@ export default function CelestialBody({
             roughness={0.35}
             metalness={0.2}
             transparent
-            opacity={dim ? 0.5 : 1}
+            opacity={(dim ? 0.5 : 1) * (faded ? 0.45 : 1)}
           />
         </mesh>
       )}
@@ -297,7 +304,7 @@ export default function CelestialBody({
             <meshBasicMaterial
               color={color}
               transparent
-              opacity={0.3}
+              opacity={0.3 * fade}
               side={THREE.DoubleSide}
               depthWrite={false}
               blending={THREE.AdditiveBlending}
@@ -365,15 +372,15 @@ export default function CelestialBody({
         </>
       )}
 
-      {/* selection / pending-weave ring */}
-      {(selected || pending) && (
+      {/* selection / pending-weave ring · a fainter one marks the neighbours */}
+      {(selected || pending || neighbor) && (
         <Billboard>
           <mesh>
             <ringGeometry args={[radius * 1.5, radius * 1.7, 48]} />
             <meshBasicMaterial
               color={pending ? "#ffffff" : color}
               transparent
-              opacity={0.9}
+              opacity={selected || pending ? 0.9 : 0.5}
               side={THREE.DoubleSide}
               depthWrite={false}
             />
@@ -401,7 +408,11 @@ export default function CelestialBody({
         distanceFactor={18}
         zIndexRange={[20, 0]}
       >
-        <div className={`body-label ${selected ? "is-selected" : ""}`}>
+        <div
+          className={`body-label ${selected ? "is-selected" : ""} ${
+            faded ? "is-faded" : ""
+          }`}
+        >
           {entity.name}
           {entity.meta?.role && (
             <span className="body-label-role">{entity.meta.role}</span>

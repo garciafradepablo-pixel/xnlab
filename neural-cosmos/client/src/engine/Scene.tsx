@@ -78,6 +78,17 @@ export default function Scene() {
     [entities, threads],
   );
 
+  // the selected node's direct neighbours (the rest of the cosmos dims away)
+  const neighborIds = useMemo(() => {
+    if (!selectedId) return null;
+    const set = new Set<string>();
+    for (const t of threads) {
+      if (t.fromId === selectedId) set.add(t.toId);
+      else if (t.toId === selectedId) set.add(t.fromId);
+    }
+    return set;
+  }, [selectedId, threads]);
+
   return (
     <ControlsContext.Provider value={gate}>
       <color attach="background" args={["#04040a"]} />
@@ -112,9 +123,20 @@ export default function Scene() {
         );
       })}
 
-      {entities.map((e) => (
-        <CelestialBody key={e.id} entity={e} radius={radiusOf(e)} />
-      ))}
+      {entities.map((e) => {
+        const neighbor = neighborIds?.has(e.id) === true;
+        const faded =
+          selectedId != null && e.id !== selectedId && !neighbor;
+        return (
+          <CelestialBody
+            key={e.id}
+            entity={e}
+            radius={radiusOf(e)}
+            neighbor={neighbor}
+            faded={faded}
+          />
+        );
+      })}
 
       <OrbitControls
         makeDefault
