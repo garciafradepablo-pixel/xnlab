@@ -16,6 +16,7 @@ import type { Entity } from "../types/domain";
 import { useUniverse } from "../store/universe";
 import { glowTexture, particleTexture } from "./textures";
 import { useControlsGate } from "./controls-context";
+import NodeActionMenu from "../ui/NodeActionMenu";
 import BlackHoleInfall from "./BlackHoleInfall";
 import GalaxyArms from "./GalaxyArms";
 import Constellation from "./Constellation";
@@ -378,6 +379,18 @@ export default function CelestialBody({
             />
           </mesh>
         </Billboard>
+      )}
+
+      {/* radial action menu — orbits the node while it's selected (navigate) */}
+      {selected && mode === "navigate" && (
+        <Html
+          center
+          position={[0, 0, 0]}
+          zIndexRange={[40, 30]}
+          style={{ pointerEvents: "auto" }}
+        >
+          <NodeActionMenu entity={entity} />
+        </Html>
       )}
 
       {/* DOM label (reliable + crisp; uses our CSS fonts) */}

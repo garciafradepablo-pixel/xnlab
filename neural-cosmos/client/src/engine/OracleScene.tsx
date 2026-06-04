@@ -102,6 +102,7 @@ export default function OracleScene() {
   const lowPower = useUniverse((s) => s.lowPower);
   const selectedId = useUniverse((s) => s.selectedId);
   const select = useUniverse((s) => s.select);
+  const setInspectorOpen = useUniverse((s) => s.setInspectorOpen);
 
   // sit the viewer inside the sphere
   useEffect(() => {
@@ -147,7 +148,11 @@ export default function OracleScene() {
           name={e.name}
           role={e.meta?.role ?? ""}
           selected={selectedId === e.id}
-          onSelect={() => select(e.id)}
+          onSelect={() => {
+            // the oracle has no radial menu; tapping opens the inspector directly
+            select(e.id);
+            setInspectorOpen(true);
+          }}
         />
       ))}
 

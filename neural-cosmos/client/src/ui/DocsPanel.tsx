@@ -12,7 +12,7 @@ export default function DocsPanel({
 }) {
   const lang = useUniverse((s) => s.lang);
   const entities = useUniverse((s) => s.entities);
-  const select = useUniverse((s) => s.select);
+  const inspect = useUniverse((s) => s.inspect);
 
   const docs = entities.flatMap((e) =>
     e.docs.map((d) => ({ entity: e, doc: d })),
@@ -24,7 +24,7 @@ export default function DocsPanel({
         {docs.length === 0 && <p className="meta">{t("empty", lang)}</p>}
         {docs.map(({ entity, doc }) => (
           <div key={doc.id} className="card">
-            <button className="link" onClick={() => { select(entity.id); onClose(); }}>
+            <button className="link" onClick={() => { inspect(entity.id); onClose(); }}>
               {entity.name}
             </button>
             <h4>{doc.title}</h4>

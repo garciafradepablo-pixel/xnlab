@@ -12,7 +12,7 @@ export default function HistoryPanel({
 }) {
   const lang = useUniverse((s) => s.lang);
   const entities = useUniverse((s) => s.entities);
-  const select = useUniverse((s) => s.select);
+  const inspect = useUniverse((s) => s.inspect);
 
   const events = entities
     .flatMap((e) => e.history.map((h) => ({ entity: e, h })))
@@ -25,7 +25,7 @@ export default function HistoryPanel({
         {events.map(({ entity, h }) => (
           <div key={h.id} className="card">
             <p>
-              <button className="link" onClick={() => { select(entity.id); onClose(); }}>
+              <button className="link" onClick={() => { inspect(entity.id); onClose(); }}>
                 {entity.name}
               </button>{" "}
               <span className="meta">· {h.kind}</span> — {h.message}

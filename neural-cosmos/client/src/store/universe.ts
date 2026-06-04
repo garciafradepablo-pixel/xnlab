@@ -83,6 +83,7 @@ interface UniverseState {
 
   // ── selection / view ──────────────────────────────────────────────────────
   select: (id: string | null) => void;
+  inspect: (id: string) => void;
   setMode: (m: Mode) => void;
   setLang: (l: Lang) => void;
   setView: (v: View) => void;
@@ -233,11 +234,18 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   },
 
   select(id) {
+    // selecting summons the radial action menu at the node; the full inspector
+    // panel is opened explicitly from there (keeps the cosmos uncluttered).
     set({
       selectedId: id,
       focusId: id,
-      inspectorOpen: id != null,
+      inspectorOpen: false,
     });
+  },
+
+  inspect(id) {
+    // explicit "open this entity" (search, lists, cross-links) → full panel
+    set({ selectedId: id, focusId: id, inspectorOpen: true });
   },
 
   setMode(mode) {
