@@ -157,8 +157,75 @@ export default function HunterNetworkPage() {
         </AnimatePresence>
       </section>
 
+      {/* Sticky mobile CTA — on the long page, the primary action is always one
+          tap away. Appears after the hero, hides once the form is in view. */}
+      <StickyCTA label={audience === "hunter" ? t.ctaHunter : t.ctaCompany} />
+
       <SiteFooter lang={lang} />
     </main>
+  );
+}
+
+// Floating call-to-action, mobile only. Fades in once the visitor scrolls past
+// the hero and fades out near the form, so it never doubles up with the inline
+// CTA. setState lives in the scroll handler (allowed), never in the effect body.
+function StickyCTA({ label }: { label: string }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const onScroll = () => {
+      const y = window.scrollY;
+      const form = document.getElementById("apply");
+      const formNear = form ? form.getBoundingClientRect().top < window.innerHeight * 1.1 : false;
+      setShow(y > 520 && !formNear);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <>
+      <AnimatePresence>
+        {show && (
+          <motion.a
+            href="#apply"
+            className="hn-sticky-cta hn-focus"
+            // Centre via framer's own x transform — a CSS translateX(-50%) would
+            // be overwritten by framer's animated transform and drift off-centre.
+            initial={{ opacity: 0, y: 20, x: "-50%" }}
+            animate={{ opacity: 1, y: 0, x: "-50%" }}
+            exit={{ opacity: 0, y: 20, x: "-50%" }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            whileTap={{ scale: 0.97 }}
+            style={{
+              position: "fixed",
+              left: "50%",
+              bottom: "max(16px, env(safe-area-inset-bottom))",
+              zIndex: 250,
+              display: "none",
+              alignItems: "center",
+              gap: 10,
+              padding: "0.95rem 1.8rem",
+              fontSize: 12,
+              fontWeight: 600,
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#1a0d04",
+              background: `linear-gradient(100deg, ${VIVID},1), ${ACCENT},1))`,
+              borderRadius: 100,
+              textDecoration: "none",
+              boxShadow: "0 10px 44px rgba(255,138,76,0.4)",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {label}
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden><path d="M5 12h14M13 6l6 6-6 6" /></svg>
+          </motion.a>
+        )}
+      </AnimatePresence>
+      {/* Mobile-only visibility for the sticky CTA. */}
+      <style>{`@media (max-width: 760px){ .hn-sticky-cta{ display: inline-flex !important; } }`}</style>
+    </>
   );
 }
 
@@ -380,14 +447,40 @@ function CompanyFace({ lang, t }: { lang: Lang; t: Copy }) {
         <R delay={0.1}><p style={{ ...labelStyle, marginBottom: "clamp(16px,2vw,24px)" }}>{t.c.getLabel}</p></R>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(240px,1fr))", gap: "clamp(14px,1.8vw,24px)" }}>
           {t.c.get.map((g, i) => (
-            <R key={i} delay={0.05 * i}>
-              <div style={{ padding: "clamp(18px,2vw,26px)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", height: "100%" }}>
+            <R key={i} delay={0.05 * i} style={{ height: "100%" }}>
+              <motion.div
+                whileHover={{ y: -5, borderColor: `${ACCENT},0.4)`, backgroundColor: "rgba(255,255,255,0.035)" }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                style={{ padding: "clamp(18px,2vw,26px)", borderRadius: 14, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", height: "100%" }}
+              >
                 <h3 style={{ margin: 0, fontSize: "clamp(1.05rem,1.4vw,1.25rem)", fontWeight: 400, color: "white", letterSpacing: "-0.01em" }}>{g.title}</h3>
                 <p style={{ margin: "10px 0 0", fontSize: "clamp(0.9rem,1.05vw,1rem)", lineHeight: 1.6, color: "rgba(255,255,255,0.6)", fontWeight: 300 }}>{g.body}</p>
-              </div>
+              </motion.div>
             </R>
           ))}
         </div>
+      </div>
+
+      {/* The guarantee — the scorecard, reframed as proof for the buyer. Every
+          seller who touches your brand cleared these thirteen dimensions. This
+          is the demand-side proof the page was missing. */}
+      <div style={{ marginTop: "clamp(56px,7vw,96px)" }}>
+        <R delay={0.1}>
+          <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20, flexWrap: "wrap", marginBottom: "clamp(18px,2.2vw,28px)" }}>
+            <p style={{ ...labelStyle, margin: 0 }}>{t.c.guaranteeLabel}</p>
+            <p style={{ fontSize: 11, lineHeight: 1.6, color: "rgba(255,255,255,0.4)", margin: 0, maxWidth: 420 }}>{t.c.guaranteeNote}</p>
+          </div>
+        </R>
+        <R delay={0.15}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(150px,1fr))", gap: "clamp(8px,1vw,12px)" }}>
+            {t.h.dimensions.map((d) => (
+              <div key={d} style={{ display: "flex", alignItems: "center", gap: 8, padding: "12px 14px", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)", background: "rgba(255,255,255,0.02)", fontSize: "clamp(0.82rem,0.95vw,0.92rem)", color: "rgba(255,255,255,0.72)", fontWeight: 300 }}>
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={`${ACCENT},0.8)`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden style={{ flexShrink: 0 }}><path d="M20 6 9 17l-5-5" /></svg>
+                {d}
+              </div>
+            ))}
+          </div>
+        </R>
       </div>
 
       {/* Principle still holds for clients: they get evaluated sellers, not warm bodies */}
@@ -488,7 +581,9 @@ function JourneyRow({ t }: { t: Copy }) {
     <div style={{ marginTop: "clamp(30px,3.6vw,46px)", display: "flex", flexWrap: "wrap", gap: "clamp(8px,1vw,12px)", alignItems: "stretch" }}>
       {t.journey.map((j, i) => (
         <div key={i} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div
+          <motion.div
+            whileHover={{ y: -4, borderColor: `${VIVID},0.4)` }}
+            transition={{ type: "spring", stiffness: 320, damping: 22 }}
             style={{
               display: "flex",
               flexDirection: "column",
@@ -508,7 +603,7 @@ function JourneyRow({ t }: { t: Copy }) {
               <span style={{ fontSize: "clamp(0.82rem,0.98vw,0.94rem)", fontWeight: 500, color: "white", letterSpacing: "-0.005em" }}>{j.title}</span>
             </span>
             <span style={{ fontSize: 11, lineHeight: 1.4, color: "rgba(255,255,255,0.52)", fontWeight: 300 }}>{j.sub}</span>
-          </div>
+          </motion.div>
           {i < t.journey.length - 1 && (
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={`${VIVID},0.45)`} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="hn-journey-arrow" aria-hidden>
               <path d="M5 12h14M13 6l6 6-6 6" />
@@ -779,6 +874,7 @@ type Copy = {
   c: {
     lead: string;
     getLabel: string; get: { title: string; body: string }[];
+    guaranteeLabel: string; guaranteeNote: string;
     principleAside: string;
     howLabel: string; steps: Step[];
     form: CompanyForm;
@@ -915,6 +1011,8 @@ const en: Copy = {
       { title: "Meetings and sales", body: "The engagement is built to produce qualified meetings and closes with decision-makers — not call volume." },
       { title: "Operator oversight", body: "Calls are reviewed, performance is tracked, and a seller who slips is pulled before they cost you a customer." },
     ],
+    guaranteeLabel: "Your guarantee",
+    guaranteeNote: "Every seller assigned to your brand cleared a scored evaluation on these thirteen dimensions. Brand care weighs as heavily as the close.",
     principleAside: "For your brand, this means the seller in front of your customer earned the right to be there.",
     howLabel: "How it works for companies",
     steps: [
@@ -1045,6 +1143,8 @@ const es: Copy = {
       { title: "Reuniones y ventas", body: "El encargo está construido para producir reuniones cualificadas y cierres con decisores — no volumen de llamadas." },
       { title: "Supervisión de operador", body: "Las llamadas se revisan, el rendimiento se sigue, y un vendedor que falla se retira antes de que te cueste un cliente." },
     ],
+    guaranteeLabel: "Tu garantía",
+    guaranteeNote: "Cada vendedor asignado a tu marca superó una evaluación puntuada en estas trece dimensiones. El cuidado de la marca pesa tanto como el cierre.",
     principleAside: "Para tu marca esto significa que el vendedor frente a tu cliente se ganó el derecho a estar ahí.",
     howLabel: "Cómo funciona para empresas",
     steps: [

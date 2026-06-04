@@ -17,6 +17,19 @@ export const metadata: Metadata = {
     "A private, performance-based network of evaluated remote Spanish-speaking sellers. Access is earned through a Commercial Access Evaluation — campaign access is bought by performance, never by payment. By request.",
   alternates: { canonical: "/hunter-network" },
   robots: { index: false, follow: false },
+  openGraph: {
+    title: "Hunter Network — red privada de vendedores evaluados",
+    description:
+      "El rendimiento da acceso a mejores campañas — no el pago. Accede a la Evaluación de Acceso Comercial.",
+    url: "https://xnlab.io/hunter-network",
+    siteName: "Hunter Network",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hunter Network — red privada de vendedores evaluados",
+    description: "El rendimiento da acceso a mejores campañas — no el pago.",
+  },
   manifest: "/hn.webmanifest",
   appleWebApp: {
     capable: true,
