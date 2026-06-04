@@ -14,12 +14,16 @@ export default function NeuralThread({
   type,
   seed,
   lowPower,
+  active = false,
+  dimmed = false,
 }: {
   from: Vec3;
   to: Vec3;
   type: ThreadType;
   seed: number;
   lowPower: boolean;
+  active?: boolean;
+  dimmed?: boolean;
 }) {
   const pulseRef = useRef<THREE.Mesh>(null);
   const haloRef = useRef<THREE.Mesh>(null);
@@ -56,8 +60,9 @@ export default function NeuralThread({
 
   useFrame((state) => {
     const time = state.clock.elapsedTime;
-    // a lead pulse + a trailing one read as a flowing current of energy
-    const lead = (time * 0.25 + seed) % 1;
+    // a lead pulse + a trailing one read as a flowing current of energy;
+    // an active synapse runs hotter (faster)
+    const lead = (time * (active ? 0.5 : 0.25) + seed) % 1;
     if (pulseRef.current) pulseRef.current.position.copy(curve.getPointAt(lead));
     if (haloRef.current) {
       haloRef.current.position.copy(curve.getPointAt(lead));
@@ -76,36 +81,38 @@ export default function NeuralThread({
         <meshBasicMaterial
           color={color}
           transparent
-          opacity={0.45}
+          opacity={dimmed ? 0.1 : active ? 0.75 : 0.45}
           depthWrite={false}
           blending={THREE.AdditiveBlending}
         />
       </mesh>
-      {/* soft glow that travels with the lead pulse */}
-      {!lowPower && (
+      {/* soft glow that travels with the lead pulse (hidden on dimmed threads) */}
+      {!lowPower && !dimmed && (
         <mesh ref={haloRef}>
-          <sphereGeometry args={[0.34, 12, 12]} />
+          <sphereGeometry args={[active ? 0.46 : 0.34, 12, 12]} />
           <meshBasicMaterial
             color={color}
             transparent
-            opacity={0.32}
+            opacity={active ? 0.5 : 0.32}
             depthWrite={false}
             blending={THREE.AdditiveBlending}
           />
         </mesh>
       )}
       {/* lead pulse */}
-      <mesh ref={pulseRef}>
-        <sphereGeometry args={[0.16, 12, 12]} />
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.95}
-          blending={THREE.AdditiveBlending}
-        />
-      </mesh>
+      {!dimmed && (
+        <mesh ref={pulseRef}>
+          <sphereGeometry args={[active ? 0.2 : 0.16, 12, 12]} />
+          <meshBasicMaterial
+            color={color}
+            transparent
+            opacity={0.95}
+            blending={THREE.AdditiveBlending}
+          />
+        </mesh>
+      )}
       {/* trailing pulse — completes the sense of a current */}
-      {!lowPower && (
+      {!lowPower && !dimmed && (
         <mesh ref={trailRef}>
           <sphereGeometry args={[0.1, 10, 10]} />
           <meshBasicMaterial

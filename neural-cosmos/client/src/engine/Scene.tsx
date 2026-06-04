@@ -61,6 +61,7 @@ export default function Scene() {
   const entities = useUniverse((s) => s.entities);
   const threads = useUniverse((s) => s.threads);
   const lowPower = useUniverse((s) => s.lowPower);
+  const selectedId = useUniverse((s) => s.selectedId);
 
   const [orbitEnabled, setOrbitEnabled] = useState(true);
   const gate = useMemo(() => ({ setOrbitEnabled }), []);
@@ -92,6 +93,11 @@ export default function Scene() {
         const from = posById.get(t.fromId);
         const to = posById.get(t.toId);
         if (!from || !to) return null;
+        // a selected node lights up its own synapses and dims the rest
+        const active =
+          selectedId != null &&
+          (t.fromId === selectedId || t.toId === selectedId);
+        const dimmed = selectedId != null && !active;
         return (
           <NeuralThread
             key={t.id}
@@ -100,6 +106,8 @@ export default function Scene() {
             type={t.type}
             seed={t.seed}
             lowPower={lowPower}
+            active={active}
+            dimmed={dimmed}
           />
         );
       })}
