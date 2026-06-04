@@ -67,6 +67,7 @@ interface UniverseState {
   weaveType: ThreadType;
   breadcrumbs: Crumb[]; // zoom trail (root … current)
   inspectorOpen: boolean;
+  focusMode: boolean; // isolate the selected node's neighbourhood (hide the rest)
   lowPower: boolean; // degrade effects on weak devices
   bloom: boolean; // cinematic post-processing (on by default; off auto on weak devices)
 
@@ -90,6 +91,7 @@ interface UniverseState {
   setFocus: (id: string | null) => void;
   setWeaveType: (t: ThreadType) => void;
   setInspectorOpen: (open: boolean) => void;
+  toggleFocusMode: () => void;
   setLowPower: (v: boolean) => void;
   setBloom: (v: boolean) => void;
 
@@ -148,6 +150,7 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   weaveType: "data",
   breadcrumbs: [],
   inspectorOpen: false,
+  focusMode: false,
   lowPower:
     typeof navigator !== "undefined" &&
     (navigator.hardwareConcurrency ?? 8) <= 4,
@@ -265,6 +268,9 @@ export const useUniverse = create<UniverseState>((set, get) => ({
   },
   setInspectorOpen(inspectorOpen) {
     set({ inspectorOpen });
+  },
+  toggleFocusMode() {
+    set((s) => ({ focusMode: !s.focusMode }));
   },
   setLowPower(lowPower) {
     set({ lowPower });

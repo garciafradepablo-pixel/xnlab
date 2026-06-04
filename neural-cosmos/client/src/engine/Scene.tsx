@@ -62,6 +62,7 @@ export default function Scene() {
   const threads = useUniverse((s) => s.threads);
   const lowPower = useUniverse((s) => s.lowPower);
   const selectedId = useUniverse((s) => s.selectedId);
+  const focusMode = useUniverse((s) => s.focusMode);
 
   const [orbitEnabled, setOrbitEnabled] = useState(true);
   const gate = useMemo(() => ({ setOrbitEnabled }), []);
@@ -109,6 +110,8 @@ export default function Scene() {
           selectedId != null &&
           (t.fromId === selectedId || t.toId === selectedId);
         const dimmed = selectedId != null && !active;
+        // focus mode removes everything outside the selected node's subgraph
+        if (dimmed && focusMode) return null;
         return (
           <NeuralThread
             key={t.id}
@@ -134,6 +137,7 @@ export default function Scene() {
             radius={radiusOf(e)}
             neighbor={neighbor}
             faded={faded}
+            focusMode={focusMode}
           />
         );
       })}

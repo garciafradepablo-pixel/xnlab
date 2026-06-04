@@ -85,11 +85,13 @@ export default function CelestialBody({
   radius,
   neighbor = false,
   faded = false,
+  focusMode = false,
 }: {
   entity: Entity;
   radius: number;
   neighbor?: boolean;
   faded?: boolean;
+  focusMode?: boolean;
 }) {
   const camera = useThree((s) => s.camera);
   const { setOrbitEnabled } = useControlsGate();
@@ -141,8 +143,10 @@ export default function CelestialBody({
   const isBlackHole = entity.state === "blackhole";
   const isNebula = entity.state === "nebula";
   const dim = entity.state === "absorbed";
-  // when another node is selected, unrelated bodies recede into the background
-  const fade = faded ? 0.22 : 1;
+  // when another node is selected, unrelated bodies recede; focus mode pushes
+  // them almost all the way out so only the neighbourhood remains
+  const ghost = faded && focusMode;
+  const fade = faded ? (focusMode ? 0.05 : 0.22) : 1;
   const hasAnimal = entity.archetype.animal !== "none";
   // a soft node ring for established bodies (like the design's circled nodes)
   const showRing = !isNebula && !isBlackHole && entity.state !== "absorbed";
@@ -291,7 +295,7 @@ export default function CelestialBody({
             roughness={0.35}
             metalness={0.2}
             transparent
-            opacity={(dim ? 0.5 : 1) * (faded ? 0.45 : 1)}
+            opacity={(dim ? 0.5 : 1) * (faded ? (focusMode ? 0.08 : 0.45) : 1)}
           />
         </mesh>
       )}
@@ -410,7 +414,7 @@ export default function CelestialBody({
       >
         <div
           className={`body-label ${selected ? "is-selected" : ""} ${
-            faded ? "is-faded" : ""
+            ghost ? "is-ghost" : faded ? "is-faded" : ""
           }`}
         >
           {entity.name}
