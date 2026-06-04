@@ -38,6 +38,7 @@ export default function App() {
         </ErrorBoundary>
       )}
       {status === "ready" && <div className="vignette" aria-hidden />}
+      {status === "ready" && <div className="hud-frame" aria-hidden />}
 
       {(status === "loading" || status === "idle") && (
         <div className="centered">
