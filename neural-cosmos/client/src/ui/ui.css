@@ -30,6 +30,11 @@
   border-left-color: var(--accent);
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5), 0 0 22px -3px var(--accent);
 }
+/* labels of bodies outside the selected node's neighbourhood recede */
+.body-label.is-faded {
+  opacity: 0.28;
+  transition: opacity 0.3s ease;
+}
 .body-label-role {
   display: block;
   font-size: 8px;
