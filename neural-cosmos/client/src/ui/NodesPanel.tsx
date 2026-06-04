@@ -16,7 +16,7 @@ export default function NodesPanel({
 }) {
   const lang = useUniverse((s) => s.lang);
   const entities = useUniverse((s) => s.entities);
-  const select = useUniverse((s) => s.select);
+  const inspect = useUniverse((s) => s.inspect);
 
   return (
     <BottomSheet open={open} onClose={onClose} title={t("navNodes", lang)}>
@@ -29,7 +29,7 @@ export default function NodesPanel({
               key={e.id}
               className="node-row"
               onClick={() => {
-                select(e.id);
+                inspect(e.id);
                 onClose();
               }}
             >

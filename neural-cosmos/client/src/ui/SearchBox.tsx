@@ -6,7 +6,7 @@ import { t } from "./strings";
 export default function SearchBox() {
   const lang = useUniverse((s) => s.lang);
   const entities = useUniverse((s) => s.entities);
-  const select = useUniverse((s) => s.select);
+  const inspect = useUniverse((s) => s.inspect);
   const [q, setQ] = useState("");
   const [focused, setFocused] = useState(false);
 
@@ -40,7 +40,7 @@ export default function SearchBox() {
               key={e.id}
               className="search-result"
               onMouseDown={() => {
-                select(e.id);
+                inspect(e.id);
                 setQ("");
               }}
             >

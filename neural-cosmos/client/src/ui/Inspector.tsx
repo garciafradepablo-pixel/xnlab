@@ -50,7 +50,7 @@ export default function Inspector() {
   const addDecision = useUniverse((s) => s.addDecision);
   const removeThread = useUniverse((s) => s.removeThread);
   const openAtlas = useUniverse((s) => s.openAtlas);
-  const select = useUniverse((s) => s.select);
+  const inspect = useUniverse((s) => s.inspect);
 
   const [tab, setTab] = useState<Tab>("info");
   const [docTitle, setDocTitle] = useState("");
@@ -437,7 +437,7 @@ export default function Inspector() {
                     {outbound ? "→ " : "← "}
                     <button
                       className="link"
-                      onClick={() => select(otherId)}
+                      onClick={() => inspect(otherId)}
                     >
                       {nameOf(otherId)}
                     </button>
