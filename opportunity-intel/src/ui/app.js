@@ -62,6 +62,7 @@ import * as chat from "../messaging.js";
 import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
 import { newCall, resultToStatus } from "../calls.js";
+import { buildFollowUpTask } from "../callfollowup.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
@@ -2481,7 +2482,16 @@ function cardHandlers(afterMutate) {
     getCalls: (id) => store.getLeadCalls(id),
     onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),
     onSaveCall: !canWrite ? undefined : (id, fields) => {
-      store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));
+      const call = store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      // Follow-up automático: si la llamada deja una fecha de seguimiento (en el
+      // análisis o expresada en la transcripción), se crea/actualiza una tarea
+      // asociada al lead y a la llamada (id determinista → sin duplicar). Sin
+      // fecha clara, no se inventa: solo queda el siguiente paso dentro de la llamada.
+      const task = buildFollowUpTask(call, lead || {}, {
+        assignee: store.getRecord(id)?.assignedTo || store.getWho() || null,
+      });
+      if (task) store.upsertTask(task);
       // El resultado de la llamada mueve el estado del CRM solo (sin degradar un
       // lead ya avanzado) y alimenta el learning loop con la objeción real
       // detectada en el análisis — el sistema aprende de cada llamada.
@@ -2489,7 +2499,6 @@ function cardHandlers(afterMutate) {
       const target = resultToStatus(fields.result, current);
       if (target && target !== current) {
         store.setStatus(id, target);
-        const lead = (state.results?.all || []).find((o) => o.id === id);
         store.recordStatusOutcome(id, target, {
           classification: lead?.scores?.classification,
           sector: lead?.sector || null,
