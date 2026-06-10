@@ -2082,3 +2082,8 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 .nba-close_lost { border-left-color: var(--red); } .nba-close_lost .nba-label { color: var(--red); }
 .nba-wait { border-left-color: var(--line-2); } .nba-wait .nba-label { color: var(--ink-dim); }
 .nba-proposal, .nba-call { border-left-color: var(--ok); } .nba-proposal .nba-label, .nba-call .nba-label { color: var(--ok); }
+
+/* Próxima mejor acción pulsable */
+button.nba.nba-btn { width: 100%; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+button.nba.nba-btn:hover { background: var(--panel-3); border-left-width: 4px; }
+button.nba.nba-btn:active { transform: translateY(1px); }

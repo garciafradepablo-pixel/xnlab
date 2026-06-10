@@ -74,3 +74,98 @@ export function getNextBestAction(lead = {}, calls = [], tasks = [], ctx = {}) {
 
   return a("review", "Sin regla clara: revísalo manualmente.");
 }
+
+// =============================================================================
+// resolveNextActionIntent — traduce una acción recomendada en una INTENCIÓN
+// operativa que la UI ejecuta. Pura: no toca DOM, store ni confirm; solo decide
+// QUÉ debería pasar. La UI mapea cada `kind` a su gesto (abrir, mover, crear…).
+//
+// kinds: open_lead | move_status | create_task | open_task |
+//        confirm_status_change | noop | manual_review
+//
+// Regla de seguridad: una acción que mueve estado NUNCA propone un retroceso
+// (no-degradar). Si el lead ya está igual o más avanzado, devuelve noop con motivo.
+// =============================================================================
+
+// Progresión del embudo para detectar retrocesos. rejected/wrong_fit quedan
+// fuera (terminales negativos); won es el techo.
+const PROGRESSION = ["not_called", "called", "no_answer", "follow_up", "interested", "meeting_booked", "proposal_sent", "won"];
+const rankOf = (status) => {
+  const i = PROGRESSION.indexOf(status);
+  return i === -1 ? 0 : i;
+};
+
+/**
+ * @param {string} action  clave de NEXT_ACTIONS (de getNextBestAction)
+ * @param {object} lead    oportunidad (.id, .company, .scores)
+ * @param {Array}  calls   llamadas de ESTE lead
+ * @param {Array}  tasks   tareas de ESTE lead
+ * @param {object} [ctx]   { status, today, by, assignee }
+ * @returns {{kind:string,label:string,reason:string,statusTarget?:string,taskDraft?:object,existingTaskId?:string,requiresConfirm?:boolean}}
+ */
+export function resolveNextActionIntent(action, lead = {}, calls = [], tasks = [], ctx = {}) {
+  const status = ctx.status || "not_called";
+  const label = NEXT_ACTIONS[action] || "Revisar";
+  const out = (kind, reason, extra = {}) => ({ kind, label, reason, ...extra });
+
+  switch (action) {
+    case "call":
+      // No hay modal de llamada propio: abrir el lead da el contexto (guion,
+      // señales, decisor). TODO: si algún día hay modal de llamada, abrirlo aquí.
+      return out("open_lead", "Abre el lead para llamar con el contexto delante.");
+
+    case "proposal": {
+      // Mover a "Propuesta enviada", pero solo hacia adelante (no-degradar).
+      if (rankOf(status) >= rankOf("proposal_sent")) {
+        return out("noop", "El lead ya está en propuesta o más avanzado: no se retrocede.");
+      }
+      return out("confirm_status_change", "¿Marcar la propuesta como enviada?", {
+        statusTarget: "proposal_sent", requiresConfirm: true,
+      });
+    }
+
+    case "follow_up": {
+      // Si ya hay un seguimiento pendiente, abrir ese (no duplicar).
+      const existing = tasks.find((t) => t && t.type === "follow_up" && t.status !== "done" && t.leadId === lead.id);
+      if (existing) {
+        return out("open_task", "Ya hay un seguimiento pendiente: ábrelo.", { existingTaskId: existing.id });
+      }
+      // Si no, un borrador de tarea con id determinista (evita duplicar al repetir).
+      const last = latestCallContext(calls);
+      return out("create_task", "Crea un seguimiento para no perder el hilo.", {
+        taskDraft: {
+          id: `fu_manual_${lead.id}`,
+          type: "follow_up",
+          leadId: lead.id,
+          callId: null,
+          dueDate: ctx.today || null,
+          title: `Seguimiento · ${lead.company || "lead"}`,
+          note: (last && last.nextStep) || "Seguimiento manual.",
+          priority: "media",
+          status: "todo",
+          assignee: ctx.assignee || ctx.by || null,
+          by: ctx.by || null,
+        },
+      });
+    }
+
+    case "wait":
+      // Sin movimiento automático: solo el motivo. (La UI puede ofrecer recordar.)
+      return out("noop", "Nada que mover ahora: espera al momento adecuado.");
+
+    case "close_lost": {
+      if (status === "won") return out("noop", "El lead está ganado: no se cierra como perdido.");
+      return out("confirm_status_change", "¿Cerrar este lead como perdido (Rechazado)?", {
+        statusTarget: "rejected", requiresConfirm: true,
+      });
+    }
+
+    case "gather_info":
+      // Abrir el lead para añadir/ pedir la información que falta.
+      return out("open_lead", "Abre el lead para reunir o pedir la información que falta.");
+
+    case "review":
+    default:
+      return out("manual_review", "Revísalo a mano: última llamada, objeción, score y tareas.");
+  }
+}

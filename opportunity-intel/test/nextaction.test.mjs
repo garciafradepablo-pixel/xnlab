@@ -1,6 +1,6 @@
 // nextaction.test.mjs — Próxima mejor acción del lead (lógica pura).
 
-const { getNextBestAction, NEXT_ACTIONS } = await import("../src/nextaction.js");
+const { getNextBestAction, NEXT_ACTIONS, resolveNextActionIntent } = await import("../src/nextaction.js");
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -48,6 +48,52 @@ ok(A("interested", many).action === "proposal", "con avance, las llamadas no fue
 // forma de salida
 const r = A("not_called");
 ok(r.label === NEXT_ACTIONS.call && typeof r.why === "string" && r.why.length > 0, "devuelve {action,label,why}");
+
+// --- resolveNextActionIntent: la acción se vuelve operativa ---------------------
+const L = { id: "L1", company: "Bodega Norte", scores: {} };
+const R = (action, calls = [], tasks = [], ctx = {}) =>
+  resolveNextActionIntent(action, L, calls, tasks, { status: "not_called", today: "2026-06-10", ...ctx });
+
+// llamar → abrir lead
+ok(R("call").kind === "open_lead", "llamar → open_lead");
+
+// enviar propuesta → confirmar cambio a Propuesta enviada
+const prop = R("proposal", [], [], { status: "interested" });
+ok(prop.kind === "confirm_status_change" && prop.statusTarget === "proposal_sent" && prop.requiresConfirm === true, "proposal → confirm a proposal_sent");
+// no-degradar: si ya está en propuesta o más, no retrocede
+ok(R("proposal", [], [], { status: "won" }).kind === "noop", "proposal sobre won → noop (no-degradar)");
+ok(R("proposal", [], [], { status: "proposal_sent" }).kind === "noop", "proposal sobre proposal_sent → noop");
+
+// follow-up con tarea existente → abrir esa tarea (sin duplicar)
+const existingTasks = [{ id: "fu_x", type: "follow_up", status: "todo", leadId: "L1" }];
+const fuOpen = R("follow_up", [], existingTasks, { status: "called" });
+ok(fuOpen.kind === "open_task" && fuOpen.existingTaskId === "fu_x", "follow_up con tarea → open_task");
+// la tarea hecha NO cuenta como pendiente → crea borrador
+const doneTasks = [{ id: "fu_x", type: "follow_up", status: "done", leadId: "L1" }];
+ok(R("follow_up", [], doneTasks).kind === "create_task", "follow_up con tarea hecha → create_task");
+
+// follow-up sin tarea → borrador de tarea con id determinista
+const fuNew = R("follow_up", [{ at: "2026-06-05", analysis: { nextStep: "Llamar al decisor" } }]);
+ok(fuNew.kind === "create_task" && fuNew.taskDraft.id === "fu_manual_L1", "follow_up sin tarea → create_task draft");
+ok(fuNew.taskDraft.type === "follow_up" && fuNew.taskDraft.leadId === "L1", "draft bien formado");
+ok(fuNew.taskDraft.note === "Llamar al decisor", "draft toma el siguiente paso de la última llamada");
+
+// esperar → noop con motivo
+const w = R("wait");
+ok(w.kind === "noop" && typeof w.reason === "string" && w.reason.length > 0, "wait → noop con motivo");
+
+// cerrar perdido → confirmar cambio a Rechazado
+const cl = R("close_lost", [], [], { status: "no_answer" });
+ok(cl.kind === "confirm_status_change" && cl.statusTarget === "rejected" && cl.requiresConfirm === true, "close_lost → confirm a rejected");
+
+// pedir más información → abrir lead
+ok(R("gather_info").kind === "open_lead", "gather_info → open_lead");
+
+// revisar manualmente → manual_review
+ok(R("review").kind === "manual_review", "review → manual_review");
+
+// robustez: sin llamadas ni tareas no rompe
+ok(R("follow_up").kind === "create_task" && resolveNextActionIntent("call", L).kind === "open_lead", "sin calls/tasks no rompe");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

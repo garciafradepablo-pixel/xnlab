@@ -64,6 +64,7 @@ import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatS
 import { buildLeaderboard } from "../productivity.js";
 import { newCall, resultToStatus, latestCallContext } from "../calls.js";
 import { buildFollowUpTask, dueFollowupTasks } from "../callfollowup.js";
+import { resolveNextActionIntent } from "../nextaction.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
@@ -2521,6 +2522,49 @@ function cardHandlers(afterMutate) {
     // y borrar llamadas, solo para roles con escritura.
     getCalls: (id) => store.getLeadCalls(id),
     getLeadTasks: (id) => store.getTasks().filter((t) => t.leadId === id),
+    // Próxima mejor acción pulsable: resuelve la intención (pura) y la ejecuta
+    // con la lógica segura ya existente (CRM, tareas, navegación). Cambios de
+    // estado piden confirmación; nada se mueve si rompería la regla de no-degradar.
+    onNextAction: !canWrite ? undefined : (id, action) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      const rec = store.getRecord(id);
+      const status = rec?.status || "not_called";
+      const intent = resolveNextActionIntent(action, lead || { id }, store.getLeadCalls(id),
+        store.getTasks().filter((t) => t.leadId === id),
+        { status, today: ymd(new Date()), by: store.getWho() || null, assignee: rec?.assignedTo || store.getWho() || null });
+      // Registro ligero del evento (fire-and-forget; sin arquitectura nueva).
+      const log = (result, nextStatus) => activity.logActivity("next_action", lead?.company || id,
+        { actionType: action, result, previousStatus: status, nextStatus: nextStatus || null });
+
+      switch (intent.kind) {
+        case "open_lead":
+        case "manual_review":
+          log("executed"); openCase(id); break;
+        case "open_task":
+          log("executed"); goView("tasks"); break;
+        case "create_task":
+          store.upsertTask(intent.taskDraft); log("executed");
+          flash(`Seguimiento creado para ${lead?.company || "el lead"}.`);
+          refresh(); break;
+        case "confirm_status_change":
+          if (confirm(intent.reason)) {
+            store.setStatus(id, intent.statusTarget);
+            store.recordStatusOutcome(id, intent.statusTarget, {
+              classification: lead?.scores?.classification,
+              sector: lead?.sector || null,
+              signals: lead?.signals || null,
+              successIndex: lead?.scores?.successIndex,
+            });
+            log("executed", intent.statusTarget);
+            flash(`Movido a ${STATUS_LABELS[intent.statusTarget] || intent.statusTarget}.`);
+            refresh();
+          } else { log("cancelled"); }
+          break;
+        case "noop":
+        default:
+          log("noop"); flash(intent.reason); break;
+      }
+    },
     onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),
     onSaveCall: !canWrite ? undefined : (id, fields) => {
       const call = store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));

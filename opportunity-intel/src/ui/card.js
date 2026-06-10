@@ -529,7 +529,13 @@ export function renderCard(opp, record, handlers = {}) {
     handlers.getLeadTasks?.(opp.id) || [],
     { status, today: new Date().toISOString().slice(0, 10) }
   );
-  const nbaPill = el("div", { class: `nba nba-${nba.action}`, title: nba.why }, [
+  // Pulsable cuando hay handler (rol con escritura); si no, informativo.
+  const nbaClickable = !!handlers.onNextAction;
+  const nbaPill = el(nbaClickable ? "button" : "div", {
+    class: `nba nba-${nba.action} ${nbaClickable ? "nba-btn" : ""}`,
+    title: nba.why,
+    onClick: nbaClickable ? (e) => { e.stopPropagation(); handlers.onNextAction(opp.id, nba.action); } : undefined,
+  }, [
     el("span", { class: "nba-label", text: `▶ ${nba.label}` }),
     el("span", { class: "nba-why", text: nba.why }),
   ]);
