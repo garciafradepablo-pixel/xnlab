@@ -1980,3 +1980,110 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 /* Selector de tipo de cuenta al invitar */
 .prof-rolewrap { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 12px; font-size: 12px; color: var(--ink-dim); }
 .prof-rolesel { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 9px; padding: 9px 11px; font: inherit; width: 100%; }
+
+/* ============================================================================
+   Caja Negra Comercial — panel de llamadas dentro del lead + análisis IA
+   ========================================================================== */
+.blackbox { border-top: 1px solid var(--line); padding-top: 14px; }
+.bb-calls { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+.bb-empty { color: var(--ink-faint); font-size: 12px; margin: 4px 0; }
+.bb-row { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+.bb-row-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.bb-when { color: var(--ink-dim); font-variant-numeric: tabular-nums; }
+.bb-chan { color: var(--ink); font-weight: 600; }
+.bb-res { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-dim); font-size: 11px; }
+.bb-res-closed_won, .bb-res-interested, .bb-res-meeting, .bb-res-proposal { color: var(--ok); border-color: var(--ok); }
+.bb-res-closed_lost, .bb-res-not_interested { color: var(--red); border-color: var(--red); }
+.bb-dur-tag, .bb-close { color: var(--ink-faint); font-size: 11px; }
+.bb-close { margin-left: auto; color: var(--accent); }
+.bb-del { margin-left: 6px; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 16px; line-height: 1; }
+.bb-del:hover { color: var(--red); }
+.bb-row-detail summary { cursor: pointer; color: var(--ink-dim); font-size: 12px; margin-top: 6px; }
+
+.bb-form { display: flex; flex-direction: column; gap: 8px; }
+.bb-meta { display: flex; gap: 8px; flex-wrap: wrap; }
+.bb-f { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; font: inherit; font-size: 13px; }
+.bb-dur { width: 80px; }
+.bb-transcript { min-height: 90px; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; font: inherit; font-size: 13px; resize: vertical; }
+.bb-actions { display: flex; gap: 8px; }
+
+.bb-analysis, .bb-dossier { display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.bb-engine { font-size: 11px; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.04em; }
+.bb-scores { display: flex; gap: 8px; }
+.bb-score { display: flex; flex-direction: column; align-items: center; padding: 6px 12px; border-radius: 10px; border: 1px solid var(--line-2); min-width: 64px; }
+.bb-score b { font-size: 18px; }
+.bb-score-l { font-size: 10px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+.bb-score-hot { border-color: var(--ok); color: var(--ok); }
+.bb-score-warm { border-color: var(--accent); color: var(--accent); }
+.bb-score-cold { border-color: var(--line-2); color: var(--ink-dim); }
+.bb-block h5 { margin: 0 0 4px; font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.bb-block p { margin: 0; font-size: 13px; color: var(--ink); }
+.bb-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.bb-chip { background: var(--panel-3); border: 1px solid var(--line-2); border-radius: 999px; padding: 3px 9px; font-size: 12px; color: var(--ink); }
+.bb-chips.buy .bb-chip { border-color: var(--ok); color: var(--ok); }
+.bb-chips.loss .bb-chip { border-color: var(--red); color: var(--red); }
+.bb-chips.obj .bb-chip { border-color: var(--yellow); color: var(--yellow); }
+.bb-followup { background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.bb-fu-text { font-style: italic; }
+
+/* ============================================================================
+   Memoria Comercial — dashboard agregado de todas las llamadas
+   ========================================================================== */
+.memory-view { display: flex; flex-direction: column; gap: 18px; max-width: 980px; }
+.memory-sub { color: var(--ink-dim); font-size: 13px; margin: -8px 0 0; }
+.memory-avg { color: var(--ink); font-size: 14px; }
+.memory-block h3 { font-size: 14px; margin: 0 0 10px; color: var(--ink); }
+.memory-funnel { display: flex; flex-direction: column; gap: 6px; }
+.mf-row { display: grid; grid-template-columns: 120px 1fr 40px; align-items: center; gap: 10px; }
+.mf-stage { font-size: 12px; color: var(--ink-dim); }
+.mf-bar { background: var(--panel-2); border-radius: 999px; height: 14px; overflow: hidden; }
+.mf-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent-2), var(--accent)); }
+.mf-n { font-variant-numeric: tabular-nums; text-align: right; color: var(--ink); }
+.memory-hot { display: flex; flex-wrap: wrap; gap: 8px; }
+.mh-chip { background: var(--panel-2); border: 1px solid var(--accent); color: var(--accent); border-radius: 999px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+.mh-chip:hover { background: var(--accent); color: #14161c; }
+.memory-sectors { display: flex; flex-direction: column; gap: 6px; }
+.ms-row { display: grid; grid-template-columns: 1fr 60px 100px; align-items: center; gap: 10px; font-size: 13px; }
+.ms-rate.good { color: var(--ok); } .ms-rate.bad { color: var(--red); }
+.ms-n { color: var(--ink-faint); font-size: 12px; }
+.memory-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+.memory-rank { margin: 0; padding-left: 0; list-style: none; display: flex; flex-direction: column; gap: 5px; }
+.memory-rank li { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.mr-count { color: var(--accent); font-variant-numeric: tabular-nums; }
+.memory-prices { display: flex; flex-wrap: wrap; gap: 8px; }
+.mp-chip { background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 8px; padding: 4px 10px; font-size: 12px; color: var(--ink); font-variant-numeric: tabular-nums; }
+
+/* Seguimientos agendados (tareas creadas desde llamadas) en la vista Hoy */
+.fut-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.fut { display: flex; align-items: stretch; gap: 8px; background: var(--panel-2); border: 1px solid var(--line); border-left: 3px solid var(--line-2); border-radius: 10px; padding: 9px 11px; }
+.fut.prio-alta { border-left-color: var(--accent); }
+.fut.fut-overdue { border-left-color: var(--red); }
+.fut-main { flex: 1; cursor: pointer; min-width: 0; }
+.fut-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.fut-name { font-weight: 600; color: var(--ink); }
+.fut-due { font-size: 11px; color: var(--ink-dim); }
+.fut-due.is-over { color: var(--red); }
+.fut-prio { font-size: 10px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--accent); border: 1px solid var(--accent); border-radius: 999px; padding: 0 6px; }
+.fut-note { font-size: 13px; color: var(--ink); margin-top: 2px; }
+.fut-ctx { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+.fut-done { align-self: center; background: none; border: 1px solid var(--line-2); color: var(--ink-dim); border-radius: 8px; width: 32px; cursor: pointer; font-size: 14px; }
+.fut-done:hover { border-color: var(--ok); color: var(--ok); }
+
+/* Memoria accionable — recomendación de próxima llamada */
+.memory-action { background: var(--panel-2); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; }
+.memory-rec { font-size: 14px; color: var(--ink); margin: 0; }
+.memory-rec.muted { color: var(--ink-dim); font-style: italic; }
+.ms-rate.muted { color: var(--ink-faint); font-style: italic; }
+
+/* Próxima mejor acción del lead (siempre visible en la tarjeta) */
+.nba { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; background: var(--panel-2); border: 1px solid var(--line); border-left: 3px solid var(--accent); border-radius: 9px; padding: 7px 11px; margin: 8px 0 0; }
+.nba-label { font-weight: 700; color: var(--accent); font-size: 13px; white-space: nowrap; }
+.nba-why { font-size: 12px; color: var(--ink-dim); }
+.nba-close_lost { border-left-color: var(--red); } .nba-close_lost .nba-label { color: var(--red); }
+.nba-wait { border-left-color: var(--line-2); } .nba-wait .nba-label { color: var(--ink-dim); }
+.nba-proposal, .nba-call { border-left-color: var(--ok); } .nba-proposal .nba-label, .nba-call .nba-label { color: var(--ok); }
+
+/* Próxima mejor acción pulsable */
+button.nba.nba-btn { width: 100%; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+button.nba.nba-btn:hover { background: var(--panel-3); border-left-width: 4px; }
+button.nba.nba-btn:active { transform: translateY(1px); }

@@ -24,6 +24,8 @@ import {
   TENSION_TYPES,
   CALL_STATUSES,
   STATUS_LABELS,
+  CALL_CHANNELS,
+  CALL_RESULTS,
   ECONOMIC_LABELS,
   evidenceVerdict,
 } from "../models.js";
@@ -31,6 +33,7 @@ import { explainScore, verificationProfile } from "../scoring.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
 import { lensLabel } from "../lenses.js";
+import { getNextBestAction } from "../nextaction.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -509,6 +512,7 @@ export function renderCard(opp, record, handlers = {}) {
     sec("Razones para NO llamar", bullets(opp.reasonsNotToCall)),
     sec("Qué invalidaría la tesis", bullets(opp.invalidators)),
     readOnly ? null : verificationBlock(opp, handlers),
+    handlers.onSaveCall || (handlers.getCalls?.(opp.id) || []).length ? blackBoxSection(opp, handlers, readOnly) : null,
     sec("Notas", notes),
     readOnly ? null : el("div", { class: "ops-detail" }, [
       el("p", { class: "learn-auto", html: "<b>El sistema aprende solo.</b> Marca el resultado con un toque arriba (Interesado · Reunión · Rechazado) y recalibra la puntuación automáticamente — sin formularios." }),
@@ -516,6 +520,24 @@ export function renderCard(opp, record, handlers = {}) {
       learnBox,
     ]),
     el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · datos demo" : opp.researched ? " · investigado" : ""}` }),
+  ]);
+
+  // Próxima mejor acción: una recomendación clara por lead, siempre visible.
+  const nba = getNextBestAction(
+    opp,
+    handlers.getCalls?.(opp.id) || [],
+    handlers.getLeadTasks?.(opp.id) || [],
+    { status, today: new Date().toISOString().slice(0, 10) }
+  );
+  // Pulsable cuando hay handler (rol con escritura); si no, informativo.
+  const nbaClickable = !!handlers.onNextAction;
+  const nbaPill = el(nbaClickable ? "button" : "div", {
+    class: `nba nba-${nba.action} ${nbaClickable ? "nba-btn" : ""}`,
+    title: nba.why,
+    onClick: nbaClickable ? (e) => { e.stopPropagation(); handlers.onNextAction(opp.id, nba.action); } : undefined,
+  }, [
+    el("span", { class: "nba-label", text: `▶ ${nba.label}` }),
+    el("span", { class: "nba-why", text: nba.why }),
   ]);
 
   // Destacado de élite: leads de máxima puntuación / "llamar de inmediato".
@@ -526,8 +548,155 @@ export function renderCard(opp, record, handlers = {}) {
     top,
     hook,
     action,
+    nbaPill,
     failurePanel,
     detail,
+  ]);
+}
+
+// ---- Caja Negra Comercial: historial de llamadas + análisis con IA ----------
+// Dentro de cada lead: las llamadas hechas, un formulario para registrar una
+// nueva (canal · duración · resultado · transcripción), un botón para analizarla
+// con IA (Gemini → fallback local) y el resultado estructurado + el mensaje de
+// seguimiento listo para copiar. Es el núcleo de "convertir llamadas en datos".
+export function blackBoxSection(opp, handlers, readOnly) {
+  const calls = (handlers.getCalls?.(opp.id) || []);
+  const wrap = el("div", { class: "sec blackbox" }, [
+    el("h4", { text: `Caja Negra · llamadas (${calls.length})` }),
+  ]);
+
+  // Historial de llamadas (lo más reciente arriba).
+  const list = el("div", { class: "bb-calls" });
+  const paint = () => {
+    list.innerHTML = "";
+    const cs = handlers.getCalls?.(opp.id) || [];
+    if (!cs.length) { list.appendChild(el("p", { class: "bb-empty", text: "Aún no hay llamadas registradas." })); return; }
+    for (const c of cs) list.appendChild(callRow(c, handlers, readOnly, paint));
+  };
+  paint();
+  wrap.appendChild(list);
+
+  if (readOnly) return wrap;
+
+  // Formulario para registrar + analizar una nueva llamada.
+  const channel = el("select", { class: "bb-f" }, Object.entries(CALL_CHANNELS).map(([k, v]) => el("option", { value: k, text: v })));
+  const result = el("select", { class: "bb-f" }, Object.entries(CALL_RESULTS).map(([k, v]) => el("option", { value: k, text: v })));
+  const dur = el("input", { class: "bb-f bb-dur", type: "number", min: "0", placeholder: "min" });
+  const transcript = el("textarea", { class: "bb-transcript", placeholder: "Pega aquí la transcripción de la llamada…" });
+
+  const resultBox = el("div", { class: "bb-analysis" });
+  let pending = null; // análisis ya calculado, a la espera de guardar
+
+  const analyzeBtn = el("button", {
+    class: "btn", text: "Analizar con IA",
+    onClick: async () => {
+      const text = transcript.value.trim();
+      if (!text) { resultBox.innerHTML = ""; resultBox.appendChild(el("p", { class: "bb-empty", text: "Pega una transcripción primero." })); return; }
+      analyzeBtn.disabled = true; analyzeBtn.textContent = "Analizando…";
+      try {
+        const ctx = { leadName: opp.decisionMaker?.name || opp.company, sector: opp.sector, classification: opp.scores?.classification };
+        const { analysis, ai } = await handlers.onAnalyzeCall(text, ctx);
+        pending = analysis;
+        resultBox.innerHTML = "";
+        resultBox.appendChild(renderAnalysis(analysis, ai));
+      } catch {
+        resultBox.innerHTML = "";
+        resultBox.appendChild(el("p", { class: "bb-empty", text: "No se pudo analizar. Inténtalo de nuevo." }));
+      } finally {
+        analyzeBtn.disabled = false; analyzeBtn.textContent = "Analizar con IA";
+      }
+    },
+  });
+
+  const saveBtn = el("button", {
+    class: "btn-primary", text: "Guardar llamada",
+    onClick: () => {
+      const text = transcript.value.trim();
+      if (!text && !pending) { return; }
+      handlers.onSaveCall?.(opp.id, {
+        channel: channel.value,
+        result: result.value,
+        durationMin: Number(dur.value) || 0,
+        transcript: text,
+        analysis: pending,
+        leadSector: opp.sector || null,
+      });
+      // Limpia el formulario y repinta el historial.
+      transcript.value = ""; dur.value = ""; pending = null; resultBox.innerHTML = "";
+      paint();
+      saveBtn.textContent = "✓ Guardada";
+      setTimeout(() => (saveBtn.textContent = "Guardar llamada"), 1500);
+    },
+  });
+
+  wrap.appendChild(el("div", { class: "bb-form" }, [
+    el("div", { class: "bb-meta" }, [channel, result, dur]),
+    transcript,
+    el("div", { class: "bb-actions" }, [analyzeBtn, saveBtn]),
+    resultBox,
+  ]));
+  return wrap;
+}
+
+// Una llamada del historial: cabecera (fecha · canal · resultado) + resumen.
+function callRow(c, handlers, readOnly, repaint) {
+  const a = c.analysis || {};
+  const when = (c.at || "").slice(0, 10);
+  const head = el("div", { class: "bb-row-head" }, [
+    el("span", { class: "bb-when", text: when }),
+    el("span", { class: "bb-chan", text: CALL_CHANNELS[c.channel] || c.channel }),
+    el("span", { class: `bb-res bb-res-${c.result}`, text: CALL_RESULTS[c.result] || c.result }),
+    c.durationMin ? el("span", { class: "bb-dur-tag", text: `${c.durationMin}m` }) : null,
+    typeof a.closeProbability === "number" ? el("span", { class: "bb-close", text: `cierre ${a.closeProbability}%` }) : null,
+    readOnly ? null : el("button", { class: "bb-del", title: "Borrar", text: "×", onClick: () => { handlers.onRemoveCall?.(c.id); repaint(); } }),
+  ]);
+  const body = el("details", { class: "bb-row-detail" }, [
+    el("summary", { text: a.summary || "Ver detalle de la llamada" }),
+    a.analysis || a.summary ? renderAnalysis(a, a.engine === "gemini") : el("p", { class: "bb-empty", text: "Llamada sin análisis." }),
+  ]);
+  return el("div", { class: "bb-row" }, [head, body]);
+}
+
+// Render del dossier estructurado de una llamada.
+function renderAnalysis(a, ai) {
+  if (!a) return el("p", { class: "bb-empty", text: "Sin análisis." });
+  const chips = (title, arr, cls = "") => (arr && arr.length)
+    ? el("div", { class: "bb-block" }, [el("h5", { text: title }), el("div", { class: `bb-chips ${cls}` }, arr.map((x) => el("span", { class: "bb-chip", text: typeof x === "string" ? x : (x.label || x.objection || x.pain || JSON.stringify(x)) })))])
+    : null;
+  const para = (title, txt) => txt ? el("div", { class: "bb-block" }, [el("h5", { text: title }), el("p", { text: txt })]) : null;
+  const s = a.scores || {};
+  return el("div", { class: "bb-dossier" }, [
+    el("div", { class: "bb-engine", text: ai ? "Análisis IA (Gemini)" : "Análisis local (determinista)" }),
+    el("div", { class: "bb-scores" }, [
+      scorePill("Interés", s.interest), scorePill("Encaje", s.fit), scorePill("Cierre", s.close ?? a.closeProbability),
+    ]),
+    para("Resumen", a.summary),
+    para("Qué quiere de verdad", a.wants),
+    chips("Dolores", a.pains, "pain"),
+    chips("Objeciones", a.objections, "obj"),
+    chips("Señales de compra", a.buySignals, "buy"),
+    chips("Señales de pérdida", a.lossSignals, "loss"),
+    chips("Lo que no dice (inferido)", a.inferred),
+    chips("Servicios que encajan", a.services, "svc"),
+    a.authority ? para("Autoridad de decisión", a.authority) : null,
+    a.budget ? para("Presupuesto mencionado", a.budget) : null,
+    a.urgency ? para("Urgencia", a.urgency) : null,
+    para("Siguiente paso", a.nextStep),
+    chips("Aprendizajes", a.learnings),
+    a.followUp ? el("div", { class: "bb-block bb-followup" }, [
+      el("h5", { text: "Mensaje de seguimiento" }),
+      el("p", { class: "bb-fu-text", text: a.followUp }),
+      copyBtn(a.followUp, "Copiar mensaje"),
+    ]) : null,
+  ]);
+}
+
+function scorePill(label, v) {
+  const n = typeof v === "number" ? v : 0;
+  const tone = n >= 70 ? "hot" : n >= 45 ? "warm" : "cold";
+  return el("span", { class: `bb-score bb-score-${tone}` }, [
+    el("b", { text: String(n) }),
+    el("span", { class: "bb-score-l", text: label }),
   ]);
 }
 

@@ -24,6 +24,7 @@ import {
   FILTER_BY_KEY,
   ECONOMIC_LABELS,
   CALL_STATUSES,
+  CALL_RESULTS,
   OFFER_LADDER,
   TENSION_TYPES,
 } from "../models.js";
@@ -61,6 +62,11 @@ import { getCatalog, cacheCatalog, labelMap, teamByTag, teamGaps } from "../team
 import * as chat from "../messaging.js";
 import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
+import { newCall, resultToStatus, latestCallContext } from "../calls.js";
+import { buildFollowUpTask, dueFollowupTasks } from "../callfollowup.js";
+import { resolveNextActionIntent } from "../nextaction.js";
+import { analyzeCall } from "../callai.js";
+import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
 import * as activity from "../activity.js";
@@ -781,7 +787,7 @@ function openProfile() {
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["tasks", "Tareas"], ["agenda", "Agenda"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar", "discover"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"], ["memory", "Caja Negra", "crm"]] },
   { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
   { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
@@ -1017,6 +1023,7 @@ function viewArea() {
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
+  else if (state.view === "memory") area.appendChild(memoryView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
   else if (state.view === "chat") area.appendChild(chatView("general"));
@@ -1954,10 +1961,18 @@ function todayView() {
     blocks.push(el("ol", { class: "today-calls" }, calls.map((o, i) => todayCall(o, i, tracking[o.id] || {}))));
   }
 
-  // Seguimientos que tocan hoy: hilos abiertos con un toque vencido.
+  // Seguimientos con fecha (tareas creadas desde llamadas): vencidos o de hoy.
+  const today = ymd(new Date());
+  const dueTasks = dueFollowupTasks(store.getTasks(), today);
+  if (dueTasks.length) {
+    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos agendados · ${dueTasks.length}` }));
+    blocks.push(el("ul", { class: "fut-list" }, dueTasks.slice(0, 10).map((t) => followupTaskRow(t, today))));
+  }
+
+  // Seguimientos que tocan hoy: hilos abiertos con un toque vencido (cadencia).
   const due = dueFollowups(opps, tracking);
   if (due.length) {
-    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos para hoy · ${due.length}` }));
+    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos sugeridos · ${due.length}` }));
     blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
   }
 
@@ -2125,6 +2140,37 @@ function followupRow(opp, fu) {
       el("div", { class: "fu-action", text: fu.action }),
     ]),
     el("span", { class: "fu-due", text: dueLabel(fu.dueAt) }),
+  ]);
+}
+
+// Fila de una tarea de seguimiento agendada (creada desde una llamada). Trae el
+// contexto mínimo de la última llamada del lead y permite marcar hecha o abrir.
+function followupTaskRow(task, today) {
+  const opp = (state.results?.all || []).find((o) => o.id === task.leadId);
+  const name = opp?.company || task.title.replace(/^Seguimiento · /, "") || "Lead";
+  const overdue = task.dueDate < today;
+  const ctx = latestCallContext(store.getLeadCalls(task.leadId));
+  const ctxBits = [];
+  if (ctx?.result) ctxBits.push(CALL_RESULTS[ctx.result] || ctx.result);
+  if (ctx?.objection) ctxBits.push(`obj: ${ctx.objection}`);
+  const canWrite = isWriter(auth.currentRole());
+
+  const doneBtn = !canWrite ? null : el("button", {
+    class: "fut-done", title: "Marcar hecha", text: "✓",
+    onClick: (e) => { e.stopPropagation(); store.setTaskStatus(task.id, "done"); render(); },
+  });
+
+  return el("li", { class: `fut prio-${task.priority || "media"} ${overdue ? "fut-overdue" : ""}` }, [
+    el("div", { class: "fut-main", onClick: () => opp ? openCase(opp.id) : (state.filters.search = name, goView("cards")) }, [
+      el("div", { class: "fut-line" }, [
+        el("span", { class: "fut-name", text: name }),
+        el("span", { class: `fut-due ${overdue ? "is-over" : ""}`, text: overdue ? `vencido (${task.dueDate})` : "hoy" }),
+        task.priority === "alta" ? el("span", { class: "fut-prio", text: "alta" }) : null,
+      ]),
+      el("div", { class: "fut-note", text: task.note || ctx?.nextStep || "Seguimiento de la llamada." }),
+      ctxBits.length ? el("div", { class: "fut-ctx", text: ctxBits.join(" · ") }) : null,
+    ]),
+    doneBtn,
   ]);
 }
 
@@ -2472,6 +2518,83 @@ function cardHandlers(afterMutate) {
       refresh();
     },
     onNotes: !canWrite ? undefined : (id, notes) => { store.setNotes(id, notes); },
+    // Caja Negra Comercial: leer el historial es para todos; registrar, analizar
+    // y borrar llamadas, solo para roles con escritura.
+    getCalls: (id) => store.getLeadCalls(id),
+    getLeadTasks: (id) => store.getTasks().filter((t) => t.leadId === id),
+    // Próxima mejor acción pulsable: resuelve la intención (pura) y la ejecuta
+    // con la lógica segura ya existente (CRM, tareas, navegación). Cambios de
+    // estado piden confirmación; nada se mueve si rompería la regla de no-degradar.
+    onNextAction: !canWrite ? undefined : (id, action) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      const rec = store.getRecord(id);
+      const status = rec?.status || "not_called";
+      const intent = resolveNextActionIntent(action, lead || { id }, store.getLeadCalls(id),
+        store.getTasks().filter((t) => t.leadId === id),
+        { status, today: ymd(new Date()), by: store.getWho() || null, assignee: rec?.assignedTo || store.getWho() || null });
+      // Registro ligero del evento (fire-and-forget; sin arquitectura nueva).
+      const log = (result, nextStatus) => activity.logActivity("next_action", lead?.company || id,
+        { actionType: action, result, previousStatus: status, nextStatus: nextStatus || null });
+
+      switch (intent.kind) {
+        case "open_lead":
+        case "manual_review":
+          log("executed"); openCase(id); break;
+        case "open_task":
+          log("executed"); goView("tasks"); break;
+        case "create_task":
+          store.upsertTask(intent.taskDraft); log("executed");
+          flash(`Seguimiento creado para ${lead?.company || "el lead"}.`);
+          refresh(); break;
+        case "confirm_status_change":
+          if (confirm(intent.reason)) {
+            store.setStatus(id, intent.statusTarget);
+            store.recordStatusOutcome(id, intent.statusTarget, {
+              classification: lead?.scores?.classification,
+              sector: lead?.sector || null,
+              signals: lead?.signals || null,
+              successIndex: lead?.scores?.successIndex,
+            });
+            log("executed", intent.statusTarget);
+            flash(`Movido a ${STATUS_LABELS[intent.statusTarget] || intent.statusTarget}.`);
+            refresh();
+          } else { log("cancelled"); }
+          break;
+        case "noop":
+        default:
+          log("noop"); flash(intent.reason); break;
+      }
+    },
+    onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),
+    onSaveCall: !canWrite ? undefined : (id, fields) => {
+      const call = store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      // Follow-up automático: si la llamada deja una fecha de seguimiento (en el
+      // análisis o expresada en la transcripción), se crea/actualiza una tarea
+      // asociada al lead y a la llamada (id determinista → sin duplicar). Sin
+      // fecha clara, no se inventa: solo queda el siguiente paso dentro de la llamada.
+      const task = buildFollowUpTask(call, lead || {}, {
+        assignee: store.getRecord(id)?.assignedTo || store.getWho() || null,
+      });
+      if (task) store.upsertTask(task);
+      // El resultado de la llamada mueve el estado del CRM solo (sin degradar un
+      // lead ya avanzado) y alimenta el learning loop con la objeción real
+      // detectada en el análisis — el sistema aprende de cada llamada.
+      const current = store.getRecord(id)?.status || "not_called";
+      const target = resultToStatus(fields.result, current);
+      if (target && target !== current) {
+        store.setStatus(id, target);
+        store.recordStatusOutcome(id, target, {
+          classification: lead?.scores?.classification,
+          sector: lead?.sector || null,
+          signals: lead?.signals || null,
+          successIndex: lead?.scores?.successIndex,
+          objection: fields.analysis?.objections?.[0] || null,
+        });
+        refresh();
+      }
+    },
+    onRemoveCall: !canWrite ? undefined : (callId) => { store.removeCall(callId); },
     onOutcome: !canWrite ? undefined : (id, outcome) => {
       // Stamp the lead's signal snapshot so calibration is reproducible even if
       // the dataset later changes. Then recompute — outcomes recalibrate scores.
@@ -2992,6 +3115,141 @@ const CRM_COLUMNS = [
   { key: "rejected", fail: true },
   { key: "wrong_fit", fail: true },
 ];
+
+// ---- Caja Negra Comercial: dashboard + Memoria Comercial --------------------
+// Lo que el equipo aprende del mercado: cifras del embudo, leads calientes y los
+// patrones agregados de TODAS las llamadas (objeciones, dolores, sectores que
+// responden, frases que abren/cierran, precios mencionados, razones de cierre).
+function memoryView() {
+  const d = buildDashboard({
+    leads: state.results.all,
+    tracking: store.getTracking(),
+    calls: store.getCalls(),
+  });
+  const m = d.memory;
+  const wrap = el("div", { class: "memory-view" }, [
+    el("h2", { text: "Caja Negra Comercial" }),
+    el("p", { class: "memory-sub", text: "Cada llamada registrada alimenta esto. Cuantas más llamadas con transcripción, más fina la lectura del mercado." }),
+  ]);
+
+  // KPIs del embudo.
+  wrap.appendChild(el("div", { class: "crm-kpis" }, [
+    crmKpi("Leads", d.totalLeads, ""),
+    crmKpi("Llamadas", d.callsMade, `${d.memory.callsWithTranscript} con transcripción`),
+    crmKpi("Reuniones", d.meetings, "", "hot"),
+    crmKpi("Propuestas", d.proposals, "", "hot"),
+    crmKpi("Ganados", d.won, "", "hot"),
+    crmKpi("Perdidos", d.lost, "", "cool"),
+  ]));
+
+  // Embudo por fases.
+  const maxN = Math.max(1, ...d.funnel.map((f) => f.n));
+  wrap.appendChild(el("div", { class: "memory-block" }, [
+    el("h3", { text: "Conversión por fase" }),
+    el("div", { class: "memory-funnel" }, d.funnel.map((f) =>
+      el("div", { class: "mf-row" }, [
+        el("span", { class: "mf-stage", text: f.stage }),
+        el("span", { class: "mf-bar", html: `<i style="width:${Math.round((f.n / maxN) * 100)}%"></i>` }),
+        el("span", { class: "mf-n", text: String(f.n) }),
+      ]))),
+  ]));
+
+  // Leads calientes (clic → ficha).
+  if (d.hot.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: `Leads calientes (${d.hot.length})` }),
+      el("div", { class: "memory-hot" }, d.hot.map((h) =>
+        el("button", { class: "mh-chip", text: `${h.company} · ${STATUS_LABELS[h.status] || h.status}`, onClick: () => openCase(h.id) }))),
+    ]));
+  }
+
+  // Memoria agregada.
+  if (!m.sampleSize) {
+    wrap.appendChild(emptyNote("Aún no hay llamadas registradas.", { icon: "📞", sub: "Abre un lead, baja a su Caja Negra, pega una transcripción y analízala. A partir de la primera, esto cobra vida." }));
+    return wrap;
+  }
+
+  // --- Aprendizajes accionables (P3): no solo datos, sino qué hacer ---
+  const am = actionableMemory({ calls: store.getCalls(), tracking: store.getTracking() });
+  wrap.appendChild(el("div", { class: "memory-block memory-action" }, [
+    el("h3", { text: "Próxima llamada — recomendación" }),
+    el("p", { class: `memory-rec ${am.recommendation.enough ? "" : "muted"}`, text: am.recommendation.text }),
+  ]));
+
+  // Ratio de avance por objeción: dónde se atasca el pitch.
+  if (am.objectionAdvance.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: "Avance por tipo de objeción" }),
+      el("div", { class: "memory-sectors" }, am.objectionAdvance.map((o) =>
+        el("div", { class: "ms-row" }, [
+          el("span", { class: "ms-name", text: o.label }),
+          o.enough
+            ? el("span", { class: `ms-rate ${o.rate >= 50 ? "good" : "bad"}`, text: `avanza ${o.rate}%` })
+            : el("span", { class: "ms-rate muted", text: "datos insuf." }),
+          el("span", { class: "ms-n", text: `${o.total} llamada${o.total === 1 ? "" : "s"}` }),
+        ]))),
+    ]));
+  }
+
+  // Patrones de ganadas vs perdidas (con honestidad de muestra).
+  if (am.winLoss.enough) {
+    const col = (title, rows, cls) => el("div", { class: "memory-block" }, [
+      el("h3", { text: title }),
+      rows.length
+        ? el("div", { class: `bb-chips ${cls}` }, rows.map((r) => el("span", { class: "bb-chip", text: `${r.label} (${r.count})` })))
+        : el("p", { class: "hint", text: "Sin frases registradas todavía." }),
+    ]);
+    wrap.appendChild(el("div", { class: "memory-grid" }, [
+      col(`En ganadas (${am.winLoss.wonSample})`, am.winLoss.winPhrases, "buy"),
+      col(`En perdidas (${am.winLoss.lostSample})`, am.winLoss.lossPhrases, "loss"),
+    ]));
+  }
+
+  const rankBlock = (title, rows, suffix = "") => rows && rows.length
+    ? el("div", { class: "memory-block" }, [
+        el("h3", { text: title }),
+        el("ol", { class: "memory-rank" }, rows.map((r) =>
+          el("li", {}, [el("span", { class: "mr-label", text: r.label }), el("span", { class: "mr-count", text: `${r.count}${suffix}` })]))),
+      ])
+    : null;
+
+  if (m.avgCloseProbability != null) {
+    wrap.appendChild(el("p", { class: "memory-avg", html: `Probabilidad de cierre media de las llamadas analizadas: <b>${m.avgCloseProbability}%</b>` }));
+  }
+
+  // Sectores que responden.
+  if (m.sectors.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: "Sectores que mejor responden" }),
+      el("div", { class: "memory-sectors" }, m.sectors.map((s) =>
+        el("div", { class: "ms-row" }, [
+          el("span", { class: "ms-name", text: (SECTOR_BY_KEY[s.sector]?.label) || s.sector }),
+          el("span", { class: `ms-rate ${s.rate >= 50 ? "good" : "bad"}`, text: `${s.rate}%` }),
+          el("span", { class: "ms-n", text: `${s.total} llamada${s.total === 1 ? "" : "s"}` }),
+        ]))),
+    ]));
+  }
+
+  const grid = el("div", { class: "memory-grid" }, [
+    rankBlock("Objeciones más repetidas", m.objections),
+    rankBlock("Dolores más frecuentes", m.pains),
+    rankBlock("Servicios más demandados", m.services),
+    rankBlock("Frases que generan interés", m.buyPhrases),
+    rankBlock("Frases que generan rechazo", m.lossPhrases),
+    rankBlock("Motivos de cierre", m.winReasons),
+    rankBlock("Motivos de pérdida", m.lossReasons),
+  ].filter(Boolean));
+  wrap.appendChild(grid);
+
+  if (m.prices.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: "Precios mencionados en llamadas" }),
+      el("div", { class: "memory-prices" }, m.prices.map((p) => el("span", { class: "mp-chip", text: p }))),
+    ]));
+  }
+
+  return wrap;
+}
 
 function crmView() {
   const tracking = store.getTracking();
