@@ -2520,6 +2520,7 @@ function cardHandlers(afterMutate) {
     // Caja Negra Comercial: leer el historial es para todos; registrar, analizar
     // y borrar llamadas, solo para roles con escritura.
     getCalls: (id) => store.getLeadCalls(id),
+    getLeadTasks: (id) => store.getTasks().filter((t) => t.leadId === id),
     onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),
     onSaveCall: !canWrite ? undefined : (id, fields) => {
       const call = store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));

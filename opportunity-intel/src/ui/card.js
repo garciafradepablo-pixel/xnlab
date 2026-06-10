@@ -33,6 +33,7 @@ import { explainScore, verificationProfile } from "../scoring.js";
 import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
 import { lensLabel } from "../lenses.js";
+import { getNextBestAction } from "../nextaction.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -521,6 +522,18 @@ export function renderCard(opp, record, handlers = {}) {
     el("div", { class: "sec-meta", text: `Sector: ${sector}${opp.synthetic ? " · datos demo" : opp.researched ? " · investigado" : ""}` }),
   ]);
 
+  // Próxima mejor acción: una recomendación clara por lead, siempre visible.
+  const nba = getNextBestAction(
+    opp,
+    handlers.getCalls?.(opp.id) || [],
+    handlers.getLeadTasks?.(opp.id) || [],
+    { status, today: new Date().toISOString().slice(0, 10) }
+  );
+  const nbaPill = el("div", { class: `nba nba-${nba.action}`, title: nba.why }, [
+    el("span", { class: "nba-label", text: `▶ ${nba.label}` }),
+    el("span", { class: "nba-why", text: nba.why }),
+  ]);
+
   // Destacado de élite: leads de máxima puntuación / "llamar de inmediato".
   const elite = s.confidence >= 90 ? "card-elite" : s.recommendation === "call_immediately" ? "card-priority" : "";
   // Foco radical: en reposo solo lo esencial (identidad + éxito + gancho +
@@ -529,6 +542,7 @@ export function renderCard(opp, record, handlers = {}) {
     top,
     hook,
     action,
+    nbaPill,
     failurePanel,
     detail,
   ]);
