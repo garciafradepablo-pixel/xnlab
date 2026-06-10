@@ -61,6 +61,9 @@ import { getCatalog, cacheCatalog, labelMap, teamByTag, teamGaps } from "../team
 import * as chat from "../messaging.js";
 import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
+import { newCall } from "../calls.js";
+import { analyzeCall } from "../callai.js";
+import { buildDashboard } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
 import * as activity from "../activity.js";
@@ -781,7 +784,7 @@ function openProfile() {
 const ZONES = [
   { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["tasks", "Tareas"], ["agenda", "Agenda"]] },
   { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar", "discover"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"]] },
+  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"], ["memory", "Caja Negra", "crm"]] },
   { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
   { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
 ];
@@ -1017,6 +1020,7 @@ function viewArea() {
   else if (state.view === "table") area.appendChild(tableView());
   else if (state.view === "cards") area.appendChild(cardsView());
   else if (state.view === "crm") area.appendChild(crmView());
+  else if (state.view === "memory") area.appendChild(memoryView());
   else if (state.view === "search") area.appendChild(searchView());
   else if (state.view === "users") area.appendChild(usersView());
   else if (state.view === "chat") area.appendChild(chatView("general"));
@@ -2472,6 +2476,14 @@ function cardHandlers(afterMutate) {
       refresh();
     },
     onNotes: !canWrite ? undefined : (id, notes) => { store.setNotes(id, notes); },
+    // Caja Negra Comercial: leer el historial es para todos; registrar, analizar
+    // y borrar llamadas, solo para roles con escritura.
+    getCalls: (id) => store.getLeadCalls(id),
+    onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),
+    onSaveCall: !canWrite ? undefined : (id, fields) => {
+      store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));
+    },
+    onRemoveCall: !canWrite ? undefined : (callId) => { store.removeCall(callId); },
     onOutcome: !canWrite ? undefined : (id, outcome) => {
       // Stamp the lead's signal snapshot so calibration is reproducible even if
       // the dataset later changes. Then recompute — outcomes recalibrate scores.
@@ -2992,6 +3004,105 @@ const CRM_COLUMNS = [
   { key: "rejected", fail: true },
   { key: "wrong_fit", fail: true },
 ];
+
+// ---- Caja Negra Comercial: dashboard + Memoria Comercial --------------------
+// Lo que el equipo aprende del mercado: cifras del embudo, leads calientes y los
+// patrones agregados de TODAS las llamadas (objeciones, dolores, sectores que
+// responden, frases que abren/cierran, precios mencionados, razones de cierre).
+function memoryView() {
+  const d = buildDashboard({
+    leads: state.results.all,
+    tracking: store.getTracking(),
+    calls: store.getCalls(),
+  });
+  const m = d.memory;
+  const wrap = el("div", { class: "memory-view" }, [
+    el("h2", { text: "Caja Negra Comercial" }),
+    el("p", { class: "memory-sub", text: "Cada llamada registrada alimenta esto. Cuantas más llamadas con transcripción, más fina la lectura del mercado." }),
+  ]);
+
+  // KPIs del embudo.
+  wrap.appendChild(el("div", { class: "crm-kpis" }, [
+    crmKpi("Leads", d.totalLeads, ""),
+    crmKpi("Llamadas", d.callsMade, `${d.memory.callsWithTranscript} con transcripción`),
+    crmKpi("Reuniones", d.meetings, "", "hot"),
+    crmKpi("Propuestas", d.proposals, "", "hot"),
+    crmKpi("Ganados", d.won, "", "hot"),
+    crmKpi("Perdidos", d.lost, "", "cool"),
+  ]));
+
+  // Embudo por fases.
+  const maxN = Math.max(1, ...d.funnel.map((f) => f.n));
+  wrap.appendChild(el("div", { class: "memory-block" }, [
+    el("h3", { text: "Conversión por fase" }),
+    el("div", { class: "memory-funnel" }, d.funnel.map((f) =>
+      el("div", { class: "mf-row" }, [
+        el("span", { class: "mf-stage", text: f.stage }),
+        el("span", { class: "mf-bar", html: `<i style="width:${Math.round((f.n / maxN) * 100)}%"></i>` }),
+        el("span", { class: "mf-n", text: String(f.n) }),
+      ]))),
+  ]));
+
+  // Leads calientes (clic → ficha).
+  if (d.hot.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: `Leads calientes (${d.hot.length})` }),
+      el("div", { class: "memory-hot" }, d.hot.map((h) =>
+        el("button", { class: "mh-chip", text: `${h.company} · ${STATUS_LABELS[h.status] || h.status}`, onClick: () => openCase(h.id) }))),
+    ]));
+  }
+
+  // Memoria agregada.
+  if (!m.sampleSize) {
+    wrap.appendChild(emptyNote("Aún no hay llamadas registradas.", { icon: "📞", sub: "Abre un lead, baja a su Caja Negra, pega una transcripción y analízala. A partir de la primera, esto cobra vida." }));
+    return wrap;
+  }
+
+  const rankBlock = (title, rows, suffix = "") => rows && rows.length
+    ? el("div", { class: "memory-block" }, [
+        el("h3", { text: title }),
+        el("ol", { class: "memory-rank" }, rows.map((r) =>
+          el("li", {}, [el("span", { class: "mr-label", text: r.label }), el("span", { class: "mr-count", text: `${r.count}${suffix}` })]))),
+      ])
+    : null;
+
+  if (m.avgCloseProbability != null) {
+    wrap.appendChild(el("p", { class: "memory-avg", html: `Probabilidad de cierre media de las llamadas analizadas: <b>${m.avgCloseProbability}%</b>` }));
+  }
+
+  // Sectores que responden.
+  if (m.sectors.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: "Sectores que mejor responden" }),
+      el("div", { class: "memory-sectors" }, m.sectors.map((s) =>
+        el("div", { class: "ms-row" }, [
+          el("span", { class: "ms-name", text: (SECTOR_BY_KEY[s.sector]?.label) || s.sector }),
+          el("span", { class: `ms-rate ${s.rate >= 50 ? "good" : "bad"}`, text: `${s.rate}%` }),
+          el("span", { class: "ms-n", text: `${s.total} llamada${s.total === 1 ? "" : "s"}` }),
+        ]))),
+    ]));
+  }
+
+  const grid = el("div", { class: "memory-grid" }, [
+    rankBlock("Objeciones más repetidas", m.objections),
+    rankBlock("Dolores más frecuentes", m.pains),
+    rankBlock("Servicios más demandados", m.services),
+    rankBlock("Frases que generan interés", m.buyPhrases),
+    rankBlock("Frases que generan rechazo", m.lossPhrases),
+    rankBlock("Motivos de cierre", m.winReasons),
+    rankBlock("Motivos de pérdida", m.lossReasons),
+  ].filter(Boolean));
+  wrap.appendChild(grid);
+
+  if (m.prices.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: "Precios mencionados en llamadas" }),
+      el("div", { class: "memory-prices" }, m.prices.map((p) => el("span", { class: "mp-chip", text: p }))),
+    ]));
+  }
+
+  return wrap;
+}
 
 function crmView() {
   const tracking = store.getTracking();

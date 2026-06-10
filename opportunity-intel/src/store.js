@@ -22,6 +22,7 @@ const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
 const USER_LEADS_KEY = `${NS}userLeads`;
 const TASKS_KEY = `${NS}tasks`; // tareas del equipo (quién hace qué), compartidas
+const CALLS_KEY = `${NS}calls`; // caja negra comercial: historial de llamadas por lead, compartido
 const TRAIN_KEY = `${NS}training`; // dossiers de formación interna (compartidos)
 const SCHED_KEY = `${NS}schedules`; // horarios de trabajo por persona (compartidos)
 const USER_KEY = `${NS}who`; // quién trabaja (Javi / Pablo / …)
@@ -340,6 +341,45 @@ export function removeTask(id) {
   return true;
 }
 
+// ---- Caja Negra Comercial: historial de llamadas por lead -------------------
+// Colección compartida (igual que tasks/posits): cada llamada es un registro con
+// su transcripción y su análisis (ver calls.js). Rueda por el mismo sync, se
+// exporta/importa con el resto del estado y respeta el RBAC del servidor.
+
+/** @returns {Array} todas las llamadas registradas, del equipo. */
+export function getCalls() {
+  const list = read(CALLS_KEY, []);
+  return Array.isArray(list) ? list : [];
+}
+
+/** Llamadas de un lead concreto, de la más reciente a la más antigua. */
+export function getLeadCalls(leadId) {
+  return getCalls()
+    .filter((c) => c.leadId === leadId)
+    .sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
+}
+
+/** Inserta o reemplaza una llamada por id (sella `updatedAt`) y sincroniza. */
+export function upsertCall(call) {
+  if (!call || !call.id) return null;
+  const list = getCalls().filter((c) => c.id !== call.id);
+  const sealed = { ...call, updatedAt: new Date().toISOString() };
+  list.push(sealed);
+  write(CALLS_KEY, list);
+  scheduleSync();
+  return sealed;
+}
+
+/** Borra una llamada por id. */
+export function removeCall(id) {
+  const list = getCalls();
+  const next = list.filter((c) => c.id !== id);
+  if (next.length === list.length) return false;
+  write(CALLS_KEY, next);
+  scheduleSync();
+  return true;
+}
+
 // ---- Asignación + agenda por persona (reparto de llamadas) ------------------
 //
 // Una llamada puede tener dueño (assignedTo), día agendado (scheduledFor,
@@ -539,6 +579,7 @@ export function exportState() {
       verifications: getVerifications(),
       userLeads: getUserLeads(),
       tasks: getTasks(),
+      calls: getCalls(),
       training: getTraining(),
       schedules: getSchedules(),
       posits: read(POSITS_KEY, []),
@@ -654,6 +695,20 @@ export function importState(json, { replace = false } = {}) {
       if (!ex || (t.updatedAt || "") > (ex.updatedAt || "")) byId.set(t.id, t);
     }
     write(TASKS_KEY, [...byId.values()]);
+  }
+
+  // --- calls (caja negra comercial; merge por id, gana updatedAt) ---
+  const incomingCalls = Array.isArray(data.calls) ? data.calls : [];
+  if (replace) {
+    write(CALLS_KEY, incomingCalls);
+  } else if (incomingCalls.length) {
+    const byId = new Map(getCalls().map((c) => [c.id, c]));
+    for (const c of incomingCalls) {
+      if (!c || !c.id) continue;
+      const ex = byId.get(c.id);
+      if (!ex || String(c.updatedAt || "") > String(ex.updatedAt || "")) byId.set(c.id, c);
+    }
+    write(CALLS_KEY, [...byId.values()]);
   }
 
   // --- training (dossiers de formación; merge por id, gana updatedAt) ---

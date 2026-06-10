@@ -275,6 +275,36 @@ export const STATUS_LABELS = {
   wrong_fit: "Mal encaje",
 };
 
+// -----------------------------------------------------------------------------
+// Caja Negra Comercial — vocabulario de llamada
+// -----------------------------------------------------------------------------
+// Cada lead acumula un historial de llamadas (ver calls.js + store.getCalls).
+// El canal y el resultado son enumerados cerrados para que el dashboard y la
+// Memoria Comercial agreguen sobre un vocabulario estable, no sobre texto libre.
+export const CALL_CHANNELS = {
+  phone: "Teléfono",
+  whatsapp: "WhatsApp",
+  meet: "Google Meet",
+  zoom: "Zoom",
+  teams: "Teams",
+  in_person: "Presencial",
+};
+
+// Resultado de UNA llamada (distinto del estado comercial del lead, que es
+// CALL_STATUSES). Una llamada puede "no contestar" sin que el lead deje de estar
+// interesado; por eso el resultado vive por-llamada y el estado vive por-lead.
+export const CALL_RESULTS = {
+  connected: "Conectó",
+  no_answer: "No contestó",
+  rescheduled: "Reagendada",
+  interested: "Interesado",
+  meeting: "Reunión agendada",
+  proposal: "Pidió propuesta",
+  closed_won: "Cerrado ganado",
+  closed_lost: "Cerrado perdido",
+  not_interested: "Sin interés",
+};
+
 // Tipos de tensión canónicos.
 export const TENSION_TYPES = {
   growth_structure: "Crecimiento vs estructura",
