@@ -259,6 +259,25 @@ function clamp(v) {
   return Math.max(0, Math.min(100, Math.round(v)));
 }
 
+/**
+ * Contexto mínimo de la última llamada de un lead, para Hoy/Agenda y la próxima
+ * mejor acción: resultado, objeción principal y siguiente paso. null si no hay
+ * llamadas. No asume orden: elige la de fecha más reciente.
+ * @param {import('./calls.js').CallRecord[]} leadCalls
+ * @returns {{at:string, result:string, objection:string|null, nextStep:string|null}|null}
+ */
+export function latestCallContext(leadCalls = []) {
+  if (!Array.isArray(leadCalls) || !leadCalls.length) return null;
+  const last = leadCalls.reduce((a, b) => (String(b.at || "") > String(a.at || "") ? b : a));
+  const an = last.analysis || {};
+  return {
+    at: last.at || null,
+    result: last.result || null,
+    objection: (an.objections && an.objections[0]) || null,
+    nextStep: an.nextStep || null,
+  };
+}
+
 function recommendNextStep({ interest, close, objections, authority, urgency, raw }) {
   if (!raw) return "Registrar la llamada y agendar el primer contacto real.";
   if (close >= 70) return "Enviar propuesta firmada hoy: el lead está caliente, no enfriar.";

@@ -24,6 +24,7 @@ import {
   FILTER_BY_KEY,
   ECONOMIC_LABELS,
   CALL_STATUSES,
+  CALL_RESULTS,
   OFFER_LADDER,
   TENSION_TYPES,
 } from "../models.js";
@@ -61,8 +62,8 @@ import { getCatalog, cacheCatalog, labelMap, teamByTag, teamGaps } from "../team
 import * as chat from "../messaging.js";
 import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
-import { newCall, resultToStatus } from "../calls.js";
-import { buildFollowUpTask } from "../callfollowup.js";
+import { newCall, resultToStatus, latestCallContext } from "../calls.js";
+import { buildFollowUpTask, dueFollowupTasks } from "../callfollowup.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
@@ -1959,10 +1960,18 @@ function todayView() {
     blocks.push(el("ol", { class: "today-calls" }, calls.map((o, i) => todayCall(o, i, tracking[o.id] || {}))));
   }
 
-  // Seguimientos que tocan hoy: hilos abiertos con un toque vencido.
+  // Seguimientos con fecha (tareas creadas desde llamadas): vencidos o de hoy.
+  const today = ymd(new Date());
+  const dueTasks = dueFollowupTasks(store.getTasks(), today);
+  if (dueTasks.length) {
+    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos agendados · ${dueTasks.length}` }));
+    blocks.push(el("ul", { class: "fut-list" }, dueTasks.slice(0, 10).map((t) => followupTaskRow(t, today))));
+  }
+
+  // Seguimientos que tocan hoy: hilos abiertos con un toque vencido (cadencia).
   const due = dueFollowups(opps, tracking);
   if (due.length) {
-    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos para hoy · ${due.length}` }));
+    blocks.push(el("h2", { class: "today-h2", text: `Seguimientos sugeridos · ${due.length}` }));
     blocks.push(el("ul", { class: "fu-list" }, due.slice(0, 8).map(({ opp, fu }) => followupRow(opp, fu))));
   }
 
@@ -2130,6 +2139,37 @@ function followupRow(opp, fu) {
       el("div", { class: "fu-action", text: fu.action }),
     ]),
     el("span", { class: "fu-due", text: dueLabel(fu.dueAt) }),
+  ]);
+}
+
+// Fila de una tarea de seguimiento agendada (creada desde una llamada). Trae el
+// contexto mínimo de la última llamada del lead y permite marcar hecha o abrir.
+function followupTaskRow(task, today) {
+  const opp = (state.results?.all || []).find((o) => o.id === task.leadId);
+  const name = opp?.company || task.title.replace(/^Seguimiento · /, "") || "Lead";
+  const overdue = task.dueDate < today;
+  const ctx = latestCallContext(store.getLeadCalls(task.leadId));
+  const ctxBits = [];
+  if (ctx?.result) ctxBits.push(CALL_RESULTS[ctx.result] || ctx.result);
+  if (ctx?.objection) ctxBits.push(`obj: ${ctx.objection}`);
+  const canWrite = isWriter(auth.currentRole());
+
+  const doneBtn = !canWrite ? null : el("button", {
+    class: "fut-done", title: "Marcar hecha", text: "✓",
+    onClick: (e) => { e.stopPropagation(); store.setTaskStatus(task.id, "done"); render(); },
+  });
+
+  return el("li", { class: `fut prio-${task.priority || "media"} ${overdue ? "fut-overdue" : ""}` }, [
+    el("div", { class: "fut-main", onClick: () => opp ? openCase(opp.id) : (state.filters.search = name, goView("cards")) }, [
+      el("div", { class: "fut-line" }, [
+        el("span", { class: "fut-name", text: name }),
+        el("span", { class: `fut-due ${overdue ? "is-over" : ""}`, text: overdue ? `vencido (${task.dueDate})` : "hoy" }),
+        task.priority === "alta" ? el("span", { class: "fut-prio", text: "alta" }) : null,
+      ]),
+      el("div", { class: "fut-note", text: task.note || ctx?.nextStep || "Seguimiento de la llamada." }),
+      ctxBits.length ? el("div", { class: "fut-ctx", text: ctxBits.join(" · ") }) : null,
+    ]),
+    doneBtn,
   ]);
 }
 

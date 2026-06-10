@@ -1,6 +1,6 @@
 // calls.test.mjs — Caja Negra Comercial: registro de llamada + análisis (puro).
 
-const { newCall, analyzeTranscript, resultToStatus } = await import("../src/calls.js");
+const { newCall, analyzeTranscript, resultToStatus, latestCallContext } = await import("../src/calls.js");
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -66,6 +66,16 @@ ok(resultToStatus("connected", "not_called") === "called", "conectó sobre lead 
 ok(resultToStatus("connected", "interested") === null, "conectó NO degrada un interesado");
 ok(resultToStatus("no_answer", "meeting_booked") === null, "no contesta NO degrada una reunión");
 ok(resultToStatus("no_answer", "not_called") === "no_answer", "no contesta sobre lead sin tocar sí marca");
+
+// --- latestCallContext: contexto mínimo de la última llamada ---
+ok(latestCallContext([]) === null, "sin llamadas → null");
+const ctx = latestCallContext([
+  { at: "2026-06-01", result: "no_answer", analysis: { objections: ["Precio / presupuesto"], nextStep: "viejo" } },
+  { at: "2026-06-05", result: "interested", analysis: { objections: ["No es el momento"], nextStep: "Cerrar reunión" } },
+]);
+ok(ctx.result === "interested" && ctx.at === "2026-06-05", "elige la llamada más reciente (no asume orden)");
+ok(ctx.objection === "No es el momento" && ctx.nextStep === "Cerrar reunión", "saca objeción principal y siguiente paso");
+ok(latestCallContext([{ at: "2026-06-01", result: "called" }]).objection === null, "llamada sin análisis → objeción null");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
