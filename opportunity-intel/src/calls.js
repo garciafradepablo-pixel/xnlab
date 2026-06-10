@@ -19,6 +19,28 @@
 // esto ya da un primer pase útil. Misma forma de salida en ambos casos.
 // =============================================================================
 
+import { RESULT_TO_STATUS } from "./models.js";
+
+// Resultados "no decisivos": que alguien coja el teléfono o no conteste no debe
+// echar atrás un lead que ya estaba interesado o con reunión. Solo mueven la
+// tarjeta si aún estaba sin tocar.
+const NON_DECISIVE_RESULTS = new Set(["connected", "no_answer"]);
+
+/**
+ * Traduce el resultado de una llamada al estado comercial del lead, respetando
+ * la regla de no-degradar. Devuelve el estado destino, o null si no debe cambiar
+ * nada (resultado no decisivo sobre un lead ya avanzado, o resultado raro).
+ * @param {string} result         clave de CALL_RESULTS
+ * @param {string} currentStatus  estado actual del lead (CALL_STATUSES)
+ * @returns {string|null}
+ */
+export function resultToStatus(result, currentStatus = "not_called") {
+  const target = RESULT_TO_STATUS[result];
+  if (!target) return null;
+  if (NON_DECISIVE_RESULTS.has(result) && currentStatus && currentStatus !== "not_called") return null;
+  return target;
+}
+
 let _seq = 0;
 function callId() {
   // id estable y ordenable por tiempo; sufijo anti-colisión en ráfagas.

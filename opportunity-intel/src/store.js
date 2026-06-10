@@ -463,6 +463,9 @@ export function recordStatusOutcome(id, status, meta = {}) {
       outcome: status,
       classification: meta.classification || null,
       sector: meta.sector || null, // para aprender qué nichos cierran mejor
+      // Objeción real detectada en la llamada (de su análisis): alimenta el
+      // ranking de objeciones del learning loop (applyLearning.topObjections).
+      objection: meta.objection || null,
       signals: meta.signals || null,
       // Predicción del motor en el momento de la llamada, para calibrar el
       // Índice de Éxito contra la realidad (lo que de verdad cierra).

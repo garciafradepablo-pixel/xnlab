@@ -305,6 +305,22 @@ export const CALL_RESULTS = {
   not_interested: "Sin interés",
 };
 
+// Mapa resultado-de-llamada → estado-comercial-del-lead (CALL_STATUSES). Al
+// guardar una llamada, su resultado mueve la tarjeta del CRM solo. "connected" y
+// "no_answer" son NO decisivos: no degradan un lead ya avanzado (ver
+// calls.resultToStatus, que aplica esa regla).
+export const RESULT_TO_STATUS = {
+  connected: "called",
+  no_answer: "no_answer",
+  rescheduled: "follow_up",
+  interested: "interested",
+  meeting: "meeting_booked",
+  proposal: "proposal_sent",
+  closed_won: "won",
+  closed_lost: "rejected",
+  not_interested: "rejected",
+};
+
 // Tipos de tensión canónicos.
 export const TENSION_TYPES = {
   growth_structure: "Crecimiento vs estructura",

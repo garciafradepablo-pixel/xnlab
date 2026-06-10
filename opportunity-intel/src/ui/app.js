@@ -61,7 +61,7 @@ import { getCatalog, cacheCatalog, labelMap, teamByTag, teamGaps } from "../team
 import * as chat from "../messaging.js";
 import { FOLDERS, listFiles, requestUpload, requestDownload, removeFile, formatSize } from "../drive.js";
 import { buildLeaderboard } from "../productivity.js";
-import { newCall } from "../calls.js";
+import { newCall, resultToStatus } from "../calls.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
@@ -2482,6 +2482,23 @@ function cardHandlers(afterMutate) {
     onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),
     onSaveCall: !canWrite ? undefined : (id, fields) => {
       store.upsertCall(newCall(id, { ...fields, by: store.getWho() || null }));
+      // El resultado de la llamada mueve el estado del CRM solo (sin degradar un
+      // lead ya avanzado) y alimenta el learning loop con la objeción real
+      // detectada en el análisis — el sistema aprende de cada llamada.
+      const current = store.getRecord(id)?.status || "not_called";
+      const target = resultToStatus(fields.result, current);
+      if (target && target !== current) {
+        store.setStatus(id, target);
+        const lead = (state.results?.all || []).find((o) => o.id === id);
+        store.recordStatusOutcome(id, target, {
+          classification: lead?.scores?.classification,
+          sector: lead?.sector || null,
+          signals: lead?.signals || null,
+          successIndex: lead?.scores?.successIndex,
+          objection: fields.analysis?.objections?.[0] || null,
+        });
+        refresh();
+      }
     },
     onRemoveCall: !canWrite ? undefined : (callId) => { store.removeCall(callId); },
     onOutcome: !canWrite ? undefined : (id, outcome) => {

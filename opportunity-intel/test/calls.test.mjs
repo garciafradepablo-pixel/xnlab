@@ -1,6 +1,6 @@
 // calls.test.mjs — Caja Negra Comercial: registro de llamada + análisis (puro).
 
-const { newCall, analyzeTranscript } = await import("../src/calls.js");
+const { newCall, analyzeTranscript, resultToStatus } = await import("../src/calls.js");
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -54,6 +54,18 @@ ok(money.budget && /5000/.test(money.budget), "extrae presupuesto mencionado");
 const a1 = JSON.stringify(analyzeTranscript("me interesa, mándame la propuesta"));
 const a2 = JSON.stringify(analyzeTranscript("me interesa, mándame la propuesta"));
 ok(a1 === a2, "mismo texto → mismo análisis (determinista)");
+
+// --- resultToStatus: el resultado de la llamada mueve el CRM ---
+ok(resultToStatus("meeting", "not_called") === "meeting_booked", "reunión → reunión agendada");
+ok(resultToStatus("closed_won", "interested") === "won", "ganado → firmado");
+ok(resultToStatus("not_interested", "called") === "rejected", "sin interés → rechazado");
+ok(resultToStatus("rescheduled", "not_called") === "follow_up", "reagendada → seguimiento");
+ok(resultToStatus("basura", "not_called") === null, "resultado desconocido no mueve nada");
+// regla de no-degradar: lo no decisivo no echa atrás un lead ya avanzado
+ok(resultToStatus("connected", "not_called") === "called", "conectó sobre lead sin tocar → llamado");
+ok(resultToStatus("connected", "interested") === null, "conectó NO degrada un interesado");
+ok(resultToStatus("no_answer", "meeting_booked") === null, "no contesta NO degrada una reunión");
+ok(resultToStatus("no_answer", "not_called") === "no_answer", "no contesta sobre lead sin tocar sí marca");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
