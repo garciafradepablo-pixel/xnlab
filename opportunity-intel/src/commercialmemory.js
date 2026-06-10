@@ -115,6 +115,130 @@ function trim(s) {
   return String(s || "").trim().slice(0, 120);
 }
 
+// =============================================================================
+// Memoria accionable — no solo datos, sino aprendizajes con regla de honestidad:
+// por debajo de MIN_SAMPLE registros, se dice "datos insuficientes" en vez de
+// sacar una conclusión de la nada.
+// =============================================================================
+
+export const MIN_SAMPLE = 3;
+
+// Estados del CRM que cuentan como "el lead avanzó".
+const ADVANCED = new Set(["interested", "meeting_booked", "proposal_sent", "won"]);
+const statusOf = (leadId, tracking) => (tracking[leadId] && tracking[leadId].status) || "not_called";
+
+/** Objeciones agrupadas por resultado de llamada. [{ result, objections:[{label,count}] }] */
+export function objectionsByResult(calls = []) {
+  const byResult = {};
+  for (const c of calls) {
+    const res = c.result || "connected";
+    byResult[res] = byResult[res] || {};
+    (c.analysis?.objections || []).forEach((o) => bump(byResult[res], o));
+  }
+  return Object.entries(byResult)
+    .map(([result, counter]) => ({ result, objections: topN(counter, 5) }))
+    .filter((r) => r.objections.length);
+}
+
+/** Objeciones agrupadas por estado actual del lead en el CRM. */
+export function objectionsByStatus(calls = [], tracking = {}) {
+  const byStatus = {};
+  for (const c of calls) {
+    const st = statusOf(c.leadId, tracking);
+    byStatus[st] = byStatus[st] || {};
+    (c.analysis?.objections || []).forEach((o) => bump(byStatus[st], o));
+  }
+  return Object.entries(byStatus)
+    .map(([status, counter]) => ({ status, objections: topN(counter, 5) }))
+    .filter((r) => r.objections.length);
+}
+
+/**
+ * Ratio de avance por tipo de objeción: de las llamadas donde apareció cada
+ * objeción, qué fracción de leads acabó avanzando. `enough` marca si hay datos
+ * suficientes para fiarse de la tasa.
+ * @returns {Array<{label,total,advanced,rate,enough}>}
+ */
+export function objectionAdvanceRate(calls = [], tracking = {}) {
+  const agg = {};
+  for (const c of calls) {
+    const advanced = ADVANCED.has(statusOf(c.leadId, tracking));
+    for (const o of c.analysis?.objections || []) {
+      agg[o] = agg[o] || { total: 0, advanced: 0 };
+      agg[o].total++;
+      if (advanced) agg[o].advanced++;
+    }
+  }
+  return Object.entries(agg)
+    .map(([label, v]) => ({
+      label, total: v.total, advanced: v.advanced,
+      rate: v.total ? Math.round((v.advanced / v.total) * 100) : 0,
+      enough: v.total >= MIN_SAMPLE,
+    }))
+    .sort((a, b) => b.total - a.total);
+}
+
+/**
+ * Patrones en llamadas ganadas vs perdidas: frases de compra de las ganadas y
+ * frases de pérdida de las perdidas. Honesto con el tamaño de muestra.
+ */
+export function winLossPatterns(calls = [], tracking = {}) {
+  const isWon = (c) => c.result === "closed_won" || statusOf(c.leadId, tracking) === "won";
+  const isLost = (c) => c.result === "closed_lost" || c.result === "not_interested"
+    || statusOf(c.leadId, tracking) === "rejected" || statusOf(c.leadId, tracking) === "wrong_fit";
+  const won = calls.filter(isWon);
+  const lost = calls.filter(isLost);
+  const winPhrases = {}; const lossPhrases = {};
+  for (const c of won) (c.analysis?.buySignals || []).forEach((p) => bump(winPhrases, trim(p)));
+  for (const c of lost) (c.analysis?.lossSignals || []).forEach((p) => bump(lossPhrases, trim(p)));
+  return {
+    wonSample: won.length, lostSample: lost.length,
+    winPhrases: topN(winPhrases, 6), lossPhrases: topN(lossPhrases, 6),
+    enough: won.length >= MIN_SAMPLE || lost.length >= MIN_SAMPLE,
+  };
+}
+
+/**
+ * Recomendación práctica para la próxima llamada, derivada de los datos reales.
+ * Sin muestra suficiente, devuelve { enough:false } y un texto honesto.
+ */
+export function nextCallRecommendation({ calls = [], tracking = {} } = {}) {
+  if (calls.length < MIN_SAMPLE) {
+    return { enough: false, text: `Datos insuficientes: registra al menos ${MIN_SAMPLE} llamadas con análisis para empezar a ver patrones.` };
+  }
+  const rates = objectionAdvanceRate(calls, tracking).filter((o) => o.enough);
+  // La objeción que más frena: con datos suficientes, la de menor tasa de avance
+  // (desempata la más frecuente).
+  const blocker = rates.slice().sort((a, b) => a.rate - b.rate || b.total - a.total)[0];
+  if (blocker && blocker.rate < 50) {
+    return {
+      enough: true,
+      focus: blocker.label,
+      text: `La objeción "${blocker.label}" aparece en ${blocker.total} llamadas y solo avanza el ${blocker.rate}%. Prepara una respuesta sólida antes de la próxima llamada.`,
+    };
+  }
+  // Si no hay un freno claro, apunta al sector que mejor responde.
+  const mem = buildMemory(calls);
+  const best = mem.sectors.find((s) => s.total >= MIN_SAMPLE && s.rate >= 50);
+  if (best) {
+    return { enough: true, text: `El sector "${best.sector}" responde mejor (${best.rate}% en ${best.total} llamadas). Prioriza captación ahí.` };
+  }
+  return { enough: true, text: "Sin un patrón dominante todavía: mantén el ritmo y registra cada llamada para afinar la lectura." };
+}
+
+/** Compone toda la memoria accionable en un solo objeto para la UI. */
+export function actionableMemory({ calls = [], tracking = {} } = {}) {
+  return {
+    sampleSize: calls.length,
+    enough: calls.length >= MIN_SAMPLE,
+    objectionAdvance: objectionAdvanceRate(calls, tracking),
+    objectionsByResult: objectionsByResult(calls),
+    objectionsByStatus: objectionsByStatus(calls, tracking),
+    winLoss: winLossPatterns(calls, tracking),
+    recommendation: nextCallRecommendation({ calls, tracking }),
+  };
+}
+
 /**
  * Resumen de tablero a partir de leads + tracking + calls. Las cifras que la
  * vista de dashboard necesita, calculadas en un sitio puro y testeable.

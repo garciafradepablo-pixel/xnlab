@@ -2068,3 +2068,9 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 .fut-ctx { font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
 .fut-done { align-self: center; background: none; border: 1px solid var(--line-2); color: var(--ink-dim); border-radius: 8px; width: 32px; cursor: pointer; font-size: 14px; }
 .fut-done:hover { border-color: var(--ok); color: var(--ok); }
+
+/* Memoria accionable — recomendación de próxima llamada */
+.memory-action { background: var(--panel-2); border: 1px solid var(--accent); border-radius: 12px; padding: 14px 16px; }
+.memory-rec { font-size: 14px; color: var(--ink); margin: 0; }
+.memory-rec.muted { color: var(--ink-dim); font-style: italic; }
+.ms-rate.muted { color: var(--ink-faint); font-style: italic; }

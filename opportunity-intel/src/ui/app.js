@@ -65,7 +65,7 @@ import { buildLeaderboard } from "../productivity.js";
 import { newCall, resultToStatus, latestCallContext } from "../calls.js";
 import { buildFollowUpTask, dueFollowupTasks } from "../callfollowup.js";
 import { analyzeCall } from "../callai.js";
-import { buildDashboard } from "../commercialmemory.js";
+import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
 import * as activity from "../activity.js";
@@ -3122,6 +3122,42 @@ function memoryView() {
   if (!m.sampleSize) {
     wrap.appendChild(emptyNote("Aún no hay llamadas registradas.", { icon: "📞", sub: "Abre un lead, baja a su Caja Negra, pega una transcripción y analízala. A partir de la primera, esto cobra vida." }));
     return wrap;
+  }
+
+  // --- Aprendizajes accionables (P3): no solo datos, sino qué hacer ---
+  const am = actionableMemory({ calls: store.getCalls(), tracking: store.getTracking() });
+  wrap.appendChild(el("div", { class: "memory-block memory-action" }, [
+    el("h3", { text: "Próxima llamada — recomendación" }),
+    el("p", { class: `memory-rec ${am.recommendation.enough ? "" : "muted"}`, text: am.recommendation.text }),
+  ]));
+
+  // Ratio de avance por objeción: dónde se atasca el pitch.
+  if (am.objectionAdvance.length) {
+    wrap.appendChild(el("div", { class: "memory-block" }, [
+      el("h3", { text: "Avance por tipo de objeción" }),
+      el("div", { class: "memory-sectors" }, am.objectionAdvance.map((o) =>
+        el("div", { class: "ms-row" }, [
+          el("span", { class: "ms-name", text: o.label }),
+          o.enough
+            ? el("span", { class: `ms-rate ${o.rate >= 50 ? "good" : "bad"}`, text: `avanza ${o.rate}%` })
+            : el("span", { class: "ms-rate muted", text: "datos insuf." }),
+          el("span", { class: "ms-n", text: `${o.total} llamada${o.total === 1 ? "" : "s"}` }),
+        ]))),
+    ]));
+  }
+
+  // Patrones de ganadas vs perdidas (con honestidad de muestra).
+  if (am.winLoss.enough) {
+    const col = (title, rows, cls) => el("div", { class: "memory-block" }, [
+      el("h3", { text: title }),
+      rows.length
+        ? el("div", { class: `bb-chips ${cls}` }, rows.map((r) => el("span", { class: "bb-chip", text: `${r.label} (${r.count})` })))
+        : el("p", { class: "hint", text: "Sin frases registradas todavía." }),
+    ]);
+    wrap.appendChild(el("div", { class: "memory-grid" }, [
+      col(`En ganadas (${am.winLoss.wonSample})`, am.winLoss.winPhrases, "buy"),
+      col(`En perdidas (${am.winLoss.lostSample})`, am.winLoss.lossPhrases, "loss"),
+    ]));
   }
 
   const rankBlock = (title, rows, suffix = "") => rows && rows.length

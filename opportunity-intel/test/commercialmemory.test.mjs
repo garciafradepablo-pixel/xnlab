@@ -1,6 +1,6 @@
 // commercialmemory.test.mjs — Memoria Comercial + dashboard (lógica pura).
 
-const { buildMemory, buildDashboard } = await import("../src/commercialmemory.js");
+const { buildMemory, buildDashboard, objectionsByResult, objectionsByStatus, objectionAdvanceRate, winLossPatterns, nextCallRecommendation, actionableMemory, MIN_SAMPLE } = await import("../src/commercialmemory.js");
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -69,6 +69,51 @@ ok(d.hot.length === 1 && d.hot[0].id === "l3", "leads calientes (interesado)");
 ok(d.byStatus.not_called === 1, "leads sin contactar contados");
 ok(d.funnel[0].stage === "Contactados" && d.funnel[d.funnel.length - 1].stage === "Cerrados", "embudo por fases");
 ok(d.memory.sampleSize === 3, "el dashboard incluye la memoria comercial");
+
+// --- Prioridad 3: memoria accionable -----------------------------------------
+const acalls = [
+  { id: "a1", leadId: "L1", result: "closed_won", analysis: { objections: ["Precio / presupuesto"], buySignals: ["me interesa"], lossSignals: [] } },
+  { id: "a2", leadId: "L2", result: "closed_lost", analysis: { objections: ["Precio / presupuesto"], buySignals: [], lossSignals: ["muy caro"] } },
+  { id: "a3", leadId: "L3", result: "not_interested", analysis: { objections: ["Precio / presupuesto"], buySignals: [], lossSignals: ["no me interesa"] } },
+  { id: "a4", leadId: "L4", result: "interested", analysis: { objections: ["No es el momento"], buySignals: ["me encaja"], lossSignals: [] } },
+];
+const atrack = {
+  L1: { status: "won" }, L2: { status: "rejected" }, L3: { status: "wrong_fit" }, L4: { status: "interested" },
+};
+
+// objeciones por resultado
+const obr = objectionsByResult(acalls);
+ok(obr.find((r) => r.result === "closed_won").objections[0].label === "Precio / presupuesto", "objeciones por resultado de llamada");
+
+// objeciones por estado del CRM
+const obs = objectionsByStatus(acalls, atrack);
+ok(obs.find((r) => r.status === "won").objections[0].label === "Precio / presupuesto", "objeciones por estado del CRM");
+
+// ratio de avance por objeción: 'Precio' aparece en 3 (L1 won avanza, L2/L3 no) → 33%
+const adv = objectionAdvanceRate(acalls, atrack);
+const precio = adv.find((o) => o.label === "Precio / presupuesto");
+ok(precio.total === 3 && precio.advanced === 1 && precio.rate === 33, "ratio de avance por objeción");
+ok(precio.enough === true, "3 muestras = suficiente");
+const momento = adv.find((o) => o.label === "No es el momento");
+ok(momento.enough === false, "1 muestra = datos insuficientes");
+
+// patrones ganados/perdidos
+const wl = winLossPatterns(acalls, atrack);
+ok(wl.wonSample === 1 && wl.lostSample === 2, "cuenta muestras ganadas/perdidas");
+ok(wl.lossPhrases.some((p) => p.label === "muy caro"), "frases de las perdidas");
+
+// recomendación práctica: 'Precio' frena (33% en 3) → debe señalarla
+const rec = nextCallRecommendation({ calls: acalls, tracking: atrack });
+ok(rec.enough === true && rec.focus === "Precio / presupuesto", "recomendación apunta a la objeción que más frena");
+
+// honestidad: pocos datos → insuficiente, sin inventar
+const poor = nextCallRecommendation({ calls: acalls.slice(0, 2), tracking: atrack });
+ok(poor.enough === false && /insuficiente/i.test(poor.text), "datos insuficientes se dicen, no se inventan");
+
+// wrapper
+const am = actionableMemory({ calls: acalls, tracking: atrack });
+ok(am.enough === true && am.objectionAdvance.length > 0 && !!am.recommendation, "actionableMemory compone todo");
+ok(MIN_SAMPLE === 3, "umbral de muestra mínima expuesto");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
