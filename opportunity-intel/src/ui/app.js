@@ -2532,18 +2532,19 @@ function cardHandlers(afterMutate) {
       const intent = resolveNextActionIntent(action, lead || { id }, store.getLeadCalls(id),
         store.getTasks().filter((t) => t.leadId === id),
         { status, today: ymd(new Date()), by: store.getWho() || null, assignee: rec?.assignedTo || store.getWho() || null });
-      // Registro ligero del evento (fire-and-forget; sin arquitectura nueva).
-      const log = (result, nextStatus) => activity.logActivity("next_action", lead?.company || id,
-        { actionType: action, result, previousStatus: status, nextStatus: nextStatus || null });
+      // Registro en el feed SOLO de ejecuciones reales (crear tarea, mover
+      // estado): la navegación, los noop y lo cancelado no son eventos de equipo.
+      const logExec = (nextStatus) => activity.logActivity("next_action", `${intent.label} · ${lead?.company || id}`,
+        { actionType: action, result: "executed", previousStatus: status, nextStatus: nextStatus || null });
 
       switch (intent.kind) {
         case "open_lead":
         case "manual_review":
-          log("executed"); openCase(id); break;
+          openCase(id); break;
         case "open_task":
-          log("executed"); goView("tasks"); break;
+          goView("tasks"); break;
         case "create_task":
-          store.upsertTask(intent.taskDraft); log("executed");
+          store.upsertTask(intent.taskDraft); logExec();
           flash(`Seguimiento creado para ${lead?.company || "el lead"}.`);
           refresh(); break;
         case "confirm_status_change":
@@ -2555,14 +2556,14 @@ function cardHandlers(afterMutate) {
               signals: lead?.signals || null,
               successIndex: lead?.scores?.successIndex,
             });
-            log("executed", intent.statusTarget);
+            logExec(intent.statusTarget);
             flash(`Movido a ${STATUS_LABELS[intent.statusTarget] || intent.statusTarget}.`);
             refresh();
-          } else { log("cancelled"); }
+          }
           break;
         case "noop":
         default:
-          log("noop"); flash(intent.reason); break;
+          flash(intent.reason); break;
       }
     },
     onAnalyzeCall: !canWrite ? undefined : (transcript, ctx) => analyzeCall(transcript, ctx),

@@ -29,7 +29,7 @@ const json = (body: unknown, status = 200) =>
 
 const TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 días (igual que el resto)
 // Verbos catalogados (espejo de src/activity.js VERBS). Lo desconocido se rechaza.
-const VERBS = new Set(["task_new", "task_done", "file_up", "file_rm", "lead_new", "client_update", "ai_run", "note"]);
+const VERBS = new Set(["task_new", "task_done", "file_up", "file_rm", "lead_new", "client_update", "ai_run", "note", "next_action"]);
 
 async function rest(path: string, init: RequestInit = {}) {
   return await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {

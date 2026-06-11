@@ -25,6 +25,7 @@ export const VERBS = {
   client_update: { glyph: "🔁", text: "actualizó" },
   ai_run: { glyph: "🤖", text: "el piloto capturó leads" },
   note: { glyph: "📝", text: "anotó" },
+  next_action: { glyph: "▶", text: "ejecutó" },
 };
 
 /** Glifo + frase de un verbo (con respaldo neutro para verbos no catalogados). */
