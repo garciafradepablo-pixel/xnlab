@@ -20,6 +20,7 @@ const ago = (secs) => new Date(NOW - secs * 1000).toISOString();
 ok(VERBS.task_done.glyph === "✓" && VERBS.file_up.glyph === "📎", "glifos de verbos");
 ok(verbMeta("task_new").text === "creó la tarea", "frase de verbo conocido");
 ok(verbMeta("zzz").glyph === "•", "verbo desconocido → respaldo neutro");
+ok(verbMeta("next_action").glyph === "▶" && verbMeta("next_action").text === "ejecutó", "verbo next_action catalogado");
 
 // --- makeEvent ---
 ok(makeEvent({ verb: "" }) === null && makeEvent({}) === null, "sin verbo no hay evento");
@@ -36,6 +37,7 @@ ok(describe({ actor: "Javi", verb: "file_up", object: "foto.png", meta: { folder
 ok(describe({ actor: "Dani", verb: "ai_run" }) === "Dani el piloto capturó leads", "describe sin objeto");
 ok(describe({ verb: "note", object: "algo" }).startsWith("Alguien anotó"), "actor ausente → 'Alguien'");
 ok(describe(null) === "", "evento nulo → cadena vacía");
+ok(describe({ actor: "Pablo", verb: "next_action", object: "Enviar propuesta · Bodega Norte" }) === "Pablo ejecutó «Enviar propuesta · Bodega Norte»", "describe de next_action legible");
 
 // --- sortEvents (acepta at o created_at) ---
 const evs = [
