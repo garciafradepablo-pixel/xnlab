@@ -34,6 +34,7 @@ import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
 import { lensLabel } from "../lenses.js";
 import { getNextBestAction } from "../nextaction.js";
+import { decide, strategicLens } from "../decision.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -77,24 +78,8 @@ function band(score) {
   return "cool";
 }
 
-// ---- Confidence ring (inline SVG, no deps) ----------------------------------
-function confidenceRing(score) {
-  const r = 26;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.max(0, Math.min(100, score)) / 100);
-  return el("div", {
-    class: `ring ring-${band(score)}`,
-    title: `Opportunity Confidence ${score}/100`,
-    html: `
-      <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
-        <circle class="ring-bg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"/>
-        <circle class="ring-fg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"
-          stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
-          stroke-linecap="round" transform="rotate(-90 32 32)"/>
-      </svg>
-      <div class="ring-num">${score}</div>`,
-  });
-}
+// (El anillo de confianza se retiró como hero: OCI es ahora la jerarquía
+// principal de la card —ver ociHero—; la confianza queda como chip secundario.)
 
 // ---- Metric bar -------------------------------------------------------------
 function bar(label, value, suffix = "%") {
@@ -301,6 +286,69 @@ function bullets(arr) {
   return el("ul", { class: "bullets" }, (arr || []).map((x) => el("li", { text: x })));
 }
 
+// ---- Opportunity Decision Layer: la tira visible de cada card ----------------
+// OCI + decisión + tag estratégico + las cuatro dimensiones + calidad de
+// evidencia. Es el titular de valor: en 2 segundos sabes qué es y qué hacer.
+function dimBar(label, value) {
+  return el("div", { class: "dim" }, [
+    el("span", { class: "dim-k", text: label }),
+    el("span", { class: "dim-bar" }, [el("i", { style: `width:${Math.max(2, value)}%` })]),
+    el("span", { class: "dim-v", text: String(value) }),
+  ]);
+}
+
+// OCI HERO — el número de decisión principal de la card (sustituye al anillo de
+// confianza como jerarquía). Va donde antes estaba el anillo, tintado por decisión.
+function ociHero(dec) {
+  const tone = dec.oci >= 66 ? "hot" : dec.oci >= 45 ? "warm" : "cold";
+  return el("div", {
+    class: `oci-hero oci-${tone} dec-${dec.decision}`,
+    title: `Opportunity Confidence Index ${dec.oci}/100 — ${dec.decisionLabel}: ${dec.decisionWhy}`,
+  }, [
+    el("b", { class: "oci-num", text: String(dec.oci) }),
+    el("span", { class: "oci-l", text: "OCI" }),
+  ]);
+}
+
+// La tira de decisión: decisión + tag + evidencia + lente + las cuatro
+// dimensiones. (El OCI ya no se repite aquí: vive como hero arriba.)
+function decisionStrip(dec, opp) {
+  const eq = dec.evidenceQuality;
+  const lens = strategicLens(opp);
+  return el("div", { class: `dec-strip dec-${dec.decision}` }, [
+    el("div", { class: "dec-mid" }, [
+      el("div", { class: "dec-row" }, [
+        el("span", { class: `dec-chip dec-chip-${dec.decision}`, text: dec.decisionLabel, title: dec.decisionWhy }),
+        el("span", { class: "dec-tag", text: dec.strategicTag.label }),
+        lens ? el("span", { class: `lens-tag lens-${lens.code}`, title: "Lente estratégica", text: lens.label }) : null,
+        el("span", { class: `eq eq-${eq.label}`, title: `${eq.confirmed} confirmadas · ${eq.indicative} indicios · ${eq.unknown} desconocidas`, text: `ev. ${eq.label}` }),
+        dec.killRisk >= 50 ? el("span", { class: "kill-risk", text: `kill ${dec.killRisk}` }) : null,
+      ]),
+      el("div", { class: "dims" }, [
+        dimBar("Fit", dec.dimensions.fit),
+        dimBar("Pain", dec.dimensions.pain),
+        dimBar("Timing", dec.dimensions.timing),
+        dimBar("Access", dec.dimensions.access),
+      ]),
+    ]),
+  ]);
+}
+
+// Fila de Operator: gestos rápidos sobre la oportunidad (contextual, no protagonista).
+function operatorRow(opp, handlers) {
+  if (!handlers.onOperator) return null;
+  const chip = (code, label) => el("button", {
+    class: `op-chip op-${code}`, text: label,
+    onClick: (e) => { e.stopPropagation(); handlers.onOperator(opp.id, code); },
+  });
+  return el("div", { class: "op-row" }, [
+    chip("defend", "Defender"),
+    chip("kill", "Matar"),
+    chip("angle", "Ángulo"),
+    chip("brief", "Brief"),
+  ]);
+}
+
 /**
  * @param {object} opp        Scored opportunity (with .scores and .ranking)
  * @param {object} record     Tracking record { status, notes }
@@ -308,6 +356,7 @@ function bullets(arr) {
  */
 export function renderCard(opp, record, handlers = {}) {
   const s = opp.scores;
+  const dec = decide(opp, s || {});
   const sector = SECTOR_BY_KEY[opp.sector]?.label || opp.sector;
   const status = record?.status || "not_called";
   const dm = opp.decisionMaker || {};
@@ -339,9 +388,11 @@ export function renderCard(opp, record, handlers = {}) {
           title: `${cd.label} — ${cd.advice}${cd.channels.length ? "\nCanales: " + cd.channels.join(", ") : ""}`,
           text: cd.icon,
         }); })(),
+        // Confianza del motor: detalle secundario (el número de decisión es OCI).
+        el("span", { class: "conf-tag", title: `Confianza del motor ${s.confidence}/100`, text: `conf ${s.confidence}` }),
       ]),
     ]),
-    confidenceRing(s.confidence),
+    ociHero(dec),
     openCase ? el("button", { class: "c-open", title: "Abrir el caso a pantalla completa", text: "⤢", onClick: openCase }) : null,
     handlers.onSello ? el("button", { class: "c-sello", title: "Lanzar un sello al compañero sobre este lead", text: "📌", onClick: (e) => { e.stopPropagation(); handlers.onSello(opp.id); } }) : null,
   ]);
@@ -509,6 +560,7 @@ export function renderCard(opp, record, handlers = {}) {
     sec("Primera palanca", el("p", { text: opp.firstLever })),
     sec("Objeción probable", el("p", { text: opp.objection })),
     sec("Respuesta recomendada", el("p", { class: "resp", html: `${esc(opp.objectionResponse)}` })),
+    dec.killReasons.length ? sec("Kill reasons — por qué NO perseguirlo", bullets(dec.killReasons.map((k) => k.label))) : null,
     sec("Razones para NO llamar", bullets(opp.reasonsNotToCall)),
     sec("Qué invalidaría la tesis", bullets(opp.invalidators)),
     readOnly ? null : verificationBlock(opp, handlers),
@@ -546,9 +598,11 @@ export function renderCard(opp, record, handlers = {}) {
   // acción). El resto se revela al abrir "Ver análisis completo".
   return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
+    decisionStrip(dec, opp),
     hook,
     action,
     nbaPill,
+    operatorRow(opp, handlers),
     failurePanel,
     detail,
   ]);

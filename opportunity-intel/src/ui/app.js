@@ -67,6 +67,9 @@ import { buildFollowUpTask, dueFollowupTasks } from "../callfollowup.js";
 import { resolveNextActionIntent } from "../nextaction.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
+import { decide } from "../decision.js";
+import { buildBrief, briefToText } from "../brief.js";
+import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
 import * as activity from "../activity.js";
@@ -106,9 +109,12 @@ const state = {
   config: { ...DEFAULT_CONFIG, ...store.getSavedConfig({}) },
   results: null,
   dataset: "researched", // researched (empresas reales) | demo (sintético de prueba)
-  // Arranca en "Hoy": abrir la app y saber al instante a quién llamar y por qué.
-  view: "today", // today | cards | pipeline | table | crm | learning
+  // Arranca en el Opportunity Feed: la superficie principal de trabajo (OCI +
+  // buckets + Command Bar). "Hoy" sigue a un toque para el arranque operativo.
+  view: "cards", // cards (feed) | today | pipeline | table | crm | learning
   filters: { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" },
+  feedCmd: null,      // foco activo del feed (salida de parseCommand)
+  feedCmdText: "",    // texto en la Command Bar
 };
 
 let root;
@@ -1874,7 +1880,7 @@ function rerenderResults() {
   const area = $(".results-region", root);
   if (!area) { render(); return; }
   clear(area);
-  area.appendChild(state.view === "table" ? buildTable() : buildCards());
+  area.appendChild(state.view === "table" ? buildTable() : feedCards(feedModel().filtered));
 }
 
 // ---- Vista "Hoy" (claridad ejecutiva) ---------------------------------------
@@ -2216,6 +2222,61 @@ function todayCall(o, i, track) {
 // Abre el guion de llamada y el mini-dossier de un lead en una capa modal.
 // El servicio mejor encajado se incrusta en la oferta; el texto se puede copiar
 // listo para enviar. Sin precios: el cierre agenda diagnóstico.
+// Operator v1 — drawer contextual sobre UNA oportunidad. Calcula la decisión y
+// el brief en local (decision.js/brief.js), y muestra la respuesta a la
+// intención elegida. Sin LLM, sin red. Cambiar de intención repinta en el sitio.
+function openOperator(opp, intent = "explain") {
+  if (!opp) return;
+  const scored = opp.scores || {};
+  const decision = decide(opp, scored);
+  const brief = buildBrief(opp, scored, decision);
+  const ctx = { opp, scored, decision, brief };
+
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+
+  let current = OPERATOR_INTENTS.includes(intent) ? intent : "explain";
+  const body = el("div", { class: "op-body" });
+  const tabs = el("div", { class: "op-tabs" });
+
+  const copyBtn = el("button", { class: "pb-copy", text: "Copiar brief", onClick: () => {
+    const txt = briefToText(brief);
+    const done = () => { copyBtn.textContent = "✓ Copiado"; setTimeout(() => (copyBtn.textContent = "Copiar brief"), 1400); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(done).catch(done); else done();
+  } });
+
+  function paint() {
+    tabs.innerHTML = "";
+    for (const it of OPERATOR_INTENTS) {
+      tabs.appendChild(el("button", {
+        class: `op-tab ${it === current ? "active" : ""}`, text: OPERATOR_LABELS[it],
+        onClick: () => { current = it; paint(); },
+      }));
+    }
+    const ans = operatorAnswer(current, ctx);
+    body.innerHTML = "";
+    body.appendChild(el("div", { class: "op-ans-title", text: ans.title }));
+    body.appendChild(el("div", { class: "op-ans" }, ans.lines.map((l) => el("p", { class: "op-line", text: l }))));
+    body.appendChild(current === "brief" ? copyBtn : null);
+  }
+  paint();
+
+  overlay.appendChild(el("div", { class: "pb-panel op-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", {}, [
+        el("div", { class: "pb-title", text: `Operator — ${opp.company}` }),
+        el("div", { class: "pb-sub", text: `OCI ${decision.oci} · ${decision.decisionLabel} · ${decision.strategicTag.label}` }),
+      ]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    tabs,
+    body,
+  ]));
+  document.body.appendChild(overlay);
+}
+
 function openPlaybook(opp) {
   if (!opp) return;
   const top = matchServices(opp, { max: 1 })[0] || null;
@@ -2355,18 +2416,140 @@ function buildTable() {
 
 // ---- Opportunity cards ------------------------------------------------------
 
+// Opportunity Feed: la superficie principal. Command Bar ("Ask Operator…") +
+// resumen de buckets accionables + feed escrolleable, todo gobernado por OCI.
 function cardsView() {
-  return el("div", {}, [
+  const model = feedModel();
+  return el("div", { class: "feed" }, [
     el("div", { class: "view-head" }, [
-      el("h2", { text: "Oportunidades" }),
-      // El agente descubre y añade leads → solo roles con permiso.
+      el("h2", { text: "Feed de oportunidades" }),
       (allow("discover") || allow("write")) ? agentButton() : null,
     ]),
     el("div", { class: "agent-report", id: "agent-report" }),
-    topPicks(),
-    filterBar(),
-    el("div", { class: "results-region" }, [buildCards()]),
+    commandBar(),
+    bucketsRow(model.buckets),
+    operatorAnswerLine(model.filtered),
+    focusBanner(model.filtered.length),
+    // Filtros avanzados, plegados: la superficie principal no se carga con ellos.
+    el("details", { class: "feed-filters" }, [el("summary", { text: "Filtros avanzados" }), filterBar()]),
+    el("div", { class: "results-region" }, [feedCards(model.filtered)]),
   ]);
+}
+
+// Modelo del feed: decide cada oportunidad visible una sola vez, agrupa en
+// buckets y aplica el foco activo (comando o bucket). Determinista.
+function feedModel() {
+  const base = visibleOpps();
+  const decided = base.map((o) => ({ opp: o, decision: decide(o, o.scores || {}) }));
+  const buckets = bucketize(decided);
+  const filtered = applyCommand(decided, state.feedCmd);
+  return { decided, buckets, filtered };
+}
+
+// Command Bar: pregunta en lenguaje natural → enfoca el feed o sugiere.
+function commandBar() {
+  const input = el("input", {
+    class: "cmd-ask", type: "text", value: state.feedCmdText || "",
+    placeholder: "Ask Operator…  ·  qué hago hoy · mata ruido · strategic doors · needs evidence · leads para XN",
+  });
+  const run = () => {
+    const cmd = parseCommand(input.value);
+    state.feedCmdText = input.value;
+    state.feedCmd = cmd.kind === "clear" ? null : cmd;
+    render();
+  };
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
+  return el("div", { class: "cmd-bar" }, [
+    el("span", { class: "cmd-ask-ic", text: "▸" }),
+    input,
+    el("button", { class: "cmd-ask-go", text: "Preguntar", onClick: run }),
+    state.feedCmd ? el("button", { class: "cmd-ask-clear", title: "Quitar foco", text: "✕", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } }) : null,
+  ]);
+}
+
+// Respuesta ejecutiva de una línea del Operator: aparece sobre el feed cuando
+// hay un comando/foco activo. Texto honesto desde datos reales (commandAnswer).
+function operatorAnswerLine(filtered) {
+  if (!state.feedCmd) return null;
+  const text = commandAnswer(state.feedCmd, filtered);
+  if (!text) return null;
+  return el("div", { class: "op-answer" }, [
+    el("span", { class: "op-answer-ic", text: "▸" }),
+    el("span", { class: "op-answer-text", text }),
+  ]);
+}
+
+// Resumen de buckets: cuatro cubos accionables + Follow-ups Due (solo si hay
+// dato real). Cada uno enfoca el feed al pulsarlo.
+function bucketsRow(buckets) {
+  const active = state.feedCmd && state.feedCmd.kind === "decision" ? state.feedCmd.decisions.join(",") : null;
+  const CLS = { actNow: "act", needsEvidence: "ev", strategicDoors: "door", killedNoise: "kill" };
+  const chips = BUCKETS.map((b) => {
+    const list = buckets[b.key] || [];
+    const isActive = active === b.decisions.join(",");
+    return el("button", {
+      class: `bk bk-${CLS[b.key]} ${isActive ? "active" : ""}`,
+      disabled: list.length ? undefined : "",
+      onClick: () => {
+        state.feedCmd = isActive ? null : { kind: "decision", decisions: b.decisions, sort: b.key === "actNow" ? "oci" : undefined, label: b.label };
+        state.feedCmdText = isActive ? "" : b.label;
+        render();
+      },
+    }, [el("b", { text: String(list.length) }), el("span", { text: b.label })]);
+  });
+  // Follow-ups Due: solo si existe dato real (tareas de seguimiento vencidas/hoy).
+  const due = dueFollowupTasks(store.getTasks(), ymd(new Date())).length;
+  if (due) {
+    chips.push(el("button", { class: "bk bk-fu", title: "Ir a Hoy", onClick: () => goView("today") }, [
+      el("b", { text: String(due) }), el("span", { text: "Follow-ups Due" }),
+    ]));
+  }
+  return el("div", { class: "buckets" }, chips);
+}
+
+// Banner de foco: qué está enfocado + cuántos, con salida. Para comandos no
+// entendidos, muestra sugerencias en vez de filtrar a ciegas.
+function focusBanner(count) {
+  const c = state.feedCmd;
+  if (!c) return null;
+  const clear = el("button", { class: "focus-x", text: "✕ quitar foco", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } });
+  if (c.kind === "unknown") {
+    return el("div", { class: "focus-banner focus-unknown" }, [
+      el("span", { text: `No entendí «${c.label}». Prueba: ${(c.suggestions || []).join(" · ")}` }),
+      clear,
+    ]);
+  }
+  return el("div", { class: "focus-banner" }, [
+    el("span", { class: "focus-label", text: `Enfocado: ${c.label}` }),
+    el("span", { class: "focus-count", text: `${count} oportunidad${count === 1 ? "" : "es"}` }),
+    clear,
+  ]);
+}
+
+// Pinta las cards del feed (ya decididas/filtradas) o un estado vacío útil.
+function feedCards(filtered) {
+  const tracking = store.getTracking();
+  const handlers = cardHandlers();
+  if (!filtered.length) {
+    if (state.feedCmd) {
+      return emptyNote(`Nada en «${state.feedCmd.label}» ahora mismo.`, {
+        icon: "⌕", sub: "Ningún lead cae en este foco con los datos actuales.",
+        action: { label: "✕ Quitar foco", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } },
+      });
+    }
+    const f = state.filters;
+    const filtering = f.search || f.sector !== "all" || f.city !== "all" || f.classification !== "all" || f.priority !== "all" || f.minEvidence || f.minConfidence || f.minEvStrength;
+    return filtering
+      ? emptyNote("Ningún candidato coincide con los filtros actuales.", {
+          icon: "⌕", sub: "Puede que un filtro esté ocultando leads.",
+          action: { label: "✕ Limpiar filtros", onClick: () => {
+            state.filters = { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" };
+            render();
+          } },
+        })
+      : emptyNote("Aún no hay oportunidades.", { icon: "⚡", sub: "Pulsa ⚡ Nueva tanda de leads para captar." });
+  }
+  return el("div", { class: "cards" }, filtered.map((x) => renderCard(x.opp, tracking[x.opp.id], handlers)));
 }
 
 // Umbral de excelencia: solo entran al ranking oportunidades por encima de
@@ -2455,43 +2638,8 @@ function agentReport(res) {
   return box;
 }
 
-// Franja "para llamar ya": los mejores leads, lo primero que se ve. Llevan a la
-// ficha al pulsarlos. Solo aparece sin filtros activos (es el estado de entrada).
-function topPicks() {
-  const f = state.filters;
-  const filtering = f.search || f.sector !== "all" || f.city !== "all" ||
-    f.classification !== "all" || f.priority !== "all" ||
-    f.minEvidence || f.minConfidence || f.minEvStrength;
-  if (filtering) return el("span");
-
-  const picks = state.results.all
-    .filter((o) => o.scores.classification !== "discard")
-    .slice(0, 5);
-  if (!picks.length) return el("span");
-
-  const tracking = store.getTracking();
-  return el("div", { class: "top-picks" }, [
-    el("div", { class: "tp-head" }, [
-      el("span", { class: "tp-bolt", text: "⚡" }),
-      el("span", { class: "tp-title", text: "Para llamar ya" }),
-      el("span", { class: "tp-sub", text: "las mejores, de mayor a menor puntuación" }),
-    ]),
-    el("div", { class: "tp-list" }, picks.map((o) => {
-      const s = o.scores;
-      const st = tracking[o.id]?.status || "not_called";
-      const tone = s.confidence >= 90 ? "elite" : s.confidence >= 75 ? "hot" : "warm";
-      return el("button", {
-        class: `tp-chip tp-${tone}`,
-        title: `${o.company} · ${RECOMMENDATIONS[s.recommendation]}`,
-        onClick: () => { state.filters.search = o.company; render(); },
-      }, [
-        el("span", { class: "tp-score", text: String(s.confidence) }),
-        el("span", { class: "tp-name", text: o.company }),
-        st !== "not_called" ? el("span", { class: "tp-st", text: STATUS_LABELS[st] }) : null,
-      ]);
-    })),
-  ]);
-}
+// (La antigua franja "Para llamar ya" se sustituyó por el resumen de buckets +
+// el comando "dame los mejores": mismo valor, menos ruido visual.)
 
 // Handlers de la tarjeta (mutación + apertura). Compartidos por la rejilla y por
 // la vista de caso a pantalla completa. `afterMutate` permite que la capa de
@@ -2522,6 +2670,12 @@ function cardHandlers(afterMutate) {
     // y borrar llamadas, solo para roles con escritura.
     getCalls: (id) => store.getLeadCalls(id),
     getLeadTasks: (id) => store.getTasks().filter((t) => t.leadId === id),
+    // Operator v1: panel contextual (explicar/defender/matar/ángulo/brief). Solo
+    // lee y muestra — no muta — así que disponible para cualquier rol.
+    onOperator: (id, intent) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      if (lead) openOperator(lead, intent);
+    },
     // Próxima mejor acción pulsable: resuelve la intención (pura) y la ejecuta
     // con la lógica segura ya existente (CRM, tareas, navegación). Cambios de
     // estado piden confirmación; nada se mueve si rompería la regla de no-degradar.
@@ -3078,28 +3232,8 @@ function freshCard(r, kind) {
   return el("div", { class: `case-fresh-card ${lever ? "lever" : "fresh-ok"}` }, children);
 }
 
-function buildCards() {
-  const rows = visibleOpps();
-  const tracking = store.getTracking();
-  const handlers = cardHandlers();
-  if (!rows.length) {
-    const f = state.filters;
-    const filtering = f.search || f.sector !== "all" || f.city !== "all" || f.classification !== "all" || f.priority !== "all" || f.minEvidence || f.minConfidence || f.minEvStrength;
-    return filtering
-      ? emptyNote("Ningún candidato coincide con los filtros actuales.", {
-          icon: "⌕", sub: "Puede que un filtro esté ocultando leads.",
-          action: { label: "✕ Limpiar filtros", onClick: () => {
-            state.filters = { sector: "all", city: "all", classification: "all", priority: "all", minEvidence: 0, minConfidence: 0, minEvStrength: 0, search: "" };
-            render();
-          } },
-        })
-      : emptyNote("Aún no hay oportunidades.", { icon: "⚡", sub: "Pulsa ⚡ Nueva tanda de leads para captar." });
-  }
-  // Los leads no tienen "casa": son oportunidades que Connect detecta. Una sola
-  // lista, ordenada por el motor. (El split 01/XN como dos carteras se retiró:
-  // 01 es la agencia paraguas, no una categoría de lead.)
-  return el("div", { class: "cards" }, rows.map((o) => renderCard(o, tracking[o.id], handlers)));
-}
+// (buildCards se fusionó en feedCards: una sola ruta de render del feed, con
+// foco por comando/bucket. Ver cardsView/feedModel/feedCards más arriba.)
 
 // ---- CRM view (tablero por estado de llamada) -------------------------------
 

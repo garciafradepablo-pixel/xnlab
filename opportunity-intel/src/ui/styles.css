@@ -2087,3 +2087,114 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 button.nba.nba-btn { width: 100%; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
 button.nba.nba-btn:hover { background: var(--panel-3); border-left-width: 4px; }
 button.nba.nba-btn:active { transform: translateY(1px); }
+
+/* ============================================================================
+   Opportunity Decision Layer — tira de decisión en la card (OCI + dims)
+   ========================================================================== */
+.dec-strip { display: flex; gap: 12px; align-items: center; background: var(--panel-2); border: 1px solid var(--line); border-radius: 11px; padding: 9px 11px; margin: 8px 0; }
+.dec-oci { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 46px; padding: 4px 8px; border-radius: 9px; background: var(--panel-3); border: 1px solid var(--line-2); }
+.dec-oci b { font-size: 20px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dec-oci-l { font-size: 9px; letter-spacing: 0.12em; color: var(--ink-faint); text-transform: uppercase; }
+.dec-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dec-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dec-chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-dim); letter-spacing: 0.02em; }
+/* Color de la decisión: frío para foco, rojo apagado para descarte, neutro resto */
+.dec-chip-ACT_NOW { color: #14161c; background: var(--accent); border-color: var(--accent); }
+.dec-chip-PREPARE, .dec-chip-STRATEGIC_DOOR { color: #aebbff; border-color: #3a4675; }
+.dec-chip-KILL, .dec-chip-OVER_SERVED { color: var(--red); border-color: #5a2e2e; }
+.dec-chip-NO_ACCESS, .dec-chip-NO_TIMING, .dec-chip-NEEDS_EVIDENCE, .dec-chip-ENRICH { color: var(--yellow); border-color: #5a4a1e; }
+.dec-tag { font-size: 10px; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+.eq { font-size: 10px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line-2); }
+.eq-sólida { color: var(--ok); border-color: var(--ok); }
+.eq-parcial { color: var(--yellow); border-color: var(--yellow); }
+.eq-débil { color: var(--grey); border-color: var(--grey); }
+.kill-risk { font-size: 10px; color: var(--red); border: 1px solid #5a2e2e; border-radius: 6px; padding: 1px 6px; }
+.dims { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+.dim { display: flex; align-items: center; gap: 6px; }
+.dim-k { font-size: 10px; color: var(--ink-dim); width: 42px; }
+.dim-bar { flex: 1; height: 5px; background: var(--panel-3); border-radius: 999px; overflow: hidden; }
+.dim-bar i { display: block; height: 100%; background: linear-gradient(90deg, #46506e, #6e7db0); }
+.dim-v { font-size: 10px; color: var(--ink-faint); width: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Fila Operator en la card */
+.op-row { display: flex; gap: 6px; margin: 8px 0 0; flex-wrap: wrap; }
+.op-chip { font-size: 11px; padding: 4px 11px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line-2); color: var(--ink-dim); cursor: pointer; transition: border-color .15s, color .15s; }
+.op-chip:hover { border-color: #6e7db0; color: #aebbff; }
+.op-kill:hover { border-color: var(--red); color: var(--red); }
+
+/* Operator drawer */
+.op-panel { max-width: 560px; }
+.op-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.op-tab { font-size: 12px; padding: 5px 11px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink-dim); cursor: pointer; }
+.op-tab.active { background: var(--panel-3); color: var(--ink); border-color: #3a4675; }
+.op-ans-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 6px; }
+.op-ans { display: flex; flex-direction: column; gap: 6px; }
+.op-line { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; }
+
+/* ============================================================================
+   Opportunity Feed — Command Bar + buckets + foco (Tanda 2)
+   ========================================================================== */
+.feed { display: flex; flex-direction: column; gap: 12px; }
+
+/* Command Bar "Ask Operator…" */
+.cmd-bar { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 12px; padding: 6px 10px; }
+.cmd-bar:focus-within { border-color: #3a4675; }
+.cmd-ask-ic { color: #6e7db0; font-size: 13px; }
+.cmd-ask { flex: 1; background: transparent; border: none; outline: none; color: var(--ink); font: inherit; font-size: 14px; padding: 5px 2px; }
+.cmd-ask::placeholder { color: var(--ink-faint); }
+.cmd-ask-go { background: var(--panel-3); color: #aebbff; border: 1px solid #3a4675; border-radius: 8px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+.cmd-ask-go:hover { background: #2a3358; }
+.cmd-ask-clear { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 14px; }
+
+/* Buckets de cabecera */
+.buckets { display: flex; flex-wrap: wrap; gap: 8px; }
+.bk { display: flex; align-items: baseline; gap: 7px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 7px 13px; cursor: pointer; transition: border-color .15s, background .15s; }
+.bk b { font-size: 16px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.bk span { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.04em; }
+.bk:hover { border-color: var(--line-2); }
+.bk:disabled { opacity: 0.4; cursor: default; }
+.bk.active { background: var(--panel-3); }
+.bk-act.active { border-color: var(--accent); } .bk-act b { color: var(--accent); }
+.bk-ev.active { border-color: var(--yellow); } .bk-ev b { color: var(--yellow); }
+.bk-door.active { border-color: #6e7db0; } .bk-door b { color: #aebbff; }
+.bk-kill.active { border-color: var(--red); } .bk-kill b { color: var(--red); }
+.bk-fu { border-style: dashed; } .bk-fu b { color: var(--accent); }
+
+/* Banner de foco */
+.focus-banner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--panel-2); border: 1px solid #3a4675; border-radius: 10px; padding: 7px 12px; font-size: 13px; }
+.focus-label { font-weight: 600; color: #aebbff; }
+.focus-count { color: var(--ink-dim); font-size: 12px; }
+.focus-unknown { border-color: var(--line-2); color: var(--ink-dim); }
+.focus-x { margin-left: auto; background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 12px; }
+.focus-x:hover { color: var(--ink); }
+
+/* Filtros avanzados plegados: la superficie principal no se carga con ellos */
+.feed-filters > summary { cursor: pointer; color: var(--ink-faint); font-size: 12px; padding: 2px 0; list-style: none; }
+.feed-filters > summary::-webkit-details-marker { display: none; }
+.feed-filters[open] > summary { color: var(--ink-dim); margin-bottom: 6px; }
+
+/* OCI como jerarquía principal: el anillo de confianza cede protagonismo */
+.card .ring { opacity: 0.78; }
+
+/* ============================================================================
+   Tanda 3 — OCI como hero, confianza secundaria, lente, respuesta del Operator
+   ========================================================================== */
+.oci-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px; padding: 6px 10px; border-radius: 12px; background: var(--panel-3); border: 1px solid var(--line-2); }
+.oci-hero .oci-num { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.oci-hero .oci-l { font-size: 10px; letter-spacing: 0.14em; color: var(--ink-faint); text-transform: uppercase; margin-top: 2px; }
+.oci-hot { border-color: var(--accent); } .oci-hot .oci-num { color: var(--accent); }
+.oci-warm { border-color: #3a4675; } .oci-warm .oci-num { color: #aebbff; }
+.oci-cold .oci-num { color: var(--ink-dim); }
+.oci-hero.dec-KILL, .oci-hero.dec-OVER_SERVED { border-color: #5a2e2e; }
+.oci-hero.dec-KILL .oci-num, .oci-hero.dec-OVER_SERVED .oci-num { color: var(--red); }
+
+/* Confianza del motor: chip secundario (ya no es el número principal) */
+.conf-tag { font-size: 10px; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+
+/* Lente estratégica */
+.lens-tag { font-size: 10px; color: #9ad0c0; border: 1px solid #2f5048; border-radius: 6px; padding: 1px 7px; letter-spacing: 0.02em; }
+
+/* Respuesta ejecutiva del Operator sobre el feed */
+.op-answer { display: flex; gap: 8px; align-items: baseline; background: var(--panel-2); border-left: 3px solid #3a4675; border-radius: 8px; padding: 8px 12px; }
+.op-answer-ic { color: #6e7db0; font-size: 12px; }
+.op-answer-text { color: var(--ink); font-size: 13px; line-height: 1.5; }
