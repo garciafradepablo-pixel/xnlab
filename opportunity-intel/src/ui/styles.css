@@ -63,18 +63,8 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 22px; border-bottom: 1px solid var(--line);
   position: relative; overflow: hidden;
-  /* Capa "neuronal": nodos tenues que laten con desplazamiento del fondo. */
-  background:
-    radial-gradient(circle at 12% 30%, rgba(201,162,39,.10) 0 2px, transparent 3px),
-    radial-gradient(circle at 28% 70%, rgba(74,158,255,.10) 0 2px, transparent 3px),
-    radial-gradient(circle at 47% 25%, rgba(139,123,216,.10) 0 2px, transparent 3px),
-    radial-gradient(circle at 66% 60%, rgba(201,162,39,.08) 0 2px, transparent 3px),
-    radial-gradient(circle at 82% 35%, rgba(74,158,255,.08) 0 2px, transparent 3px),
-    radial-gradient(circle at 92% 72%, rgba(139,123,216,.10) 0 2px, transparent 3px),
-    var(--panel);
-  background-size: 220% 100%; animation: neural 16s ease-in-out infinite alternate;
+  background: var(--panel);
 }
-@keyframes neural { from { background-position: 0% 0; } to { background-position: 60% 0; } }
 .brand { display: flex; flex-direction: column; position: relative; z-index: 1; }
 .head-actions { position: relative; z-index: 1; }
 .logo { font-weight: 700; letter-spacing: 2px; }
