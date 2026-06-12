@@ -75,6 +75,39 @@ try {
   ok(root.querySelector(".feed") != null, "la app abre en el Opportunity Feed");
 } catch (e) { ok(false, "el feed por defecto no debe lanzar: " + e.message); }
 
+// ── 3c. Tras importar, los recién importados SIEMPRE se ven (fix recent-imports)
+// Un lead solo-nombre+web queda 'unqualified' y el filtro por defecto lo ocultaría;
+// el foco temporal "Recién importados" debe mostrarlo igualmente.
+try {
+  const flush = async (n = 10) => { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); };
+  const bodyByText = (sel, re) => document.body.querySelectorAll(sel).find((t) => re.test(t.textContent));
+  const UNIQUE = "Zzqq Import Unica 9173 Sl"; // nombre único: no colisiona con seed/Mallorca
+
+  const importBtn = byText(".feed-io .io-btn", /Importar/i);
+  ok(importBtn != null, "el editor ve el botón ↧ Importar en el feed");
+  if (importBtn) {
+    importBtn.click();
+    const ta = document.body.querySelector(".imp-ta");
+    ok(ta != null, "↧ Importar abre el muelle de importación");
+    ta.value = `empresa,web\n${UNIQUE},https://zzqq-unica-9173.example`;
+    bodyByText(".imp-bar .btn", /Analizar lista/i).click();
+    const primary = document.body.querySelector(".imp-actions .btn-primary");
+    ok(primary != null && /Importar 1 nuevo/.test(primary.textContent), "el preview ofrece importar 1 nuevo");
+    primary.click();
+    await flush();
+
+    const banner = root.querySelector(".focus-banner");
+    ok(banner != null && /Recién importados/.test(banner.textContent), "tras importar se activa el foco «Recién importados»");
+    const card = root.querySelectorAll(".card").find((c) => new RegExp(UNIQUE).test(c.textContent));
+    ok(card != null, "el lead recién importado (unqualified) es visible en el feed pese al filtro por defecto");
+
+    // Volver al feed normal con "✕ quitar foco" (no debe dejar el foco pegado).
+    const clear = root.querySelectorAll(".focus-banner .focus-x").find((b) => /quitar foco/.test(b.textContent));
+    ok(clear != null, "el foco «Recién importados» ofrece salida con ✕ quitar foco");
+    if (clear) { clear.click(); ok(root.querySelector(".focus-banner") == null, "quitar foco vuelve al feed normal"); }
+  }
+} catch (e) { ok(false, "el flujo de import → foco recién importados no debe lanzar: " + e.message); }
+
 // ── 4. Abrir un caso a pantalla completa (código nuevo) y cerrarlo ────────────
 try {
   const openBtn = root.querySelector(".c-open");
