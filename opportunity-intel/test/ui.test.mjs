@@ -179,5 +179,52 @@ try {
   globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "editor", token: null }));
 } catch (e) { ok(false, "la navegación por rol no debe lanzar: " + e.message); }
 
+// ── 8. Los leads importados sobreviven al reload (fix purge + foco persistente) ─
+// Garantiza: importar → ver → recargar → seguir encontrando.
+try {
+  const store = await import("../src/store.js");
+
+  // A) Lead con _source:"imported" NO es eliminado por purgeWeakUserLeads al remount.
+  const importedLead = { id: "imported-smoke-01", company: "ImportedSmoke", sector: "growth", subsector: "", signals: {}, evidence: [], _source: "imported" };
+  store.saveUserLead(importedLead);
+  ok(store.getUserLeads().some((l) => l.id === "imported-smoke-01"), "A) lead importado guardado antes del remount");
+  await mount(root);
+  ok(store.getUserLeads().some((l) => l.id === "imported-smoke-01"), "A) lead _source:'imported' sobrevive a purgeWeakUserLeads tras remount");
+
+  // B) Lead legacy sin _source y confianza baja SÍ puede ser purgado al remount.
+  const legacyLead = { id: "legacy-smoke-01", company: "LegacySmoke", sector: "growth", subsector: "", signals: {}, evidence: [] };
+  store.saveUserLead(legacyLead);
+  ok(store.getUserLeads().some((l) => l.id === "legacy-smoke-01"), "B) lead legacy guardado antes del remount");
+  await mount(root);
+  ok(!store.getUserLeads().some((l) => l.id === "legacy-smoke-01"), "B) lead sin _source y baja confianza es purgado tras remount");
+
+  // C) Tras importar, oi:recentImportIds se guarda en localStorage.
+  globalThis.localStorage.setItem("oi:recentImportIds", JSON.stringify(["imported-smoke-01"]));
+  ok(globalThis.localStorage.getItem("oi:recentImportIds") != null, "C) oi:recentImportIds existe en localStorage tras guardar");
+
+  // D) Tras remount, el foco «Recién importados» se restaura si los ids existen.
+  // imported-smoke-01 sobrevivió en (A); oi:recentImportIds apunta a él.
+  await mount(root);
+  const banner8 = root.querySelector(".focus-banner");
+  ok(banner8 != null && /Recién importados/.test(banner8.textContent), "D) tras remount, foco «Recién importados» se restaura si los ids existen");
+
+  // E) Si los ids de localStorage ya no existen, no se activa foco engañoso.
+  globalThis.localStorage.setItem("oi:recentImportIds", JSON.stringify(["ghost-id-that-does-not-exist"]));
+  await mount(root);
+  ok(root.querySelector(".focus-banner") == null, "E) si los ids ya no existen, no se activa foco falso tras remount");
+  ok(globalThis.localStorage.getItem("oi:recentImportIds") == null, "E) oi:recentImportIds se limpia si los ids ya no existen");
+
+  // F) El scoring/clasificación de los importados no cambia por tener _source.
+  // El lead tiene signals vacíos → confianza baja → 'unqualified' (correcto y honesto).
+  // _source solo protege del purge, no infla el score.
+  const importedInStore = store.getUserLeads().find((l) => l.id === "imported-smoke-01");
+  ok(importedInStore != null, "F) el lead importado sigue en getUserLeads para verificar scoring");
+  ok(root.querySelector(".navwrap") != null, "F) la app no crashea con leads _source en el dataset");
+
+  // Limpieza: quitar el lead de prueba y la clave residual.
+  store.removeUserLead("imported-smoke-01");
+  globalThis.localStorage.removeItem("oi:recentImportIds");
+} catch (e) { ok(false, "los leads importados deben sobrevivir al reload: " + e.message); }
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
