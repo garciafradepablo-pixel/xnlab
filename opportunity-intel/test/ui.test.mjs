@@ -56,6 +56,8 @@ try {
       // Tanda 4: Import/Export accesibles y discretos en la cabecera del feed.
       ok(root.querySelector(".feed-io .io-btn") != null, "el feed ofrece acciones Import/Export discretas");
       ok(root.querySelector(".card") != null, "Import/Export no rompe el render de las cards");
+      // Tanda 5: control discreto de enriquecimiento web en leads con website.
+      ok(root.querySelector(".enrich-btn") != null, "los leads con web ofrecen 'Enriquecer web' (discreto)");
       // Tanda 3.5: ejemplos de comando como chips pulsables (no texto largo).
       ok(root.querySelector(".cmd-examples .cmd-ex") != null, "la Command Bar ofrece ejemplos como chips");
       // Tanda 3: OCI es la jerarquía principal; el anillo de confianza ya no domina.

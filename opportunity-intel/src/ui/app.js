@@ -50,6 +50,7 @@ import { buildPlaybook, playbookToText } from "../playbook.js";
 import { buildProposal, proposalToText } from "../proposal.js";
 import { dueFollowups, dueLabel } from "../followups.js";
 import { fetchWebFreshness, webSignalsToVerifications } from "../enrichweb.js";
+import { extractWebSignals, enrichmentSummary } from "../webenrich.js";
 import { fetchMomentum, momentumToVerification, momentumLabel } from "../momentum.js";
 import { inferSector } from "../sectorinfer.js";
 import { recordSearch, getInterests } from "../interests.js";
@@ -2226,6 +2227,54 @@ function todayCall(o, i, track) {
 // Operator v1 — drawer contextual sobre UNA oportunidad. Calcula la decisión y
 // el brief en local (decision.js/brief.js), y muestra la respuesta a la
 // intención elegida. Sin LLM, sin red. Cambiar de intención repinta en el sitio.
+// Enriquecimiento web HONESTO de un lead: lee su web (Edge Function) y convierte
+// lo que AFIRMA en verificaciones citadas (verde solo si es explícito; amarillo
+// si es indicio; gris si no aparece). No recomputa: lo hace el llamante. Devuelve
+// el resultado para que la UI muestre estado (success/failed) sin inventar.
+async function enrichLead(opp) {
+  if (!opp || !opp.website) return { status: "failed", note: "Este lead no tiene web registrada." };
+  let page;
+  try {
+    page = await fetchWebFreshness(opp.website, auth.getToken(), true); // force: lectura fresca con campos ricos
+  } catch {
+    return { status: "failed", note: "Sin conexión para leer su web." };
+  }
+  const result = extractWebSignals(page, { website: opp.website });
+  if (result.status === "success") {
+    for (const v of result.verifications) {
+      store.addVerification(opp.id, v.filter, v.level, v.note, v.url, { auto: true, srcLabel: "Lectura de su web" });
+    }
+  }
+  return result;
+}
+
+// Estado de enriquecimiento de un lead (derivado de sus verificaciones auto): sin
+// persistencia nueva — la evidencia citada YA lleva fuente (url) y fecha (at).
+function leadEnrichment(id) {
+  const vs = store.getLeadVerifications(id).filter((v) => v.auto);
+  return { enriched: vs.length > 0, count: vs.length, at: vs.length ? vs.map((v) => v.at).sort().pop() : null };
+}
+
+// Comando "enrich" / "enriquecer": lee la web de los leads del foco actual que
+// están en NEEDS_EVIDENCE y tienen web (lote acotado, no masivo).
+async function enrichFocused() {
+  const decided = feedModel().filtered;
+  const targets = decided
+    .filter((x) => x.opp.website && (x.decision.decision === "NEEDS_EVIDENCE" || x.decision.decision === "ENRICH"))
+    .slice(0, 12) // tope: nada de automatización masiva
+    .map((x) => x.opp);
+  if (!targets.length) { flash("Nada que enriquecer aquí: ninguno con web pendiente de evidencia."); return; }
+  flash(`Leyendo ${targets.length} web${targets.length === 1 ? "" : "s"}…`);
+  let okN = 0, failN = 0;
+  for (const opp of targets) {
+    const r = await enrichLead(opp);
+    if (r.status === "success" && r.verifications.length) okN++; else if (r.status === "failed") failN++;
+  }
+  await recompute();
+  render();
+  flash(`Enriquecidos ${okN} con señales · ${failN} no legibles. Revisa el feed.`);
+}
+
 // Muelle de importación: pega una lista externa → preview honesto → al feed.
 // No enriquece, no inventa, no duplica en silencio.
 function openImport() {
@@ -2549,6 +2598,7 @@ function appCommand(text) {
   const n = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (!n.trim()) return false;
   if (/\b(import|importar|pegar|paste)\b/.test(n)) { openImport(); return true; }
+  if (/\b(enrich|enriquec)/.test(n)) { enrichFocused(); return true; }
   if (/\bexport/.test(n) || /\bexportar/.test(n) || (/\bcsv\b/.test(n) && !/import/.test(n))) {
     exportDecisionCsvNow(); return true;
   }
@@ -2787,6 +2837,24 @@ function cardHandlers(afterMutate) {
     // y borrar llamadas, solo para roles con escritura.
     getCalls: (id) => store.getLeadCalls(id),
     getLeadTasks: (id) => store.getTasks().filter((t) => t.leadId === id),
+    // Enriquecimiento web honesto (solo escritura): lee la web del lead y guarda
+    // verificaciones citadas; luego recomputa el OCI. Estado derivado, sin
+    // persistencia nueva. leadEnrichment está siempre disponible (solo lee).
+    leadEnrichment,
+    onEnrich: !canWrite ? undefined : async (id, btn) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      if (!lead) return;
+      const prev = btn && btn.textContent;
+      if (btn) { btn.textContent = "Enriqueciendo…"; btn.disabled = true; }
+      const r = await enrichLead(lead);
+      if (r.status === "failed") {
+        flash("No se pudo verificar su web (bloqueada, lenta o sin contenido).");
+        if (btn) { btn.textContent = prev || "↻ Enriquecer web"; btn.disabled = false; }
+        return;
+      }
+      flash(enrichmentSummary(r));
+      refresh(); // recomputa OCI con la evidencia citada y repinta la card
+    },
     // Operator v1: panel contextual (explicar/defender/matar/ángulo/brief). Solo
     // lee y muestra — no muta — así que disponible para cualquier rol.
     onOperator: (id, intent) => {

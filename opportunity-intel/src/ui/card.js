@@ -341,6 +341,22 @@ function decisionStrip(dec, opp) {
 // discreto en el clúster de la card —ver c-operator en `top`— que abre el drawer
 // con Defender/Matar/Ángulo/Brief. Menos ruido, mismo acceso.)
 
+// Enriquecimiento web: una línea discreta. Si la web ya se leyó, muestra el
+// estado citado ("✓ Web leída · N señales"); si no, un botón para leerla.
+function buildEnrichRow(opp, handlers) {
+  const e = handlers.leadEnrichment ? handlers.leadEnrichment(opp.id) : { enriched: false, count: 0, at: null };
+  const btn = el("button", {
+    class: `enrich-btn ${e.enriched ? "is-done" : ""}`,
+    title: e.enriched ? "Volver a leer su web" : "Leer su web y convertir lo que afirma en evidencia citada",
+    text: e.enriched ? "↻ Re-leer web" : "↻ Enriquecer web",
+  });
+  btn.addEventListener("click", (ev) => { ev.stopPropagation(); handlers.onEnrich(opp.id, btn); });
+  const status = e.enriched
+    ? el("span", { class: "enrich-state", text: `✓ Web leída · ${e.count} señal${e.count === 1 ? "" : "es"} citada${e.count === 1 ? "" : "s"}` })
+    : null;
+  return el("div", { class: "enrich-row" }, [status, btn]);
+}
+
 /**
  * @param {object} opp        Scored opportunity (with .scores and .ranking)
  * @param {object} record     Tracking record { status, notes }
@@ -584,6 +600,10 @@ export function renderCard(opp, record, handlers = {}) {
     el("span", { class: "nba-why", text: nba.why }),
   ]);
 
+  // Enriquecimiento web honesto: control discreto solo si el lead tiene web y el
+  // rol puede escribir. Si ya se leyó, muestra estado citado en vez del botón.
+  const enrichRow = (opp.website && handlers.onEnrich) ? buildEnrichRow(opp, handlers) : null;
+
   // Destacado de élite: leads de máxima puntuación / "llamar de inmediato".
   const elite = s.confidence >= 90 ? "card-elite" : s.recommendation === "call_immediately" ? "card-priority" : "";
   // Foco radical: en reposo solo lo esencial (identidad + éxito + gancho +
@@ -594,6 +614,7 @@ export function renderCard(opp, record, handlers = {}) {
     hook,
     action,
     nbaPill,
+    enrichRow,
     failurePanel,
     detail,
   ]);
