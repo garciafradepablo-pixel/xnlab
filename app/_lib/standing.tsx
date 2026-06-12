@@ -83,12 +83,11 @@ const COPY = {
   en: {
     label: "002.5 — Position",
     h1a: "First cycle,",
-    h1b: "open.",
+    h1b: "in selection.",
     sub: "The roster is published when the work is recognised. What appears here rests on the brand's permission, not on ours.",
     rosterLabel: "Currently",
     cycleLabel: "Cycle MMXXVI",
-    cycleWindow: "January — June",
-    cycleStatus: "First cycle open.",
+    cycleStatus: "First cycle, in selection.",
     cycleNote:
       "Cycles close at six brands. We do not stretch the studio to make a seventh fit.",
     trust1:
@@ -99,17 +98,16 @@ const COPY = {
     signature:
       "Every engagement is partner-signed. Single point of accountability. Written deliverables only. The studio does not present decks.",
     closed: "Closed",
-    open: "Open",
+    open: "In Selection",
   },
   es: {
     label: "002.5 — Posición",
     h1a: "Primer ciclo,",
-    h1b: "abierto.",
+    h1b: "en selección.",
     sub: "El roster se publica cuando el trabajo se reconoce. Lo que aparece aquí depende del permiso de la marca, no del nuestro.",
     rosterLabel: "Actualmente",
     cycleLabel: "Ciclo MMXXVI",
-    cycleWindow: "Enero — junio",
-    cycleStatus: "Primer ciclo abierto.",
+    cycleStatus: "Primer ciclo, en selección.",
     cycleNote:
       "Los ciclos cierran a seis marcas. No estiramos el estudio para que entre una séptima.",
     trust1:
@@ -120,7 +118,7 @@ const COPY = {
     signature:
       "Cada encargo lo firma un socio del estudio. Un único punto de responsabilidad. Entregables escritos. El estudio no presenta decks.",
     closed: "Cerrado",
-    open: "Abierto",
+    open: "En selección",
   },
 };
 
@@ -423,17 +421,6 @@ export function Standing({ lang }: { lang: "en" | "es" }) {
                 }}
               >
                 {t.cycleStatus}
-              </p>
-              <p
-                style={{
-                  fontSize: "clamp(0.9rem,1.05vw,1rem)",
-                  lineHeight: 1.65,
-                  color: "rgba(255,255,255,0.55)",
-                  fontWeight: 300,
-                  margin: "0 0 18px",
-                }}
-              >
-                {t.cycleWindow}
               </p>
               {/* Capacity meter — pulls from ENGAGEMENTS.length so the
                   bar always matches the dossier above. 6 cells total

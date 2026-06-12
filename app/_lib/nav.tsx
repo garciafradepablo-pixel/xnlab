@@ -101,7 +101,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
               opacity + scale. Hover reveals a small status caption. */}
           <div
             aria-label={lang === "en" ? "Studio observing" : "Estudio activo"}
-            title={lang === "en" ? "Studio observing · First cycle of MMXXVI · Open" : "Estudio activo · Primer ciclo de MMXXVI · Abierto"}
+            title={lang === "en" ? "Studio observing · First cycle of MMXXVI · In Selection" : "Estudio activo · Primer ciclo de MMXXVI · En selección"}
             style={{ position: "relative", width: 10, height: 10, display: "flex", alignItems: "center", justifyContent: "center" }}
           >
             <motion.span

@@ -41,8 +41,7 @@ const en = {
   admission: {
     label: "Before you write",
     cycleLabel: "Cycle MMXXVI",
-    cycleWindow: "January — 30 June MMXXVI",
-    cycleStatus: "Open.",
+    cycleStatus: "In Selection.",
     cycleNote:
       "Cycles close at six brands. We do not stretch the studio to make a seventh fit.",
     notServedLabel: "We do not work with",
@@ -103,8 +102,7 @@ const es = {
   admission: {
     label: "Antes de escribir",
     cycleLabel: "Ciclo MMXXVI",
-    cycleWindow: "Enero — 30 de junio MMXXVI",
-    cycleStatus: "Abierto.",
+    cycleStatus: "En selección.",
     cycleNote:
       "Los ciclos cierran a seis marcas. No estiramos el estudio para que entre una séptima.",
     notServedLabel: "No trabajamos con",
@@ -444,17 +442,6 @@ export default function Contact() {
                   }}
                 >
                   {t.admission.cycleStatus}
-                </p>
-                <p
-                  style={{
-                    fontSize: "clamp(0.88rem,1.05vw,1rem)",
-                    lineHeight: 1.65,
-                    color: "rgba(255,255,255,0.55)",
-                    fontWeight: 300,
-                    margin: "0 0 18px",
-                  }}
-                >
-                  {t.admission.cycleWindow}
                 </p>
                 {/* Cap motif — six equal marks for the six places a cycle
                     holds. NOT a progress/scarcity meter: the studio's

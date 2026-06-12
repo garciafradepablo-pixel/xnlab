@@ -960,8 +960,8 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               }}
             />
             {lang === "en"
-              ? "First cycle of MMXXVI · Open"
-              : "Primer ciclo de MMXXVI · Abierto"}
+              ? "First cycle of MMXXVI · In Selection"
+              : "Primer ciclo de MMXXVI · En selección"}
           </p>
           {/* Primary commercial CTA. The hero is the 10-second window;
               this is the one verb that matters. pointerEvents re-enabled

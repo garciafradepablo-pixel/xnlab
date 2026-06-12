@@ -42,7 +42,7 @@ const en = {
     cover: {
       meta: "XNLAB · STUDIO DOSSIER",
       cycle: "Cycle MMXXVI",
-      sub: "January — June",
+      sub: "In Selection",
     },
     sections: [
       {
@@ -168,7 +168,6 @@ const en = {
         num: "VIII",
         title: "Cycle MMXXVI",
         kvs: [
-          ["Window", "January — June MMXXVI"],
           ["Capacity", "Six brands per cycle"],
           ["Remaining", "One place"],
           ["Entry", "By appointment"],
@@ -212,7 +211,7 @@ const es = {
     cover: {
       meta: "XNLAB · DOSSIER DEL ESTUDIO",
       cycle: "Ciclo MMXXVI",
-      sub: "Enero — junio",
+      sub: "En selección",
     },
     sections: [
       {
@@ -338,7 +337,6 @@ const es = {
         num: "VIII",
         title: "Ciclo MMXXVI",
         kvs: [
-          ["Ventana", "Enero — junio MMXXVI"],
           ["Capacidad", "Seis marcas por ciclo"],
           ["Disponible", "Una plaza"],
           ["Entrada", "Por cita previa"],
