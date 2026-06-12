@@ -1,6 +1,6 @@
 // feed.test.mjs — Opportunity Feed: buckets + Command Bar (lógica pura).
 
-const { bucketize, parseCommand, applyCommand, operatorToday, BUCKETS } = await import("../src/operator.js");
+const { bucketize, parseCommand, applyCommand, operatorToday, commandAnswer, BUCKETS } = await import("../src/operator.js");
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -61,6 +61,34 @@ ok(applyCommand(onlyKill, parseCommand("qué hago hoy")).length === 0, "7) sin r
 // 1) operatorToday no inventa
 ok(operatorToday([]).length === 0, "1) today sin datos → vacío (no inventa)");
 ok(operatorToday(decided).length === 3 && operatorToday(decided)[0].opp.id === "A", "today = ACT_NOW+PREPARE ordenado por OCI");
+
+// === Operator one-line answer (Tanda 3): desde datos reales, sin inventar ===
+// Le adjuntamos decisionWhy a los decididos sintéticos para la razón ejecutiva.
+const withWhy = decided.map((x) => ({ ...x, decision: { ...x.decision, decisionWhy: "opening real, acceso y evidencia." } }));
+const todayCmd = parseCommand("qué hago hoy");
+const todayFocus = applyCommand(withWhy, todayCmd);
+const ansToday = commandAnswer(todayCmd, todayFocus);
+ok(/Ataca 3 oportunidades ahora/.test(ansToday), "today → cuenta real de accionables");
+ok(ansToday.includes("OCI 80") && ansToday.includes("razón:"), "today → mejor prioridad con OCI y razón reales");
+
+const killCmd = parseCommand("mata ruido");
+ok(/Hay 2 oportunidades que conviene matar/.test(commandAnswer(killCmd, applyCommand(decided, killCmd))), "kill → cuenta real de ruido");
+const evCmd = parseCommand("needs evidence");
+ok(/2 oportunidades necesitan evidencia/.test(commandAnswer(evCmd, applyCommand(decided, evCmd))), "needs evidence → cuenta real");
+const doorCmd = parseCommand("strategic doors");
+ok(/1 puerta estrategica|1 puerta estratégica/.test(commandAnswer(doorCmd, applyCommand(decided, doorCmd))), "strategic doors → cuenta real");
+
+// No inventa cuando no hay datos
+ok(commandAnswer(parseCommand("qué hago hoy"), []).match(/No hay nada que atacar/i), "today sin datos → lo dice, no inventa");
+ok(commandAnswer(parseCommand("mata ruido"), []).match(/No hay ruido que matar/i), "kill sin datos → lo dice");
+ok(commandAnswer(parseCommand("strategic doors"), []).match(/Ninguna puerta/i), "doors sin datos → lo dice");
+
+// Comando desconocido → sugerencias, no alucinación
+const unk = commandAnswer(parseCommand("hazme un sándwich"), []);
+ok(/No entendí/.test(unk) && /qué hago hoy/.test(unk), "comando desconocido → sugerencias, sin inventar");
+
+// Sin comando → sin respuesta (no ruido)
+ok(commandAnswer(null, decided) === "" && commandAnswer(parseCommand(""), decided) === "", "sin comando → línea vacía");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

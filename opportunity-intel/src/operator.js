@@ -192,3 +192,43 @@ export function applyCommand(decided = [], cmd) {
   return decided;
 }
 
+/**
+ * Respuesta ejecutiva de UNA línea para un comando, a partir de datos REALES del
+ * feed. No inventa: si no hay datos, lo dice. Comando desconocido → sugerencias.
+ * @param {object|null} cmd     salida de parseCommand (o el foco activo)
+ * @param {Array<{opp,decision}>} focused  resultado de applyCommand(decided, cmd)
+ * @returns {string} línea corta (o "" si no hay comando)
+ */
+export function commandAnswer(cmd, focused = []) {
+  if (!cmd || cmd.kind === "clear") return "";
+  if (cmd.kind === "unknown") return `No entendí «${cmd.label}». Prueba: ${(cmd.suggestions || []).join(" · ")}.`;
+  const n = focused.length;
+  const ops = `${n} oportunidad${n === 1 ? "" : "es"}`; // plural irregular en español
+  const best = focused[0];
+
+  if (cmd.kind === "top") {
+    if (!n) return "No hay oportunidades con los datos actuales.";
+    return `Top por OCI: ${best.opp.company} (OCI ${best.decision.oci}). ${ops} ordenadas.`;
+  }
+  if (cmd.kind === "classification") {
+    const tag = String(cmd.value || "").toUpperCase();
+    return n ? `${n} lead${n === 1 ? "" : "s"} para ${tag}.` : `No hay leads para ${tag} con los datos actuales.`;
+  }
+  // kind === "decision": el mensaje depende del conjunto de decisiones.
+  const set = new Set(cmd.decisions || []);
+  if (set.has("ACT_NOW")) {
+    if (!n) return "No hay nada que atacar ahora con los datos actuales.";
+    return `Ataca ${ops} ahora. Mejor prioridad: ${best.opp.company} · OCI ${best.decision.oci} · razón: ${best.decision.decisionWhy}`;
+  }
+  if (set.has("KILL")) {
+    return n ? `Hay ${ops} que conviene matar o ignorar por baja señal.` : "No hay ruido que matar ahora: nada cae en descarte.";
+  }
+  if (set.has("NEEDS_EVIDENCE")) {
+    return n ? `${ops} necesitan evidencia antes de actuar.` : "Ninguna pendiente de evidencia ahora mismo.";
+  }
+  if (set.has("STRATEGIC_DOOR")) {
+    return n ? `${n} puerta${n === 1 ? "" : "s"} estratégica${n === 1 ? "" : "s"} detectada${n === 1 ? "" : "s"}. No todas son cash inmediato.` : "Ninguna puerta estratégica con los datos actuales.";
+  }
+  return n ? `${ops} en «${cmd.label}».` : `Nada en «${cmd.label}» con los datos actuales.`;
+}
+

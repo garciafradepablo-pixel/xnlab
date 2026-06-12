@@ -69,7 +69,7 @@ import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import { decide } from "../decision.js";
 import { buildBrief, briefToText } from "../brief.js";
-import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, BUCKETS } from "../operator.js";
+import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
 import * as activity from "../activity.js";
@@ -2428,6 +2428,7 @@ function cardsView() {
     el("div", { class: "agent-report", id: "agent-report" }),
     commandBar(),
     bucketsRow(model.buckets),
+    operatorAnswerLine(model.filtered),
     focusBanner(model.filtered.length),
     // Filtros avanzados, plegados: la superficie principal no se carga con ellos.
     el("details", { class: "feed-filters" }, [el("summary", { text: "Filtros avanzados" }), filterBar()]),
@@ -2463,6 +2464,18 @@ function commandBar() {
     input,
     el("button", { class: "cmd-ask-go", text: "Preguntar", onClick: run }),
     state.feedCmd ? el("button", { class: "cmd-ask-clear", title: "Quitar foco", text: "✕", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } }) : null,
+  ]);
+}
+
+// Respuesta ejecutiva de una línea del Operator: aparece sobre el feed cuando
+// hay un comando/foco activo. Texto honesto desde datos reales (commandAnswer).
+function operatorAnswerLine(filtered) {
+  if (!state.feedCmd) return null;
+  const text = commandAnswer(state.feedCmd, filtered);
+  if (!text) return null;
+  return el("div", { class: "op-answer" }, [
+    el("span", { class: "op-answer-ic", text: "▸" }),
+    el("span", { class: "op-answer-text", text }),
   ]);
 }
 

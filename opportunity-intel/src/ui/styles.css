@@ -2175,3 +2175,26 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 
 /* OCI como jerarquía principal: el anillo de confianza cede protagonismo */
 .card .ring { opacity: 0.78; }
+
+/* ============================================================================
+   Tanda 3 — OCI como hero, confianza secundaria, lente, respuesta del Operator
+   ========================================================================== */
+.oci-hero { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 60px; padding: 6px 10px; border-radius: 12px; background: var(--panel-3); border: 1px solid var(--line-2); }
+.oci-hero .oci-num { font-size: 30px; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.oci-hero .oci-l { font-size: 10px; letter-spacing: 0.14em; color: var(--ink-faint); text-transform: uppercase; margin-top: 2px; }
+.oci-hot { border-color: var(--accent); } .oci-hot .oci-num { color: var(--accent); }
+.oci-warm { border-color: #3a4675; } .oci-warm .oci-num { color: #aebbff; }
+.oci-cold .oci-num { color: var(--ink-dim); }
+.oci-hero.dec-KILL, .oci-hero.dec-OVER_SERVED { border-color: #5a2e2e; }
+.oci-hero.dec-KILL .oci-num, .oci-hero.dec-OVER_SERVED .oci-num { color: var(--red); }
+
+/* Confianza del motor: chip secundario (ya no es el número principal) */
+.conf-tag { font-size: 10px; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+
+/* Lente estratégica */
+.lens-tag { font-size: 10px; color: #9ad0c0; border: 1px solid #2f5048; border-radius: 6px; padding: 1px 7px; letter-spacing: 0.02em; }
+
+/* Respuesta ejecutiva del Operator sobre el feed */
+.op-answer { display: flex; gap: 8px; align-items: baseline; background: var(--panel-2); border-left: 3px solid #3a4675; border-radius: 8px; padding: 8px 12px; }
+.op-answer-ic { color: #6e7db0; font-size: 12px; }
+.op-answer-text { color: var(--ink); font-size: 13px; line-height: 1.5; }

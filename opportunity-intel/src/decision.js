@@ -149,6 +149,51 @@ export const STRATEGIC_TAGS = {
 
 const PREMIUM_SECTORS = new Set(["realestate", "hospitality"]);
 
+// -----------------------------------------------------------------------------
+// Lentes estratégicas — qué MUNDO toca cada oportunidad. No es el motor de
+// scoring (eso es lenses.js por sector); es una etiqueta de POSICIÓN estratégica
+// para leer el ecosistema. Se deriva SOLO de datos reales del lead (nombre,
+// subsector, sector, tesis); si nada lo respalda, NO se inventa etiqueta.
+// -----------------------------------------------------------------------------
+export const STRATEGIC_LENSES = {
+  longevity: "Longevity",
+  frontier_communities: "Frontier Communities",
+  web3: "Web3",
+  wellness: "Wellness",
+  ai_automation: "AI Automation",
+  hospitality: "Hospitality",
+  creative_ip: "Creative / IP",
+  capital_investors: "Capital / Investors",
+};
+
+// Orden = prioridad (lo más específico primero). Patrones sobre texto ya
+// normalizado (minúsculas, sin acentos).
+const LENS_PATTERNS = [
+  ["longevity", /longevity|longevidad|biohack|anti.?aging|healthspan|epigenet/],
+  ["frontier_communities", /pop.?up city|frontier|network state|intentional communit|zuzalu|comunidad(es)? frontera|nomad/],
+  ["web3", /web3|crypto|blockchain|smart ?contract|\bnft\b|\bdao\b|on.?chain|tokeniz/],
+  ["wellness", /wellness|bienestar|\bspa\b|retreat|retiro|holistic|mindful|yoga|biohacking/],
+  ["ai_automation", /\bai\b|inteligencia artificial|automatiz|automation|agentic|\bllm\b|machine learning/],
+  ["hospitality", /hospitality|hosteler|hotel|restaurant|boutique|resort|gastro/],
+  ["creative_ip", /creativ|estudio creativ|productora|branding|intellectual propert|content studio|media house/],
+  ["capital_investors", /\bvc\b|venture|investor|inversor|family office|\bfund\b|fondo de inversion|private equity/],
+];
+
+/**
+ * Lente estratégica de una oportunidad, o null si los datos no la respaldan.
+ * @param {object} opp
+ * @returns {{code:string, label:string}|null}
+ */
+export function strategicLens(opp = {}) {
+  const hay = [opp.company, opp.subsector, opp.sector, opp.thesis, opp.summary]
+    .filter(Boolean).join(" ").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  for (const [code, re] of LENS_PATTERNS) if (re.test(hay)) return { code, label: STRATEGIC_LENSES[code] };
+  // Respaldo por sector real (dato existente): hostelería → Hospitality.
+  if (opp.sector === "hospitality") return { code: "hospitality", label: STRATEGIC_LENSES.hospitality };
+  return null;
+}
+
+
 function strategicTag({ fit, access }, oci, scored, decision, opp) {
   const econ = scored.economicPotential;
   const cashReady = (econ === "high" || econ === "very high") && access >= 40;

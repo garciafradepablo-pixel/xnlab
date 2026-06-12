@@ -34,7 +34,7 @@ import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
 import { lensLabel } from "../lenses.js";
 import { getNextBestAction } from "../nextaction.js";
-import { decide } from "../decision.js";
+import { decide, strategicLens } from "../decision.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -78,24 +78,8 @@ function band(score) {
   return "cool";
 }
 
-// ---- Confidence ring (inline SVG, no deps) ----------------------------------
-function confidenceRing(score) {
-  const r = 26;
-  const circ = 2 * Math.PI * r;
-  const offset = circ * (1 - Math.max(0, Math.min(100, score)) / 100);
-  return el("div", {
-    class: `ring ring-${band(score)}`,
-    title: `Opportunity Confidence ${score}/100`,
-    html: `
-      <svg viewBox="0 0 64 64" width="64" height="64" aria-hidden="true">
-        <circle class="ring-bg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"/>
-        <circle class="ring-fg" cx="32" cy="32" r="${r}" fill="none" stroke-width="6"
-          stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"
-          stroke-linecap="round" transform="rotate(-90 32 32)"/>
-      </svg>
-      <div class="ring-num">${score}</div>`,
-  });
-}
+// (El anillo de confianza se retiró como hero: OCI es ahora la jerarquía
+// principal de la card —ver ociHero—; la confianza queda como chip secundario.)
 
 // ---- Metric bar -------------------------------------------------------------
 function bar(label, value, suffix = "%") {
@@ -313,17 +297,30 @@ function dimBar(label, value) {
   ]);
 }
 
-function decisionStrip(dec) {
+// OCI HERO — el número de decisión principal de la card (sustituye al anillo de
+// confianza como jerarquía). Va donde antes estaba el anillo, tintado por decisión.
+function ociHero(dec) {
+  const tone = dec.oci >= 66 ? "hot" : dec.oci >= 45 ? "warm" : "cold";
+  return el("div", {
+    class: `oci-hero oci-${tone} dec-${dec.decision}`,
+    title: `Opportunity Confidence Index ${dec.oci}/100 — ${dec.decisionLabel}: ${dec.decisionWhy}`,
+  }, [
+    el("b", { class: "oci-num", text: String(dec.oci) }),
+    el("span", { class: "oci-l", text: "OCI" }),
+  ]);
+}
+
+// La tira de decisión: decisión + tag + evidencia + lente + las cuatro
+// dimensiones. (El OCI ya no se repite aquí: vive como hero arriba.)
+function decisionStrip(dec, opp) {
   const eq = dec.evidenceQuality;
+  const lens = strategicLens(opp);
   return el("div", { class: `dec-strip dec-${dec.decision}` }, [
-    el("div", { class: "dec-oci", title: "Opportunity Confidence Index" }, [
-      el("b", { text: String(dec.oci) }),
-      el("span", { class: "dec-oci-l", text: "OCI" }),
-    ]),
     el("div", { class: "dec-mid" }, [
       el("div", { class: "dec-row" }, [
         el("span", { class: `dec-chip dec-chip-${dec.decision}`, text: dec.decisionLabel, title: dec.decisionWhy }),
         el("span", { class: "dec-tag", text: dec.strategicTag.label }),
+        lens ? el("span", { class: `lens-tag lens-${lens.code}`, title: "Lente estratégica", text: lens.label }) : null,
         el("span", { class: `eq eq-${eq.label}`, title: `${eq.confirmed} confirmadas · ${eq.indicative} indicios · ${eq.unknown} desconocidas`, text: `ev. ${eq.label}` }),
         dec.killRisk >= 50 ? el("span", { class: "kill-risk", text: `kill ${dec.killRisk}` }) : null,
       ]),
@@ -391,9 +388,11 @@ export function renderCard(opp, record, handlers = {}) {
           title: `${cd.label} — ${cd.advice}${cd.channels.length ? "\nCanales: " + cd.channels.join(", ") : ""}`,
           text: cd.icon,
         }); })(),
+        // Confianza del motor: detalle secundario (el número de decisión es OCI).
+        el("span", { class: "conf-tag", title: `Confianza del motor ${s.confidence}/100`, text: `conf ${s.confidence}` }),
       ]),
     ]),
-    confidenceRing(s.confidence),
+    ociHero(dec),
     openCase ? el("button", { class: "c-open", title: "Abrir el caso a pantalla completa", text: "⤢", onClick: openCase }) : null,
     handlers.onSello ? el("button", { class: "c-sello", title: "Lanzar un sello al compañero sobre este lead", text: "📌", onClick: (e) => { e.stopPropagation(); handlers.onSello(opp.id); } }) : null,
   ]);
@@ -599,7 +598,7 @@ export function renderCard(opp, record, handlers = {}) {
   // acción). El resto se revela al abrir "Ver análisis completo".
   return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
-    decisionStrip(dec),
+    decisionStrip(dec, opp),
     hook,
     action,
     nbaPill,

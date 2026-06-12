@@ -1,7 +1,7 @@
 // decision.test.mjs — Opportunity Decision Layer (OCI). Honestidad estructural.
 
 const { scoreOpportunity } = await import("../src/scoring.js");
-const { decide, evidenceQuality } = await import("../src/decision.js");
+const { decide, evidenceQuality, strategicLens } = await import("../src/decision.js");
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -77,6 +77,18 @@ ok(eqMixed.unknown === 7, "el resto gris cuenta como desconocido");
 ok(dStrong.strategicTag.code === "cash", "lead fuerte y monetizable → Cash Lead");
 ok(dPretty.strategicTag.code === "strategic_door" || dPretty.strategicTag.code === "noise", "encaje sin caja → puerta o ruido, no Cash");
 ok(typeof dStrong.decisionWhy === "string" && dStrong.decisionWhy.length > 0, "la decisión trae su porqué");
+
+// === Lentes estratégicas: mapean desde datos reales, sin inventar ===
+ok(strategicLens({ company: "Longevity Clinic Madrid" }).code === "longevity", "longevity desde el nombre");
+ok(strategicLens({ subsector: "web3 / smart contracts" }).code === "web3", "web3 desde subsector");
+ok(strategicLens({ company: "Zuzalu pop-up city" }).code === "frontier_communities", "frontier communities");
+ok(strategicLens({ subsector: "spa & wellness retreat" }).code === "wellness", "wellness");
+ok(strategicLens({ thesis: "plataforma de automatización con IA" }).code === "ai_automation", "ai automation desde la tesis");
+ok(strategicLens({ company: "Boutique Hotel", sector: "hospitality" }).code === "hospitality", "hospitality");
+ok(strategicLens({ company: "Estudio creativo y productora" }).code === "creative_ip", "creative/ip");
+ok(strategicLens({ subsector: "family office / venture" }).code === "capital_investors", "capital/investors");
+ok(strategicLens({ company: "Clínica dental Pérez", sector: "health" }) === null, "sin señal de mundo → null (no inventa lente)");
+ok(strategicLens({ sector: "hospitality" }).code === "hospitality", "respaldo por sector real (hospitality)");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

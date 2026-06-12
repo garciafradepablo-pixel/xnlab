@@ -50,9 +50,20 @@ try {
       oppTab.click();
       ok(root.querySelector(".card") != null, "Oportunidades renderiza al menos una tarjeta");
       ok(root.querySelector(".c-open") != null, "la tarjeta ofrece el botón de abrir caso (⤢)");
+      // Tanda 2: el feed trae Command Bar y resumen de buckets.
+      ok(root.querySelector(".cmd-ask") != null, "el feed muestra la Command Bar 'Ask Operator'");
+      ok(root.querySelector(".buckets") != null, "el feed muestra el resumen de buckets");
+      // Tanda 3: OCI es la jerarquía principal; el anillo de confianza ya no domina.
+      ok(root.querySelector(".oci-hero") != null, "la tarjeta muestra el OCI como número principal (hero)");
+      ok(root.querySelector(".card .ring") == null, "el anillo de confianza ya no domina la tarjeta");
     }
   }
 } catch (e) { ok(false, "navegar Captar→Oportunidades no debe lanzar: " + e.message); }
+
+// ── 3b. La app ABRE en el Feed (vista principal por defecto) ──────────────────
+try {
+  ok(root.querySelector(".feed") != null, "la app abre en el Opportunity Feed");
+} catch (e) { ok(false, "el feed por defecto no debe lanzar: " + e.message); }
 
 // ── 4. Abrir un caso a pantalla completa (código nuevo) y cerrarlo ────────────
 try {
