@@ -2087,3 +2087,46 @@ a, .cat-lead-name, .facet-chip, .idea-chip, .cat-find, .cat-del, .cat-contact, .
 button.nba.nba-btn { width: 100%; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
 button.nba.nba-btn:hover { background: var(--panel-3); border-left-width: 4px; }
 button.nba.nba-btn:active { transform: translateY(1px); }
+
+/* ============================================================================
+   Opportunity Decision Layer — tira de decisión en la card (OCI + dims)
+   ========================================================================== */
+.dec-strip { display: flex; gap: 12px; align-items: center; background: var(--panel-2); border: 1px solid var(--line); border-radius: 11px; padding: 9px 11px; margin: 8px 0; }
+.dec-oci { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 46px; padding: 4px 8px; border-radius: 9px; background: var(--panel-3); border: 1px solid var(--line-2); }
+.dec-oci b { font-size: 20px; line-height: 1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.dec-oci-l { font-size: 9px; letter-spacing: 0.12em; color: var(--ink-faint); text-transform: uppercase; }
+.dec-mid { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.dec-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.dec-chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-dim); letter-spacing: 0.02em; }
+/* Color de la decisión: frío para foco, rojo apagado para descarte, neutro resto */
+.dec-chip-ACT_NOW { color: #14161c; background: var(--accent); border-color: var(--accent); }
+.dec-chip-PREPARE, .dec-chip-STRATEGIC_DOOR { color: #aebbff; border-color: #3a4675; }
+.dec-chip-KILL, .dec-chip-OVER_SERVED { color: var(--red); border-color: #5a2e2e; }
+.dec-chip-NO_ACCESS, .dec-chip-NO_TIMING, .dec-chip-NEEDS_EVIDENCE, .dec-chip-ENRICH { color: var(--yellow); border-color: #5a4a1e; }
+.dec-tag { font-size: 10px; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; text-transform: uppercase; letter-spacing: 0.04em; }
+.eq { font-size: 10px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line-2); }
+.eq-sólida { color: var(--ok); border-color: var(--ok); }
+.eq-parcial { color: var(--yellow); border-color: var(--yellow); }
+.eq-débil { color: var(--grey); border-color: var(--grey); }
+.kill-risk { font-size: 10px; color: var(--red); border: 1px solid #5a2e2e; border-radius: 6px; padding: 1px 6px; }
+.dims { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
+.dim { display: flex; align-items: center; gap: 6px; }
+.dim-k { font-size: 10px; color: var(--ink-dim); width: 42px; }
+.dim-bar { flex: 1; height: 5px; background: var(--panel-3); border-radius: 999px; overflow: hidden; }
+.dim-bar i { display: block; height: 100%; background: linear-gradient(90deg, #46506e, #6e7db0); }
+.dim-v { font-size: 10px; color: var(--ink-faint); width: 20px; text-align: right; font-variant-numeric: tabular-nums; }
+
+/* Fila Operator en la card */
+.op-row { display: flex; gap: 6px; margin: 8px 0 0; flex-wrap: wrap; }
+.op-chip { font-size: 11px; padding: 4px 11px; border-radius: 999px; background: var(--panel-2); border: 1px solid var(--line-2); color: var(--ink-dim); cursor: pointer; transition: border-color .15s, color .15s; }
+.op-chip:hover { border-color: #6e7db0; color: #aebbff; }
+.op-kill:hover { border-color: var(--red); color: var(--red); }
+
+/* Operator drawer */
+.op-panel { max-width: 560px; }
+.op-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+.op-tab { font-size: 12px; padding: 5px 11px; border-radius: 8px; background: var(--panel-2); border: 1px solid var(--line); color: var(--ink-dim); cursor: pointer; }
+.op-tab.active { background: var(--panel-3); color: var(--ink); border-color: #3a4675; }
+.op-ans-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-faint); margin-bottom: 6px; }
+.op-ans { display: flex; flex-direction: column; gap: 6px; }
+.op-line { margin: 0; font-size: 13px; line-height: 1.5; color: var(--ink); white-space: pre-wrap; }

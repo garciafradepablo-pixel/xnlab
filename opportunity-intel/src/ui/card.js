@@ -34,6 +34,7 @@ import { matchServices, ticketLabel, SERVICE_BY_ID } from "../services.js";
 import { failureReason, viability, recommendedPath, freshness, connectionDifficulty, FAILURE_STATUSES } from "../diagnosis.js";
 import { lensLabel } from "../lenses.js";
 import { getNextBestAction } from "../nextaction.js";
+import { decide } from "../decision.js";
 
 const offerText = (key) => {
   const o = OFFER_LADDER[key];
@@ -301,6 +302,56 @@ function bullets(arr) {
   return el("ul", { class: "bullets" }, (arr || []).map((x) => el("li", { text: x })));
 }
 
+// ---- Opportunity Decision Layer: la tira visible de cada card ----------------
+// OCI + decisión + tag estratégico + las cuatro dimensiones + calidad de
+// evidencia. Es el titular de valor: en 2 segundos sabes qué es y qué hacer.
+function dimBar(label, value) {
+  return el("div", { class: "dim" }, [
+    el("span", { class: "dim-k", text: label }),
+    el("span", { class: "dim-bar" }, [el("i", { style: `width:${Math.max(2, value)}%` })]),
+    el("span", { class: "dim-v", text: String(value) }),
+  ]);
+}
+
+function decisionStrip(dec) {
+  const eq = dec.evidenceQuality;
+  return el("div", { class: `dec-strip dec-${dec.decision}` }, [
+    el("div", { class: "dec-oci", title: "Opportunity Confidence Index" }, [
+      el("b", { text: String(dec.oci) }),
+      el("span", { class: "dec-oci-l", text: "OCI" }),
+    ]),
+    el("div", { class: "dec-mid" }, [
+      el("div", { class: "dec-row" }, [
+        el("span", { class: `dec-chip dec-chip-${dec.decision}`, text: dec.decisionLabel, title: dec.decisionWhy }),
+        el("span", { class: "dec-tag", text: dec.strategicTag.label }),
+        el("span", { class: `eq eq-${eq.label}`, title: `${eq.confirmed} confirmadas · ${eq.indicative} indicios · ${eq.unknown} desconocidas`, text: `ev. ${eq.label}` }),
+        dec.killRisk >= 50 ? el("span", { class: "kill-risk", text: `kill ${dec.killRisk}` }) : null,
+      ]),
+      el("div", { class: "dims" }, [
+        dimBar("Fit", dec.dimensions.fit),
+        dimBar("Pain", dec.dimensions.pain),
+        dimBar("Timing", dec.dimensions.timing),
+        dimBar("Access", dec.dimensions.access),
+      ]),
+    ]),
+  ]);
+}
+
+// Fila de Operator: gestos rápidos sobre la oportunidad (contextual, no protagonista).
+function operatorRow(opp, handlers) {
+  if (!handlers.onOperator) return null;
+  const chip = (code, label) => el("button", {
+    class: `op-chip op-${code}`, text: label,
+    onClick: (e) => { e.stopPropagation(); handlers.onOperator(opp.id, code); },
+  });
+  return el("div", { class: "op-row" }, [
+    chip("defend", "Defender"),
+    chip("kill", "Matar"),
+    chip("angle", "Ángulo"),
+    chip("brief", "Brief"),
+  ]);
+}
+
 /**
  * @param {object} opp        Scored opportunity (with .scores and .ranking)
  * @param {object} record     Tracking record { status, notes }
@@ -308,6 +359,7 @@ function bullets(arr) {
  */
 export function renderCard(opp, record, handlers = {}) {
   const s = opp.scores;
+  const dec = decide(opp, s || {});
   const sector = SECTOR_BY_KEY[opp.sector]?.label || opp.sector;
   const status = record?.status || "not_called";
   const dm = opp.decisionMaker || {};
@@ -509,6 +561,7 @@ export function renderCard(opp, record, handlers = {}) {
     sec("Primera palanca", el("p", { text: opp.firstLever })),
     sec("Objeción probable", el("p", { text: opp.objection })),
     sec("Respuesta recomendada", el("p", { class: "resp", html: `${esc(opp.objectionResponse)}` })),
+    dec.killReasons.length ? sec("Kill reasons — por qué NO perseguirlo", bullets(dec.killReasons.map((k) => k.label))) : null,
     sec("Razones para NO llamar", bullets(opp.reasonsNotToCall)),
     sec("Qué invalidaría la tesis", bullets(opp.invalidators)),
     readOnly ? null : verificationBlock(opp, handlers),
@@ -546,9 +599,11 @@ export function renderCard(opp, record, handlers = {}) {
   // acción). El resto se revela al abrir "Ver análisis completo".
   return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
+    decisionStrip(dec),
     hook,
     action,
     nbaPill,
+    operatorRow(opp, handlers),
     failurePanel,
     detail,
   ]);

@@ -67,6 +67,9 @@ import { buildFollowUpTask, dueFollowupTasks } from "../callfollowup.js";
 import { resolveNextActionIntent } from "../nextaction.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
+import { decide } from "../decision.js";
+import { buildBrief, briefToText } from "../brief.js";
+import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS } from "../operator.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
 import * as activity from "../activity.js";
@@ -2216,6 +2219,61 @@ function todayCall(o, i, track) {
 // Abre el guion de llamada y el mini-dossier de un lead en una capa modal.
 // El servicio mejor encajado se incrusta en la oferta; el texto se puede copiar
 // listo para enviar. Sin precios: el cierre agenda diagnóstico.
+// Operator v1 — drawer contextual sobre UNA oportunidad. Calcula la decisión y
+// el brief en local (decision.js/brief.js), y muestra la respuesta a la
+// intención elegida. Sin LLM, sin red. Cambiar de intención repinta en el sitio.
+function openOperator(opp, intent = "explain") {
+  if (!opp) return;
+  const scored = opp.scores || {};
+  const decision = decide(opp, scored);
+  const brief = buildBrief(opp, scored, decision);
+  const ctx = { opp, scored, decision, brief };
+
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+
+  let current = OPERATOR_INTENTS.includes(intent) ? intent : "explain";
+  const body = el("div", { class: "op-body" });
+  const tabs = el("div", { class: "op-tabs" });
+
+  const copyBtn = el("button", { class: "pb-copy", text: "Copiar brief", onClick: () => {
+    const txt = briefToText(brief);
+    const done = () => { copyBtn.textContent = "✓ Copiado"; setTimeout(() => (copyBtn.textContent = "Copiar brief"), 1400); };
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(done).catch(done); else done();
+  } });
+
+  function paint() {
+    tabs.innerHTML = "";
+    for (const it of OPERATOR_INTENTS) {
+      tabs.appendChild(el("button", {
+        class: `op-tab ${it === current ? "active" : ""}`, text: OPERATOR_LABELS[it],
+        onClick: () => { current = it; paint(); },
+      }));
+    }
+    const ans = operatorAnswer(current, ctx);
+    body.innerHTML = "";
+    body.appendChild(el("div", { class: "op-ans-title", text: ans.title }));
+    body.appendChild(el("div", { class: "op-ans" }, ans.lines.map((l) => el("p", { class: "op-line", text: l }))));
+    body.appendChild(current === "brief" ? copyBtn : null);
+  }
+  paint();
+
+  overlay.appendChild(el("div", { class: "pb-panel op-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", {}, [
+        el("div", { class: "pb-title", text: `Operator — ${opp.company}` }),
+        el("div", { class: "pb-sub", text: `OCI ${decision.oci} · ${decision.decisionLabel} · ${decision.strategicTag.label}` }),
+      ]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    tabs,
+    body,
+  ]));
+  document.body.appendChild(overlay);
+}
+
 function openPlaybook(opp) {
   if (!opp) return;
   const top = matchServices(opp, { max: 1 })[0] || null;
@@ -2522,6 +2580,12 @@ function cardHandlers(afterMutate) {
     // y borrar llamadas, solo para roles con escritura.
     getCalls: (id) => store.getLeadCalls(id),
     getLeadTasks: (id) => store.getTasks().filter((t) => t.leadId === id),
+    // Operator v1: panel contextual (explicar/defender/matar/ángulo/brief). Solo
+    // lee y muestra — no muta — así que disponible para cualquier rol.
+    onOperator: (id, intent) => {
+      const lead = (state.results?.all || []).find((o) => o.id === id);
+      if (lead) openOperator(lead, intent);
+    },
     // Próxima mejor acción pulsable: resuelve la intención (pura) y la ejecuta
     // con la lógica segura ya existente (CRM, tareas, navegación). Cambios de
     // estado piden confirmación; nada se mueve si rompería la regla de no-degradar.
