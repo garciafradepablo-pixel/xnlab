@@ -317,7 +317,7 @@ export function Transform({ lang }: { lang: "en" | "es" }) {
               {t.ctaH}
             </p>
             <Link
-              href="/contact"
+              href="/perception-audit"
               style={{
                 display: "inline-flex",
                 alignItems: "center",

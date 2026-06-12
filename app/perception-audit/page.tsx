@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import PerceptionAudit from "./_perception-audit";
 
-const TITLE = "Perception Audit — XNLAB";
+const TITLE = "Perception Audit";
 const DESCRIPTION =
   "The Perception Audit is the diagnosis every XNLAB engagement begins with. We map the gap between what your brand is worth in person and what the market reads online — surface by surface — and hand you the fastest path to closing it. By application.";
 

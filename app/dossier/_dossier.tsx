@@ -21,7 +21,7 @@ const en = {
     h1a: "A short document.",
     h1b: "Sent by the studio.",
     lead:
-      "How the studio operates, the six surfaces we work across, the position on AI, the discovery protocol. Released as a private read for visitors considering an engagement. The first cycle of MMXXVI is open. Cycles close at six brands.",
+      "How the studio operates, the six surfaces we work across, the position on AI, the discovery protocol. Released as a private read for visitors considering an engagement. The first cycle of MMXXVI is in selection. Cycles close at six brands.",
     emailLabel: "Email",
     emailPlaceholder: "you@company.com",
     submit: "Request the dossier",
@@ -190,7 +190,7 @@ const es = {
     h1a: "Un documento corto.",
     h1b: "Lo envía el estudio.",
     lead:
-      "Cómo opera el estudio, las seis superficies en las que trabajamos, la posición sobre IA, el protocolo de discovery. Se entrega como lectura privada a quienes consideran abrir un encargo. El primer ciclo de MMXXVI está abierto. Los ciclos cierran a seis marcas.",
+      "Cómo opera el estudio, las seis superficies en las que trabajamos, la posición sobre IA, el protocolo de discovery. Se entrega como lectura privada a quienes consideran abrir un encargo. El primer ciclo de MMXXVI está en selección. Los ciclos cierran a seis marcas.",
     emailLabel: "Email",
     emailPlaceholder: "tu@empresa.com",
     submit: "Pedir el dossier",
