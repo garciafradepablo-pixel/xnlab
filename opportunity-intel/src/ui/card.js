@@ -402,7 +402,6 @@ export function renderCard(opp, record, handlers = {}) {
     // con Defender/Matar/Ángulo/Brief). Sustituye a los cuatro chips en reposo.
     handlers.onOperator ? el("button", { class: "c-operator", title: "Operator — defender · matar · ángulo · brief", text: "▸", onClick: (e) => { e.stopPropagation(); handlers.onOperator(opp.id, "explain"); } }) : null,
     openCase ? el("button", { class: "c-open", title: "Abrir el caso a pantalla completa", text: "⤢", onClick: openCase }) : null,
-    handlers.onSello ? el("button", { class: "c-sello", title: "Lanzar un sello al compañero sobre este lead", text: "📌", onClick: (e) => { e.stopPropagation(); handlers.onSello(opp.id); } }) : null,
   ]);
 
   // ---- HOOK: the single reason to call now ----

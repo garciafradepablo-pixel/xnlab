@@ -13,6 +13,11 @@ import { scoreOpportunity } from "../scoring.js";
 import SEED from "../seed.js";
 import RESEARCHED from "../data/researched.js";
 import MALLORCA from "../data/mallorca.js";
+
+// ECO_ENABLED: el micro flotante EC·Eco es una herramienta de colaboración
+// interna. Se desactiva del flujo principal sin borrar voice.js ni su lógica.
+// Cambiar a true para restaurarlo cuando se quiera.
+const ECO_ENABLED = false;
 import {
   SECTORS,
   SECTOR_BY_KEY,
@@ -141,7 +146,7 @@ export async function mount(rootEl) {
   ensureSyncSubscription();
   ensureRemoteRefresh(); // el latido del muelle: lo del otro entra sin recargar
   ensureHotkeys(); // ⌘K disponible en toda la app
-  ensureEco(); // micro flotante (EC · Eco) abajo a la derecha
+  if (ECO_ENABLED) ensureEco(); // micro flotante (EC · Eco) — desactivado en flujo principal
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
@@ -610,13 +615,12 @@ function header() {
         whaleMark(),
         el("span", { class: "logo", html: 'CONNECT' }),
       ]),
-      el("span", { class: "tagline", text: "Inteligencia de oportunidades — capta y selecciona clientes" }),
+      el("span", { class: "tagline", text: "Pásame caos. Te devuelvo el mapa: qué atacar, qué verificar, qué descartar." }),
     ]),
     el("div", { class: "head-actions" }, [
       state.dataset !== "researched"
         ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Conecta fuentes reales (ver README)." })
         : null,
-      muellePulse(),
       userChip(),
       syncBadge(),
     ]),
@@ -833,37 +837,47 @@ function openProfile() {
 // esconde a quien no la tiene: un viewer/analyst (solo lectura) no ve «Buscar»
 // (descubrir) ni el tablero «CRM» (mover) — entra a su mundo sin botones que no
 // puede pulsar. El editor (Javi) las ve todas; el admin (Pablo), además «Equipo».
-const ZONES = [
-  { key: "work", label: "Trabajar", views: [["today", "Hoy"], ["tasks", "Tareas"], ["agenda", "Agenda"]] },
-  { key: "capture", label: "Captar", views: [["cards", "Oportunidades"], ["search", "Buscar", "discover"]] },
-  { key: "close", label: "Cerrar", views: [["crm", "CRM", "crm"], ["pipeline", "Embudo"], ["memory", "Caja Negra", "crm"]] },
-  { key: "muelle", label: "Muelle", views: [["muelle", "Posits"]] },
-  { key: "know", label: "Saber", views: [["learning", "Aprendizaje"], ["training", "Dossiers"]] },
-];
+// Navegación principal: 3 zonas. Mapa es el feed central. Captar agrupa el
+// descubrimiento activo. Avanzado recoge todo lo operativo/interno sin abarrotar
+// la barra — las vistas siguen vivas en viewArea() y accesibles por ⌘K.
 function zonesForUser() {
-  // En modo prueba (solo lectura, sin sesión): solo mirar oportunidades.
+  // En modo prueba (solo lectura, sin sesión): solo mirar el mapa de oportunidades.
   if (previewMode) {
-    return [{ key: "capture", label: "Captar", views: [["cards", "Oportunidades"]] }];
+    return [{ key: "map", label: "Mapa", views: [["cards", "Oportunidades"]] }];
   }
-  // Filtra las sub-vistas que el rol no puede usar; si una zona se queda sin
-  // ninguna, desaparece de la barra (nada de zonas vacías).
-  const z = ZONES
-    .map((zz) => ({ ...zz, views: zz.views.filter(([, , cap]) => !cap || allow(cap)) }))
-    .filter((zz) => zz.views.length);
-  // Zona de equipo: quién está ahora, feed de actividad, chat, mejoras, privados,
-  // drive y productividad. Es para quien OPERA (editor/admin); un rol de solo
-  // lectura no gobierna ni colabora, así que no ve «Equipo». La gestión de
-  // personas, solo admin.
+
+  // Mapa: el feed principal de oportunidades. Siempre visible.
+  const mapZone = { key: "map", label: "Mapa", views: [["cards", "Oportunidades"]] };
+
+  // Captar: descubrimiento activo (gated por permiso discover). Desaparece si no hay permiso.
+  const captureViews = [["search", "Buscar", "discover"]].filter(([,, cap]) => !cap || allow(cap));
+  const captureZone = captureViews.length ? { key: "capture", label: "Captar", views: captureViews } : null;
+
+  // Avanzado: todo lo operativo no-core. Sin gate → siempre visible; cada subtab
+  // filtra su propia cap. Las vistas de equipo solo para quien puede escribir.
+  const advancedViews = [
+    ["today", "Hoy"],
+    ["tasks", "Tareas"],
+    ["agenda", "Agenda"],
+    ["crm", "CRM", "crm"],
+    ["pipeline", "Embudo"],
+    ["memory", "Caja Negra", "crm"],
+    ["muelle", "Posits"],
+    ["learning", "Aprendizaje"],
+    ["training", "Dossiers"],
+  ].filter(([,, cap]) => !cap || allow(cap));
+
   if (allow("write")) {
     const teamViews = [["presence", "Ahora"], ["feed", "Feed"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
     if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
-    z.push({ key: "team", label: "Equipo", views: teamViews });
+    advancedViews.push(...teamViews);
   }
-  return z;
+
+  return [mapZone, captureZone, { key: "advanced", label: "Avanzado", views: advancedViews }].filter(Boolean);
 }
 function zoneOfView(view) {
   for (const z of zonesForUser()) if (z.views.some(([k]) => k === view)) return z.key;
-  return "work";
+  return "map"; // fallback al mapa si la vista no está en ninguna zona visible
 }
 
 function tabs() {
