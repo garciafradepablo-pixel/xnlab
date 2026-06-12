@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Dossier from "./_dossier";
 
 export const metadata: Metadata = {
-  title: "Studio dossier — XNLAB",
+  title: "Studio dossier",
   description:
     "The XNLAB studio dossier for cycle MMXXVI. How the studio operates, the six surfaces, the six systems, the AI position, the discovery protocol. By request.",
   alternates: { canonical: "/dossier" },

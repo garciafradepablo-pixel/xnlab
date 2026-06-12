@@ -6,7 +6,7 @@ import { getNonce } from "../_lib/csp";
 const SITE = "https://xnlab.io";
 
 export const metadata: Metadata = {
-  title: "Sectors — Atmosphere Systems by Industry · XNLAB",
+  title: "Sectors — Atmosphere Systems by Industry",
   description:
     "The six surfaces, applied to your industry. Hospitality, clinics, restaurants, real estate — and the next sector each cycle. By appointment.",
   keywords: [

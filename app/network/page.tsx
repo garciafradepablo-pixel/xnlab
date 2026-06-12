@@ -7,7 +7,7 @@ import NetworkWindow from "./_network";
 // worlds, not a recruitment door. The link still resolves for anyone who
 // has it; noindex only keeps crawlers from listing it.
 export const metadata: Metadata = {
-  title: "The network — XNLAB",
+  title: "The network",
   description:
     "The studio's collaborator window for cycle MMXXVI. Four disciplines — distribution, systems, creation, direction. By request.",
   alternates: { canonical: "/network" },

@@ -60,7 +60,7 @@ const en = {
   dossier: {
     eyebrow: "Not ready to write yet",
     title: "Request the studio dossier.",
-    body: "A short document. How the studio operates, the six surfaces, a ledger of recent engagements. Sent personally.",
+    body: "A short document. How the studio operates, the six surfaces, the position on AI, the discovery protocol. Sent personally.",
     cta: "Request the dossier",
   },
   reading: {
@@ -122,7 +122,7 @@ const es = {
   dossier: {
     eyebrow: "Aún no es momento de escribir",
     title: "Pide el dossier del estudio.",
-    body: "Un documento corto. Cómo opera el estudio, las seis superficies, un registro de los encargos recientes. Enviado en persona.",
+    body: "Un documento corto. Cómo opera el estudio, las seis superficies, la posición ante la IA y el protocolo de descubrimiento. Enviado en persona.",
     cta: "Pedir el dossier",
   },
   reading: {

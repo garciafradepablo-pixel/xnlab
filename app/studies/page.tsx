@@ -4,7 +4,7 @@ import { projects } from "./data";
 import { getNonce } from "../_lib/csp";
 
 export const metadata: Metadata = {
-  title: "Atelier Studies — XNLAB Internal Visual Systems",
+  title: "Atelier Studies — Internal Visual Systems",
   description:
     "Internal XNLAB studies published while the first wave of client work matures. Aesthetic exercises in atmosphere, identity, campaign systems and digital presence — the same framework used in every engagement.",
   alternates: { canonical: "/studies" },
