@@ -9,6 +9,7 @@ import { WordmarkLink } from "./wordmark";
 import { worlds, type World } from "./worlds";
 import { verticals, type Vertical } from "./verticals";
 import { Orb } from "./orb";
+import { Magnetic } from "./chrome";
 
 const serif = "var(--font-serif,'Cormorant Garamond',Georgia,serif)";
 
@@ -140,6 +141,20 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
             const onRoute =
               pathname === it.href ||
               (it.href !== "/" && pathname.startsWith(it.href));
+            const linkEl = (
+              <Link
+                href={it.href}
+                aria-current={onRoute ? "page" : undefined}
+                style={{
+                  textDecoration: "none",
+                  color: active || onRoute ? "white" : "rgba(255,255,255,0.55)",
+                  letterSpacing: active ? "0.28em" : "0.22em",
+                  transition: "color 0.3s, letter-spacing 0.3s",
+                }}
+              >
+                {it.label}
+              </Link>
+            );
             return (
               <div
                 key={it.key}
@@ -167,18 +182,7 @@ export function Nav({ lang, set, t }: { lang: NavLang; set: (l: NavLang) => void
                 }}
                 style={{ position: "relative", padding: "22px 0" }}
               >
-                <Link
-                  href={it.href}
-                  aria-current={onRoute ? "page" : undefined}
-                  style={{
-                    textDecoration: "none",
-                    color: active || onRoute ? "white" : "rgba(255,255,255,0.55)",
-                    letterSpacing: active ? "0.28em" : "0.22em",
-                    transition: "color 0.3s, letter-spacing 0.3s",
-                  }}
-                >
-                  {it.label}
-                </Link>
+                {it.key === "apply" ? <Magnetic strength={0.14}>{linkEl}</Magnetic> : linkEl}
                 {/* Hover underline — a thin amber line that draws from
                     the centre out on mouse enter and retracts on leave.
                     Sits BELOW the active-route dot so both can coexist

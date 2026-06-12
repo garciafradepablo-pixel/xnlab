@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ts, tsS, Dust } from "./atoms";
 import { Orb } from "./orb";
 import { worlds } from "./worlds";
+import { Magnetic } from "./chrome";
 
 type HeroCopy = {
   eyebrow: string;
@@ -13,6 +14,7 @@ type HeroCopy = {
   s2: string;
   s3: string;
   s4: string;
+  auditCta: string;
 };
 
 // Six World Cores arranged in a dome above the wordmark. The central
@@ -961,6 +963,62 @@ export function Hero({ lang, copy }: { lang: "en" | "es"; copy: HeroCopy }) {
               ? "First cycle of MMXXVI · Open"
               : "Primer ciclo de MMXXVI · Abierto"}
           </p>
+          {/* Primary commercial CTA. The hero is the 10-second window;
+              this is the one verb that matters. pointerEvents re-enabled
+              because the strapline wrapper is click-through. */}
+          <div style={{ pointerEvents: "auto" }}>
+            <Magnetic strength={0.18}>
+              <Link
+                href="/perception-audit"
+                style={{
+                  pointerEvents: "auto",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  marginTop: "clamp(6px,1vh,12px)",
+                  padding: "14px clamp(26px,3vw,38px)",
+                  fontSize: "clamp(10.5px,0.92vw,12px)",
+                  fontWeight: 500,
+                  letterSpacing: "0.3em",
+                  textTransform: "uppercase",
+                  color: "#060606",
+                  textDecoration: "none",
+                  background: "#f5e9d4",
+                  borderRadius: 999,
+                  transition:
+                    "background 0.5s cubic-bezier(0.22,1,0.36,1), transform 0.5s cubic-bezier(0.22,1,0.36,1), box-shadow 0.6s cubic-bezier(0.22,1,0.36,1)",
+                  boxShadow:
+                    "0 16px 40px -18px rgba(232,183,131,0.6), 0 0 0 1px rgba(232,183,131,0.2) inset",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 24px 58px -20px rgba(232,183,131,0.8), 0 0 0 1px rgba(232,183,131,0.34) inset";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = "#f5e9d4";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 16px 40px -18px rgba(232,183,131,0.6), 0 0 0 1px rgba(232,183,131,0.2) inset";
+                }}
+                onFocus={(e) => {
+                  e.currentTarget.style.background = "#ffffff";
+                  e.currentTarget.style.transform = "translateY(-1px)";
+                  e.currentTarget.style.boxShadow =
+                    "0 24px 58px -20px rgba(232,183,131,0.8), 0 0 0 1px rgba(232,183,131,0.34) inset";
+                }}
+                onBlur={(e) => {
+                  e.currentTarget.style.background = "#f5e9d4";
+                  e.currentTarget.style.transform = "translateY(0)";
+                  e.currentTarget.style.boxShadow =
+                    "0 16px 40px -18px rgba(232,183,131,0.6), 0 0 0 1px rgba(232,183,131,0.2) inset";
+                }}
+              >
+                {copy.auditCta}
+              </Link>
+            </Magnetic>
+          </div>
         </motion.div>
 
 
