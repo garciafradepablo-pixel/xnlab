@@ -114,3 +114,81 @@ export function operatorToday(decided = []) {
 export function operatorFilter(decided = [], decisionCode) {
   return decided.filter((x) => x && x.decision && x.decision.decision === decisionCode);
 }
+
+// =============================================================================
+// Operator GLOBAL — buckets del feed + comandos de la Command Bar.
+//
+// Convierte la capa de decisión en la superficie de trabajo: agrupa las
+// oportunidades en cuatro cubos accionables y traduce comandos en lenguaje
+// natural ("qué hago hoy", "mata ruido", "strategic doors") en un FOCO del feed
+// o una respuesta corta. Sin LLM: reglas locales, deterministas, testeables.
+// =============================================================================
+
+// Los cubos de cabecera. Cada uno = un conjunto de decisiones. Disjuntos por
+// diseño (lo que se ataca nunca se mezcla con lo que se mata).
+export const BUCKETS = [
+  { key: "actNow", label: "Act Now", decisions: ["ACT_NOW"] },
+  { key: "needsEvidence", label: "Needs Evidence", decisions: ["NEEDS_EVIDENCE", "ENRICH"] },
+  { key: "strategicDoors", label: "Strategic Doors", decisions: ["STRATEGIC_DOOR"] },
+  { key: "killedNoise", label: "Killed Noise", decisions: ["KILL", "OVER_SERVED"] },
+];
+
+/**
+ * Agrupa oportunidades decididas en los cubos de cabecera.
+ * @param {Array<{opp,decision}>} decided
+ * @returns {{actNow:Array, needsEvidence:Array, strategicDoors:Array, killedNoise:Array, all:Array}}
+ */
+export function bucketize(decided = []) {
+  const out = { actNow: [], needsEvidence: [], strategicDoors: [], killedNoise: [], all: decided.slice() };
+  for (const x of decided) {
+    const code = x && x.decision && x.decision.decision;
+    for (const b of BUCKETS) if (b.decisions.includes(code)) out[b.key].push(x);
+  }
+  return out;
+}
+
+const cnorm = (s) => String(s || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+
+export const COMMAND_SUGGESTIONS = ["qué hago hoy", "dame los mejores", "mata ruido", "strategic doors", "needs evidence", "leads para XN", "leads para 01"];
+
+/**
+ * Interpreta un comando de la Command Bar. PURO: no toca estado.
+ * @param {string} text
+ * @returns {{kind:"decision"|"top"|"classification"|"clear"|"unknown", label:string, decisions?:string[], sort?:string, value?:string, suggestions?:string[]}}
+ */
+export function parseCommand(text) {
+  const n = cnorm(text);
+  if (!n) return { kind: "clear", label: "Todo" };
+  const has = (...w) => w.some((x) => n.includes(x));
+  if (has("hoy", "today", "que hago", "atacar", "ataco")) return { kind: "decision", decisions: ["ACT_NOW", "PREPARE"], sort: "oci", label: "Hoy" };
+  if (has("mejor", "best", "top ", "los mejores")) return { kind: "top", label: "Mejores" };
+  if (has("mata", "matar", "kill", "ruido", "noise", "descarta", "basura")) return { kind: "decision", decisions: ["KILL", "OVER_SERVED"], label: "Ruido" };
+  if (has("strateg", "estrateg", "puerta", "door")) return { kind: "decision", decisions: ["STRATEGIC_DOOR"], label: "Strategic Doors" };
+  if (has("evidenc", "enrich", "enriquec", "faltan datos", "needs evidence")) return { kind: "decision", decisions: ["NEEDS_EVIDENCE", "ENRICH"], label: "Needs Evidence" };
+  if (has("xn")) return { kind: "classification", value: "xn", label: "Leads XN" };
+  if (has(" 01", "01", "cero uno")) return { kind: "classification", value: "01", label: "Leads 01" };
+  if (has("limpia", "reset", "todas", "todo", "clear", "quita")) return { kind: "clear", label: "Todo" };
+  return { kind: "unknown", label: String(text || "").trim(), suggestions: COMMAND_SUGGESTIONS };
+}
+
+/**
+ * Aplica un comando ya parseado sobre la lista decidida. PURO.
+ * @param {Array<{opp,decision}>} decided
+ * @param {object|null} cmd  salida de parseCommand
+ * @returns {Array<{opp,decision}>}
+ */
+export function applyCommand(decided = [], cmd) {
+  if (!cmd || cmd.kind === "clear" || cmd.kind === "unknown") return decided;
+  if (cmd.kind === "top") return decided.slice().sort((a, b) => b.decision.oci - a.decision.oci);
+  if (cmd.kind === "decision") {
+    const set = new Set(cmd.decisions);
+    let r = decided.filter((x) => set.has(x.decision.decision));
+    if (cmd.sort === "oci") r = r.sort((a, b) => b.decision.oci - a.decision.oci);
+    return r;
+  }
+  if (cmd.kind === "classification") {
+    return decided.filter((x) => x.opp && x.opp.scores && x.opp.scores.classification === cmd.value);
+  }
+  return decided;
+}
+
