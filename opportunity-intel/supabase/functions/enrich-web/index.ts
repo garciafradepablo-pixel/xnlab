@@ -71,6 +71,45 @@ function extract(html: string) {
   return { copyright_year, has_viewport, generator, title, signals: { opening, hiring, booking } };
 }
 
+// Extracción RICA adicional (Tanda 5): meta description, encabezados, texto
+// visible acotado y enlaces internos básicos. Se devuelve en la respuesta (NO se
+// cachea: cero migración de esquema) para que el extractor LOCAL honesto derive
+// señales citadas. Fragmentos cortos, sin copiar páginas enteras, sin crawling.
+function extractRich(html: string, baseUrl: string) {
+  const h = html.slice(0, MAX_HTML);
+  const md = h.match(/<meta[^>]+name=["']?description["']?[^>]*content=["']([^"']+)["']/i)
+    || h.match(/<meta[^>]+property=["']og:description["']?[^>]*content=["']([^"']+)["']/i);
+  const meta_description = md ? md[1].trim().slice(0, 300) : null;
+  const headings: string[] = [];
+  for (const m of h.matchAll(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/gi)) {
+    const t = m[1].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    if (t && t.length <= 120) headings.push(t);
+    if (headings.length >= 12) break;
+  }
+  const visible_text = h
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&nbsp;/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 2500);
+  const links: string[] = [];
+  const host = (() => { try { return new URL(baseUrl).host.toLowerCase(); } catch { return ""; } })();
+  for (const m of h.matchAll(/<a[^>]+href=["']([^"'#]+)["']/gi)) {
+    const href = m[1].trim();
+    if (!href) continue;
+    try {
+      const u = new URL(href, baseUrl);
+      if (u.host.toLowerCase() !== host) continue; // solo enlaces internos
+      const path = u.pathname.toLowerCase();
+      if (path && path !== "/" && !links.includes(path)) links.push(path);
+    } catch { /* href raro: ignora */ }
+    if (links.length >= 40) break;
+  }
+  return { meta_description, headings, visible_text, links };
+}
+
 function verdict(sig: { copyright_year: number | null; has_viewport: boolean }): string {
   const year = new Date().getFullYear();
   const parts: string[] = [];
@@ -136,7 +175,9 @@ Deno.serve(async (req: Request) => {
     generator: sig.generator, title: sig.title, note, signals: sig.signals,
   };
   try { await db.from("web_enrichment").upsert(record); } catch { /* best-effort */ }
-  return json({ ok: true, readable: true, ...row(record) });
+  // Campos ricos (Tanda 5): solo en la respuesta, no en la caché (cero migración).
+  const rich = extractRich(html, url);
+  return json({ ok: true, readable: true, ...row(record), final_url: url, ...rich });
 });
 
 function row(d: any) {

@@ -2227,3 +2227,14 @@ button.nba.nba-btn:active { transform: translateY(1px); }
   .imp-summary { gap: 6px; }
   .imp-stat { flex: 1 1 40%; }
 }
+
+/* ============================================================================
+   Tanda 5 — Enriquecimiento web (control discreto en la card)
+   ========================================================================== */
+.enrich-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 6px; }
+.enrich-btn { background: var(--panel-2); color: var(--ink-dim); border: 1px solid var(--line-2);
+  border-radius: 8px; padding: 5px 11px; font-size: 12px; cursor: pointer; transition: border-color .15s, color .15s; }
+.enrich-btn:hover { color: #9ad0c0; border-color: #2f5048; }
+.enrich-btn:disabled { opacity: 0.6; cursor: default; }
+.enrich-btn.is-done { color: var(--ink-faint); }
+.enrich-state { font-size: 11px; color: var(--ok); }
