@@ -189,6 +189,13 @@ export function applyCommand(decided = [], cmd) {
   if (cmd.kind === "classification") {
     return decided.filter((x) => x.opp && x.opp.scores && x.opp.scores.classification === cmd.value);
   }
+  // Foco "Recién importados": filtra por el conjunto exacto de ids que se acaban
+  // de pegar. No mira clasificación ni OCI — son leads que el usuario quiere ver
+  // YA, aunque sean 'unqualified'. El scoring no cambia: solo lo que se muestra.
+  if (cmd.kind === "recent") {
+    const set = new Set(cmd.ids || []);
+    return decided.filter((x) => x.opp && set.has(x.opp.id));
+  }
   return decided;
 }
 
@@ -205,6 +212,12 @@ export function commandAnswer(cmd, focused = []) {
   const n = focused.length;
   const ops = `${n} oportunidad${n === 1 ? "" : "es"}`; // plural irregular en español
   const best = focused[0];
+
+  if (cmd.kind === "recent") {
+    return n
+      ? `${ops} recién importada${n === 1 ? "" : "s"} — revísalas y enriquece su web antes de decidir.`
+      : "No hay importaciones recientes que mostrar.";
+  }
 
   if (cmd.kind === "top") {
     if (!n) return "No hay oportunidades con los datos actuales.";

@@ -90,5 +90,28 @@ ok(/No entendí/.test(unk) && /qué hago hoy/.test(unk), "comando desconocido �
 // Sin comando → sin respuesta (no ruido)
 ok(commandAnswer(null, decided) === "" && commandAnswer(parseCommand(""), decided) === "", "sin comando → línea vacía");
 
+// === Foco "Recién importados" (fix/recent-imports-focus) =====================
+// Un lead recién importado suele quedar 'unqualified'. El foco temporal debe
+// mostrarlo por id, ignorando clasificación, sin tocar el scoring.
+const imported = [
+  { opp: { id: "imp-1", company: "Importada A", scores: { classification: "unqualified" } }, decision: { decision: "NEEDS_EVIDENCE", oci: 20 } },
+  { opp: { id: "imp-2", company: "Importada B", scores: { classification: "unqualified" } }, decision: { decision: "ENRICH", oci: 18 } },
+];
+const pool = [...decided, ...imported]; // mezcla con leads 01/xn ya existentes
+const recentCmd = { kind: "recent", ids: ["imp-1", "imp-2"], label: "Recién importados" };
+const recentFocus = applyCommand(pool, recentCmd);
+// 1) tras importar, los 'unqualified' aparecen en el foco (no se ocultan)
+ok(recentFocus.length === 2 && recentFocus.every((x) => x.opp.scores.classification === "unqualified"), "1) foco muestra los importados 'unqualified'");
+// 3) el foco contiene SOLO los ids recién importados (no arrastra el resto)
+ok(recentFocus.map((x) => x.opp.id).sort().join(",") === "imp-1,imp-2", "3) el foco contiene solo los ids importados");
+ok(!recentFocus.some((x) => x.opp.id === "A"), "el foco NO incluye leads ajenos al import");
+// 4) el scoring/clasificación no cambia por enfocar (applyCommand no muta)
+ok(pool.find((x) => x.opp.id === "imp-1").opp.scores.classification === "unqualified", "4) clasificación intacta tras enfocar (no muta el scoring)");
+// commandAnswer honesto para el foco recent
+ok(/2 oportunidades recién importadas/.test(commandAnswer(recentCmd, recentFocus)), "recent → cuenta real de importadas");
+// 5) ids vacíos → foco vacío y mensaje honesto (no foco engañoso)
+ok(applyCommand(pool, { kind: "recent", ids: [] }).length === 0, "5) sin ids → foco vacío (no inventa)");
+ok(/No hay importaciones recientes/.test(commandAnswer({ kind: "recent", ids: [] }, [])), "5) recent vacío → mensaje honesto");
+
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);

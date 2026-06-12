@@ -2289,20 +2289,33 @@ function openImport() {
 
   function importRows(rows) {
     const existingNames = new Set((state.results?.all || []).map((o) => (o.company || "").toLowerCase()));
+    const importedIds = [];
     let added = 0;
     for (const row of rows) {
       const input = rowToLeadInput(row);
       if (!input.company && !input.website) continue;
-      store.saveUserLead(buildLead(input));
+      const lead = buildLead(input);
+      store.saveUserLead(lead);
+      importedIds.push(lead.id);
       existingNames.add((input.company || "").toLowerCase());
       added++;
     }
     close();
     recompute().then(() => {
-      // El feed muestra lo importado: enfócalo en lo que pide evidencia (donde caen).
-      state.feedCmd = null; state.feedCmdText = "";
+      if (!added) {
+        // Todo eran duplicados (o filas vacías): no creamos foco engañoso.
+        render();
+        flash("No había leads nuevos que importar (todo eran duplicados).");
+        return;
+      }
+      // Foco temporal "Recién importados": limpia cualquier foco/filtro previo y
+      // muestra EXACTAMENTE lo recién pegado, aunque sea 'unqualified'. El usuario
+      // vuelve al feed normal con "✕ quitar foco".
+      state.recentImportIds = importedIds;
+      state.feedCmd = { kind: "recent", ids: importedIds, label: "Recién importados" };
+      state.feedCmdText = "Recién importados";
       render();
-      flash(`Importadas ${added} oportunidad${added === 1 ? "" : "es"}. Revisa el feed: las pobres caen en 'Faltan datos'.`);
+      flash(`Importadas ${added} oportunidad${added === 1 ? "" : "es"} — mostrando recién importadas.`);
     });
   }
 
@@ -2581,7 +2594,13 @@ function cardsView() {
 // Modelo del feed: decide cada oportunidad visible una sola vez, agrupa en
 // buckets y aplica el foco activo (comando o bucket). Determinista.
 function feedModel() {
-  const base = visibleOpps();
+  // Foco "Recién importados": se salta los filtros de visibilidad (clasificación,
+  // sector, ciudad, minConfidence…) para el conjunto exacto recién pegado. Así los
+  // leads importados —a menudo 'unqualified'— SIEMPRE se ven justo tras importar,
+  // sin que un filtro previo los oculte. Fuera de este foco, el feed va normal.
+  const base = state.feedCmd && state.feedCmd.kind === "recent"
+    ? (state.results?.all || []).filter((o) => (state.feedCmd.ids || []).includes(o.id))
+    : visibleOpps();
   const decided = base.map((o) => ({ opp: o, decision: decide(o, o.scores || {}) }));
   const buckets = bucketize(decided);
   const filtered = applyCommand(decided, state.feedCmd);
