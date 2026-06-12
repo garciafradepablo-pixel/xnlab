@@ -13,7 +13,7 @@ const en = {
   h1a: "Write to",
   h1b: "the studio.",
   lead:
-    "We respond personally to every message that fits. The first cycle of MMXXVI is open.",
+    "We respond personally to every message that fits. The first cycle of MMXXVI is in selection.",
   fields: {
     name: "Name",
     email: "Email",
@@ -74,7 +74,7 @@ const es = {
   h1a: "Escribe al",
   h1b: "estudio.",
   lead:
-    "Respondemos personalmente a cada mensaje que encaja. El primer ciclo de MMXXVI está abierto.",
+    "Respondemos personalmente a cada mensaje que encaja. El primer ciclo de MMXXVI está en selección.",
   fields: {
     name: "Nombre",
     email: "Email",
