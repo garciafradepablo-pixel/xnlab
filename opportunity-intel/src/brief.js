@@ -116,3 +116,55 @@ export function briefToText(b) {
   L.push(`Próxima acción: ${b.nextAction ? b.nextAction.label : "—"}`);
   return L.join("\n");
 }
+
+/**
+ * Serializa el brief a Markdown para copiar/descargar (.md). Honesto: lo que no
+ * se sabe se nombra "No se sabe" (es) / "Unknown" (en), nunca se inventa.
+ * @param {object} b     brief de buildBrief
+ * @param {string} [lang] "es" | "en"
+ */
+export function briefToMarkdown(b, lang = "es") {
+  const UNK = lang === "en" ? "Unknown" : "No se sabe";
+  const t = {
+    sub: lang === "en" ? "sector/location to confirm" : "sector/ubicación por confirmar",
+    decision: lang === "en" ? "Decision" : "Decisión",
+    value: lang === "en" ? "Strategic value" : "Valor estratégico",
+    economy: lang === "en" ? "economy" : "economía",
+    evidence: lang === "en" ? "Evidence" : "Evidencia",
+    confirmed: lang === "en" ? "confirmed" : "confirmadas",
+    indic: lang === "en" ? "indicative" : "indicios",
+    unknown: lang === "en" ? "unknown" : "desconocidas",
+    thesis: lang === "en" ? "Thesis" : "Tesis",
+    why: lang === "en" ? "Why now" : "Por qué ahora",
+    pain: lang === "en" ? "Pain / gap" : "Dolor / brecha",
+    dontKnow: lang === "en" ? "What we DON'T know" : "Qué NO sabemos",
+    kill: "Kill reasons",
+    risks: lang === "en" ? "Risks" : "Riesgos",
+    channel: lang === "en" ? "Channel" : "Canal",
+    angle: lang === "en" ? "Opening angle" : "Ángulo de entrada",
+    first: lang === "en" ? "First message" : "Primer mensaje",
+    next: lang === "en" ? "Next action" : "Próxima acción",
+  };
+  const L = [];
+  L.push(`# Opportunity Brief — ${b.name}`);
+  L.push(`*${[b.sector, b.city].filter(Boolean).join(" · ") || t.sub}*`);
+  L.push("");
+  L.push(`**OCI ${b.oci}/100 — ${b.decisionLabel}.** ${b.decisionWhy}`);
+  L.push("");
+  L.push(`- **${t.value}:** ${b.strategicTag ? b.strategicTag.label : UNK}${b.economic ? ` · ${t.economy}: ${b.economic}` : ""}`);
+  L.push(`- **Fit / Pain / Timing / Access:** ${b.dimensions.fit} / ${b.dimensions.pain} / ${b.dimensions.timing} / ${b.dimensions.access}`);
+  L.push(`- **${t.evidence}:** ${b.evidenceQuality.label} — ${b.evidenceQuality.confirmed} ${t.confirmed}, ${b.evidenceQuality.indicative} ${t.indic}, ${b.evidenceQuality.unknown} ${t.unknown}`);
+  L.push("");
+  L.push(`## ${t.thesis}\n${b.thesis || UNK}`);
+  L.push(`## ${t.why}\n${b.whyNow || UNK}`);
+  L.push(`## ${t.pain}\n${b.pain || UNK}`);
+  L.push(`## ${t.dontKnow}\n${b.unknowns.length ? b.unknowns.map((u) => `- ${u}`).join("\n") : UNK}`);
+  if (b.killReasons.length) L.push(`## ${t.kill}\n${b.killReasons.map((k) => `- ${k.label}`).join("\n")}`);
+  if (b.risks.length) L.push(`## ${t.risks}\n${b.risks.map((r) => `- ${r}`).join("\n")}`);
+  L.push("");
+  L.push(`## ${t.channel}\n${b.channel || UNK}`);
+  L.push(`## ${t.angle}\n${b.openingAngle || UNK}`);
+  L.push(`## ${t.first}\n${b.firstMessage}`);
+  L.push(`## ${t.next}\n${b.nextAction ? b.nextAction.label : UNK}`);
+  return L.join("\n");
+}

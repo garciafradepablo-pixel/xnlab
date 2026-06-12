@@ -68,7 +68,8 @@ import { resolveNextActionIntent } from "../nextaction.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import { decide } from "../decision.js";
-import { buildBrief, briefToText } from "../brief.js";
+import { buildBrief, briefToText, briefToMarkdown } from "../brief.js";
+import { parseLeads, rowToLeadInput, findDuplicates } from "../importer.js";
 import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
 import * as tasks from "../tasks.js";
 import * as presence from "../presence.js";
@@ -2225,6 +2226,89 @@ function todayCall(o, i, track) {
 // Operator v1 — drawer contextual sobre UNA oportunidad. Calcula la decisión y
 // el brief en local (decision.js/brief.js), y muestra la respuesta a la
 // intención elegida. Sin LLM, sin red. Cambiar de intención repinta en el sitio.
+// Muelle de importación: pega una lista externa → preview honesto → al feed.
+// No enriquece, no inventa, no duplica en silencio.
+function openImport() {
+  const overlay = el("div", { class: "pb-overlay", onClick: (e) => { if (e.target === overlay) close(); } });
+  const close = () => { overlay.remove(); document.removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  document.addEventListener("keydown", onKey);
+
+  const ta = el("textarea", { class: "imp-ta", placeholder: "Pega aquí tu lista (CSV de Apollo/Clay/HubSpot, o nombres por línea).\nEj.: empresa,web,sector,ciudad,notas" });
+  const preview = el("div", { class: "imp-preview" });
+  const FIELD_LABEL = { company: "empresa", website: "web", sector: "sector", city: "ciudad", notes: "notas" };
+
+  function importRows(rows) {
+    const existingNames = new Set((state.results?.all || []).map((o) => (o.company || "").toLowerCase()));
+    let added = 0;
+    for (const row of rows) {
+      const input = rowToLeadInput(row);
+      if (!input.company && !input.website) continue;
+      store.saveUserLead(buildLead(input));
+      existingNames.add((input.company || "").toLowerCase());
+      added++;
+    }
+    close();
+    recompute().then(() => {
+      // El feed muestra lo importado: enfócalo en lo que pide evidencia (donde caen).
+      state.feedCmd = null; state.feedCmdText = "";
+      render();
+      flash(`Importadas ${added} oportunidad${added === 1 ? "" : "es"}. Revisa el feed: las pobres caen en 'Faltan datos'.`);
+    });
+  }
+
+  const analyze = el("button", { class: "btn", text: "Analizar lista", onClick: () => {
+    const parsed = parseLeads(ta.value);
+    preview.innerHTML = "";
+    if (!parsed.total) { preview.appendChild(el("p", { class: "imp-empty", text: "No detecté ninguna fila. Pega al menos un nombre de empresa." })); return; }
+    const existing = (state.results?.all || []).map((o) => ({ company: o.company, website: o.website }));
+    const dups = findDuplicates(parsed.rows, existing);
+    const dupCount = dups.filter((d) => d.dup).length;
+    const newRows = parsed.rows.filter((_, i) => !dups[i].dup);
+
+    preview.appendChild(el("div", { class: "imp-summary" }, [
+      el("div", { class: "imp-stat" }, [el("b", { text: String(parsed.total) }), el("span", { text: "leads detectados" })]),
+      el("div", { class: "imp-stat" }, [el("b", { text: String(newRows.length) }), el("span", { text: "nuevos" })]),
+      dupCount ? el("div", { class: "imp-stat imp-dup" }, [el("b", { text: String(dupCount) }), el("span", { text: "posibles duplicados" })]) : null,
+    ]));
+    preview.appendChild(el("p", { class: "imp-fields" }, [
+      el("span", { text: `Reconocidos: ${parsed.fields.recognized.map((f) => FIELD_LABEL[f] || f).join(", ") || "—"}` }),
+      parsed.fields.missing.length ? el("span", { class: "imp-missing", text: ` · Sin datos (quedan grises): ${parsed.fields.missing.map((f) => FIELD_LABEL[f] || f).join(", ")}` }) : null,
+    ]));
+    if (dupCount) {
+      preview.appendChild(el("p", { class: "imp-dupnote", text: `${dupCount} ya parecen estar en Connect (por web o nombre). Se saltarán salvo que importes todos.` }));
+    }
+    // Muestra de las primeras filas (honesto sobre qué entró).
+    preview.appendChild(el("div", { class: "imp-rows" }, parsed.rows.slice(0, 6).map((r, i) =>
+      el("div", { class: `imp-row ${dups[i].dup ? "is-dup" : ""}` }, [
+        el("span", { class: "imp-co", text: r.company || "(sin nombre)" }),
+        el("span", { class: "imp-web", text: r.website || "—" }),
+        dups[i].dup ? el("span", { class: "imp-tag", text: `dup: ${dups[i].against || ""}` }) : null,
+      ]))));
+
+    const actions = el("div", { class: "imp-actions" }, [
+      el("button", { class: "btn-primary", text: `Importar ${newRows.length} nuevos`, onClick: () => importRows(newRows), disabled: newRows.length ? undefined : "" }),
+      dupCount ? el("button", { class: "btn", text: `Importar todos (${parsed.total}, incl. duplicados)`, onClick: () => importRows(parsed.rows) }) : null,
+      el("button", { class: "btn", text: "Cancelar", onClick: close }),
+    ]);
+    preview.appendChild(actions);
+  } });
+
+  overlay.appendChild(el("div", { class: "pb-panel imp-panel" }, [
+    el("div", { class: "pb-head" }, [
+      el("div", {}, [
+        el("div", { class: "pb-title", text: "Importar leads" }),
+        el("div", { class: "pb-sub", text: "Pega Apollo/Clay/HubSpot/CSV. Connect los convierte en oportunidades con OCI y decisión — sin inventar lo que no aportes." }),
+      ]),
+      el("button", { class: "pb-x", text: "✕", title: "Cerrar", onClick: close }),
+    ]),
+    ta,
+    el("div", { class: "imp-bar" }, [analyze]),
+    preview,
+  ]));
+  document.body.appendChild(overlay);
+}
+
 function openOperator(opp, intent = "explain") {
   if (!opp) return;
   const scored = opp.scores || {};
@@ -2246,6 +2330,11 @@ function openOperator(opp, intent = "explain") {
     const done = () => { copyBtn.textContent = "✓ Copiado"; setTimeout(() => (copyBtn.textContent = "Copiar brief"), 1400); };
     if (navigator.clipboard?.writeText) navigator.clipboard.writeText(txt).then(done).catch(done); else done();
   } });
+  const mdBtn = el("button", { class: "pb-copy", text: "Descargar .md", onClick: () => {
+    const safe = String(opp.company || "brief").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    xport.download(`brief-${safe}.md`, briefToMarkdown(brief, "es"), "text/markdown");
+  } });
+  const briefActions = el("div", { class: "op-brief-actions" }, [copyBtn, mdBtn]);
 
   function paint() {
     tabs.innerHTML = "";
@@ -2259,7 +2348,7 @@ function openOperator(opp, intent = "explain") {
     body.innerHTML = "";
     body.appendChild(el("div", { class: "op-ans-title", text: ans.title }));
     body.appendChild(el("div", { class: "op-ans" }, ans.lines.map((l) => el("p", { class: "op-line", text: l }))));
-    body.appendChild(current === "brief" ? copyBtn : null);
+    body.appendChild(current === "brief" ? briefActions : null);
   }
   paint();
 
@@ -2423,7 +2512,11 @@ function cardsView() {
   return el("div", { class: "feed" }, [
     el("div", { class: "view-head" }, [
       el("h2", { text: "Feed de oportunidades" }),
-      (allow("discover") || allow("write")) ? agentButton() : null,
+      el("div", { class: "feed-io" }, [
+        allow("write") ? el("button", { class: "io-btn", title: "Pegar una lista externa (Apollo/Clay/HubSpot/CSV) y convertirla en oportunidades", text: "↧ Importar", onClick: openImport }) : null,
+        el("button", { class: "io-btn", title: "Exportar el feed como CSV de decisión", text: "↥ Export CSV", onClick: exportDecisionCsvNow }),
+        (allow("discover") || allow("write")) ? agentButton() : null,
+      ]),
     ]),
     el("div", { class: "agent-report", id: "agent-report" }),
     commandBar(),
@@ -2450,11 +2543,29 @@ function feedModel() {
 // Placeholder corto; los ejemplos son chips pulsables debajo (descubribles sin
 // texto largo que sature, y en móvil no se cortan).
 const CMD_EXAMPLES = ["Qué hago hoy", "Mata ruido", "Strategic doors", "Needs evidence"];
+// Comandos de app (import/export) — se interceptan antes del parser de feed para
+// no contaminar la lógica pura de operator.js. Devuelve true si lo gestiona.
+function appCommand(text) {
+  const n = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (!n.trim()) return false;
+  if (/\b(import|importar|pegar|paste)\b/.test(n)) { openImport(); return true; }
+  if (/\bexport/.test(n) || /\bexportar/.test(n) || (/\bcsv\b/.test(n) && !/import/.test(n))) {
+    exportDecisionCsvNow(); return true;
+  }
+  return false;
+}
 function runCommand(text) {
+  if (appCommand(text)) { state.feedCmdText = ""; return; }
   const cmd = parseCommand(text);
   state.feedCmdText = text;
   state.feedCmd = cmd.kind === "clear" ? null : cmd;
   render();
+}
+function exportDecisionCsvNow() {
+  const opps = (state.results?.all || []).filter((o) => o.scores);
+  if (!opps.length) { flash("No hay oportunidades que exportar todavía."); return; }
+  xport.exportDecisionCSV(opps, store.getTracking());
+  flash(`CSV exportado · ${opps.length} oportunidades.`);
 }
 function commandBar() {
   const input = el("input", {
