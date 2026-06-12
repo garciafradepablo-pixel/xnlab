@@ -593,8 +593,6 @@ output { font-size: 12px; color: var(--accent); }
 .card-priority { border-color: rgba(63,185,80,.45); }
 .rank-crown { color: var(--accent); font-size: 13px; display: block; line-height: 1; }
 
-.card.prio-high { border-top: 3px solid var(--green); }
-.card.prio-medium { border-top: 3px solid var(--yellow); }
 .card.prio-low { border-top: 3px solid var(--grey); }
 /* status accent on the whole card */
 .card.st-meeting_booked { box-shadow: inset 3px 0 0 var(--green); }
@@ -1688,8 +1686,7 @@ button:disabled { cursor: not-allowed; }
 /* Recomendación 'llamar ya' = urgencia, no verde */
 .reco-hot { color: #f57953; border-color: rgba(239,106,69,.45); }
 
-/* Prioridad alta = caliente (borde superior de la tarjeta) */
-.card.prio-high { border-top-color: #ef6a45; }
+
 
 /* Moodboard por empresa: miniaturas de su web (remotas + lazy → 0 peso bundle) */
 .cat-lead-wrap { display: block; }
