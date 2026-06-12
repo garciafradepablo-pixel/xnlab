@@ -2447,24 +2447,30 @@ function feedModel() {
 }
 
 // Command Bar: pregunta en lenguaje natural → enfoca el feed o sugiere.
+// Placeholder corto; los ejemplos son chips pulsables debajo (descubribles sin
+// texto largo que sature, y en móvil no se cortan).
+const CMD_EXAMPLES = ["Qué hago hoy", "Mata ruido", "Strategic doors", "Needs evidence"];
+function runCommand(text) {
+  const cmd = parseCommand(text);
+  state.feedCmdText = text;
+  state.feedCmd = cmd.kind === "clear" ? null : cmd;
+  render();
+}
 function commandBar() {
   const input = el("input", {
     class: "cmd-ask", type: "text", value: state.feedCmdText || "",
-    placeholder: "Ask Operator…  ·  qué hago hoy · mata ruido · strategic doors · needs evidence · leads para XN",
+    placeholder: "Ask Operator…",
   });
-  const run = () => {
-    const cmd = parseCommand(input.value);
-    state.feedCmdText = input.value;
-    state.feedCmd = cmd.kind === "clear" ? null : cmd;
-    render();
-  };
-  input.addEventListener("keydown", (e) => { if (e.key === "Enter") run(); });
-  return el("div", { class: "cmd-bar" }, [
+  input.addEventListener("keydown", (e) => { if (e.key === "Enter") runCommand(input.value); });
+  const bar = el("div", { class: "cmd-bar" }, [
     el("span", { class: "cmd-ask-ic", text: "▸" }),
     input,
-    el("button", { class: "cmd-ask-go", text: "Preguntar", onClick: run }),
+    el("button", { class: "cmd-ask-go", text: "Preguntar", onClick: () => runCommand(input.value) }),
     state.feedCmd ? el("button", { class: "cmd-ask-clear", title: "Quitar foco", text: "✕", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } }) : null,
   ]);
+  const examples = el("div", { class: "cmd-examples" }, CMD_EXAMPLES.map((ex) =>
+    el("button", { class: "cmd-ex", text: ex, onClick: () => runCommand(ex) })));
+  return el("div", { class: "cmd-wrap" }, [bar, examples]);
 }
 
 // Respuesta ejecutiva de una línea del Operator: aparece sobre el feed cuando

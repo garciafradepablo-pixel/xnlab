@@ -19,14 +19,12 @@ import {
   LEVELS,
   SECTOR_BY_KEY,
   CLASSIFICATIONS,
-  RECOMMENDATIONS,
   OFFER_LADDER,
   TENSION_TYPES,
   CALL_STATUSES,
   STATUS_LABELS,
   CALL_CHANNELS,
   CALL_RESULTS,
-  ECONOMIC_LABELS,
   evidenceVerdict,
 } from "../models.js";
 import { explainScore, verificationProfile } from "../scoring.js";
@@ -298,12 +296,17 @@ function dimBar(label, value) {
 }
 
 // OCI HERO — el número de decisión principal de la card (sustituye al anillo de
-// confianza como jerarquía). Va donde antes estaba el anillo, tintado por decisión.
-function ociHero(dec) {
+// confianza como jerarquía). El índice de éxito y la confianza del motor viven
+// en su tooltip: presentes para quien los busque, sin competir en reposo.
+function ociHero(dec, s = {}) {
   const tone = dec.oci >= 66 ? "hot" : dec.oci >= 45 ? "warm" : "cold";
+  const extra = [
+    s.successIndex != null ? `Éxito ${s.successIndex}` : null,
+    s.confidence != null ? `Conf. motor ${s.confidence}` : null,
+  ].filter(Boolean).join(" · ");
   return el("div", {
     class: `oci-hero oci-${tone} dec-${dec.decision}`,
-    title: `Opportunity Confidence Index ${dec.oci}/100 — ${dec.decisionLabel}: ${dec.decisionWhy}`,
+    title: `Opportunity Confidence Index ${dec.oci}/100 — ${dec.decisionLabel}: ${dec.decisionWhy}${extra ? `\n${extra}` : ""}`,
   }, [
     el("b", { class: "oci-num", text: String(dec.oci) }),
     el("span", { class: "oci-l", text: "OCI" }),
@@ -334,20 +337,9 @@ function decisionStrip(dec, opp) {
   ]);
 }
 
-// Fila de Operator: gestos rápidos sobre la oportunidad (contextual, no protagonista).
-function operatorRow(opp, handlers) {
-  if (!handlers.onOperator) return null;
-  const chip = (code, label) => el("button", {
-    class: `op-chip op-${code}`, text: label,
-    onClick: (e) => { e.stopPropagation(); handlers.onOperator(opp.id, code); },
-  });
-  return el("div", { class: "op-row" }, [
-    chip("defend", "Defender"),
-    chip("kill", "Matar"),
-    chip("angle", "Ángulo"),
-    chip("brief", "Brief"),
-  ]);
-}
+// (La fila de cuatro chips Operator en reposo se sustituyó por un solo control
+// discreto en el clúster de la card —ver c-operator en `top`— que abre el drawer
+// con Defender/Matar/Ángulo/Brief. Menos ruido, mismo acceso.)
 
 /**
  * @param {object} opp        Scored opportunity (with .scores and .ranking)
@@ -378,21 +370,21 @@ export function renderCard(opp, record, handlers = {}) {
     el("div", { class: "c-ident" }, [
       el("h3", { class: openCase ? "c-title-open" : "", title: openCase ? "Abrir el caso a pantalla completa" : null, text: opp.company, onClick: openCase || undefined }),
       el("p", { class: "c-sub", text: `${opp.subsector} · ${opp.city}` }),
-      // Foco radical: en reposo, solo lo que decide si llamar — éxito, casa y
-      // facilidad de contacto. (Recomendación y € viven en el análisis.)
+      // Foco radical en reposo: solo casa (01/XN) y facilidad de contacto. El
+      // éxito y la confianza del motor viven en el tooltip del OCI; ya no compiten.
       el("div", { class: "c-tags" }, [
-        s.successIndex != null ? el("span", { class: `success-tag success-${band(s.successIndex)}`, title: `Índice de éxito ${s.successIndex} · ${RECOMMENDATIONS[s.recommendation]} · € ${ECONOMIC_LABELS[s.economicPotential] || s.economicPotential}`, text: `🎯 ${s.successIndex}` }) : null,
         el("span", { class: `pillc pillc-${s.classification}`, text: classLabel(s.classification) }),
         (() => { const cd = connectionDifficulty(opp); return el("span", {
           class: `conn conn-${cd.level}`,
           title: `${cd.label} — ${cd.advice}${cd.channels.length ? "\nCanales: " + cd.channels.join(", ") : ""}`,
           text: cd.icon,
         }); })(),
-        // Confianza del motor: detalle secundario (el número de decisión es OCI).
-        el("span", { class: "conf-tag", title: `Confianza del motor ${s.confidence}/100`, text: `conf ${s.confidence}` }),
       ]),
     ]),
-    ociHero(dec),
+    ociHero(dec, s),
+    // Operator: un solo control discreto en el clúster de la card (abre el drawer
+    // con Defender/Matar/Ángulo/Brief). Sustituye a los cuatro chips en reposo.
+    handlers.onOperator ? el("button", { class: "c-operator", title: "Operator — defender · matar · ángulo · brief", text: "▸", onClick: (e) => { e.stopPropagation(); handlers.onOperator(opp.id, "explain"); } }) : null,
     openCase ? el("button", { class: "c-open", title: "Abrir el caso a pantalla completa", text: "⤢", onClick: openCase }) : null,
     handlers.onSello ? el("button", { class: "c-sello", title: "Lanzar un sello al compañero sobre este lead", text: "📌", onClick: (e) => { e.stopPropagation(); handlers.onSello(opp.id); } }) : null,
   ]);
@@ -602,7 +594,6 @@ export function renderCard(opp, record, handlers = {}) {
     hook,
     action,
     nbaPill,
-    operatorRow(opp, handlers),
     failurePanel,
     detail,
   ]);

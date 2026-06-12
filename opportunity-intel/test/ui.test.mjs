@@ -53,9 +53,14 @@ try {
       // Tanda 2: el feed trae Command Bar y resumen de buckets.
       ok(root.querySelector(".cmd-ask") != null, "el feed muestra la Command Bar 'Ask Operator'");
       ok(root.querySelector(".buckets") != null, "el feed muestra el resumen de buckets");
+      // Tanda 3.5: ejemplos de comando como chips pulsables (no texto largo).
+      ok(root.querySelector(".cmd-examples .cmd-ex") != null, "la Command Bar ofrece ejemplos como chips");
       // Tanda 3: OCI es la jerarquía principal; el anillo de confianza ya no domina.
       ok(root.querySelector(".oci-hero") != null, "la tarjeta muestra el OCI como número principal (hero)");
       ok(root.querySelector(".card .ring") == null, "el anillo de confianza ya no domina la tarjeta");
+      // Tanda 3.5: Operator sigue accesible, pero como un solo control (no 4 CTAs).
+      ok(root.querySelector(".card .c-operator") != null, "la tarjeta conserva acceso a Operator (control único)");
+      ok(root.querySelector(".card .op-row") == null, "la fila de cuatro chips Operator ya no carga el reposo");
     }
   }
 } catch (e) { ok(false, "navegar Captar→Oportunidades no debe lanzar: " + e.message); }
