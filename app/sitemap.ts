@@ -41,6 +41,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "monthly",
     priority: 0.85,
   };
+  // /perception-audit — the commercial entry product and the primary
+  // CTA target from the home hero and contact section. High priority.
+  const perceptionAudit: MetadataRoute.Sitemap[number] = {
+    url: `${SITE}/perception-audit`,
+    lastModified: now,
+    changeFrequency: "monthly",
+    priority: 0.95,
+  };
   // /for/[vertical] — the applied verticals system. Each industry page
   // is a dedicated, high-intent entry point (a hospitality founder, a
   // clinic owner, an estate agency all land on their own surface). High
@@ -96,5 +104,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     changeFrequency: "yearly",
     priority: 0.7,
   }));
-  return [home, worldsIndex, ...worldsList, verticalsIndex, ...verticalsList, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
+  return [home, perceptionAudit, verticalsIndex, ...verticalsList, worldsIndex, ...worldsList, labRecordsIndex, ...labRecords, manifesto, workIndex, ...works, dossier, contact, imprint];
 }
