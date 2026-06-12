@@ -2188,3 +2188,42 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .cmd-ex { font-size: 11px; padding: 5px 11px; border-radius: 999px; background: var(--panel-2);
   border: 1px solid var(--line); color: var(--ink-dim); cursor: pointer; transition: border-color .15s, color .15s; }
 .cmd-ex:hover { border-color: #3a4675; color: #aebbff; }
+
+/* ============================================================================
+   Tanda 4 — Import/Export vendible (acciones discretas, modal de import)
+   ========================================================================== */
+.feed-io { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.io-btn { background: var(--panel-2); color: var(--ink-dim); border: 1px solid var(--line-2);
+  border-radius: 8px; padding: 6px 11px; font-size: 12px; cursor: pointer; transition: border-color .15s, color .15s; }
+.io-btn:hover { color: #aebbff; border-color: #3a4675; }
+
+/* Modal de import (reusa pb-overlay/pb-panel) */
+.imp-panel { max-width: 600px; }
+.imp-ta { width: 100%; min-height: 130px; background: var(--panel-2); color: var(--ink); border: 1px solid var(--line);
+  border-radius: 10px; padding: 10px 12px; font: inherit; font-size: 13px; resize: vertical; }
+.imp-bar { display: flex; gap: 8px; margin: 10px 0; }
+.imp-preview { display: flex; flex-direction: column; gap: 10px; }
+.imp-empty { color: var(--ink-faint); font-size: 13px; }
+.imp-summary { display: flex; gap: 10px; flex-wrap: wrap; }
+.imp-stat { display: flex; align-items: baseline; gap: 6px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 9px; padding: 6px 12px; }
+.imp-stat b { font-size: 18px; font-variant-numeric: tabular-nums; color: var(--ink); }
+.imp-stat span { font-size: 11px; color: var(--ink-dim); text-transform: uppercase; letter-spacing: 0.03em; }
+.imp-dup b { color: var(--yellow); }
+.imp-fields { font-size: 12px; color: var(--ink-dim); margin: 0; }
+.imp-missing { color: var(--ink-faint); }
+.imp-dupnote { font-size: 12px; color: var(--yellow); margin: 0; }
+.imp-rows { display: flex; flex-direction: column; gap: 4px; max-height: 180px; overflow-y: auto; }
+.imp-row { display: flex; gap: 10px; align-items: baseline; font-size: 12px; padding: 4px 8px; background: var(--panel-2); border-radius: 7px; }
+.imp-row.is-dup { opacity: 0.6; }
+.imp-co { font-weight: 600; color: var(--ink); }
+.imp-web { color: var(--ink-faint); }
+.imp-tag { margin-left: auto; color: var(--yellow); font-size: 11px; }
+.imp-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+.op-brief-actions { display: flex; gap: 8px; margin-top: 4px; }
+
+@media (max-width: 600px) {
+  .feed-io { width: 100%; }
+  .io-btn { flex: 1 1 auto; text-align: center; }
+  .imp-summary { gap: 6px; }
+  .imp-stat { flex: 1 1 40%; }
+}

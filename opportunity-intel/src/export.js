@@ -13,6 +13,8 @@ import {
   OFFER_LADDER,
   STATUS_LABELS,
 } from "./models.js";
+import { decide, strategicLens } from "./decision.js";
+import { buildBrief } from "./brief.js";
 
 const offerLabel = (key) => {
   const o = OFFER_LADDER[key];
@@ -141,7 +143,48 @@ export function download(filename, text, mime = "text/plain") {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// ---- Decision CSV (la capa vendible: OCI + decisión + por qué) --------------
+// Cada oportunidad, ya puntuada, pasa por la capa de decisión y sale con su OCI,
+// decisión, tag estratégico, lente, calidad de evidencia, kill reasons, acción
+// recomendada, ángulo y estado de CRM. Sin dependencias nuevas: Blob + string.
+export function toDecisionCSV(opps = [], tracking = {}) {
+  const headers = [
+    "Empresa", "Website", "Sector", "Ciudad", "OCI", "Decisión", "ValorEstratégico",
+    "LenteEstratégica", "CalidadEvidencia", "KillRisk", "KillReasons", "AcciónRecomendada",
+    "ÁnguloEntrada", "EstadoCRM",
+  ];
+  const lines = [headers.join(",")];
+  for (const opp of opps) {
+    const d = decide(opp, opp.scores || {});
+    const lens = strategicLens(opp);
+    const brief = buildBrief(opp, opp.scores || {}, d);
+    const status = tracking[opp.id]?.status;
+    const cells = [
+      opp.company || "",
+      opp.website || "",
+      SECTOR_BY_KEY[opp.sector]?.label || opp.sector || "",
+      opp.city || "",
+      d.oci,
+      d.decisionLabel,
+      d.strategicTag ? d.strategicTag.label : "",
+      lens ? lens.label : "",
+      d.evidenceQuality.label,
+      d.killRisk,
+      d.killReasons.map((k) => k.label).join("; "),
+      d.recommendedAction ? d.recommendedAction.label : "",
+      brief.openingAngle || "",
+      status ? (STATUS_LABELS[status] || status) : "",
+    ];
+    lines.push(cells.map(csvCell).join(","));
+  }
+  return lines.join("\n");
+}
+
 const stamp = () => new Date().toISOString().slice(0, 10);
+
+export function exportDecisionCSV(opps, tracking) {
+  return download(`oportunidades-decision-${stamp()}.csv`, toDecisionCSV(opps, tracking), "text/csv");
+}
 
 export function exportCSV(opps, tracking) {
   download(`opportunities-${stamp()}.csv`, toCSV(opps, tracking), "text/csv");

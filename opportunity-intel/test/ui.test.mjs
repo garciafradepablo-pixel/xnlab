@@ -53,6 +53,9 @@ try {
       // Tanda 2: el feed trae Command Bar y resumen de buckets.
       ok(root.querySelector(".cmd-ask") != null, "el feed muestra la Command Bar 'Ask Operator'");
       ok(root.querySelector(".buckets") != null, "el feed muestra el resumen de buckets");
+      // Tanda 4: Import/Export accesibles y discretos en la cabecera del feed.
+      ok(root.querySelector(".feed-io .io-btn") != null, "el feed ofrece acciones Import/Export discretas");
+      ok(root.querySelector(".card") != null, "Import/Export no rompe el render de las cards");
       // Tanda 3.5: ejemplos de comando como chips pulsables (no texto largo).
       ok(root.querySelector(".cmd-examples .cmd-ex") != null, "la Command Bar ofrece ejemplos como chips");
       // Tanda 3: OCI es la jerarquía principal; el anillo de confianza ya no domina.
