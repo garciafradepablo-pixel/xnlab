@@ -36,39 +36,35 @@ try {
   ok(root.querySelector(".app-head") != null, "renderiza la cabecera de la app");
 } catch (e) { ok(false, "mount con sesión no debe lanzar: " + e.message); }
 
-// ── 3. Nav premium: zona "Captar" → subpestaña "Oportunidades" → tarjetas ────
+// ── 3. Nav premium: zona "Mapa" → tarjetas (vista única, sin subtab) ──────────
 const byText = (sel, re) => root.querySelectorAll(sel).find((t) => re.test(t.textContent));
 try {
   ok(root.querySelector(".zones") != null, "renderiza la barra de zonas (nav nivel 1)");
-  const capture = byText(".zone", /Captar/i);
-  ok(capture != null, "existe la zona Captar");
-  if (capture) {
-    capture.click();
-    const oppTab = byText(".tab", /Oportun/i);
-    ok(oppTab != null, "la zona Captar muestra la subpestaña Oportunidades");
-    if (oppTab) {
-      oppTab.click();
-      ok(root.querySelector(".card") != null, "Oportunidades renderiza al menos una tarjeta");
-      ok(root.querySelector(".c-open") != null, "la tarjeta ofrece el botón de abrir caso (⤢)");
-      // Tanda 2: el feed trae Command Bar y resumen de buckets.
-      ok(root.querySelector(".cmd-ask") != null, "el feed muestra la Command Bar 'Ask Operator'");
-      ok(root.querySelector(".buckets") != null, "el feed muestra el resumen de buckets");
-      // Tanda 4: Import/Export accesibles y discretos en la cabecera del feed.
-      ok(root.querySelector(".feed-io .io-btn") != null, "el feed ofrece acciones Import/Export discretas");
-      ok(root.querySelector(".card") != null, "Import/Export no rompe el render de las cards");
-      // Tanda 5: control discreto de enriquecimiento web en leads con website.
-      ok(root.querySelector(".enrich-btn") != null, "los leads con web ofrecen 'Enriquecer web' (discreto)");
-      // Tanda 3.5: ejemplos de comando como chips pulsables (no texto largo).
-      ok(root.querySelector(".cmd-examples .cmd-ex") != null, "la Command Bar ofrece ejemplos como chips");
-      // Tanda 3: OCI es la jerarquía principal; el anillo de confianza ya no domina.
-      ok(root.querySelector(".oci-hero") != null, "la tarjeta muestra el OCI como número principal (hero)");
-      ok(root.querySelector(".card .ring") == null, "el anillo de confianza ya no domina la tarjeta");
-      // Tanda 3.5: Operator sigue accesible, pero como un solo control (no 4 CTAs).
-      ok(root.querySelector(".card .c-operator") != null, "la tarjeta conserva acceso a Operator (control único)");
-      ok(root.querySelector(".card .op-row") == null, "la fila de cuatro chips Operator ya no carga el reposo");
-    }
+  const mapaZone = byText(".zone", /Mapa/);
+  ok(mapaZone != null, "existe la zona Mapa");
+  ok(byText(".zone", /Captar/) != null, "existe la zona Captar");
+  if (mapaZone) {
+    mapaZone.click(); // zona de una vista → navega directamente a «cards», sin subtab
+    ok(root.querySelector(".card") != null, "Mapa renderiza al menos una tarjeta");
+    ok(root.querySelector(".c-open") != null, "la tarjeta ofrece el botón de abrir caso (⤢)");
+    // Tanda 2: el feed trae Command Bar y resumen de buckets.
+    ok(root.querySelector(".cmd-ask") != null, "el feed muestra la Command Bar 'Ask Operator'");
+    ok(root.querySelector(".buckets") != null, "el feed muestra el resumen de buckets");
+    // Tanda 4: Import/Export accesibles y discretos en la cabecera del feed.
+    ok(root.querySelector(".feed-io .io-btn") != null, "el feed ofrece acciones Import/Export discretas");
+    ok(root.querySelector(".card") != null, "Import/Export no rompe el render de las cards");
+    // Tanda 5: control discreto de enriquecimiento web en leads con website.
+    ok(root.querySelector(".enrich-btn") != null, "los leads con web ofrecen 'Enriquecer web' (discreto)");
+    // Tanda 3.5: ejemplos de comando como chips pulsables (no texto largo).
+    ok(root.querySelector(".cmd-examples .cmd-ex") != null, "la Command Bar ofrece ejemplos como chips");
+    // Tanda 3: OCI es la jerarquía principal; el anillo de confianza ya no domina.
+    ok(root.querySelector(".oci-hero") != null, "la tarjeta muestra el OCI como número principal (hero)");
+    ok(root.querySelector(".card .ring") == null, "el anillo de confianza ya no domina la tarjeta");
+    // Tanda 3.5: Operator sigue accesible, pero como un solo control (no 4 CTAs).
+    ok(root.querySelector(".card .c-operator") != null, "la tarjeta conserva acceso a Operator (control único)");
+    ok(root.querySelector(".card .op-row") == null, "la fila de cuatro chips Operator ya no carga el reposo");
   }
-} catch (e) { ok(false, "navegar Captar→Oportunidades no debe lanzar: " + e.message); }
+} catch (e) { ok(false, "navegar Mapa→Oportunidades no debe lanzar: " + e.message); }
 
 // ── 3b. La app ABRE en el Feed (vista principal por defecto) ──────────────────
 try {
@@ -128,7 +124,7 @@ try {
 // ── 5. Recorrer TODAS las zonas y sus subpestañas sin que nada lance ─────────
 try {
   const zoneEls = root.querySelectorAll(".zone");
-  ok(zoneEls.length >= 4, "hay al menos 4 zonas (Trabajar/Captar/Cerrar/Muelle/Saber)");
+  ok(zoneEls.length >= 3, "hay al menos 3 zonas (Mapa/Captar/Avanzado)");
   for (const z of zoneEls) {
     if (/⌘K/.test(z.textContent)) continue; // el botón de comandos se prueba aparte
     z.click();
@@ -160,19 +156,22 @@ try {
   const enterZone = (re) => { const z = [...root.querySelectorAll(".zone")].find((n) => re.test(n.textContent)); if (z) z.click(); return z; };
   const subs = () => [...root.querySelectorAll(".subtabs .tab")].map((n) => n.textContent.trim());
 
-  // Editor (rol por defecto del login de prueba): ve los accesos de escritura.
+  // Editor (rol por defecto del login de prueba): ve las 3 zonas y los accesos de escritura.
   await mount(root);
-  enterZone(/Captar/); ok(subs().some((t) => /Buscar/.test(t)), "editor ve «Buscar» (descubrir) dentro de Captar");
-  enterZone(/Cerrar/); ok(subs().some((t) => /CRM/.test(t)), "editor ve «CRM» (mover el tablero) dentro de Cerrar");
+  const zoneNames = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
+  ok(zoneNames.some((t) => /Mapa/.test(t)), "editor ve la zona «Mapa»");
+  ok(zoneNames.some((t) => /Captar/.test(t)), "editor ve la zona «Captar» (tiene permiso discover)");
+  ok(zoneNames.some((t) => /Avanzado/.test(t)), "editor ve la zona «Avanzado»");
+  // Captar es zona de una vista (search) → no genera subtabs; la existencia de la zona es prueba suficiente.
+  enterZone(/Avanzado/); ok(subs().some((t) => /CRM/.test(t)), "editor ve «CRM» (mover el tablero) dentro de Avanzado");
 
   // Bajamos la sesión a viewer (solo lectura) y re-montamos.
   globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "viewer", token: null }));
   await mount(root);
   const zoneLabels = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
-  ok(zoneLabels.some((t) => /Captar/.test(t)), "viewer conserva la zona «Captar» (Oportunidades es lectura)");
-  ok(!zoneLabels.some((t) => /Equipo/.test(t)), "viewer NO ve «Equipo» (no gobierna)");
-  enterZone(/Captar/); ok(!subs().some((t) => /Buscar/.test(t)), "viewer NO ve «Buscar» (no puede descubrir)");
-  enterZone(/Cerrar/); ok(!subs().some((t) => /^CRM$/.test(t)), "viewer NO ve el tablero «CRM» (no puede mover)");
+  ok(zoneLabels.some((t) => /Mapa/.test(t)), "viewer conserva la zona «Mapa» (Oportunidades es lectura)");
+  ok(!zoneLabels.some((t) => /Captar/.test(t)), "viewer NO ve «Captar» (discover gated)");
+  enterZone(/Avanzado/); ok(!subs().some((t) => /^CRM$/.test(t)), "viewer NO ve «CRM» en Avanzado (no tiene cap crm)");
   ok(root.querySelector(".navwrap") != null, "el shell sigue entero con rol viewer");
 
   // Restaura la sesión editor para no contaminar nada posterior.
@@ -225,6 +224,11 @@ try {
   store.removeUserLead("imported-smoke-01");
   globalThis.localStorage.removeItem("oi:recentImportIds");
 } catch (e) { ok(false, "los leads importados deben sobrevivir al reload: " + e.message); }
+
+// ── 9. ECO_ENABLED=false: el micro flotante (EC·Eco) no está montado ─────────
+try {
+  ok(document.body.querySelector(".eco-fab") == null, "ECO_ENABLED=false: el micro EC·Eco no está montado en el DOM");
+} catch (e) { ok(false, "ECO_ENABLED check no debe lanzar: " + e.message); }
 
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed ? 1 : 0);
