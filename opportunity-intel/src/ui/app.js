@@ -145,6 +145,22 @@ export async function mount(rootEl) {
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
+  // Cada arranque parte del feed (vista por defecto) sin foco residual de la
+  // sesión anterior. Igual que en un reload real: el módulo se reinicializa.
+  state.view = "cards";
+  state.feedCmd = null;
+  state.feedCmdText = "";
+  const _savedImportIds = loadRecentImportIds();
+  if (_savedImportIds && _savedImportIds.length) {
+    const _userLeadIds = new Set(store.getUserLeads().map((l) => l.id));
+    const _alive = _savedImportIds.filter((id) => _userLeadIds.has(id));
+    if (_alive.length) {
+      state.feedCmd = { kind: "recent", ids: _alive, label: "Recién importados" };
+      state.feedCmdText = "Recién importados";
+    } else {
+      clearRecentImportIds(); // ids caducados: no crea foco engañoso
+    }
+  }
   render();
 
   // Reanuda el piloto automático si quedó en marcha (no para entre sesiones).
@@ -426,12 +442,37 @@ function renderTagRound(creds) {
   root.appendChild(el("div", { class: "auth-screen" }, [card]));
 }
 
+// ---- Persistencia del foco "Recién importados" entre sesiones ---------------
+// El foco vive en memoria; esta clave lo ancla a localStorage para restaurarlo
+// tras reload. Se limpia cuando el usuario lo descarta explícitamente.
+const RECENT_IMPORT_KEY = "oi:recentImportIds";
+function saveRecentImportIds(ids) {
+  try { localStorage.setItem(RECENT_IMPORT_KEY, JSON.stringify(ids)); } catch { /* */ }
+}
+function loadRecentImportIds() {
+  try { const v = localStorage.getItem(RECENT_IMPORT_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
+}
+function clearRecentImportIds() {
+  try { localStorage.removeItem(RECENT_IMPORT_KEY); } catch { /* */ }
+}
+
+// Limpia el foco activo: descarta el estado en memoria, el texto de la barra y
+// (si era "recent") el ancla de localStorage para no restaurarlo al recargar.
+function clearFeedCmd() {
+  if (state.feedCmd && state.feedCmd.kind === "recent") clearRecentImportIds();
+  state.feedCmd = null;
+  state.feedCmdText = "";
+  render();
+}
+
 // Quita de "tus leads" los que no llegan al listón de calidad (p.ej. los 31.7
 // que el agente antiguo metía). Así el ranking no se llena de cifras bajas.
+// Leads con _source (importados por el usuario) nunca se purgan: son suyos.
 function purgeWeakUserLeads() {
   try {
     const leads = store.getUserLeads();
     for (const l of leads) {
+      if (l._source) continue; // el usuario lo puso deliberadamente; no tocar
       const s = scoreOpportunity(l, state.config);
       if (s.confidence < 70) store.removeUserLead(l.id);
     }
@@ -2295,6 +2336,7 @@ function openImport() {
       const input = rowToLeadInput(row);
       if (!input.company && !input.website) continue;
       const lead = buildLead(input);
+      lead._source = "imported"; // protege del purge de baja confianza al recargar
       store.saveUserLead(lead);
       importedIds.push(lead.id);
       existingNames.add((input.company || "").toLowerCase());
@@ -2308,9 +2350,10 @@ function openImport() {
         flash("No había leads nuevos que importar (todo eran duplicados).");
         return;
       }
-      // Foco temporal "Recién importados": limpia cualquier foco/filtro previo y
-      // muestra EXACTAMENTE lo recién pegado, aunque sea 'unqualified'. El usuario
-      // vuelve al feed normal con "✕ quitar foco".
+      // Persiste los ids para restaurar el foco tras reload (sobrevive al refresco).
+      saveRecentImportIds(importedIds);
+      // Foco temporal "Recién importados": muestra EXACTAMENTE lo recién pegado,
+      // aunque sea 'unqualified'. El usuario vuelve al feed normal con "✕ quitar foco".
       state.recentImportIds = importedIds;
       state.feedCmd = { kind: "recent", ids: importedIds, label: "Recién importados" };
       state.feedCmdText = "Recién importados";
@@ -2646,7 +2689,7 @@ function commandBar() {
     el("span", { class: "cmd-ask-ic", text: "▸" }),
     input,
     el("button", { class: "cmd-ask-go", text: "Preguntar", onClick: () => runCommand(input.value) }),
-    state.feedCmd ? el("button", { class: "cmd-ask-clear", title: "Quitar foco", text: "✕", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } }) : null,
+    state.feedCmd ? el("button", { class: "cmd-ask-clear", title: "Quitar foco", text: "✕", onClick: clearFeedCmd }) : null,
   ]);
   const examples = el("div", { class: "cmd-examples" }, CMD_EXAMPLES.map((ex) =>
     el("button", { class: "cmd-ex", text: ex, onClick: () => runCommand(ex) })));
@@ -2698,7 +2741,7 @@ function bucketsRow(buckets) {
 function focusBanner(count) {
   const c = state.feedCmd;
   if (!c) return null;
-  const clear = el("button", { class: "focus-x", text: "✕ quitar foco", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } });
+  const clear = el("button", { class: "focus-x", text: "✕ quitar foco", onClick: clearFeedCmd });
   if (c.kind === "unknown") {
     return el("div", { class: "focus-banner focus-unknown" }, [
       el("span", { text: `No entendí «${c.label}». Prueba: ${(c.suggestions || []).join(" · ")}` }),
@@ -2720,7 +2763,7 @@ function feedCards(filtered) {
     if (state.feedCmd) {
       return emptyNote(`Nada en «${state.feedCmd.label}» ahora mismo.`, {
         icon: "⌕", sub: "Ningún lead cae en este foco con los datos actuales.",
-        action: { label: "✕ Quitar foco", onClick: () => { state.feedCmd = null; state.feedCmdText = ""; render(); } },
+        action: { label: "✕ Quitar foco", onClick: clearFeedCmd },
       });
     }
     const f = state.filters;
