@@ -2251,3 +2251,38 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .enrich-btn:disabled { opacity: 0.6; cursor: default; }
 .enrich-btn.is-done { color: var(--ink-faint); }
 .enrich-state { font-size: 11px; color: var(--ok); }
+
+/* ============================================================================
+   Reactor — el sistema operativo de decisión
+   Una columna, sin cards, sin filtros. Solo la decisión del motor y el CTA.
+   ========================================================================== */
+.reactor-view {
+  max-width: 640px; margin: 0 auto; padding: 32px 22px 60px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.reactor-greet { padding-bottom: 18px; border-bottom: 1px solid var(--line); margin-bottom: 10px; }
+.reactor-hello { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin: 0 0 4px; }
+.reactor-sub { font-size: 13px; color: var(--ink-faint); margin: 0; }
+.reactor-block {
+  padding: 18px 20px; background: var(--panel); border: 1px solid var(--line-2);
+  border-radius: 14px; display: flex; flex-direction: column; gap: 10px;
+}
+.reactor-risk-active { border-color: #5a3030; background: #1a1213; }
+.reactor-kicker { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
+.reactor-body { display: flex; flex-direction: column; gap: 6px; }
+.reactor-figure { font-size: 20px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; }
+.reactor-stat { font-size: 13px; color: var(--ink-dim); }
+.reactor-ok { color: var(--ok); }
+.reactor-warn { color: #e07070; }
+.reactor-dim { color: var(--ink-faint); }
+.reactor-empty { font-size: 13px; color: var(--ink-faint); font-style: italic; }
+.reactor-best { font-size: 13px; color: var(--ink-dim); padding-top: 4px; border-top: 1px solid var(--line); }
+.reactor-best-label { color: var(--ink-faint); }
+.reactor-best-name { color: var(--ink); }
+.reactor-best-oci { color: var(--accent); }
+.reactor-best-city { color: var(--ink-faint); }
+.reactor-cta {
+  margin-top: 14px; width: 100%; padding: 16px 24px;
+  font-size: 16px; font-weight: 700; letter-spacing: -0.01em;
+  border-radius: 14px;
+}

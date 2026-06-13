@@ -150,9 +150,9 @@ export async function mount(rootEl) {
   auth.syncRemoteColors().then(() => render()).catch(() => {}); // colores de firma consistentes entre dispositivos (best-effort)
   purgeWeakUserLeads(); // limpia leads crudos de baja puntuación de versiones previas
   await recompute();
-  // Cada arranque parte del feed (vista por defecto) sin foco residual de la
-  // sesión anterior. Igual que en un reload real: el módulo se reinicializa.
-  state.view = "cards";
+  // Cada arranque parte del Reactor (sistema operativo de decisión) sin foco
+  // residual de la sesión anterior. Igual que en un reload real: módulo limpio.
+  state.view = "reactor";
   state.feedCmd = null;
   state.feedCmdText = "";
   const _savedImportIds = loadRecentImportIds();
@@ -162,6 +162,8 @@ export async function mount(rootEl) {
     if (_alive.length) {
       state.feedCmd = { kind: "recent", ids: _alive, label: "Recién importados" };
       state.feedCmdText = "Recién importados";
+      // Importación pendiente de revisión: ir al feed donde vive el focus-banner.
+      state.view = "cards";
     } else {
       clearRecentImportIds(); // ids caducados: no crea foco engañoso
     }
@@ -848,6 +850,10 @@ function zonesForUser() {
     return [{ key: "map", label: "Mapa", views: [["cards", "Oportunidades"]] }];
   }
 
+  // Reactor: el sistema operativo de decisión. Primera superficie visible.
+  // Sin gate de permiso — quien puede entrar a la app ve el reactor.
+  const reactorZone = { key: "reactor", label: "Reactor", views: [["reactor", "Reactor"]] };
+
   // Mapa: el feed principal de oportunidades. Siempre visible.
   const mapZone = { key: "map", label: "Mapa", views: [["cards", "Oportunidades"]] };
 
@@ -875,7 +881,7 @@ function zonesForUser() {
     advancedViews.push(...teamViews);
   }
 
-  return [mapZone, captureZone, { key: "advanced", label: "Avanzado", views: advancedViews }].filter(Boolean);
+  return [reactorZone, mapZone, captureZone, { key: "advanced", label: "Avanzado", views: advancedViews }].filter(Boolean);
 }
 function zoneOfView(view) {
   for (const z of zonesForUser()) if (z.views.some(([k]) => k === view)) return z.key;
@@ -1081,7 +1087,8 @@ function securitySection() {
 
 function viewArea() {
   const area = el("section", { class: "view" });
-  if (state.view === "today") area.appendChild(todayView());
+  if (state.view === "reactor") area.appendChild(reactorView());
+  else if (state.view === "today") area.appendChild(todayView());
   else if (state.view === "tasks") area.appendChild(tasksView());
   else if (state.view === "agenda") area.appendChild(agendaView());
   else if (state.view === "pipeline") area.appendChild(pipelineView());
@@ -1975,6 +1982,128 @@ function commandCenter(calls) {
       el("span", { class: "cc-step-l", text: lbl }),
     ])));
   return el("section", { class: "command-center" }, [now, route]);
+}
+
+// ---- Reactor: el sistema operativo de decisión ---------------------------------
+//
+// La primera pantalla que ve el fundador cada mañana. Una columna. Sin cards,
+// sin filtros, sin tablas. Solo: dónde está el dinero · qué hizo la máquina ·
+// qué riesgo no estás viendo · un CTA que arranca el trabajo.
+//
+// Fuentes de datos: pipelinePulse, feedModel/buckets, dueFollowups,
+// dueFollowupTasks, state._cronNew. Sin lógica nueva — solo recomposición.
+function reactorView() {
+  const opps = state.results?.all || [];
+  const tracking = store.getTracking();
+  const pulse = pipelinePulse(opps, tracking);
+
+  // Act Now ordenadas por OCI (la cola de trabajo)
+  const model = feedModel();
+  const actNow = (model.buckets.actNow || [])
+    .slice()
+    .sort((a, b) => (b.decision?.oci || 0) - (a.decision?.oci || 0));
+  const best = actNow[0];
+
+  // Captaciones recientes del cron (server-side, background)
+  const cronNew = state._cronNew?.length || 0;
+
+  // Riesgo: seguimientos vencidos + hilos de cadencia abiertos + enfriándose
+  const today = ymd(new Date());
+  const dueTasks = dueFollowupTasks(store.getTasks(), today);
+  const dueOpps = dueFollowups(opps, tracking);
+  const cooling = opps.filter((o) => {
+    const tr = tracking[o.id];
+    if (!tr || !["called", "follow_up", "interested"].includes(tr.status)) return false;
+    if (!tr.updatedAt) return false;
+    return Math.floor((Date.now() - new Date(tr.updatedAt).getTime()) / 86400000) > 7;
+  });
+  const riskCount = dueTasks.length + dueOpps.length + cooling.length;
+
+  // CTA: ir a Mapa con foco actNow activado (mismo mecanismo que focusBucket)
+  const startDay = () => {
+    const b = BUCKETS.find((x) => x.key === "actNow");
+    if (b) {
+      state.feedCmd = { kind: "decision", decisions: b.decisions, sort: "oci", label: b.label };
+      state.feedCmdText = b.label;
+    }
+    goView("cards");
+  };
+
+  // Saludo
+  const u = auth.currentUser();
+  const h = new Date().getHours();
+  const greet = h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
+
+  const blocks = [];
+
+  // 1. Buenos días
+  blocks.push(el("div", { class: "reactor-greet" }, [
+    el("p", { class: "reactor-hello", text: `${greet}${u?.name ? `, ${u.name}` : ""}.` }),
+    el("p", { class: "reactor-sub", text: "El reactor trabajó mientras dormías." }),
+  ]));
+
+  // 2. Dinero detectado
+  blocks.push(el("div", { class: "reactor-block" }, [
+    el("span", { class: "reactor-kicker", text: "Dinero detectado" }),
+    actNow.length > 0
+      ? el("div", { class: "reactor-body" }, [
+          el("div", { class: "reactor-figure", text: `${actNow.length} movimiento${actNow.length === 1 ? "" : "s"} listo${actNow.length === 1 ? "" : "s"} para actuar` }),
+          pulse.valueTotal > 0
+            ? el("div", { class: "reactor-stat", text: `${eurFmt(pulse.valueTotal)} en cartera potencial` })
+            : null,
+          best
+            ? el("div", { class: "reactor-best" }, [
+                el("span", { class: "reactor-best-label", text: "Mejor:" }),
+                el("b", { class: "reactor-best-name", text: ` ${best.opp.company}` }),
+                el("span", { class: "reactor-best-oci", text: ` · OCI ${best.decision?.oci || 0}` }),
+                best.opp.city ? el("span", { class: "reactor-best-city", text: ` · ${best.opp.city}` }) : null,
+              ])
+            : null,
+        ])
+      : el("div", { class: "reactor-body reactor-empty", text: "Ningún movimiento listo para hoy. El motor sigue evaluando." }),
+  ]));
+
+  // 3. Lo que hizo la máquina
+  const killed = (model.buckets.killedNoise || []).length;
+  blocks.push(el("div", { class: "reactor-block" }, [
+    el("span", { class: "reactor-kicker", text: "Lo que hizo la máquina" }),
+    el("div", { class: "reactor-body" }, [
+      cronNew > 0
+        ? el("div", { class: "reactor-stat reactor-ok", text: `${cronNew} empresa${cronNew === 1 ? "" : "s"} captada${cronNew === 1 ? "" : "s"} sola${cronNew === 1 ? "" : "s"} mientras no estabas` })
+        : el("div", { class: "reactor-stat reactor-dim", text: "Sin captaciones nuevas desde el último acceso" }),
+      el("div", { class: "reactor-stat", text: `${model.decided.length} empresa${model.decided.length === 1 ? "" : "s"} evaluada${model.decided.length === 1 ? "" : "s"} · ${killed} descartada${killed === 1 ? "" : "s"} por el motor` }),
+    ]),
+  ]));
+
+  // 4. Riesgo
+  blocks.push(el("div", { class: `reactor-block${riskCount > 0 ? " reactor-risk-active" : ""}` }, [
+    el("span", { class: "reactor-kicker", text: "Riesgo" }),
+    el("div", { class: "reactor-body" }, [
+      dueTasks.length > 0
+        ? el("div", { class: "reactor-stat reactor-warn", text: `${dueTasks.length} seguimiento${dueTasks.length === 1 ? "" : "s"} agendado${dueTasks.length === 1 ? "" : "s"} vencido${dueTasks.length === 1 ? "" : "s"}` })
+        : null,
+      dueOpps.length > 0
+        ? el("div", { class: "reactor-stat reactor-warn", text: `${dueOpps.length} hilo${dueOpps.length === 1 ? "" : "s"} abierto${dueOpps.length === 1 ? "" : "s"} sin segundo toque` })
+        : null,
+      cooling.length > 0
+        ? el("div", { class: "reactor-stat reactor-warn", text: `${cooling.length} oportunidad${cooling.length === 1 ? "" : "es"} sin movimiento en más de 7 días` })
+        : null,
+      riskCount === 0
+        ? el("div", { class: "reactor-stat reactor-ok", text: "Sin riesgos activos detectados." })
+        : null,
+    ].filter(Boolean)),
+  ]));
+
+  // 5. CTA gigante
+  blocks.push(el("button", {
+    class: "btn-primary reactor-cta",
+    text: actNow.length > 0
+      ? `Empezar el día · ${actNow.length} movimiento${actNow.length === 1 ? "" : "s"}`
+      : "Ver el mapa de oportunidades",
+    onClick: startDay,
+  }));
+
+  return el("div", { class: "reactor-view" }, blocks);
 }
 
 function todayView() {

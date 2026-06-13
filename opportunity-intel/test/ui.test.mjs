@@ -66,10 +66,16 @@ try {
   }
 } catch (e) { ok(false, "navegar Mapa→Oportunidades no debe lanzar: " + e.message); }
 
-// ── 3b. La app ABRE en el Feed (vista principal por defecto) ──────────────────
+// ── 3b. El Reactor existe como zona navegable y renderiza sin errores ─────────
 try {
-  ok(root.querySelector(".feed") != null, "la app abre en el Opportunity Feed");
-} catch (e) { ok(false, "el feed por defecto no debe lanzar: " + e.message); }
+  const reactorZone = byText(".zone", /Reactor/);
+  ok(reactorZone != null, "existe la zona Reactor en la navegación");
+  if (reactorZone) {
+    reactorZone.click();
+    ok(root.querySelector(".reactor-view") != null, "Reactor renderiza su vista al navegar a ella");
+    ok(root.querySelector(".reactor-cta") != null, "el Reactor muestra el CTA principal");
+  }
+} catch (e) { ok(false, "navegar a Reactor no debe lanzar: " + e.message); }
 
 // ── 3c. Tras importar, los recién importados SIEMPRE se ven (fix recent-imports)
 // Un lead solo-nombre+web queda 'unqualified' y el filtro por defecto lo ocultaría;
@@ -78,6 +84,10 @@ try {
   const flush = async (n = 10) => { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); };
   const bodyByText = (sel, re) => document.body.querySelectorAll(sel).find((t) => re.test(t.textContent));
   const UNIQUE = "Zzqq Import Unica 9173 Sl"; // nombre único: no colisiona con seed/Mallorca
+
+  // La app abre en el Reactor; para importar navegamos a Mapa (donde vive el feed)
+  const mapaZoneForImport = byText(".zone", /Mapa/);
+  if (mapaZoneForImport) mapaZoneForImport.click();
 
   const importBtn = byText(".feed-io .io-btn", /Importar/i);
   ok(importBtn != null, "el editor ve el botón ↧ Importar en el feed");
