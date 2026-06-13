@@ -2624,13 +2624,46 @@ function buildTable() {
 
 // ---- Opportunity cards ------------------------------------------------------
 
-// Opportunity Feed: la superficie principal. Command Bar ("Ask Operator…") +
-// resumen de buckets accionables + feed escrolleable, todo gobernado por OCI.
+// Veredicto del mapa: frase de estado generada por el motor que orienta al
+// usuario antes de que lea una sola card. Convierte el feed en resultado de
+// un cálculo, no en listado de datos esperando lectura.
+function mapVerdict(buckets, total) {
+  if (!total) return null;
+  const act = buckets.actNow?.length || 0;
+  const ev  = buckets.needsEvidence?.length || 0;
+  const door = buckets.strategicDoors?.length || 0;
+  const kill = buckets.killedNoise?.length || 0;
+
+  const emp = total === 1 ? "empresa" : "empresas";
+  const proc = total === 1 ? "procesada" : "procesadas";
+
+  let line;
+  if (act === 0 && ev === 0) {
+    line = `El motor ha procesado ${total} ${emp}. Ninguna requiere acción inmediata.`;
+  } else if (act > 0 && ev === 0) {
+    const merece = act === 1 ? "merece" : "merecen";
+    line = `De ${total} ${emp} ${proc}, ${act} ${merece} una llamada ahora mismo.${kill ? ` ${kill} quedan descartadas.` : ""}`;
+  } else if (act === 0 && ev > 0) {
+    line = `El motor ha procesado ${total} ${emp}. ${ev} necesitan más evidencia antes de avanzar.${kill ? ` ${kill} descartadas.` : ""}`;
+  } else {
+    const parts = [`${act} para llamar ahora`];
+    if (ev) parts.push(`${ev} necesitan evidencia`);
+    if (door) parts.push(`${door} puertas estratégicas`);
+    if (kill) parts.push(`${kill} descartadas`);
+    line = `De ${total} ${emp} ${proc}: ${parts.join(" · ")}.`;
+  }
+
+  return el("p", { class: "map-verdict", text: line });
+}
+
+// Opportunity Map: la superficie principal. Command Bar ("Ask Operator…") +
+// veredicto del motor + buckets accionables + feed escrolleable, todo gobernado por OCI.
 function cardsView() {
   const model = feedModel();
+  const total = model.decided.length;
   return el("div", { class: "feed" }, [
     el("div", { class: "view-head" }, [
-      el("h2", { text: "Feed de oportunidades" }),
+      el("h2", { text: "Mapa de oportunidades" }),
       el("div", { class: "feed-io" }, [
         allow("write") ? el("button", { class: "io-btn", title: "Pegar una lista externa (Apollo/Clay/HubSpot/CSV) y convertirla en oportunidades", text: "↧ Importar", onClick: openImport }) : null,
         el("button", { class: "io-btn", title: "Exportar el feed como CSV de decisión", text: "↥ Export CSV", onClick: exportDecisionCsvNow }),
@@ -2639,6 +2672,7 @@ function cardsView() {
     ]),
     el("div", { class: "agent-report", id: "agent-report" }),
     commandBar(),
+    mapVerdict(model.buckets, total),
     bucketsRow(model.buckets),
     operatorAnswerLine(model.filtered),
     focusBanner(model.filtered.length),
