@@ -551,6 +551,7 @@ export function renderCard(opp, record, handlers = {}) {
   const detail = el("details", { class: "c-detail" }, [
     el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
     // Foco radical: lo secundario vive aquí dentro, no en reposo.
+    decisionStrip(dec, opp),
     freshBadge,
     metrics,
     serviceBlock,
@@ -609,7 +610,6 @@ export function renderCard(opp, record, handlers = {}) {
   // acción). El resto se revela al abrir "Ver análisis completo".
   return el("article", { class: `card prio-${s.callPriority} st-${status} ${elite}`, dataset: { id: opp.id } }, [
     top,
-    decisionStrip(dec, opp),
     hook,
     action,
     nbaPill,
