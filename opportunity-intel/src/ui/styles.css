@@ -593,6 +593,16 @@ output { font-size: 12px; color: var(--accent); }
 .card.st-interested { box-shadow: inset 3px 0 0 var(--o1); }
 .card.st-rejected, .card.st-wrong_fit { opacity: .6; }
 
+/* Jerarquía operativa: hook (por qué actuar) sube antes del análisis del motor. */
+.card > .c-top     { order: 1; }
+.card > .c-hook    { order: 2; }
+.card > .dec-strip { order: 3; }
+.card > .c-action  { order: 4; }
+.card > .nba       { order: 5; }
+.card > .enrich-row { order: 6; }
+.card > .fail-panel { order: 7; }
+.card > .c-detail  { order: 8; }
+
 /* TOP */
 .c-top { display: flex; gap: 12px; align-items: flex-start; }
 .c-rank { font-size: 13px; font-weight: 800; color: var(--ink-dim); min-width: 28px; padding-top: 4px; }
