@@ -596,7 +596,6 @@ output { font-size: 12px; color: var(--accent); }
 /* Jerarquía operativa: hook (por qué actuar) sube antes del análisis del motor. */
 .card > .c-top     { order: 1; }
 .card > .c-hook    { order: 2; }
-.card > .dec-strip { order: 3; }
 .card > .c-action  { order: 4; }
 .card > .nba       { order: 5; }
 .card > .enrich-row { order: 6; }
