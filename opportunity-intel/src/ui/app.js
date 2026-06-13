@@ -2624,36 +2624,76 @@ function buildTable() {
 
 // ---- Opportunity cards ------------------------------------------------------
 
-// Veredicto del mapa: frase de estado generada por el motor que orienta al
-// usuario antes de que lea una sola card. Convierte el feed en resultado de
-// un cálculo, no en listado de datos esperando lectura.
-function mapVerdict(buckets, total) {
-  if (!total) return null;
+// Hero de decisión: lo primero que ve el usuario al abrir Mapa. No es un
+// resumen pasivo — es el veredicto del motor convertido en una sola orden de
+// trabajo. "El motor procesó el caos · hoy hay N que importan · tu siguiente
+// acción es verlas". Reutiliza el foco actNow de los buckets (cero lógica nueva).
+function mapHero(buckets, total) {
   const act = buckets.actNow?.length || 0;
   const ev  = buckets.needsEvidence?.length || 0;
-  const door = buckets.strategicDoors?.length || 0;
-  const kill = buckets.killedNoise?.length || 0;
 
+  // Activa exactamente el mismo foco que el chip del bucket (misma fuente de
+  // verdad: BUCKETS). No duplica la lógica de filtrado.
+  const focusBucket = (key) => {
+    const b = BUCKETS.find((x) => x.key === key);
+    if (!b) return;
+    state.feedCmd = { kind: "decision", decisions: b.decisions, sort: key === "actNow" ? "oci" : undefined, label: b.label };
+    state.feedCmdText = b.label;
+    render();
+  };
+
+  const kicker = el("span", { class: "hero-kicker", text: "Mapa de oportunidades" });
   const emp = total === 1 ? "empresa" : "empresas";
-  const proc = total === 1 ? "procesada" : "procesadas";
 
-  let line;
-  if (act === 0 && ev === 0) {
-    line = `El motor ha procesado ${total} ${emp}. Ninguna requiere acción inmediata.`;
-  } else if (act > 0 && ev === 0) {
-    const merece = act === 1 ? "merece" : "merecen";
-    line = `De ${total} ${emp} ${proc}, ${act} ${merece} una llamada ahora mismo.${kill ? ` ${kill} quedan descartadas.` : ""}`;
-  } else if (act === 0 && ev > 0) {
-    line = `El motor ha procesado ${total} ${emp}. ${ev} necesitan más evidencia antes de avanzar.${kill ? ` ${kill} descartadas.` : ""}`;
-  } else {
-    const parts = [`${act} para llamar ahora`];
-    if (ev) parts.push(`${ev} necesitan evidencia`);
-    if (door) parts.push(`${door} puertas estratégicas`);
-    if (kill) parts.push(`${kill} descartadas`);
-    line = `De ${total} ${emp} ${proc}: ${parts.join(" · ")}.`;
+  // Estado vacío: el motor aún no tiene nada que procesar.
+  if (!total) {
+    return el("div", { class: "map-hero map-hero-empty" }, [
+      kicker,
+      el("p", { class: "hero-lead", text: "Aún no hay oportunidades en el mapa." }),
+      el("button", { class: "btn-primary hero-cta", text: "Captar las primeras", onClick: () => goView("search") }),
+    ]);
   }
 
-  return el("p", { class: "map-verdict", text: line });
+  const lead = el("p", { class: "hero-lead" }, [
+    el("span", { text: "El motor ha revisado " }),
+    el("b", { text: String(total) }),
+    el("span", { text: ` ${emp}.` }),
+  ]);
+
+  // Caso principal: hay llamadas que hacer hoy. El número manda.
+  if (act > 0) {
+    const merecen = act === 1 ? "merece" : "merecen";
+    const directive = act === 1 ? "Tu trabajo hoy: hablar con ella." : `Tu trabajo hoy: hablar con estas ${act}.`;
+    return el("div", { class: "map-hero" }, [
+      kicker,
+      lead,
+      el("p", { class: "hero-figure" }, [
+        el("b", { text: String(act) }),
+        el("span", { text: ` ${merecen} una llamada ahora.` }),
+      ]),
+      el("p", { class: "hero-directive", text: directive }),
+      el("button", { class: "btn-primary hero-cta", text: act === 1 ? "Ver la empresa" : `Ver las ${act}`, onClick: () => focusBucket("actNow") }),
+    ]);
+  }
+
+  // Sin llamadas inmediatas, pero hay evidencia que reunir antes de avanzar.
+  if (ev > 0) {
+    const necesitan = ev === 1 ? "necesita" : "necesitan";
+    return el("div", { class: "map-hero map-hero-soft" }, [
+      kicker,
+      lead,
+      el("p", { class: "hero-figure", text: "Ninguna lista para llamar todavía." }),
+      el("p", { class: "hero-directive", text: `${ev} ${necesitan} más evidencia antes de avanzar.` }),
+      el("button", { class: "btn-primary hero-cta", text: ev === 1 ? "Revisar la empresa" : `Revisar las ${ev}`, onClick: () => focusBucket("needsEvidence") }),
+    ]);
+  }
+
+  // Nada accionable hoy: todo es puerta estratégica o ruido descartado.
+  return el("div", { class: "map-hero map-hero-soft" }, [
+    kicker,
+    lead,
+    el("p", { class: "hero-figure", text: "Ninguna requiere acción inmediata hoy." }),
+  ]);
 }
 
 // Opportunity Map: la superficie principal. Command Bar ("Ask Operator…") +
@@ -2662,8 +2702,13 @@ function cardsView() {
   const model = feedModel();
   const total = model.decided.length;
   return el("div", { class: "feed" }, [
-    el("div", { class: "view-head" }, [
-      el("h2", { text: "Mapa de oportunidades" }),
+    // Decisión primero: el veredicto del motor abre la pantalla, antes que
+    // cualquier herramienta. El usuario entiende qué hacer hoy en 3 segundos.
+    mapHero(model.buckets, total),
+    // Herramientas (importar · exportar · captar más): plegadas, no compiten
+    // con la decisión. Misma funcionalidad, jerarquía visual reducida.
+    el("details", { class: "map-tools" }, [
+      el("summary", { text: "Herramientas" }),
       el("div", { class: "feed-io" }, [
         allow("write") ? el("button", { class: "io-btn", title: "Pegar una lista externa (Apollo/Clay/HubSpot/CSV) y convertirla en oportunidades", text: "↧ Importar", onClick: openImport }) : null,
         el("button", { class: "io-btn", title: "Exportar el feed como CSV de decisión", text: "↥ Export CSV", onClick: exportDecisionCsvNow }),
@@ -2672,7 +2717,6 @@ function cardsView() {
     ]),
     el("div", { class: "agent-report", id: "agent-report" }),
     commandBar(),
-    mapVerdict(model.buckets, total),
     bucketsRow(model.buckets),
     operatorAnswerLine(model.filtered),
     focusBanner(model.filtered.length),

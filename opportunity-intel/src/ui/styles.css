@@ -2113,8 +2113,24 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .cmd-ask-go:hover { background: #2a3358; }
 .cmd-ask-clear { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 14px; }
 
-/* Veredictos de orientación: una frase de estado antes de cualquier CTA */
-.map-verdict, .capture-verdict { font-size: 13px; color: var(--ink-dim); line-height: 1.5; padding: 8px 0 4px; border-top: 1px solid var(--line); }
+/* Veredicto de orientación: una frase de estado antes de cualquier CTA */
+.capture-verdict { font-size: 13px; color: var(--ink-dim); line-height: 1.5; padding: 8px 0 4px; border-top: 1px solid var(--line); }
+
+/* Hero de decisión: lo primero en Mapa. Una orden de trabajo, no un dashboard. */
+.map-hero { display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--line-2); border-radius: 14px; }
+.hero-kicker { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink-faint); margin-bottom: 4px; }
+.hero-lead { font-size: 14px; color: var(--ink-dim); }
+.hero-lead b { color: var(--ink); font-variant-numeric: tabular-nums; }
+.hero-figure { font-size: 26px; font-weight: 700; color: var(--ink); line-height: 1.2; }
+.hero-figure b { color: var(--accent); font-variant-numeric: tabular-nums; }
+.map-hero-soft .hero-figure { font-size: 18px; font-weight: 600; color: var(--ink-dim); }
+.hero-directive { font-size: 14px; color: var(--ink-dim); }
+.hero-cta { width: auto; align-self: flex-start; margin-top: 10px; padding: 10px 22px; font-size: 14px; }
+
+/* Herramientas plegadas: import/export/captar más, sin dominar la entrada */
+.map-tools > summary { cursor: pointer; color: var(--ink-faint); font-size: 12px; padding: 2px 0; list-style: none; }
+.map-tools > summary::-webkit-details-marker { display: none; }
+.map-tools[open] > summary { color: var(--ink-dim); margin-bottom: 8px; }
 
 /* Buckets de cabecera */
 .buckets { display: flex; flex-wrap: wrap; gap: 8px; }
