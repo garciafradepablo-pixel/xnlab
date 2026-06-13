@@ -16,6 +16,27 @@ import { getNextBestAction } from "./nextaction.js";
 import { nextFollowup, dueLabel } from "./followups.js";
 import { buildMemory } from "./commercialmemory.js";
 
+// Máximo 1 línea: la dimensión más fuerte convertida en señal legible.
+function topDimensionLine(dims) {
+  const { fit = 0, pain = 0, timing = 0, access = 0 } = dims;
+  const max = Math.max(fit, pain, timing, access);
+  if (max < 50) return null;
+  if (access === max) return "Contacto directo identificado";
+  if (timing === max) return "Ventana de compra activa";
+  if (pain === max) return "Dolor activo sin resolver";
+  return "Perfil de cliente ideal";
+}
+
+// Máximo 1 línea: el riesgo más urgente o null si todo limpio.
+function compactRisk(fu, since, now, decision) {
+  if (fu && fu.isDue) return `Seguimiento vencido ${dueLabel(fu.dueAt, now)}`;
+  if (since != null && since >= 14) return `${since}d sin contacto`;
+  if (since != null && since >= 7) return `${since}d sin movimiento`;
+  const timing = decision.dimensions?.timing;
+  if (timing != null && timing < 30) return "Ventana cerrándose";
+  return null;
+}
+
 const DAY = 86400000;
 
 function daysSince(iso, now) {
@@ -124,4 +145,43 @@ export function buildVerdict({ actNow = [], tracking = {}, calls = [], tasks = [
     confidence,
     lines,
   };
+}
+
+/**
+ * Lista de hasta 3 prioridades compactas para el Reactor V3 (Mission Control).
+ * Cada entrada: rank, company, OCI, motive (1 línea), riskLine (1 línea), ctaType.
+ * Nunca inventa: si no hay dimensión fuerte, motive === null; si no hay riesgo, riskLine === null.
+ *
+ * @param {object} args
+ * @param {Array}  args.actNow    [{opp, decision}] ya ordenadas por OCI (desc).
+ * @param {object} args.tracking  mapa id → { status, updatedAt }.
+ * @param {number} [args.now]     epoch ms (inyectable para test).
+ * @returns {Array<{rank, leadId, company, city, sector, oci, motive, riskLine, ctaType, status}>}
+ */
+export function buildPriorityList({ actNow = [], tracking = {}, now = Date.now() } = {}) {
+  return actNow.slice(0, 3).map((item, i) => {
+    const opp = item.opp;
+    const decision = item.decision || {};
+    const tr = tracking[opp.id] || {};
+    const since = daysSince(tr.updatedAt, now);
+    const oci = decision.oci || 0;
+    const status = tr.status || "not_called";
+    const fu = nextFollowup(tr, now);
+    const motive = topDimensionLine(decision.dimensions || {});
+    const riskLine = compactRisk(fu, since, now, decision);
+    const ctaType = (status === "not_called" || (fu && fu.isDue)) ? "call" : "case";
+
+    return {
+      rank: i + 1,
+      leadId: opp.id,
+      company: opp.company,
+      city: opp.city || "",
+      sector: opp.sector || "",
+      oci,
+      motive,
+      riskLine,
+      ctaType,
+      status,
+    };
+  });
 }

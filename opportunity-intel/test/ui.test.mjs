@@ -73,7 +73,7 @@ try {
   if (reactorZone) {
     reactorZone.click();
     ok(root.querySelector(".reactor-view") != null, "Reactor renderiza su vista al navegar a ella");
-    ok(root.querySelector(".reactor-cta") != null, "el Reactor muestra el CTA principal");
+    ok(root.querySelector(".mc-cta-primary") != null, "el Reactor muestra el CTA principal (Mission Control)");
   }
 } catch (e) { ok(false, "navegar a Reactor no debe lanzar: " + e.message); }
 

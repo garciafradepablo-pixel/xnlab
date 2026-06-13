@@ -2253,59 +2253,103 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .enrich-state { font-size: 11px; color: var(--ok); }
 
 /* ============================================================================
-   Reactor — el director operativo. El Veredicto manda; todo lo demás es contexto.
-   Una columna. Una decisión. Una acción. Sin tiles, sin KPIs compitiendo.
+   Reactor V3 — Mission Control.
+   Prioridad > navegación. Dinero > métricas. Acción > explicación.
+   Cada bloque: <2 segundos para entender. Sin cards. Sin párrafos. Sin CRM.
    ========================================================================== */
 .reactor-view {
-  max-width: 640px; margin: 0 auto; padding: 32px 22px 60px;
-  display: flex; flex-direction: column; gap: 14px;
-}
-.reactor-greet { margin-bottom: 2px; }
-.reactor-hello { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin: 0 0 3px; }
-.reactor-sub { font-size: 13px; color: var(--ink-faint); margin: 0; }
-.reactor-kicker { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
-
-/* El Veredicto: la pieza central. Tipografía editorial, frase a frase. */
-.reactor-verdict {
-  padding: 24px 24px 22px; background: var(--panel); border: 1px solid var(--accent);
-  border-radius: 16px; display: flex; flex-direction: column; gap: 12px;
-  box-shadow: 0 0 0 1px rgba(203,162,74,.08), 0 14px 40px rgba(0,0,0,.35);
-}
-.reactor-verdict-empty { border-color: var(--line-2); box-shadow: none; }
-.reactor-verdict-body { display: flex; flex-direction: column; gap: 9px; }
-.reactor-vline { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); letter-spacing: -0.01em; }
-.reactor-vline-lead { font-size: 21px; font-weight: 700; line-height: 1.3; color: var(--ink); }
-.reactor-vline-go { font-weight: 600; color: var(--accent); }
-
-/* Los 4 elementos: empresa · acción · riesgo. Filas, no tarjetas. */
-.reactor-decision { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
-.reactor-field { padding: 12px 4px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
-.reactor-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
-.reactor-field-val { font-size: 15px; color: var(--ink-dim); }
-.reactor-company { font-size: 17px; color: var(--ink); font-weight: 700; }
-.reactor-company-meta { color: var(--ink-faint); font-size: 13px; }
-.reactor-action { color: var(--ink); }
-.reactor-action-why { color: var(--ink-dim); }
-.reactor-field-risk .reactor-risk-text { color: #e0a070; font-size: 14px; line-height: 1.45; }
-
-/* CTA: abre la empresa recomendada. Un solo verbo dominante. */
-.reactor-cta {
-  margin-top: 8px; width: 100%; padding: 17px 24px;
-  font-size: 16px; font-weight: 700; letter-spacing: -0.01em; border-radius: 14px;
+  max-width: 600px; margin: 0 auto; padding: 28px 22px 60px;
+  display: flex; flex-direction: column;
 }
 
-/* Estado del sistema: contexto plegado. Dinero, máquina, riesgos globales. */
-.reactor-system { margin-top: 6px; }
-.reactor-system-sum { cursor: pointer; color: var(--ink-faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 0; list-style: none; }
-.reactor-system-sum::-webkit-details-marker { display: none; }
-.reactor-system[open] .reactor-system-sum { color: var(--ink-dim); margin-bottom: 10px; }
-.reactor-system-body { display: flex; flex-direction: column; gap: 10px; }
-.reactor-sysblock {
-  padding: 14px 16px; background: var(--panel); border: 1px solid var(--line);
-  border-radius: 12px; display: flex; flex-direction: column; gap: 8px;
+/* Header: REACTOR + 3 estadísticas de peso */
+.mc-header { padding: 0 0 24px; display: flex; flex-direction: column; gap: 16px; }
+.mc-title {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
+  color: var(--ink-faint); text-transform: uppercase;
 }
-.reactor-body { display: flex; flex-direction: column; gap: 5px; }
-.reactor-stat { font-size: 13px; color: var(--ink-dim); }
-.reactor-ok { color: var(--ok); }
-.reactor-warn { color: #e07070; }
-.reactor-dim { color: var(--ink-faint); }
+.mc-stats { display: flex; gap: 28px; flex-wrap: wrap; }
+.mc-stat-block { display: flex; flex-direction: column; gap: 2px; }
+.mc-stat-n {
+  font-size: 26px; font-weight: 700; letter-spacing: -0.03em;
+  color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1;
+}
+.mc-stat-l { font-size: 11px; color: var(--ink-faint); letter-spacing: 0.02em; }
+.mc-stat-warn .mc-stat-n { color: #d98060; }
+.mc-stat-warn .mc-stat-l { color: #d98060; opacity: .7; }
+
+/* Separadores duros — sin redondeo, sin sombra */
+.mc-divider { border: none; border-top: 1px solid var(--line); margin: 0; }
+
+/* Bloque de prioridad */
+.mc-priority { padding: 20px 0; display: flex; flex-direction: column; gap: 8px; }
+
+/* Fila de cabecera: #N + empresa + OCI */
+.mc-priority-head { display: flex; align-items: baseline; gap: 10px; }
+.mc-rank {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--ink-faint); min-width: 26px; font-variant-numeric: tabular-nums;
+}
+.mc-company {
+  font-size: 22px; font-weight: 700; letter-spacing: -0.025em;
+  color: var(--ink); flex: 1; line-height: 1.1;
+}
+.mc-priority-top .mc-company { color: var(--accent); }
+.mc-oci {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  color: var(--ink-faint); font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.mc-oci::before { content: "OCI "; }
+.mc-priority-top .mc-oci { color: var(--accent); opacity: .8; }
+
+/* Motive: 1 línea, subdued */
+.mc-motive {
+  font-size: 13px; color: var(--ink-dim); padding-left: 36px;
+  letter-spacing: 0.01em; line-height: 1.4;
+}
+
+/* Risk: 1 línea, warning */
+.mc-risk {
+  font-size: 12px; color: #c07050; padding-left: 36px;
+  letter-spacing: 0.01em; line-height: 1.4;
+}
+.mc-risk::before { content: "↑ "; }
+
+/* CTAs */
+.mc-cta-primary {
+  margin-top: 8px; width: 100%; padding: 15px 24px; cursor: pointer;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--accent); color: #000; border: none; border-radius: 6px;
+}
+.mc-cta-primary:hover { opacity: .88; }
+.mc-cta-sec {
+  margin-top: 4px; padding: 9px 16px; align-self: flex-start; cursor: pointer;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
+  background: transparent; color: var(--ink-dim);
+  border: 1px solid var(--line-2); border-radius: 5px;
+}
+.mc-cta-sec:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+/* Estado vacío */
+.mc-empty { padding: 28px 0; display: flex; flex-direction: column; gap: 16px; }
+.mc-empty-label { font-size: 15px; color: var(--ink-dim); }
+
+/* Estado del sistema (plegado) */
+.mc-system { padding-top: 4px; }
+.mc-system-sum {
+  cursor: pointer; color: var(--ink-faint); font-size: 10px;
+  text-transform: uppercase; letter-spacing: 0.14em; padding: 10px 0; list-style: none;
+}
+.mc-system-sum::-webkit-details-marker { display: none; }
+.mc-system[open] .mc-system-sum { color: var(--ink-dim); margin-bottom: 10px; }
+.mc-system-body { display: flex; flex-direction: column; gap: 8px; }
+.mc-sysblock {
+  padding: 12px 16px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 6px; display: flex; flex-direction: column; gap: 6px;
+}
+.mc-syslabel { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
+.mc-sysrows { display: flex; flex-direction: column; gap: 4px; }
+.mc-sysrow { font-size: 13px; color: var(--ink-dim); }
+.mc-sysrow-ok { color: var(--ok); }
+.mc-sysrow-warn { color: #d07070; }
+.mc-sysrow-dim { color: var(--ink-faint); }

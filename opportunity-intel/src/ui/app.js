@@ -74,7 +74,7 @@ import { resolveNextActionIntent } from "../nextaction.js";
 import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import { decide } from "../decision.js";
-import { buildVerdict } from "../verdict.js";
+import { buildVerdict, buildPriorityList } from "../verdict.js";
 import { buildBrief, briefToText, briefToMarkdown } from "../brief.js";
 import { parseLeads, rowToLeadInput, findDuplicates } from "../importer.js";
 import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
@@ -1985,164 +1985,131 @@ function commandCenter(calls) {
   return el("section", { class: "command-center" }, [now, route]);
 }
 
-// ---- Reactor: el sistema operativo de decisión ---------------------------------
+// ---- Reactor V3: Mission Control -----------------------------------------------
 //
-// La primera pantalla que ve el fundador cada mañana. Una columna. Sin cards,
-// sin filtros, sin tablas. Solo: dónde está el dinero · qué hizo la máquina ·
-// qué riesgo no estás viendo · un CTA que arranca el trabajo.
-//
-// Fuentes de datos: pipelinePulse, feedModel/buckets, dueFollowups,
-// dueFollowupTasks, state._cronNew. Sin lógica nueva — solo recomposición.
+// La primera pantalla. Una jerarquía: dinero → prioridad #1 → #2 → #3 → sistema.
+// Cada bloque se entiende en <2 segundos. Sin párrafos. Sin tiles de dashboard.
+// Acción > explicación. Dinero > métricas. Prioridad > navegación.
+
+function renderMCPriority(p, isTop) {
+  const ctaLabel = p.status === "not_called" ? "PRIMER CONTACTO"
+    : p.ctaType === "call" ? "LLAMAR HOY"
+    : "ABRIR CASO";
+  return el("div", { class: `mc-priority${isTop ? " mc-priority-top" : ""}` }, [
+    el("div", { class: "mc-priority-head" }, [
+      el("span", { class: "mc-rank", text: `#${p.rank}` }),
+      el("span", { class: "mc-company", text: p.company }),
+      el("span", { class: "mc-oci", text: String(p.oci) }),
+    ]),
+    p.motive ? el("div", { class: "mc-motive", text: p.motive }) : null,
+    p.riskLine ? el("div", { class: "mc-risk", text: p.riskLine }) : null,
+    el("button", {
+      class: isTop ? "mc-cta-primary" : "mc-cta-sec",
+      text: ctaLabel,
+      onClick: () => openCase(p.leadId),
+    }),
+  ].filter(Boolean));
+}
+
 function reactorView() {
   const opps = state.results?.all || [];
   const tracking = store.getTracking();
   const pulse = pipelinePulse(opps, tracking);
-
-  // Act Now ordenadas por OCI (la cola de trabajo)
   const model = feedModel();
+  const now = Date.now();
+  const today = ymd(new Date());
+
   const actNow = (model.buckets.actNow || [])
     .slice()
     .sort((a, b) => (b.decision?.oci || 0) - (a.decision?.oci || 0));
 
-  // Captaciones recientes del cron (server-side, background)
   const cronNew = state._cronNew?.length || 0;
-
-  // Riesgo: seguimientos vencidos + hilos de cadencia abiertos + enfriándose
-  const today = ymd(new Date());
   const dueTasks = dueFollowupTasks(store.getTasks(), today);
   const dueOpps = dueFollowups(opps, tracking);
   const cooling = opps.filter((o) => {
     const tr = tracking[o.id];
     if (!tr || !["called", "follow_up", "interested"].includes(tr.status)) return false;
     if (!tr.updatedAt) return false;
-    return Math.floor((Date.now() - new Date(tr.updatedAt).getTime()) / 86400000) > 7;
+    return Math.floor((now - new Date(tr.updatedAt).getTime()) / 86400000) > 7;
   });
   const riskCount = dueTasks.length + dueOpps.length + cooling.length;
+  const killed = (model.buckets.killedNoise || []).length;
 
-  // CTA: ir a Mapa con foco actNow activado (mismo mecanismo que focusBucket)
-  const startDay = () => {
-    const b = BUCKETS.find((x) => x.key === "actNow");
-    if (b) {
-      state.feedCmd = { kind: "decision", decisions: b.decisions, sort: "oci", label: b.label };
-      state.feedCmdText = b.label;
-    }
-    goView("cards");
-  };
+  const priorities = buildPriorityList({ actNow, tracking, now });
 
-  // Saludo
-  const u = auth.currentUser();
-  const h = new Date().getHours();
-  const greet = h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
-
-  // El Veredicto: la decisión en lenguaje, antes que cualquier métrica.
-  // Recompone decision engine + memoria + seguimientos + próxima acción.
-  const verdict = buildVerdict({
-    actNow,
-    tracking,
-    calls: store.getCalls(),
-    tasks: store.getTasks(),
-    today,
-  });
-
-  const blocks = [];
-
-  // Encabezado mínimo: el marco ("trabajó mientras dormías"), sin robar foco.
-  blocks.push(el("div", { class: "reactor-greet" }, [
-    el("p", { class: "reactor-hello", text: `${greet}${u?.name ? `, ${u.name}` : ""}.` }),
-    el("p", { class: "reactor-sub", text: "El reactor trabajó mientras dormías." }),
-  ]));
-
-  if (verdict.has) {
-    // ── EL VEREDICTO ──────────────────────────────────────────────────────────
-    // Cada frase es un dato real convertido en orden. Sin tiles, sin números sueltos.
-    blocks.push(el("div", { class: "reactor-verdict" }, [
-      el("span", { class: "reactor-kicker", text: "Veredicto del reactor" }),
-      el("div", { class: "reactor-verdict-body" },
-        verdict.lines.map((line, i) => el("p", {
-          class: `reactor-vline${i === 0 ? " reactor-vline-lead" : ""}${i === verdict.lines.length - 1 ? " reactor-vline-go" : ""}`,
-          text: line,
-        }))),
-    ]));
-
-    // ── Los 4 elementos: empresa · acción · riesgo · CTA ─────────────────────
-    blocks.push(el("div", { class: "reactor-decision" }, [
-      el("div", { class: "reactor-field" }, [
-        el("span", { class: "reactor-field-label", text: "Empresa recomendada" }),
-        el("div", { class: "reactor-field-val" }, [
-          el("b", { class: "reactor-company", text: verdict.company }),
-          el("span", { class: "reactor-company-meta", text: `${verdict.city ? ` · ${verdict.city}` : ""} · OCI ${verdict.oci}` }),
+  // ── Header: título + 3 números ───────────────────────────────────────────
+  const sections = [
+    el("div", { class: "mc-header" }, [
+      el("div", { class: "mc-title", text: "REACTOR" }),
+      el("div", { class: "mc-stats" }, [
+        el("div", { class: "mc-stat-block" }, [
+          el("div", { class: "mc-stat-n", text: pulse.valueTotal > 0 ? eurFmt(pulse.valueTotal) : String(actNow.length) }),
+          el("div", { class: "mc-stat-l", text: pulse.valueTotal > 0 ? "pipeline activo" : "movimientos listos" }),
+        ]),
+        el("div", { class: "mc-stat-block" }, [
+          el("div", { class: "mc-stat-n", text: String(model.decided.length) }),
+          el("div", { class: "mc-stat-l", text: "evaluados" }),
+        ]),
+        el("div", { class: `mc-stat-block${riskCount > 0 ? " mc-stat-warn" : ""}` }, [
+          el("div", { class: "mc-stat-n", text: String(riskCount) }),
+          el("div", { class: "mc-stat-l", text: "riesgos" }),
         ]),
       ]),
-      el("div", { class: "reactor-field" }, [
-        el("span", { class: "reactor-field-label", text: "Siguiente acción" }),
-        el("div", { class: "reactor-field-val" }, [
-          el("b", { class: "reactor-action", text: verdict.nextAction.label }),
-          el("span", { class: "reactor-action-why", text: ` — ${verdict.nextAction.why}` }),
-        ]),
-      ]),
-      el("div", { class: "reactor-field reactor-field-risk" }, [
-        el("span", { class: "reactor-field-label", text: "Riesgo" }),
-        el("div", { class: "reactor-field-val reactor-risk-text", text: verdict.risk }),
-      ]),
-    ]));
+    ]),
+    el("hr", { class: "mc-divider" }),
+  ];
 
-    // ── CTA: abre directamente la empresa recomendada (su contexto de llamada) ─
-    blocks.push(el("button", {
-      class: "btn-primary reactor-cta",
-      text: `Empezar por aquí · ${verdict.company}`,
-      onClick: () => openCase(verdict.leadId),
-    }));
+  // ── Prioridades #1 / #2 / #3 ─────────────────────────────────────────────
+  if (priorities.length === 0) {
+    sections.push(el("div", { class: "mc-empty" }, [
+      el("div", { class: "mc-empty-label", text: "Sin movimiento listo para hoy." }),
+      el("button", {
+        class: "mc-cta-primary",
+        text: "VER MAPA DE OPORTUNIDADES",
+        onClick: () => goView("cards"),
+      }),
+    ]));
   } else {
-    // Honestidad: si el motor no tiene un movimiento listo, lo dice. No fabrica.
-    blocks.push(el("div", { class: "reactor-verdict reactor-verdict-empty" }, [
-      el("span", { class: "reactor-kicker", text: "Veredicto del reactor" }),
-      el("p", { class: "reactor-vline reactor-vline-lead", text: "No hay un movimiento listo para hoy." }),
-      el("p", { class: "reactor-vline", text: "El motor sigue evaluando y captando en segundo plano. Vuelve cuando madure una oportunidad, o entra al mapa a revisar lo que hay." }),
-    ]));
-    blocks.push(el("button", {
-      class: "btn-primary reactor-cta",
-      text: "Ver el mapa de oportunidades",
-      onClick: startDay,
-    }));
+    priorities.forEach((p, i) => {
+      if (i > 0) sections.push(el("hr", { class: "mc-divider" }));
+      sections.push(renderMCPriority(p, i === 0));
+    });
   }
 
-  // ── Estado del sistema: contexto, no decisión. Plegado por defecto. ─────────
-  const killed = (model.buckets.killedNoise || []).length;
-  blocks.push(el("details", { class: "reactor-system" }, [
-    el("summary", { class: "reactor-system-sum", text: "Estado del sistema" }),
-    el("div", { class: "reactor-system-body" }, [
-      // Dinero detectado
-      el("div", { class: "reactor-sysblock" }, [
-        el("span", { class: "reactor-kicker", text: "Dinero detectado" }),
-        el("div", { class: "reactor-body" }, [
-          el("div", { class: "reactor-stat", text: `${actNow.length} movimiento${actNow.length === 1 ? "" : "s"} listo${actNow.length === 1 ? "" : "s"} para actuar` }),
-          pulse.valueTotal > 0 ? el("div", { class: "reactor-stat", text: `${eurFmt(pulse.valueTotal)} en cartera potencial` }) : null,
+  // ── Estado del sistema (plegado) ─────────────────────────────────────────
+  sections.push(el("hr", { class: "mc-divider" }));
+  sections.push(el("details", { class: "mc-system" }, [
+    el("summary", { class: "mc-system-sum", text: "Estado del sistema" }),
+    el("div", { class: "mc-system-body" }, [
+      el("div", { class: "mc-sysblock" }, [
+        el("span", { class: "mc-syslabel", text: "Dinero detectado" }),
+        el("div", { class: "mc-sysrows" }, [
+          el("div", { class: "mc-sysrow", text: `${actNow.length} movimiento${actNow.length === 1 ? "" : "s"} listo${actNow.length === 1 ? "" : "s"} para actuar` }),
+          pulse.valueTotal > 0 ? el("div", { class: "mc-sysrow", text: `${eurFmt(pulse.valueTotal)} en cartera potencial` }) : null,
         ].filter(Boolean)),
       ]),
-      // Actividad de la máquina
-      el("div", { class: "reactor-sysblock" }, [
-        el("span", { class: "reactor-kicker", text: "Actividad de la máquina" }),
-        el("div", { class: "reactor-body" }, [
+      el("div", { class: "mc-sysblock" }, [
+        el("span", { class: "mc-syslabel", text: "Actividad de la máquina" }),
+        el("div", { class: "mc-sysrows" }, [
           cronNew > 0
-            ? el("div", { class: "reactor-stat reactor-ok", text: `${cronNew} empresa${cronNew === 1 ? "" : "s"} captada${cronNew === 1 ? "" : "s"} sola${cronNew === 1 ? "" : "s"} mientras no estabas` })
-            : el("div", { class: "reactor-stat reactor-dim", text: "Sin captaciones nuevas desde el último acceso" }),
-          el("div", { class: "reactor-stat", text: `${model.decided.length} empresa${model.decided.length === 1 ? "" : "s"} evaluada${model.decided.length === 1 ? "" : "s"} · ${killed} descartada${killed === 1 ? "" : "s"} por el motor` }),
+            ? el("div", { class: "mc-sysrow mc-sysrow-ok", text: `${cronNew} empresa${cronNew === 1 ? "" : "s"} captada${cronNew === 1 ? "" : "s"} sola${cronNew === 1 ? "" : "s"}` })
+            : el("div", { class: "mc-sysrow mc-sysrow-dim", text: "Sin captaciones nuevas desde el último acceso" }),
+          el("div", { class: "mc-sysrow", text: `${model.decided.length} evaluada${model.decided.length === 1 ? "" : "s"} · ${killed} descartada${killed === 1 ? "" : "s"}` }),
         ]),
       ]),
-      // Riesgos globales
-      el("div", { class: "reactor-sysblock" }, [
-        el("span", { class: "reactor-kicker", text: "Riesgos globales" }),
-        el("div", { class: "reactor-body" }, [
-          dueTasks.length > 0 ? el("div", { class: "reactor-stat reactor-warn", text: `${dueTasks.length} seguimiento${dueTasks.length === 1 ? "" : "s"} agendado${dueTasks.length === 1 ? "" : "s"} vencido${dueTasks.length === 1 ? "" : "s"}` }) : null,
-          dueOpps.length > 0 ? el("div", { class: "reactor-stat reactor-warn", text: `${dueOpps.length} hilo${dueOpps.length === 1 ? "" : "s"} abierto${dueOpps.length === 1 ? "" : "s"} sin segundo toque` }) : null,
-          cooling.length > 0 ? el("div", { class: "reactor-stat reactor-warn", text: `${cooling.length} oportunidad${cooling.length === 1 ? "" : "es"} sin movimiento en más de 7 días` }) : null,
-          riskCount === 0 ? el("div", { class: "reactor-stat reactor-ok", text: "Sin riesgos activos detectados." }) : null,
+      el("div", { class: "mc-sysblock" }, [
+        el("span", { class: "mc-syslabel", text: "Riesgos globales" }),
+        el("div", { class: "mc-sysrows" }, [
+          dueTasks.length > 0 ? el("div", { class: "mc-sysrow mc-sysrow-warn", text: `${dueTasks.length} seguimiento${dueTasks.length === 1 ? "" : "s"} vencido${dueTasks.length === 1 ? "" : "s"}` }) : null,
+          dueOpps.length > 0 ? el("div", { class: "mc-sysrow mc-sysrow-warn", text: `${dueOpps.length} hilo${dueOpps.length === 1 ? "" : "s"} sin segundo toque` }) : null,
+          cooling.length > 0 ? el("div", { class: "mc-sysrow mc-sysrow-warn", text: `${cooling.length} oportunidad${cooling.length === 1 ? "" : "es"} enfriándose` }) : null,
+          riskCount === 0 ? el("div", { class: "mc-sysrow mc-sysrow-ok", text: "Sin riesgos activos." }) : null,
         ].filter(Boolean)),
       ]),
     ]),
   ]));
 
-  return el("div", { class: "reactor-view" }, blocks);
+  return el("div", { class: "reactor-view" }, sections);
 }
 
 function todayView() {
