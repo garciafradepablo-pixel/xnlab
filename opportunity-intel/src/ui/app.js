@@ -2035,7 +2035,14 @@ function reactorView() {
   const riskCount = dueTasks.length + dueOpps.length + cooling.length;
   const killed = (model.buckets.killedNoise || []).length;
 
-  const priorities = buildPriorityList({ actNow, tracking, now });
+  // Emisión de la orden #1: estampa `orderIssuedAt` en el lead de mayor OCI
+  // (actNow ya viene ordenado desc, así que actNow[0] ES la prioridad #1). Solo
+  // la #1, nunca #2/#3. Side effect aislado en la capa UI; verdict.js sigue puro.
+  // Re-leemos el tracking tras estampar para que orderStatus refleje la emisión.
+  if (actNow.length > 0 && actNow[0].opp) {
+    store.stampOrderIssued(actNow[0].opp.id, now);
+  }
+  const priorities = buildPriorityList({ actNow, tracking: store.getTracking(), now });
 
   // ── Header: título + 3 números ───────────────────────────────────────────
   const sections = [

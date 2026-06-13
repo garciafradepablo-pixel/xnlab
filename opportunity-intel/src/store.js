@@ -11,6 +11,7 @@
 // =============================================================================
 
 import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
+import { deriveOrderStatus } from "./orders.js";
 import { currentUser, currentRole, getToken } from "./auth.js";
 import { can } from "./roles.js";
 import * as statesync from "./statesync.js";
@@ -296,6 +297,31 @@ export function setNotes(id, notes) {
   write(TRACK_KEY, all);
   scheduleSync();
   return all[id];
+}
+
+/**
+ * Emite la orden #1 del Reactor: estampa `orderIssuedAt` en el tracking del lead
+ * para que el sistema recuerde "yo emití esta orden". NO toca status, notes ni
+ * updatedAt — solo el ancla temporal. Idempotente dentro de una orden viva:
+ *
+ *   - none / ignored / escalated → estampa de nuevo (emisión o re-emisión legítima).
+ *   - pending / executed         → no sobreescribe (la orden sigue en curso o ya
+ *                                  se cumplió; re-estampar borraría su historia).
+ *
+ * @param {string} leadId
+ * @param {number} [now] epoch ms (inyectable para test).
+ * @returns {TrackingRecord|null} el record (estampado o intacto).
+ */
+export function stampOrderIssued(leadId, now = Date.now()) {
+  if (!leadId) return null;
+  const all = getTracking();
+  const rec = all[leadId] || { status: "not_called", notes: "", updatedAt: null, by: null };
+  const { status } = deriveOrderStatus(rec, now);
+  if (status === "pending" || status === "executed") return rec; // orden viva: no re-emitir
+  all[leadId] = { ...rec, orderIssuedAt: new Date(now).toISOString() };
+  write(TRACK_KEY, all);
+  scheduleSync();
+  return all[leadId];
 }
 
 // ---- Tareas del equipo (quién hace qué) -------------------------------------

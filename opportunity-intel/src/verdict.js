@@ -15,6 +15,7 @@
 import { getNextBestAction } from "./nextaction.js";
 import { nextFollowup, dueLabel } from "./followups.js";
 import { buildMemory } from "./commercialmemory.js";
+import { deriveOrderStatus } from "./orders.js";
 
 // Máximo 1 línea: la dimensión más fuerte convertida en señal legible.
 function topDimensionLine(dims) {
@@ -170,6 +171,9 @@ export function buildPriorityList({ actNow = [], tracking = {}, now = Date.now()
     const motive = topDimensionLine(decision.dimensions || {});
     const riskLine = compactRisk(fu, since, now, decision);
     const ctaType = (status === "not_called" || (fu && fu.isDue)) ? "call" : "case";
+    // Estado vivo de la orden, derivado del ancla `orderIssuedAt` del tracking.
+    // Lectura pura: la EMISIÓN (escribir el ancla) la hace reactorView, no aquí.
+    const orderStatus = deriveOrderStatus(tr, now).status;
 
     return {
       rank: i + 1,
@@ -182,6 +186,7 @@ export function buildPriorityList({ actNow = [], tracking = {}, now = Date.now()
       riskLine,
       ctaType,
       status,
+      orderStatus,
     };
   });
 }
