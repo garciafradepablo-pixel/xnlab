@@ -2251,3 +2251,61 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .enrich-btn:disabled { opacity: 0.6; cursor: default; }
 .enrich-btn.is-done { color: var(--ink-faint); }
 .enrich-state { font-size: 11px; color: var(--ok); }
+
+/* ============================================================================
+   Reactor — el director operativo. El Veredicto manda; todo lo demás es contexto.
+   Una columna. Una decisión. Una acción. Sin tiles, sin KPIs compitiendo.
+   ========================================================================== */
+.reactor-view {
+  max-width: 640px; margin: 0 auto; padding: 32px 22px 60px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.reactor-greet { margin-bottom: 2px; }
+.reactor-hello { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); margin: 0 0 3px; }
+.reactor-sub { font-size: 13px; color: var(--ink-faint); margin: 0; }
+.reactor-kicker { font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint); }
+
+/* El Veredicto: la pieza central. Tipografía editorial, frase a frase. */
+.reactor-verdict {
+  padding: 24px 24px 22px; background: var(--panel); border: 1px solid var(--accent);
+  border-radius: 16px; display: flex; flex-direction: column; gap: 12px;
+  box-shadow: 0 0 0 1px rgba(203,162,74,.08), 0 14px 40px rgba(0,0,0,.35);
+}
+.reactor-verdict-empty { border-color: var(--line-2); box-shadow: none; }
+.reactor-verdict-body { display: flex; flex-direction: column; gap: 9px; }
+.reactor-vline { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink-dim); letter-spacing: -0.01em; }
+.reactor-vline-lead { font-size: 21px; font-weight: 700; line-height: 1.3; color: var(--ink); }
+.reactor-vline-go { font-weight: 600; color: var(--accent); }
+
+/* Los 4 elementos: empresa · acción · riesgo. Filas, no tarjetas. */
+.reactor-decision { display: flex; flex-direction: column; gap: 2px; padding: 4px 0; }
+.reactor-field { padding: 12px 4px; border-bottom: 1px solid var(--line); display: flex; flex-direction: column; gap: 4px; }
+.reactor-field-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faint); }
+.reactor-field-val { font-size: 15px; color: var(--ink-dim); }
+.reactor-company { font-size: 17px; color: var(--ink); font-weight: 700; }
+.reactor-company-meta { color: var(--ink-faint); font-size: 13px; }
+.reactor-action { color: var(--ink); }
+.reactor-action-why { color: var(--ink-dim); }
+.reactor-field-risk .reactor-risk-text { color: #e0a070; font-size: 14px; line-height: 1.45; }
+
+/* CTA: abre la empresa recomendada. Un solo verbo dominante. */
+.reactor-cta {
+  margin-top: 8px; width: 100%; padding: 17px 24px;
+  font-size: 16px; font-weight: 700; letter-spacing: -0.01em; border-radius: 14px;
+}
+
+/* Estado del sistema: contexto plegado. Dinero, máquina, riesgos globales. */
+.reactor-system { margin-top: 6px; }
+.reactor-system-sum { cursor: pointer; color: var(--ink-faint); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; padding: 6px 0; list-style: none; }
+.reactor-system-sum::-webkit-details-marker { display: none; }
+.reactor-system[open] .reactor-system-sum { color: var(--ink-dim); margin-bottom: 10px; }
+.reactor-system-body { display: flex; flex-direction: column; gap: 10px; }
+.reactor-sysblock {
+  padding: 14px 16px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; display: flex; flex-direction: column; gap: 8px;
+}
+.reactor-body { display: flex; flex-direction: column; gap: 5px; }
+.reactor-stat { font-size: 13px; color: var(--ink-dim); }
+.reactor-ok { color: var(--ok); }
+.reactor-warn { color: #e07070; }
+.reactor-dim { color: var(--ink-faint); }
