@@ -4391,6 +4391,32 @@ function captureMap() {
   return el("section", { class: "capture-map" }, blocks);
 }
 
+// Veredicto del estado de captación: una frase que orienta antes de cualquier
+// CTA. Prioridad: leads recientes > piloto activo > mapa poblado > vacío.
+function captureVerdict() {
+  const cronNew = state._cronNew?.length || 0;
+  const a = autopilotState();
+  const forest = getForest();
+  const totalLeads = store.getUserLeads().length;
+  const totalCats = forest.length;
+
+  let line;
+  if (cronNew > 0) {
+    line = `Llegaron ${cronNew} empresa${cronNew === 1 ? "" : "s"} mientras no estabas. Ya están captadas y listas para revisión.`;
+  } else if (a.on) {
+    line = "El piloto está en marcha. El mapa sigue creciendo automáticamente.";
+  } else if (totalCats > 0 || totalLeads > 0) {
+    const catPart = totalCats > 0 ? `${totalCats} categoría${totalCats === 1 ? "" : "s"}` : null;
+    const leadPart = totalLeads > 0 ? `${totalLeads} empresa${totalLeads === 1 ? "" : "s"} captada${totalLeads === 1 ? "" : "s"}` : null;
+    const parts = [catPart, leadPart].filter(Boolean);
+    line = `El mapa contiene ${parts.join(" y ")}.`;
+  } else {
+    line = "El mapa está vacío. Describe una oportunidad para generar categorías y arrancar la captación.";
+  }
+
+  return el("p", { class: "capture-verdict", text: line });
+}
+
 function searchView() {
   const userLeads = store.getUserLeads();
   const blocks = [el("h2", { text: "Captar clientes" })];
@@ -4401,6 +4427,8 @@ function searchView() {
     blocks.push(el("p", { class: "ro-notice", text: `Tu rol (${roleLabel(auth.currentRole())}) es de solo lectura: puedes consultar el ranking y los dossiers, pero no descubrir ni añadir leads. Pide a un ADMIN que cambie tu rol si necesitas operar.` }));
     return el("section", { class: "search-view" }, blocks);
   }
+
+  blocks.push(captureVerdict());
 
   // Mapa de captación: una idea → árbol de categorías. Lo primero y más fácil.
   blocks.push(captureMap());
