@@ -563,7 +563,9 @@ function render() {
   // fuera de la vista diaria del trabajador. En modo prueba, solo el aviso.
   if (previewMode) {
     main.appendChild(previewBanner()); // aviso "solo lectura"
-  } else if (allow("manage_roles")) {
+  } else if (allow("manage_roles") && state.view !== "cards") {
+    // Configuración técnica fuera de Mapa: la primera pantalla abre en la
+    // decisión, no en ajustes. Sigue disponible en el resto de vistas.
     const cfg = el("details", { class: "config-wrap" }, [
       el("summary", { class: "config-summary", text: "⚙︎ Configuración de búsqueda y datos" }),
       configPanel(),
@@ -2702,11 +2704,22 @@ function cardsView() {
   const model = feedModel();
   const total = model.decided.length;
   return el("div", { class: "feed" }, [
-    // Decisión primero: el veredicto del motor abre la pantalla, antes que
-    // cualquier herramienta. El usuario entiende qué hacer hoy en 3 segundos.
+    // 1. Decisión: el hero del motor abre la pantalla. Una orden de trabajo.
     mapHero(model.buckets, total),
-    // Herramientas (importar · exportar · captar más): plegadas, no compiten
-    // con la decisión. Misma funcionalidad, jerarquía visual reducida.
+    // 2. Foco activo (si lo hay): banner fino justo encima de las cards, para
+    //    que al pulsar "Ver las N" el usuario vea que el feed quedó enfocado.
+    focusBanner(model.filtered.length),
+    // 3. Las oportunidades, pegadas al hero. Nada entre la decisión y el trabajo.
+    el("div", { class: "results-region" }, [feedCards(model.filtered)]),
+    // 4. Contexto del motor: buckets + Ask Operator + respuesta. Plegado: nadie
+    //    abre Connect para filtrar, sino para que le digan qué hacer.
+    el("details", { class: "motor-context" }, [
+      el("summary", { text: "Contexto del motor" }),
+      bucketsRow(model.buckets),
+      commandBar(),
+      operatorAnswerLine(model.filtered),
+    ]),
+    // 5. Herramientas (importar · exportar · captar más) + parte del agente.
     el("details", { class: "map-tools" }, [
       el("summary", { text: "Herramientas" }),
       el("div", { class: "feed-io" }, [
@@ -2714,15 +2727,10 @@ function cardsView() {
         el("button", { class: "io-btn", title: "Exportar el feed como CSV de decisión", text: "↥ Export CSV", onClick: exportDecisionCsvNow }),
         (allow("discover") || allow("write")) ? agentButton() : null,
       ]),
+      el("div", { class: "agent-report", id: "agent-report" }),
     ]),
-    el("div", { class: "agent-report", id: "agent-report" }),
-    commandBar(),
-    bucketsRow(model.buckets),
-    operatorAnswerLine(model.filtered),
-    focusBanner(model.filtered.length),
-    // Filtros avanzados, plegados: la superficie principal no se carga con ellos.
+    // 6. Filtros avanzados, plegados: la superficie principal no se carga con ellos.
     el("details", { class: "feed-filters" }, [el("summary", { text: "Filtros avanzados" }), filterBar()]),
-    el("div", { class: "results-region" }, [feedCards(model.filtered)]),
   ]);
 }
 
