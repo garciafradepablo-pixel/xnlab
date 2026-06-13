@@ -2113,6 +2113,9 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .cmd-ask-go:hover { background: #2a3358; }
 .cmd-ask-clear { background: none; border: none; color: var(--ink-faint); cursor: pointer; font-size: 14px; }
 
+/* Veredicto del motor: orienta antes de que el usuario lea una card */
+.map-verdict { font-size: 13px; color: var(--ink-dim); line-height: 1.5; padding: 8px 0 4px; border-top: 1px solid var(--line); }
+
 /* Buckets de cabecera */
 .buckets { display: flex; flex-wrap: wrap; gap: 8px; }
 .bk { display: flex; align-items: baseline; gap: 7px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 10px; padding: 7px 13px; cursor: pointer; transition: border-color .15s, background .15s; }
