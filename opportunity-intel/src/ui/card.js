@@ -443,26 +443,31 @@ export function renderCard(opp, record, handlers = {}) {
       ])
     : null;
 
-  // ---- ACTION STRIP: offer + copyable opening + quick status ----
+  // ---- ACTION STRIP: offer + contact + quick status ----
+  // Foco radical en reposo: la oferta (una línea) y el contacto bastan para
+  // decidir y marcar. El guion verbatim y los generadores de documento son
+  // contenido de ejecución de llamada — se construyen aquí pero se revelan
+  // dentro de "Ver análisis completo".
+  const scriptBlock = el("div", { class: "open-line" }, [
+    el("blockquote", { text: opp.callOpening }),
+    copyBtn(opp.callOpening),
+  ]);
+  const docActions = (handlers.onPlaybook || handlers.onProposal)
+    ? el("div", { class: "doc-actions" }, [
+        handlers.onPlaybook
+          ? el("button", { class: "pb-trigger", text: "📞 Guion + dossier", title: "Qué decir y qué mandar", onClick: () => handlers.onPlaybook(opp.id) })
+          : null,
+        handlers.onProposal
+          ? el("button", { class: "pb-trigger pb-trigger-proposal", text: "✎ Propuesta", title: "Genera la propuesta lista para enviar (cierra agendando el diagnóstico)", onClick: () => handlers.onProposal(opp.id) })
+          : null,
+      ])
+    : null;
+
   const action = el("div", { class: "c-action" }, [
     el("div", { class: "offer-line" }, [
       el("span", { class: "offer-ic", text: "→" }),
       el("span", { class: "offer-txt", text: offerText(opp.suggestedOfferKey) }),
     ]),
-    el("div", { class: "open-line" }, [
-      el("blockquote", { text: opp.callOpening }),
-      copyBtn(opp.callOpening),
-    ]),
-    (handlers.onPlaybook || handlers.onProposal)
-      ? el("div", { class: "doc-actions" }, [
-          handlers.onPlaybook
-            ? el("button", { class: "pb-trigger", text: "📞 Guion + dossier", title: "Qué decir y qué mandar", onClick: () => handlers.onPlaybook(opp.id) })
-            : null,
-          handlers.onProposal
-            ? el("button", { class: "pb-trigger pb-trigger-proposal", text: "✎ Propuesta", title: "Genera la propuesta lista para enviar (cierra agendando el diagnóstico)", onClick: () => handlers.onProposal(opp.id) })
-            : null,
-        ])
-      : null,
     el("div", { class: "contact-line" }, [
       // Decisor: si hay LinkedIn personal, el nombre es el enlace.
       dm.linkedin
@@ -552,6 +557,10 @@ export function renderCard(opp, record, handlers = {}) {
     el("summary", {}, [el("span", { text: "Ver análisis completo" }), el("span", { class: "diag", text: explainScore(s) })]),
     // Foco radical: lo secundario vive aquí dentro, no en reposo.
     decisionStrip(dec, opp),
+    // Guion de apertura + generadores de documento: ejecución de llamada, no
+    // triaje. Viven en el detalle, justo donde el usuario los necesita.
+    scriptBlock,
+    docActions,
     freshBadge,
     metrics,
     serviceBlock,
