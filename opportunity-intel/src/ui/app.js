@@ -76,7 +76,8 @@ import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import { decide } from "../decision.js";
 import { buildVerdict, buildPriorityList } from "../verdict.js";
 import { deriveOrderStatus } from "../orders.js";
-import { orderIdFor, foldOrders, computeOrderEdge, OUTCOME_STATUS } from "../ledger.js";
+import { orderIdFor, foldOrders, OUTCOME_STATUS } from "../ledger.js";
+import { authorityLine, hasOverrideRegret } from "../authority.js";
 import { buildBrief, briefToText, briefToMarkdown } from "../brief.js";
 import { parseLeads, rowToLeadInput, findDuplicates } from "../importer.js";
 import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
@@ -2136,12 +2137,19 @@ function reactorView() {
     }
     store.stampOrderIssued(topId, now);
     const rec = store.getRecord(topId);
+    const oci = actNow[0].decision?.oci || 0;
     store.ledgerIssue(orderIdFor(topId, rec.orderIssuedAt), {
-      leadId: topId, at: now, oci: actNow[0].decision?.oci || 0,
+      leadId: topId, at: now, oci,
+      expectedOutcome: "avance", // toda orden predice avance: por eso se emite
+      confidence: oci, // confianza = el propio índice del motor, no se inventa
+      expectedValue: null, // el valor realizado aún no se mide (V2)
     });
   }
   const priorities = buildPriorityList({ actNow, tracking: store.getTracking(), now });
-  const edge = computeOrderEdge(foldOrders(store.getLedger()), now);
+  // El Ledger como evidencia: una línea honesta de prueba de autoridad.
+  const orders = foldOrders(store.getLedger());
+  const proofLine = authorityLine(orders, now);
+  const showRegret = hasOverrideRegret(orders);
 
   // ── Header: solo el título. Sin panel de métricas (V4: una orden, no un
   //    dashboard). El contexto agregado vive plegado en "Estado del sistema".
@@ -2166,9 +2174,11 @@ function reactorView() {
     sections.push(renderActiveOrder(priorities[0]));
   }
 
-  // ── Order Edge: la prueba en construcción de que obedecer gana. ──────────
-  if (edge.line) {
-    sections.push(el("div", { class: "ord-edge", text: edge.line }));
+  // ── Prueba de autoridad: UNA línea bajo la orden. La evidencia, no el
+  //    marketing. Y, si existe, la prueba de que ignorar costó. ─────────────
+  sections.push(el("div", { class: "ord-edge", text: proofLine }));
+  if (showRegret) {
+    sections.push(el("div", { class: "ord-regret", text: "Se ignoró una orden que posteriormente empeoró." }));
   }
 
   // ── Estado del sistema (plegado) ─────────────────────────────────────────

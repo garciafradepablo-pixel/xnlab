@@ -351,10 +351,17 @@ function hasLedgerEvent(orderId, type) {
   return getLedger().some((e) => e && e.orderId === orderId && e.type === type);
 }
 
-/** ORDEN EMITIDA. Idempotente: una sola fila `issued` por orden. */
-export function ledgerIssue(orderId, { leadId = null, at = Date.now(), oci = null } = {}) {
+/** ORDEN EMITIDA. Idempotente: una sola fila `issued` por orden. Lleva la
+ *  predicción (expected_outcome/value + confidence) para poder, luego,
+ *  contrastar predicción vs realidad (ver authority.js). */
+export function ledgerIssue(orderId, {
+  leadId = null, at = Date.now(), oci = null,
+  expectedOutcome = null, expectedValue = null, confidence = null,
+} = {}) {
   if (!orderId || hasLedgerEvent(orderId, "issued")) return null;
-  return appendLedger(makeEvent("issued", orderId, { leadId, at, oci }));
+  return appendLedger(makeEvent("issued", orderId, {
+    leadId, at, oci, expectedOutcome, expectedValue, confidence,
+  }));
 }
 
 /** ORDEN OBEDECIDA. Idempotente: una sola fila `obeyed` por orden. */

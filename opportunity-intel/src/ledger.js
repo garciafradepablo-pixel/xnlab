@@ -40,8 +40,14 @@ export function orderIdFor(leadId, issuedAtISO) {
   return `ord_${leadId}_${stamp}`;
 }
 
-/** Construye un evento del Ledger (inmutable). `at` en ms. */
-export function makeEvent(type, orderId, { leadId = null, at = Date.now(), outcome = null, oci = null } = {}) {
+/** Construye un evento del Ledger (inmutable). `at` en ms.
+ *  El evento `issued` lleva la PREDICCIÓN (expected_outcome/value + confidence);
+ *  el `resolved` lleva la REALIDAD (outcome + actual_value). Comparar ambos es
+ *  lo que convierte el Ledger en evidencia (ver authority.js). */
+export function makeEvent(type, orderId, {
+  leadId = null, at = Date.now(), outcome = null, oci = null,
+  expectedOutcome = null, expectedValue = null, confidence = null, actualValue = null,
+} = {}) {
   if (!LEDGER_EVENTS.includes(type) || !orderId) return null;
   return {
     id: `lg_${at.toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
@@ -51,6 +57,12 @@ export function makeEvent(type, orderId, { leadId = null, at = Date.now(), outco
     at: new Date(at).toISOString(),
     outcome: type === "resolved" ? outcome : null,
     oci: type === "issued" ? oci : null,
+    // Predicción (issued): qué esperaba la orden y con cuánta confianza.
+    expectedOutcome: type === "issued" ? expectedOutcome : null,
+    expectedValue: type === "issued" ? expectedValue : null,
+    confidence: type === "issued" ? confidence : null,
+    // Realidad (resolved): el valor real producido (null hasta que se mida).
+    actualValue: type === "resolved" ? actualValue : null,
   };
 }
 
@@ -71,6 +83,8 @@ export function foldOrders(events = []) {
         orderId, leadId: null, issuedAt: null, obeyedAt: null,
         resolvedAt: null, outcome: null, latencyMinutes: null,
         overrideRegret: false, oci: null, state: "issued",
+        expectedOutcome: null, expectedValue: null, confidence: null,
+        actualOutcome: null, actualValue: null,
       });
     }
     return byOrder.get(orderId);
@@ -82,11 +96,18 @@ export function foldOrders(events = []) {
     const o = get(e.orderId);
     if (e.leadId && !o.leadId) o.leadId = e.leadId;
     if (e.type === "issued") {
-      if (!o.issuedAt) { o.issuedAt = e.at; o.oci = e.oci; }
+      if (!o.issuedAt) {
+        o.issuedAt = e.at; o.oci = e.oci;
+        o.expectedOutcome = e.expectedOutcome; o.expectedValue = e.expectedValue;
+        o.confidence = e.confidence;
+      }
     } else if (e.type === "obeyed") {
       if (!o.obeyedAt) o.obeyedAt = e.at;
     } else if (e.type === "resolved") {
-      if (!o.resolvedAt) { o.resolvedAt = e.at; o.outcome = e.outcome; }
+      if (!o.resolvedAt) {
+        o.resolvedAt = e.at; o.outcome = e.outcome;
+        o.actualOutcome = e.outcome; o.actualValue = e.actualValue;
+      }
     } else if (e.type === "regret") {
       o.overrideRegret = true;
     }
@@ -134,7 +155,8 @@ export function computeOrderEdge(orders = [], now = Date.now()) {
   if (edgePct != null) {
     line = `Las órdenes obedecidas avanzan el ${edgePct}% de las veces (${advanced}/${resolvedObeyed}).`;
   } else if (obeyed > 0) {
-    line = `${obeyed} orden${obeyed === 1 ? "" : "es"} obedecida${obeyed === 1 ? "" : "s"}, esperando resultado.`;
+    const w = obeyed === 1 ? "orden obedecida" : "órdenes obedecidas";
+    line = `${obeyed} ${w}, esperando resultado.`;
   }
 
   return { obeyed, advanced, lost, ignored, resolvedObeyed, edgePct, line };
