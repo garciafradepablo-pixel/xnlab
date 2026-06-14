@@ -2353,3 +2353,79 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .mc-sysrow-ok { color: var(--ok); }
 .mc-sysrow-warn { color: #d07070; }
 .mc-sysrow-dim { color: var(--ink-faint); }
+
+/* ============================================================================
+   Reactor V4 — La orden activa. UNA orden, un acto: OBEDECER.
+   El bloque entero es un mando, no una tarjeta. Sin menú, sin alternativas.
+   ========================================================================== */
+.ord-active { padding: 12px 0 24px; display: flex; flex-direction: column; gap: 14px; }
+.ord-label {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.22em; text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.ord-command { display: flex; flex-direction: column; gap: 2px; }
+.ord-verb {
+  font-size: 12px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.ord-company {
+  font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02;
+  color: var(--accent);
+}
+.ord-oci {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  color: var(--ink-faint); font-variant-numeric: tabular-nums;
+}
+.ord-context { display: flex; flex-direction: column; gap: 4px; }
+.ord-ctx-line { font-size: 14px; color: var(--ink-dim); line-height: 1.45; }
+.ord-obey {
+  margin-top: 8px; width: 100%; padding: 18px 24px; cursor: pointer;
+  font-size: 15px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  background: var(--accent); color: #000; border: none; border-radius: 6px;
+}
+.ord-obey:hover { opacity: .9; }
+
+/* Order Edge: la prueba en construcción de que obedecer gana */
+.ord-edge {
+  font-size: 12px; color: var(--ink-faint); letter-spacing: 0.01em;
+  padding: 4px 0 0; line-height: 1.4;
+}
+
+/* Ejecución de la orden — overlay enfocado. NO cards, NO listas. */
+.ord-screen {
+  position: fixed; inset: 0; z-index: 60; display: flex;
+  align-items: center; justify-content: center; padding: 20px;
+  background: rgba(0,0,0,.55); backdrop-filter: blur(3px);
+}
+.ord-exec {
+  width: 100%; max-width: 460px; background: var(--bg); border: 1px solid var(--line-2);
+  border-radius: 10px; padding: 22px; display: flex; flex-direction: column; gap: 18px;
+}
+.ord-exec-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.ord-exec-company { font-size: 22px; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); }
+.ord-exec-x {
+  cursor: pointer; background: transparent; border: none; color: var(--ink-faint);
+  font-size: 16px; line-height: 1; padding: 4px;
+}
+.ord-exec-x:hover { color: var(--ink); }
+.ord-exec-rows { display: flex; flex-direction: column; gap: 12px; }
+.ord-exec-row { display: flex; flex-direction: column; gap: 3px; }
+.ord-exec-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-faint);
+}
+.ord-exec-value { font-size: 14px; color: var(--ink-dim); line-height: 1.45; }
+.ord-finish { display: flex; flex-direction: column; gap: 10px; }
+.ord-finish-btn {
+  width: 100%; padding: 15px 24px; cursor: pointer;
+  font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  background: var(--accent); color: #000; border: none; border-radius: 6px;
+}
+.ord-finish-btn:hover { opacity: .9; }
+.ord-outcome-q { font-size: 12px; color: var(--ink-faint); letter-spacing: 0.02em; }
+.ord-outcomes { display: flex; flex-wrap: wrap; gap: 8px; }
+.ord-chip {
+  padding: 10px 16px; cursor: pointer; font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em; background: var(--panel); color: var(--ink-dim);
+  border: 1px solid var(--line-2); border-radius: 6px;
+}
+.ord-chip:hover { color: var(--ink); border-color: var(--accent); }

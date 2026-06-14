@@ -12,12 +12,14 @@
 
 import { deriveCalibration, deriveSuccessCalibration } from "./calibration.js";
 import { deriveOrderStatus } from "./orders.js";
+import { makeEvent } from "./ledger.js";
 import { currentUser, currentRole, getToken } from "./auth.js";
 import { can } from "./roles.js";
 import * as statesync from "./statesync.js";
 
 const NS = "oi:"; // namespace
 const TRACK_KEY = `${NS}tracking`;
+const LEDGER_KEY = `${NS}ledger`; // log append-only ORDEN→OBEDIENCIA→RESULTADO (el activo)
 const LEARN_KEY = `${NS}learning`;
 const CONFIG_KEY = `${NS}config`;
 const VERIFY_KEY = `${NS}verify`;
@@ -322,6 +324,56 @@ export function stampOrderIssued(leadId, now = Date.now()) {
   write(TRACK_KEY, all);
   scheduleSync();
   return all[leadId];
+}
+
+// ---- Ledger: el registro append-only ORDEN→OBEDIENCIA→RESULTADO ------------
+// El activo principal de Connect. NUNCA se sobrescribe, NUNCA se borra: solo se
+// añaden eventos. La vista por orden se deriva plegando (ver ledger.js).
+
+/** @returns {Array} log completo de eventos del Ledger (orden de inserción). */
+export function getLedger() {
+  const list = read(LEDGER_KEY, []);
+  return Array.isArray(list) ? list : [];
+}
+
+/** Añade un evento al Ledger. Append-only: nunca toca eventos previos. */
+function appendLedger(evt) {
+  if (!evt) return null;
+  const list = getLedger();
+  list.push(evt);
+  write(LEDGER_KEY, list);
+  scheduleSync();
+  return evt;
+}
+
+/** ¿Existe ya un evento de este tipo para esta orden? (idempotencia). */
+function hasLedgerEvent(orderId, type) {
+  return getLedger().some((e) => e && e.orderId === orderId && e.type === type);
+}
+
+/** ORDEN EMITIDA. Idempotente: una sola fila `issued` por orden. */
+export function ledgerIssue(orderId, { leadId = null, at = Date.now(), oci = null } = {}) {
+  if (!orderId || hasLedgerEvent(orderId, "issued")) return null;
+  return appendLedger(makeEvent("issued", orderId, { leadId, at, oci }));
+}
+
+/** ORDEN OBEDECIDA. Idempotente: una sola fila `obeyed` por orden. */
+export function ledgerObey(orderId, at = Date.now()) {
+  if (!orderId || hasLedgerEvent(orderId, "obeyed")) return null;
+  return appendLedger(makeEvent("obeyed", orderId, { at }));
+}
+
+/** ORDEN RESUELTA con su resultado. Idempotente: una sola fila `resolved`. */
+export function ledgerResolve(orderId, outcome, at = Date.now()) {
+  if (!orderId || hasLedgerEvent(orderId, "resolved")) return null;
+  return appendLedger(makeEvent("resolved", orderId, { at, outcome }));
+}
+
+/** OVERRIDE-REGRET: orden ignorada cuyo lead empeoró. Se almacena, no se
+ *  muestra todavía. Idempotente: una sola fila `regret` por orden. */
+export function ledgerRegret(orderId, at = Date.now()) {
+  if (!orderId || hasLedgerEvent(orderId, "regret")) return null;
+  return appendLedger(makeEvent("regret", orderId, { at }));
 }
 
 // ---- Tareas del equipo (quién hace qué) -------------------------------------
