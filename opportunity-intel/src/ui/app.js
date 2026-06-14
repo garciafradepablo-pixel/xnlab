@@ -75,6 +75,8 @@ import { analyzeCall } from "../callai.js";
 import { buildDashboard, actionableMemory } from "../commercialmemory.js";
 import { decide } from "../decision.js";
 import { buildVerdict, buildPriorityList } from "../verdict.js";
+import { deriveOrderStatus } from "../orders.js";
+import { orderIdFor, foldOrders, computeOrderEdge, OUTCOME_STATUS } from "../ledger.js";
 import { buildBrief, briefToText, briefToMarkdown } from "../brief.js";
 import { parseLeads, rowToLeadInput, findDuplicates } from "../importer.js";
 import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
@@ -1991,24 +1993,108 @@ function commandCenter(calls) {
 // Cada bloque se entiende en <2 segundos. Sin párrafos. Sin tiles de dashboard.
 // Acción > explicación. Dinero > métricas. Prioridad > navegación.
 
-function renderMCPriority(p, isTop) {
-  const ctaLabel = p.status === "not_called" ? "PRIMER CONTACTO"
-    : p.ctaType === "call" ? "LLAMAR HOY"
-    : "ABRIR CASO";
-  return el("div", { class: `mc-priority${isTop ? " mc-priority-top" : ""}` }, [
-    el("div", { class: "mc-priority-head" }, [
-      el("span", { class: "mc-rank", text: `#${p.rank}` }),
-      el("span", { class: "mc-company", text: p.company }),
-      el("span", { class: "mc-oci", text: String(p.oci) }),
+// Reactor V4 — UNA sola orden activa. No lista, no menú, no alternativas. El
+// bloque entero es la orden; el único acto posible es OBEDECER.
+function renderActiveOrder(p) {
+  const verb = p.status === "not_called" ? "PRIMER CONTACTO CON" : "LLAMA A";
+  return el("div", { class: "ord-active" }, [
+    el("div", { class: "ord-label", text: "ORDEN ACTIVA" }),
+    el("div", { class: "ord-command" }, [
+      el("span", { class: "ord-verb", text: verb }),
+      el("span", { class: "ord-company", text: p.company.toUpperCase() }),
     ]),
-    p.motive ? el("div", { class: "mc-motive", text: p.motive }) : null,
-    p.riskLine ? el("div", { class: "mc-risk", text: p.riskLine }) : null,
+    el("div", { class: "ord-oci", text: `OCI ${p.oci}` }),
+    el("div", { class: "ord-context" }, [
+      p.motive ? el("div", { class: "ord-ctx-line", text: p.motive }) : null,
+      p.riskLine ? el("div", { class: "ord-ctx-line", text: p.riskLine }) : null,
+    ].filter(Boolean)),
     el("button", {
-      class: isTop ? "mc-cta-primary" : "mc-cta-sec",
-      text: ctaLabel,
-      onClick: () => openCase(p.leadId),
+      class: "ord-obey",
+      text: "OBEDECER",
+      onClick: () => obeyOrder(p.leadId),
     }),
-  ].filter(Boolean));
+  ]);
+}
+
+// El acto de obediencia: registra OBEYED en el Ledger y abre la ejecución de la
+// orden — NO cards, NO terreno, NO listas, NO navegación. Solo la orden viva.
+function obeyOrder(leadId) {
+  const rec = store.getRecord(leadId);
+  if (rec.orderIssuedAt) store.ledgerObey(orderIdFor(leadId, rec.orderIssuedAt));
+  openOrderExecution(leadId);
+}
+
+// Vista de ejecución: lo mínimo para ejecutar la orden ya. Empresa, contexto,
+// objeción dominante, última interacción, siguiente acción → y el cierre en un
+// click. Reusa buildVerdict (lectura), no toca scoring/decision/memory.
+function openOrderExecution(leadId) {
+  const lead = (state.results?.all || []).find((o) => o.id === leadId);
+  if (!lead) return;
+  const now = Date.now();
+  const v = buildVerdict({
+    actNow: [{ opp: lead, decision: (feedModel().buckets.actNow || []).find((x) => x.opp.id === leadId)?.decision || {} }],
+    tracking: store.getTracking(),
+    calls: store.getCalls(),
+    tasks: store.getTasks(),
+    now,
+    today: ymd(new Date()),
+  });
+
+  const overlay = el("div", { class: "ord-screen", onClick: (e) => { if (e.target === overlay) close(); } });
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  function close() { overlay.remove(); document.removeEventListener("keydown", onKey); }
+  document.addEventListener("keydown", onKey);
+
+  // Zona de cierre: el botón revela los 5 resultados rápidos; un click cierra.
+  const finishZone = el("div", { class: "ord-finish" });
+  finishZone.appendChild(el("button", {
+    class: "ord-finish-btn",
+    text: "ORDEN COMPLETADA",
+    onClick: () => {
+      clear(finishZone);
+      finishZone.appendChild(el("div", { class: "ord-outcome-q", text: "¿Qué pasó?" }));
+      finishZone.appendChild(el("div", { class: "ord-outcomes" }, [
+        ["avance", "Avance"], ["seguimiento", "Seguimiento"], ["propuesta", "Propuesta"],
+        ["perdido", "Perdido"], ["sin_respuesta", "Sin respuesta"],
+      ].map(([key, label]) => el("button", {
+        class: "ord-chip",
+        text: label,
+        onClick: () => { resolveOrder(leadId, key); close(); },
+      }))));
+    },
+  }));
+
+  const panel = el("div", { class: "ord-exec" }, [
+    el("div", { class: "ord-exec-head" }, [
+      el("div", { class: "ord-exec-company", text: lead.company }),
+      el("button", { class: "ord-exec-x", text: "✕", onClick: () => close() }),
+    ]),
+    el("div", { class: "ord-exec-rows" }, [
+      v.objection ? execRow("Objeción dominante", `«${v.objection}»`) : null,
+      execRow("Última interacción", v.lastContact || "Sin registro."),
+      v.nextAction?.why ? execRow("Siguiente acción", v.nextAction.why) : null,
+    ].filter(Boolean)),
+    finishZone,
+  ]);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+}
+
+function execRow(label, value) {
+  return el("div", { class: "ord-exec-row" }, [
+    el("span", { class: "ord-exec-label", text: label }),
+    el("span", { class: "ord-exec-value", text: value }),
+  ]);
+}
+
+// Cierre de la orden: registra RESOLVED en el Ledger con su resultado y mueve el
+// tracking por el camino normal (cierra la orden vía updatedAt > orderIssuedAt).
+function resolveOrder(leadId, outcome) {
+  const rec = store.getRecord(leadId);
+  if (rec.orderIssuedAt) store.ledgerResolve(orderIdFor(leadId, rec.orderIssuedAt), outcome);
+  const status = OUTCOME_STATUS[outcome];
+  if (status) store.setStatus(leadId, status);
+  goView("reactor"); // la siguiente orden ya espera
 }
 
 function reactorView() {
@@ -2035,41 +2121,41 @@ function reactorView() {
   const riskCount = dueTasks.length + dueOpps.length + cooling.length;
   const killed = (model.buckets.killedNoise || []).length;
 
-  // Emisión de la orden #1: estampa `orderIssuedAt` en el lead de mayor OCI
-  // (actNow ya viene ordenado desc, así que actNow[0] ES la prioridad #1). Solo
-  // la #1, nunca #2/#3. Side effect aislado en la capa UI; verdict.js sigue puro.
-  // Re-leemos el tracking tras estampar para que orderStatus refleje la emisión.
+  // Emisión de la orden activa (V4): UNA sola, la de mayor OCI (actNow viene
+  // ordenado desc). Antes de re-emitir, si la orden anterior quedó ignorada y el
+  // lead empeoró (escalada), se registra override-regret en el Ledger. Luego se
+  // estampa y se registra la emisión (ISSUED). Todo append-only.
   if (actNow.length > 0 && actNow[0].opp) {
-    store.stampOrderIssued(actNow[0].opp.id, now);
+    const topId = actNow[0].opp.id;
+    const prev = tracking[topId];
+    if (prev && prev.orderIssuedAt) {
+      const prevStatus = deriveOrderStatus(prev, now).status;
+      if (prevStatus === "escalated") {
+        store.ledgerRegret(orderIdFor(topId, prev.orderIssuedAt));
+      }
+    }
+    store.stampOrderIssued(topId, now);
+    const rec = store.getRecord(topId);
+    store.ledgerIssue(orderIdFor(topId, rec.orderIssuedAt), {
+      leadId: topId, at: now, oci: actNow[0].decision?.oci || 0,
+    });
   }
   const priorities = buildPriorityList({ actNow, tracking: store.getTracking(), now });
+  const edge = computeOrderEdge(foldOrders(store.getLedger()), now);
 
-  // ── Header: título + 3 números ───────────────────────────────────────────
+  // ── Header: solo el título. Sin panel de métricas (V4: una orden, no un
+  //    dashboard). El contexto agregado vive plegado en "Estado del sistema".
   const sections = [
     el("div", { class: "mc-header" }, [
       el("div", { class: "mc-title", text: "REACTOR" }),
-      el("div", { class: "mc-stats" }, [
-        el("div", { class: "mc-stat-block" }, [
-          el("div", { class: "mc-stat-n", text: pulse.valueTotal > 0 ? eurFmt(pulse.valueTotal) : String(actNow.length) }),
-          el("div", { class: "mc-stat-l", text: pulse.valueTotal > 0 ? "pipeline activo" : "movimientos listos" }),
-        ]),
-        el("div", { class: "mc-stat-block" }, [
-          el("div", { class: "mc-stat-n", text: String(model.decided.length) }),
-          el("div", { class: "mc-stat-l", text: "evaluados" }),
-        ]),
-        el("div", { class: `mc-stat-block${riskCount > 0 ? " mc-stat-warn" : ""}` }, [
-          el("div", { class: "mc-stat-n", text: String(riskCount) }),
-          el("div", { class: "mc-stat-l", text: "riesgos" }),
-        ]),
-      ]),
     ]),
     el("hr", { class: "mc-divider" }),
   ];
 
-  // ── Prioridades #1 / #2 / #3 ─────────────────────────────────────────────
+  // ── La orden activa: UNA sola. No lista, no menú. ────────────────────────
   if (priorities.length === 0) {
     sections.push(el("div", { class: "mc-empty" }, [
-      el("div", { class: "mc-empty-label", text: "Sin movimiento listo para hoy." }),
+      el("div", { class: "mc-empty-label", text: "Sin orden activa. Nada que ejecutar ahora." }),
       el("button", {
         class: "mc-cta-primary",
         text: "VER MAPA DE OPORTUNIDADES",
@@ -2077,10 +2163,12 @@ function reactorView() {
       }),
     ]));
   } else {
-    priorities.forEach((p, i) => {
-      if (i > 0) sections.push(el("hr", { class: "mc-divider" }));
-      sections.push(renderMCPriority(p, i === 0));
-    });
+    sections.push(renderActiveOrder(priorities[0]));
+  }
+
+  // ── Order Edge: la prueba en construcción de que obedecer gana. ──────────
+  if (edge.line) {
+    sections.push(el("div", { class: "ord-edge", text: edge.line }));
   }
 
   // ── Estado del sistema (plegado) ─────────────────────────────────────────

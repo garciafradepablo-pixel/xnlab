@@ -73,7 +73,9 @@ try {
   if (reactorZone) {
     reactorZone.click();
     ok(root.querySelector(".reactor-view") != null, "Reactor renderiza su vista al navegar a ella");
-    ok(root.querySelector(".mc-cta-primary") != null, "el Reactor muestra el CTA principal (Mission Control)");
+    // V4: el Reactor emite UNA orden activa (.ord-obey) o, sin orden, el CTA del
+    // estado vacío (.mc-cta-primary). Cualquiera de los dos es válido.
+    ok(root.querySelector(".ord-obey, .mc-cta-primary") != null, "el Reactor muestra una acción primaria (orden activa o estado vacío)");
   }
 } catch (e) { ok(false, "navegar a Reactor no debe lanzar: " + e.message); }
 
