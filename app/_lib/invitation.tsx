@@ -73,7 +73,9 @@ export function Invitation() {
   const t = COPY[lang];
 
   // Routes where the visitor is already converting — never interrupt.
-  const suppressed = pathname === "/contact" || pathname === "/dossier";
+  // /hunter-network is its own conversion surface with a dominant CTA and its
+  // own forms; the dossier teaser would compete with it, so it's suppressed too.
+  const suppressed = pathname === "/contact" || pathname === "/dossier" || pathname === "/hunter-network";
 
   const dismiss = useCallback(() => {
     setOpen(false);

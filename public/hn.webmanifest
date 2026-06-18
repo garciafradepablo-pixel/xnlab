@@ -1,0 +1,20 @@
+{
+  "id": "/hunter-network",
+  "name": "Hunter Network",
+  "short_name": "Hunter",
+  "description": "Red privada de vendedores evaluados. Accede a la Evaluación de Acceso Comercial — el rendimiento da acceso a mejores campañas.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/hunter-network?source=pwa",
+  "scope": "/hunter-network",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#060606",
+  "theme_color": "#060606",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/hn-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/hn-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/hn-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
