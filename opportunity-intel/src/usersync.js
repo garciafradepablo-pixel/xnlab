@@ -95,6 +95,12 @@ export function remoteSetAvatar(token, avatar) {
   return call("setAvatar", { token, avatar });
 }
 
+/** Edita el perfil propio: apodo (aka), email y/o foto. Solo viajan los campos
+ *  que pasas. El backend (acción setProfile) ya existe en producción. */
+export function remoteSetProfile(token, { aka, email, photo } = {}) {
+  return call("setProfile", { token, aka, email, photo });
+}
+
 /** Lista de {name, color, role} de todas las cuentas. [] si falla. */
 export async function remoteList() {
   try { const r = await call("list", {}); return r.ok ? r.users : []; }

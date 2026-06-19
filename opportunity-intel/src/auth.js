@@ -25,6 +25,11 @@ const SESSION_KEY = `${NS}session`;
 let remote = usersync;
 export function __setRemote(r) { remote = r; }
 
+// Apodo a forma canónica (espacios colapsados) y validación de email — para
+// editar el perfil (apodo/email) desde el cliente. El backend ya los acepta.
+const canonName = (s) => String(s || "").trim().replace(/\s+/g, " ");
+const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(e || "").trim());
+
 const mem = new Map();
 const storage =
   typeof localStorage !== "undefined"
@@ -113,7 +118,7 @@ export function login(name, password) {
 // Cachea/actualiza un usuario en local tras confirmarlo el backend, para que la
 // sesión persista y se pueda entrar sin red la próxima vez en este navegador.
 // Guarda también rol y token de sesión devueltos por el servidor.
-function cacheUser(name, color, password, role, token, avatar, tags, tier) {
+function cacheUser(name, color, password, role, token, avatar, tags, tier, aka, email, photo) {
   const prev = getUsers().find((u) => norm(u.name) === norm(name));
   const users = getUsers().filter((u) => norm(u.name) !== norm(name));
   users.push({
@@ -122,6 +127,9 @@ function cacheUser(name, color, password, role, token, avatar, tags, tier) {
     token: token || null,
     tags: Array.isArray(tags) ? tags : (prev?.tags ?? []),
     tier: Number.isFinite(tier) ? tier : (prev?.tier ?? 2),
+    aka: aka ?? prev?.aka ?? null,
+    email: email ?? prev?.email ?? null,
+    photo: photo ?? prev?.photo ?? null,
     createdAt: new Date().toISOString(), remote: true,
   });
   write(USERS_KEY, users);
@@ -140,7 +148,7 @@ export async function createUserAsync(name, password, color, invite, tags) {
   try {
     const r = await remote.remoteRegister(n, password, finalColor, invite, tags || []);
     if (!r || !r.ok) return { ok: false, error: r?.error || "No se pudo crear el usuario." };
-    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, null, r.user.tags || tags || [], r.user.tier);
+    cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, null, r.user.tags || tags || [], r.user.tier, r.user.aka, r.user.email, r.user.photo);
     return { ok: true };
   } catch {
     // Sin red: crea al menos en local (se sincronizará cuando vuelva la red).
@@ -166,7 +174,7 @@ export async function loginAsync(name, password) {
   try {
     const r = await remote.remoteLogin(name, password);
     if (r && r.ok && r.user) {
-      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.tags || [], r.user.tier);
+      cacheUser(r.user.name, r.user.color, password, r.user.role, r.user.token, r.user.avatar, r.user.tags || [], r.user.tier, r.user.aka, r.user.email, r.user.photo);
       write(SESSION_KEY, { name: r.user.name, role: normalizeRole(r.user.role), token: r.user.token || null });
       return { ok: true, user: { name: r.user.name, color: r.user.color, role: normalizeRole(r.user.role) } };
     }
@@ -221,8 +229,8 @@ export async function syncRemoteColors() {
     const byName = new Map(users.map((u) => [norm(u.name), u]));
     for (const r of list) {
       const ex = byName.get(norm(r.name));
-      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; if (Array.isArray(r.tags)) ex.tags = r.tags; if (Number.isFinite(r.tier)) ex.tier = r.tier; } // color/rol/avatar/etiquetas/nivel: el servidor manda
-      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, role: r.role ? normalizeRole(r.role) : undefined, tags: Array.isArray(r.tags) ? r.tags : [], tier: Number.isFinite(r.tier) ? r.tier : 2, colorOnly: true }); // para teñir/badge/ojeada
+      if (ex) { ex.color = r.color; if (r.role) ex.role = normalizeRole(r.role); ex.avatar = r.avatar ?? null; ex.aka = r.aka ?? ex.aka ?? null; ex.photo = r.photo ?? null; if (r.email !== undefined) ex.email = r.email; if (Array.isArray(r.tags)) ex.tags = r.tags; if (Number.isFinite(r.tier)) ex.tier = r.tier; } // color/rol/avatar/apodo/foto/etiquetas/nivel: el servidor manda
+      else users.push({ name: r.name, color: r.color, avatar: r.avatar ?? null, aka: r.aka ?? r.name, email: r.email ?? null, photo: r.photo ?? null, role: r.role ? normalizeRole(r.role) : undefined, tags: Array.isArray(r.tags) ? r.tags : [], tier: Number.isFinite(r.tier) ? r.tier : 2, colorOnly: true }); // para teñir/badge/ojeada
     }
     write(USERS_KEY, users);
   } catch { /* best-effort */ }
@@ -249,6 +257,33 @@ export async function setAvatar(avatar) {
   return { ok: true, avatar: av, local: !s?.token };
 }
 
+/**
+ * Edita el perfil del usuario en sesión: APODO (aka), EMAIL y/o FOTO. Server-first
+ * (durable y visible para el equipo); refleja en local para la sesión actual.
+ * Pasa solo los campos que quieras cambiar. El backend ya expone `setProfile`.
+ * @returns {Promise<{ok, error?, user?}>}
+ */
+export async function setProfile({ aka, email, photo } = {}) {
+  const token = getToken();
+  if (!token) return { ok: false, error: "Necesitas una sesión verificada (vuelve a entrar online)." };
+  if (aka !== undefined && canonName(aka).length < 2) return { ok: false, error: "El apodo debe tener al menos 2 caracteres." };
+  if (email !== undefined && !validEmail(email)) return { ok: false, error: "Pon un email válido para tenerte localizado." };
+  try {
+    const r = await remote.remoteSetProfile(token, { aka, email, photo });
+    if (!r || !r.ok) return { ok: false, error: (r && r.error) || "No se pudo guardar el perfil." };
+    const s = read(SESSION_KEY, null);
+    const users = getUsers();
+    const me = s && users.find((x) => norm(x.name) === norm(s.name));
+    if (me && r.user) {
+      if (r.user.aka !== undefined) me.aka = r.user.aka;
+      if (r.user.email !== undefined) me.email = r.user.email;
+      if (r.user.photo !== undefined) me.photo = r.user.photo;
+      write(USERS_KEY, users);
+    }
+    return { ok: true, user: r.user };
+  } catch { return { ok: false, error: "Sin conexión con el servidor." }; }
+}
+
 export function logout() { storage.removeItem(SESSION_KEY); }
 
 /** Usuario en sesión (con color y rol) o null. */
@@ -257,7 +292,7 @@ export function currentUser() {
   if (!s) return null;
   const u = getUsers().find((x) => norm(x.name) === norm(s.name));
   if (!u) return null;
-  return { name: u.name, color: u.color, avatar: u.avatar || null, tags: Array.isArray(u.tags) ? u.tags : [], tier: Number.isFinite(u.tier) ? u.tier : 2, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
+  return { name: u.name, color: u.color, avatar: u.avatar || null, aka: u.aka || null, email: u.email || null, photo: u.photo || null, tags: Array.isArray(u.tags) ? u.tags : [], tier: Number.isFinite(u.tier) ? u.tier : 2, role: normalizeRole(s.role || u.role || DEFAULT_ROLE) };
 }
 
 /** Etiquetas de equipo del usuario en sesión (slugs). [] si no hay sesión. */
@@ -299,7 +334,7 @@ export async function refreshSession() {
       write(SESSION_KEY, { ...s, role });
       const users = getUsers();
       const u = users.find((x) => norm(x.name) === norm(s.name));
-      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; if (Array.isArray(r.user.tags)) u.tags = r.user.tags; if (Number.isFinite(r.user.tier)) u.tier = r.user.tier; write(USERS_KEY, users); }
+      if (u) { u.role = role; if (r.user.color) u.color = r.user.color; if (r.user.aka !== undefined) u.aka = r.user.aka; if (r.user.email !== undefined) u.email = r.user.email; if (r.user.photo !== undefined) u.photo = r.user.photo; if (Array.isArray(r.user.tags)) u.tags = r.user.tags; if (Number.isFinite(r.user.tier)) u.tier = r.user.tier; write(USERS_KEY, users); }
       return { ok: true, role };
     }
     return { ok: false };
