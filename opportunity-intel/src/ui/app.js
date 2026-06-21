@@ -2203,8 +2203,19 @@ function reactorView() {
   // ordenado desc). Antes de re-emitir, si la orden anterior quedó ignorada y el
   // lead empeoró (escalada), se registra override-regret en el Ledger. Luego se
   // estampa y se registra la emisión (ISSUED). Todo append-only.
-  if (actNow.length > 0 && actNow[0].opp) {
-    const topId = actNow[0].opp.id;
+  //
+  // AVANCE DE ORDEN: la orden activa es la de mayor OCI cuya orden NO esté ya
+  // ejecutada. Así, tras resolver una, el Reactor pasa a la SIGUIENTE empresa —
+  // el loop corre todo el día y la evidencia del Ledger se acumula sola.
+  let topItem = null;
+  for (const item of actNow) {
+    if (!item.opp) continue;
+    if (deriveOrderStatus(tracking[item.opp.id] || {}, now).status !== "executed") { topItem = item; break; }
+  }
+  const allExecuted = actNow.length > 0 && topItem === null; // todo lo de hoy, hecho
+
+  if (topItem) {
+    const topId = topItem.opp.id;
     const prev = tracking[topId];
     if (prev && prev.orderIssuedAt) {
       const prevStatus = deriveOrderStatus(prev, now).status;
@@ -2214,7 +2225,7 @@ function reactorView() {
     }
     store.stampOrderIssued(topId, now);
     const rec = store.getRecord(topId);
-    const oci = actNow[0].decision?.oci || 0;
+    const oci = topItem.decision?.oci || 0;
     store.ledgerIssue(orderIdFor(topId, rec.orderIssuedAt), {
       leadId: topId, at: now, oci,
       expectedOutcome: "avance", // toda orden predice avance: por eso se emite
@@ -2222,7 +2233,8 @@ function reactorView() {
       expectedValue: null, // el valor realizado aún no se mide (V2)
     });
   }
-  const priorities = buildPriorityList({ actNow, tracking: store.getTracking(), now });
+  // La orden activa = solo el lead elegido (el siguiente no ejecutado).
+  const priorities = buildPriorityList({ actNow: topItem ? [topItem] : [], tracking: store.getTracking(), now });
   // El Ledger como evidencia: una línea honesta de prueba de autoridad.
   const orders = foldOrders(store.getLedger());
   const proofLine = authorityLine(orders, now);
@@ -2240,7 +2252,9 @@ function reactorView() {
   // ── La orden activa: UNA sola. No lista, no menú. ────────────────────────
   if (priorities.length === 0) {
     sections.push(el("div", { class: "mc-empty" }, [
-      el("div", { class: "mc-empty-label", text: "Sin orden activa. Nada que ejecutar ahora." }),
+      el("div", { class: "mc-empty-label", text: allExecuted
+        ? "Todas las órdenes de hoy, ejecutadas. Buen trabajo."
+        : "Sin orden activa. Nada que ejecutar ahora." }),
       el("button", {
         class: "mc-cta-primary",
         text: "VER MAPA DE OPORTUNIDADES",
