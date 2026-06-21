@@ -707,7 +707,6 @@ function header() {
         whaleMark(),
         el("span", { class: "logo", html: 'CONNECT' }),
       ]),
-      el("span", { class: "tagline", text: "Pásame caos. Te devuelvo el mapa: qué atacar, qué verificar, qué descartar." }),
     ]),
     el("div", { class: "head-actions" }, [
       state.dataset !== "researched"
@@ -761,7 +760,6 @@ function userChip() {
   const chip = el("button", { class: "user-chip", title: `${u.name} · ${tierLabel(u.tier)} · ${roleLabel(u.role)} — pulsa para tu perfil` }, [
     dot,
     el("span", { class: "user-name", text: u.name }),
-    el("span", { class: `tier-badge tier-${u.tier}`, text: `N${u.tier}` }),
     el("span", { class: `role-badge role-${u.role}`, text: roleLabel(u.role) }),
   ]);
   chip.addEventListener("click", openProfile);
@@ -2247,14 +2245,9 @@ function reactorView() {
   const proofLine = authorityLine(orders, now);
   const showRegret = hasOverrideRegret(orders);
 
-  // ── Header: solo el título. Sin panel de métricas (V4: una orden, no un
-  //    dashboard). El contexto agregado vive plegado en "Estado del sistema".
-  const sections = [
-    el("div", { class: "mc-header" }, [
-      el("div", { class: "mc-title", text: "REACTOR" }),
-    ]),
-    el("hr", { class: "mc-divider" }),
-  ];
+  // La orden ES la pantalla. Sin título redundante (la pestaña ya dice Reactor),
+  // sin panel de métricas. El contexto agregado vive plegado abajo.
+  const sections = [];
 
   // ── La orden activa: UNA sola. No lista, no menú. ────────────────────────
   if (priorities.length === 0) {
