@@ -136,6 +136,14 @@ export async function mount(rootEl) {
   let previewTok = null;
   try { previewTok = new URLSearchParams(location.search).get("preview"); } catch { /* */ }
   if (previewTok) { await previewMount(previewTok); return; }
+  // Entrada de demostración pública: ?try (o ?demo). Sin sesión, sin registro.
+  // El destinatario de un email ve UNA orden comercial real en segundos — el
+  // momento mágico — y solo entonces decide crear cuenta. Es lo que hace a
+  // Connect vendible por email: el producto se demuestra en el clic.
+  try {
+    const sp = new URLSearchParams(location.search);
+    if (sp.get("try") != null || sp.get("demo") != null) { await demoMount(); return; }
+  } catch { /* */ }
   // Enlace de invitación: ?invite=Nombre → abre directo en "crear usuario".
   try { const inv = new URLSearchParams(location.search).get("invite"); if (inv) { state._invite = inv; if (!auth.currentUser()) state._authTab = "create"; } } catch { /* */ }
   // Puerta de acceso: sin sesión, mostramos login/registro. Cada usuario tiene
@@ -232,6 +240,75 @@ async function previewMount(token) {
     const lead = (state.results?.all || []).find((o) => o.id === previewMode.company);
     if (lead) openCase(lead.id);
   }
+}
+
+// ============================================================================
+// Momento mágico — la entrada pública (?try / ?demo). Sin sesión ni registro.
+// El destinatario de un email ve UNA orden comercial real, computada sobre datos
+// reales del sistema, en segundos. Una promesa, una orden, una llamada a la
+// acción. Es la superficie que hace a Connect vendible por email automatizado.
+// ============================================================================
+async function demoMount() {
+  previewMode = { scope: "demo" }; // bloquea escrituras de red, como la vista de prueba
+  state.dataset = "demo";
+  clear(root);
+  root.appendChild(el("div", { class: "demo-screen" }, [
+    el("div", { class: "demo-card" }, [
+      el("div", { class: "auth-logo", html: 'CONNECT' }),
+      el("p", { class: "auth-tagline", text: "Calculando tu primera orden…" }),
+    ]),
+  ]));
+
+  try { await recompute(); } catch { /* datos demo: nunca bloquea */ }
+
+  const now = Date.now();
+  const model = feedModel();
+  const actNow = (model.buckets.actNow || [])
+    .slice()
+    .sort((a, b) => (b.decision?.oci || 0) - (a.decision?.oci || 0));
+  const top = buildPriorityList({ actNow, tracking: {}, now })[0] || null;
+
+  const startCTA = (label) => el("button", {
+    class: "demo-cta",
+    text: label,
+    onClick: () => { previewMode = null; state._authTab = "create"; renderAuth(); },
+  });
+
+  // La orden real, o un estado honesto si el dataset no produjo ninguna.
+  const orderBlock = top
+    ? el("div", { class: "demo-order" }, [
+        el("div", { class: "ord-label", text: "TU PRIMERA ORDEN" }),
+        el("div", { class: "ord-command" }, [
+          el("span", { class: "ord-verb", text: top.status === "not_called" ? "PRIMER CONTACTO CON" : "LLAMA A" }),
+          el("span", { class: "ord-company", text: top.company.toUpperCase() }),
+        ]),
+        el("div", { class: "ord-oci", text: `OCI ${top.oci}` }),
+        el("div", { class: "ord-context" }, [
+          top.motive ? el("div", { class: "ord-ctx-line", text: top.motive }) : null,
+          top.riskLine ? el("div", { class: "ord-ctx-line", text: top.riskLine }) : null,
+        ].filter(Boolean)),
+      ])
+    : el("div", { class: "demo-order" }, [
+        el("div", { class: "ord-label", text: "TU PRIMERA ORDEN" }),
+        el("div", { class: "demo-empty", text: "Pega tus empresas y Connect emite la primera orden al instante." }),
+      ]);
+
+  clear(root);
+  root.appendChild(el("div", { class: "demo-screen" }, [
+    el("div", { class: "demo-wrap" }, [
+      el("div", { class: "auth-logo", html: 'CONNECT' }),
+      el("h1", { class: "demo-head", text: "Tu siguiente movimiento comercial, decidido." }),
+      el("p", { class: "demo-sub", text: "No es un CRM. Connect te dice a quién llamar hoy, y por qué. Tú solo obedeces." }),
+      orderBlock,
+      el("div", { class: "demo-steps" }, [
+        el("div", { class: "demo-step" }, [el("span", { class: "demo-step-n", text: "1" }), el("span", { text: "Pegas tu caos comercial." })]),
+        el("div", { class: "demo-step" }, [el("span", { class: "demo-step-n", text: "2" }), el("span", { text: "Connect emite una orden: a quién, por qué, qué pasa si esperas." })]),
+        el("div", { class: "demo-step" }, [el("span", { class: "demo-step-n", text: "3" }), el("span", { text: "Obedeces. El sistema registra el resultado y aprende." })]),
+      ]),
+      startCTA("PROBAR CON MIS EMPRESAS"),
+      el("p", { class: "demo-foot", text: "Empieza en menos de un minuto. Sin instalar nada." }),
+    ]),
+  ]));
 }
 
 // —— Indicador discreto de sincronización ————————————————————————————————————
