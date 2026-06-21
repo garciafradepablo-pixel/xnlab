@@ -15,8 +15,8 @@
   --ink-dim: #949cab;
   --ink-faint: #69727f;
   /* Acento e identidades por posición (balance) */
-  --accent: #cba24a;        /* oro afinado, más rico */
-  --accent-2: #b1872f;      /* oro profundo para degradados */
+  --accent: #a98edb;        /* amatista afinado — premium, no neón */
+  --accent-2: #8367c7;      /* violeta profundo para degradados */
   --o1: #5c7cfa;            /* 01 — índigo sobrio */
   --xn: #9b80f0;            /* XN — violeta */
   --ok: #3a9d6e;            /* verificado/éxito — esmeralda apagado (adiós verde chillón) */
@@ -2410,6 +2410,10 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .demo-head {
   font-size: 30px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.08;
   color: var(--ink); margin: 6px 0 0;
+}
+.demo-for {
+  font-size: 12px; color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase;
+  font-weight: 700; margin: 0 0 -6px;
 }
 .demo-sub { font-size: 15px; color: var(--ink-dim); line-height: 1.5; margin: 0; }
 .demo-order {

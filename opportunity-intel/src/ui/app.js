@@ -142,7 +142,13 @@ export async function mount(rootEl) {
   // Connect vendible por email: el producto se demuestra en el clic.
   try {
     const sp = new URLSearchParams(location.search);
-    if (sp.get("try") != null || sp.get("demo") != null) { await demoMount(); return; }
+    const tv = sp.get("try"), dv = sp.get("demo");
+    if (tv != null || dv != null) {
+      // El valor del propio parámetro personaliza el saludo: ?try=Mhares → "Para
+      // Mhares:". Así un DM en frío abre con el nombre del prospecto.
+      await demoMount((tv || dv || "").trim());
+      return;
+    }
   } catch { /* */ }
   // Enlace de invitación: ?invite=Nombre → abre directo en "crear usuario".
   try { const inv = new URLSearchParams(location.search).get("invite"); if (inv) { state._invite = inv; if (!auth.currentUser()) state._authTab = "create"; } } catch { /* */ }
@@ -248,7 +254,7 @@ async function previewMount(token) {
 // reales del sistema, en segundos. Una promesa, una orden, una llamada a la
 // acción. Es la superficie que hace a Connect vendible por email automatizado.
 // ============================================================================
-async function demoMount() {
+async function demoMount(recipient = "") {
   previewMode = { scope: "demo" }; // bloquea escrituras de red, como la vista de prueba
   state.dataset = "demo";
   clear(root);
@@ -297,6 +303,7 @@ async function demoMount() {
   root.appendChild(el("div", { class: "demo-screen" }, [
     el("div", { class: "demo-wrap" }, [
       el("div", { class: "auth-logo", html: 'CONNECT' }),
+      recipient ? el("p", { class: "demo-for", text: `Para ${recipient}:` }) : null,
       el("h1", { class: "demo-head", text: "Tu siguiente movimiento comercial, decidido." }),
       el("p", { class: "demo-sub", text: "No es un CRM. Connect te dice a quién llamar hoy, y por qué. Tú solo obedeces." }),
       orderBlock,
