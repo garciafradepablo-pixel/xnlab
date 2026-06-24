@@ -580,7 +580,7 @@ output { font-size: 12px; color: var(--accent); }
   display: flex; flex-direction: column; gap: 12px;
   transition: transform .12s ease, border-color .12s ease, box-shadow .12s ease;
 }
-.card:hover { transform: translateY(-2px); border-color: #3a3f4a; box-shadow: 0 8px 30px rgba(0,0,0,.35); }
+.card:hover { transform: translateY(-2px); border-color: var(--line-2); box-shadow: var(--sh-2); }
 /* Destacado de élite: leads top, lo primero que llama la atención. */
 .card-elite { border: 1px solid var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 8px 34px rgba(201,162,39,.18); }
 .card-elite:hover { box-shadow: 0 0 0 1px var(--accent), 0 12px 40px rgba(201,162,39,.28); }
@@ -731,10 +731,10 @@ output { font-size: 12px; color: var(--accent); }
 .quick { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
 .q { font-size: 12px; font-weight: 600; padding: 8px 4px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink-dim); }
 .q:hover { color: var(--ink); border-color: var(--ink-dim); }
-.q.active.q-called { background: rgba(255,255,255,.1); color: var(--ink); border-color: var(--ink-dim); }
-.q.active.q-interested { background: rgba(74,158,255,.2); color: var(--o1); border-color: var(--o1); }
-.q.active.q-meeting_booked { background: rgba(63,185,80,.22); color: var(--green); border-color: var(--green); }
-.q.active.q-rejected { background: rgba(240,71,71,.18); color: var(--red); border-color: var(--red); }
+.q.active.q-called { background: var(--panel-3); color: var(--ink); border-color: var(--ink-faint); }
+.q.active.q-interested { background: #e7f0ff; color: var(--o1); border-color: #9cc2ff; }
+.q.active.q-meeting_booked { background: #dff3e8; color: var(--ok); border-color: #9cd9b8; }
+.q.active.q-rejected { background: #fde8e8; color: var(--red); border-color: #f0b4b4; }
 
 /* DETAIL (folded) */
 .c-detail { border-top: 1px solid var(--line); padding-top: 4px; }
@@ -2068,10 +2068,10 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .dec-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .dec-chip { font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--ink-dim); letter-spacing: 0.02em; }
 /* Color de la decisión: frío para foco, rojo apagado para descarte, neutro resto */
-.dec-chip-ACT_NOW { color: #14161c; background: var(--accent); border-color: var(--accent); }
-.dec-chip-PREPARE, .dec-chip-STRATEGIC_DOOR { color: #aebbff; border-color: #3a4675; }
-.dec-chip-KILL, .dec-chip-OVER_SERVED { color: var(--red); border-color: #5a2e2e; }
-.dec-chip-NO_ACCESS, .dec-chip-NO_TIMING, .dec-chip-NEEDS_EVIDENCE, .dec-chip-ENRICH { color: var(--yellow); border-color: #5a4a1e; }
+.dec-chip-ACT_NOW { color: #fff; background: var(--accent); border-color: var(--accent); }
+.dec-chip-PREPARE, .dec-chip-STRATEGIC_DOOR { color: var(--o1); background: #eef3ff; border-color: #c3cdf5; }
+.dec-chip-KILL, .dec-chip-OVER_SERVED { color: var(--red); background: #fdecec; border-color: #f0c0c0; }
+.dec-chip-NO_ACCESS, .dec-chip-NO_TIMING, .dec-chip-NEEDS_EVIDENCE, .dec-chip-ENRICH { color: var(--yellow); background: #fbf2dd; border-color: #ecdca8; }
 .dec-tag { font-size: 10px; color: var(--ink-faint); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; text-transform: uppercase; letter-spacing: 0.04em; }
 .eq { font-size: 10px; padding: 1px 7px; border-radius: 6px; border: 1px solid var(--line-2); }
 .eq-sólida { color: var(--ok); border-color: var(--ok); }
