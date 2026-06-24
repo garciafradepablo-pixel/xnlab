@@ -112,7 +112,7 @@ function order(lead, t, { obeyed = false, outcome = null } = {}) {
     ...order("z", NOW, {}), // ignorada
   ]);
   const line = authorityLine(orders, NOW + 60 * H);
-  ok(/100% más que las ignoradas/.test(line), "muestra + ignoradas → afirma lift vs ignoradas");
+  ok(/100% de las veces/.test(line) && /ignoradas, ninguna/.test(line), "muestra + ignoradas → tasa real + contraste honesto");
 }
 
 // ── 8. authorityLine: muestra suficiente sin ignoradas → 'de las veces' ───────

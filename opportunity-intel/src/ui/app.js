@@ -2235,15 +2235,17 @@ function reactorView() {
   }
   const allExecuted = actNow.length > 0 && topItem === null; // todo lo de hoy, hecho
 
+  // Override-regret (cobertura completa): CUALQUIER orden ignorada cuyo lead
+  // escaló se registra — no solo la que vuelve a ser #1. Idempotente: ledgerRegret
+  // deduplica. Se lee del snapshot `tracking` (antes de re-estampar el top).
+  for (const [lid, tr] of Object.entries(tracking)) {
+    if (tr && tr.orderIssuedAt && deriveOrderStatus(tr, now).status === "escalated") {
+      store.ledgerRegret(orderIdFor(lid, tr.orderIssuedAt));
+    }
+  }
+
   if (topItem) {
     const topId = topItem.opp.id;
-    const prev = tracking[topId];
-    if (prev && prev.orderIssuedAt) {
-      const prevStatus = deriveOrderStatus(prev, now).status;
-      if (prevStatus === "escalated") {
-        store.ledgerRegret(orderIdFor(topId, prev.orderIssuedAt));
-      }
-    }
     store.stampOrderIssued(topId, now);
     const rec = store.getRecord(topId);
     const oci = topItem.decision?.oci || 0;

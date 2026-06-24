@@ -78,8 +78,10 @@ export function authorityLine(orders = [], now = Date.now()) {
 
   const lift = computeOutcomeLift(orders, now);
   if (lift.enough && lift.liftPct != null) {
+    // Decimos la TASA real (avanzadas/resueltas), no un delta. Si hay ignoradas,
+    // se contrasta con un hecho honesto: las ignoradas no avanzaron ninguna.
     return lift.ignored > 0
-      ? `Las órdenes obedecidas avanzan un ${lift.liftPct}% más que las ignoradas.`
+      ? `Las órdenes obedecidas avanzan el ${lift.liftPct}% de las veces; las ignoradas, ninguna.`
       : `Las órdenes obedecidas avanzan el ${lift.liftPct}% de las veces.`;
   }
 
