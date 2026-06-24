@@ -42,7 +42,9 @@ try {
   ok(root.querySelector(".zones") != null, "renderiza la barra de zonas (nav nivel 1)");
   const mapaZone = byText(".zone", /Mapa/);
   ok(mapaZone != null, "existe la zona Mapa");
-  ok(byText(".zone", /Captar/) != null, "existe la zona Captar");
+  // Nav adelgazada a 2 zonas primarias (Reactor · Mapa). Captar y Avanzado ya no
+  // ocupan la barra: se alcanzan por ⌘K. La barra mantiene ese acceso por comandos.
+  ok(byText(".zone", /⌘K/) != null, "la barra ofrece el acceso por comandos (⌘K), puerta a Captar/Avanzado");
   if (mapaZone) {
     mapaZone.click(); // zona de una vista → navega directamente a «cards», sin subtab
     ok(root.querySelector(".card") != null, "Mapa renderiza al menos una tarjeta");
@@ -136,7 +138,7 @@ try {
 // ── 5. Recorrer TODAS las zonas y sus subpestañas sin que nada lance ─────────
 try {
   const zoneEls = root.querySelectorAll(".zone");
-  ok(zoneEls.length >= 3, "hay al menos 3 zonas (Mapa/Captar/Avanzado)");
+  ok(zoneEls.length >= 3, "barra de 2 zonas primarias (Reactor · Mapa) + acceso ⌘K");
   for (const z of zoneEls) {
     if (/⌘K/.test(z.textContent)) continue; // el botón de comandos se prueba aparte
     z.click();
@@ -162,28 +164,35 @@ try {
   }
 } catch (e) { ok(false, "la paleta ⌘K no debe lanzar: " + e.message); }
 
-// ── 7. Navegación por rol: un VIEWER (solo lectura) no ve los accesos de escritura
+// ── 7. Permisos por rol con nav de 2 zonas: el gating se conserva, ahora vía ⌘K.
+// La barra primaria es Reactor·Mapa para todos; Captar (discover) y CRM (cap crm)
+// siguen GATED — alcanzables por la paleta solo para quien tiene el permiso.
 try {
-  // Las sub-pestañas solo se pintan para la zona ACTIVA: entra a la zona y lee.
-  const enterZone = (re) => { const z = [...root.querySelectorAll(".zone")].find((n) => re.test(n.textContent)); if (z) z.click(); return z; };
-  const subs = () => [...root.querySelectorAll(".subtabs .tab")].map((n) => n.textContent.trim());
+  // Abre ⌘K y devuelve las etiquetas de los comandos listados; luego cierra.
+  const paletteLabels = () => {
+    const cmd = [...root.querySelectorAll(".zone")].find((n) => /⌘K/.test(n.textContent));
+    if (cmd) cmd.click();
+    const labels = [...document.body.querySelectorAll(".cmd-item")].map((n) => n.textContent.trim());
+    const ov = document.body.querySelector(".cmd-overlay"); if (ov) ov.remove();
+    return labels;
+  };
 
-  // Editor (rol por defecto del login de prueba): ve las 3 zonas y los accesos de escritura.
+  // Editor (rol por defecto): nav primaria Reactor·Mapa, y alcanza Buscar (Captar) y CRM.
   await mount(root);
   const zoneNames = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
-  ok(zoneNames.some((t) => /Mapa/.test(t)), "editor ve la zona «Mapa»");
-  ok(zoneNames.some((t) => /Captar/.test(t)), "editor ve la zona «Captar» (tiene permiso discover)");
-  ok(zoneNames.some((t) => /Avanzado/.test(t)), "editor ve la zona «Avanzado»");
-  // Captar es zona de una vista (search) → no genera subtabs; la existencia de la zona es prueba suficiente.
-  enterZone(/Avanzado/); ok(subs().some((t) => /CRM/.test(t)), "editor ve «CRM» (mover el tablero) dentro de Avanzado");
+  ok(zoneNames.some((t) => /Reactor/.test(t)) && zoneNames.some((t) => /Mapa/.test(t)), "editor ve la nav primaria (Reactor · Mapa)");
+  const ed = paletteLabels();
+  ok(ed.some((t) => /Ir a Buscar/.test(t)), "editor alcanza «Buscar» (Captar) por ⌘K — tiene discover");
+  ok(ed.some((t) => /Ir a CRM/.test(t)), "editor alcanza «CRM» por ⌘K — tiene cap crm");
 
-  // Bajamos la sesión a viewer (solo lectura) y re-montamos.
+  // Viewer (solo lectura): conserva la nav, pero Captar y CRM quedan gated (fuera de la paleta).
   globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "SmokePablo", role: "viewer", token: null }));
   await mount(root);
   const zoneLabels = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
   ok(zoneLabels.some((t) => /Mapa/.test(t)), "viewer conserva la zona «Mapa» (Oportunidades es lectura)");
-  ok(!zoneLabels.some((t) => /Captar/.test(t)), "viewer NO ve «Captar» (discover gated)");
-  enterZone(/Avanzado/); ok(!subs().some((t) => /^CRM$/.test(t)), "viewer NO ve «CRM» en Avanzado (no tiene cap crm)");
+  const vw = paletteLabels();
+  ok(!vw.some((t) => /Ir a Buscar/.test(t)), "viewer NO alcanza «Buscar» (discover gated)");
+  ok(!vw.some((t) => /Ir a CRM/.test(t)), "viewer NO alcanza «CRM» (no tiene cap crm)");
   ok(root.querySelector(".navwrap") != null, "el shell sigue entero con rol viewer");
 
   // Restaura la sesión editor para no contaminar nada posterior.

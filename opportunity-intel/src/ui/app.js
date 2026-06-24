@@ -938,36 +938,45 @@ function zonesForUser() {
 
   // Reactor: el sistema operativo de decisión. Primera superficie visible.
   // Sin gate de permiso — quien puede entrar a la app ve el reactor.
-  const reactorZone = { key: "reactor", label: "Reactor", views: [["reactor", "Reactor"]] };
+  const reactorZone = { key: "reactor", label: "Reactor", primary: true, views: [["reactor", "Reactor"]] };
 
   // Mapa: el feed principal de oportunidades. Siempre visible.
-  const mapZone = { key: "map", label: "Mapa", views: [["cards", "Oportunidades"]] };
+  const mapZone = { key: "map", label: "Mapa", primary: true, views: [["cards", "Oportunidades"]] };
 
-  // Captar: descubrimiento activo (gated por permiso discover). Desaparece si no hay permiso.
+  // Captar: descubrimiento activo (gated por permiso discover). Zona secundaria:
+  // no ocupa la barra principal; se alcanza por ⌘K y aparece al estar dentro.
   const captureViews = [["search", "Buscar", "discover"]].filter(([,, cap]) => !cap || allow(cap));
   const captureZone = captureViews.length ? { key: "capture", label: "Captar", views: captureViews } : null;
 
-  // Avanzado: todo lo operativo no-core. Sin gate → siempre visible; cada subtab
-  // filtra su propia cap. Las vistas de equipo solo para quien puede escribir.
+  // Avanzado: ADELGAZADO a lo esencial operativo (Hoy · Tareas · Agenda · CRM).
+  // El resto (Embudo, Caja Negra, Posits, Aprendizaje, Dossiers, equipo) sigue
+  // vivo y accesible por ⌘K (ver extraViews) — no abarrota la navegación.
   const advancedViews = [
     ["today", "Hoy"],
     ["tasks", "Tareas"],
     ["agenda", "Agenda"],
     ["crm", "CRM", "crm"],
+  ].filter(([,, cap]) => !cap || allow(cap));
+  const advancedZone = advancedViews.length ? { key: "advanced", label: "Avanzado", views: advancedViews } : null;
+
+  return [reactorZone, mapZone, captureZone, advancedZone].filter(Boolean);
+}
+
+// Vistas de cola larga: vivas pero NO en la barra. Solo accesibles por ⌘K, para
+// mantener la navegación en 2 zonas primarias sin perder ninguna función.
+function extraViews() {
+  const out = [
     ["pipeline", "Embudo"],
     ["memory", "Caja Negra", "crm"],
     ["muelle", "Posits"],
     ["learning", "Aprendizaje"],
     ["training", "Dossiers"],
   ].filter(([,, cap]) => !cap || allow(cap));
-
   if (allow("write")) {
-    const teamViews = [["presence", "Ahora"], ["feed", "Feed"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]];
-    if (allow("manage_roles")) teamViews.push(["users", "Personas"]);
-    advancedViews.push(...teamViews);
+    out.push(["presence", "Ahora"], ["feed", "Feed"], ["chat", "Chat"], ["board", "Mejoras"], ["dms", "Privados"], ["drive", "Drive"], ["leaderboard", "Productividad"]);
+    if (allow("manage_roles")) out.push(["users", "Personas"]);
   }
-
-  return [reactorZone, mapZone, captureZone, { key: "advanced", label: "Avanzado", views: advancedViews }].filter(Boolean);
+  return out;
 }
 function zoneOfView(view) {
   for (const z of zonesForUser()) if (z.views.some(([k]) => k === view)) return z.key;
@@ -977,8 +986,12 @@ function zoneOfView(view) {
 function tabs() {
   const zs = zonesForUser();
   const activeZone = zoneOfView(state.view);
+  // Barra de 2 zonas: solo las primarias (Reactor · Mapa). Una zona secundaria
+  // (Captar / Avanzado) aparece SOLO mientras estás dentro de ella; se entra por
+  // ⌘K. Así la navegación por defecto es mínima sin perder nada.
+  const visible = zs.filter((z) => z.primary || z.key === activeZone);
   const zoneBar = el("nav", { class: "zones" }, [
-    ...zs.map((z) => el("button", {
+    ...visible.map((z) => el("button", {
       class: `zone ${z.key === activeZone ? "active" : ""}`,
       text: z.label,
       // Entrar a una zona: si ya estás en una de sus vistas, te quedas; si no,
@@ -1007,6 +1020,9 @@ function openCommand() {
   function build(q) {
     const out = [];
     for (const z of zonesForUser()) for (const [key, label] of z.views)
+      out.push({ kind: "nav", label: `Ir a ${label}`, run: () => { close(); goView(key); } });
+    // Cola larga (no en la barra): sigue accesible aquí, en la paleta.
+    for (const [key, label] of extraViews())
       out.push({ kind: "nav", label: `Ir a ${label}`, run: () => { close(); goView(key); } });
     out.push({ kind: "act", label: "Buscar oportunidades (recalcular)", run: async () => { close(); await recompute(); goView("cards"); } });
     out.push({ kind: "act", label: "Cerrar sesión", run: () => { close(); if (confirm("¿Cerrar sesión?")) { presence.stopHeartbeat(); auth.logout(); mount(root); } } });
