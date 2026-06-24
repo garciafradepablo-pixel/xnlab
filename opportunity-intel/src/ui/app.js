@@ -2281,12 +2281,6 @@ function deskView() {
 
   const live = items.length;
   const hot = items.filter((d) => (d.decision.oci || 0) >= 70).length;
-  // Cola de trabajo: las cuentas AÚN sin tocar. Al marcar una contactada, sale de
-  // la cola y el Desk avanza a la siguiente — el bucle vivo que incita a trabajar.
-  const WORKED = new Set(["contacted", "called", "interested", "meeting_booked", "proposal", "won", "signed", "rejected", "lost"]);
-  const queue = items.filter((d) => !WORKED.has(tracking[d.opp.id]?.status));
-  const priority = buildPriorityList({ actNow: queue, tracking, now });
-  const top = priority[0] || null;
 
   // Track record honesto, leído del Ledger (nunca inventado).
   const orders = foldOrders(store.getLedger());
@@ -2294,6 +2288,20 @@ function deskView() {
   const advanced = orders.filter((o) => o.resolvedAt && (o.outcome === "avance" || o.outcome === "propuesta")).length;
   const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
   const doneToday = orders.filter((o) => o.obeyedAt && new Date(o.obeyedAt).getTime() >= startToday.getTime()).length;
+
+  // Cola de trabajo: cuentas AÚN sin contactar. La fuente de verdad es el Ledger
+  // (¿hay orden obedecida?) más cualquier estado ya trabajado del tracking. Así,
+  // al contactar una, sale de la cola y el Desk avanza — y NO reaparece aunque su
+  // desenlace sea "sin respuesta".
+  const contactedIds = new Set(orders.filter((o) => o.obeyedAt).map((o) => o.leadId));
+  const WORKED = new Set(["contacted", "called", "interested", "meeting_booked", "proposal", "proposal_sent", "follow_up", "won", "signed", "rejected", "lost", "no_answer"]);
+  const queue = items.filter((d) => !contactedIds.has(d.opp.id) && !WORKED.has(tracking[d.opp.id]?.status));
+  const priority = buildPriorityList({ actNow: queue, tracking, now });
+  const top = priority[0] || null;
+
+  // En seguimiento: contactadas que aún no tienen desenlace. Cerrarlas hace real
+  // la métrica "Avanzaron".
+  const inProgress = orders.filter((o) => o.obeyedAt && !o.resolvedAt);
 
   const firstName = (auth.currentUser()?.name || "").split(" ")[0] || "";
 
@@ -2348,6 +2356,17 @@ function deskView() {
           ])
         : null,
     ]),
+
+    // Bloque en seguimiento: contactadas sin cerrar. Cerrarlas alimenta "Avanzaron".
+    inProgress.length
+      ? el("div", { class: "desk-block desk-followup" }, [
+          el("div", { class: "desk-block-head" }, [
+            el("span", { class: "desk-block-title", text: "En seguimiento" }),
+            el("span", { class: "desk-block-count", text: `${inProgress.length} sin cerrar` }),
+          ]),
+          ...inProgress.slice(0, 6).map((o) => deskFollowupRow(o)),
+        ])
+      : null,
 
     el("div", { class: "desk-keys" }, [
       el("span", {}, [el("kbd", { text: "↑↓" }), el("span", { text: "navegar" })]),
@@ -2450,6 +2469,24 @@ function deskRow(d) {
     }),
   ]);
   return row;
+}
+
+// Fila de seguimiento: una contactada sin cerrar, con dos cierres de un clic.
+// "Avanzó" → outcome "avance" (suma a Avanzaron); "Sin respuesta" → cierre neutro.
+function deskFollowupRow(order) {
+  const opp = (state.results?.all || []).find((x) => x.id === order.leadId);
+  const name = opp?.company || "Cuenta contactada";
+  const meta = opp ? ([opp.sector, opp.city].filter(Boolean).join(" · ") || "contactada") : "contactada";
+  return el("div", { class: "desk-fu-row" }, [
+    el("div", { class: "desk-fu-co" }, [
+      el("span", { text: name }),
+      el("small", { text: meta }),
+    ]),
+    el("div", { class: "desk-fu-actions" }, [
+      el("button", { class: "desk-fu-yes", text: "✓ Avanzó", onClick: () => resolveOrder(order.leadId, "avance") }),
+      el("button", { class: "desk-fu-no", text: "Sin respuesta", onClick: () => resolveOrder(order.leadId, "sin_respuesta") }),
+    ]),
+  ]);
 }
 
 function deskEmpty() {
