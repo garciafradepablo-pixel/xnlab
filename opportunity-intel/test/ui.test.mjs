@@ -42,7 +42,7 @@ try {
   ok(root.querySelector(".zones") != null, "renderiza la barra de zonas (nav nivel 1)");
   const mapaZone = byText(".zone", /Mapa/);
   ok(mapaZone != null, "existe la zona Mapa");
-  // Nav adelgazada a 2 zonas primarias (Reactor · Mapa). Captar y Avanzado ya no
+  // Nav adelgazada a 2 zonas primarias (Desk · Mapa). Captar y Avanzado ya no
   // ocupan la barra: se alcanzan por ⌘K. La barra mantiene ese acceso por comandos.
   ok(byText(".zone", /⌘K/) != null, "la barra ofrece el acceso por comandos (⌘K), puerta a Captar/Avanzado");
   if (mapaZone) {
@@ -68,18 +68,31 @@ try {
   }
 } catch (e) { ok(false, "navegar Mapa→Oportunidades no debe lanzar: " + e.message); }
 
-// ── 3b. El Reactor existe como zona navegable y renderiza sin errores ─────────
+// ── 3b. El Desk (superficie héroe) existe como zona y renderiza sin errores ───
 try {
-  const reactorZone = byText(".zone", /Reactor/);
-  ok(reactorZone != null, "existe la zona Reactor en la navegación");
-  if (reactorZone) {
-    reactorZone.click();
-    ok(root.querySelector(".reactor-view") != null, "Reactor renderiza su vista al navegar a ella");
-    // V4: el Reactor emite UNA orden activa (.ord-obey) o, sin orden, el CTA del
-    // estado vacío (.mc-cta-primary). Cualquiera de los dos es válido.
-    ok(root.querySelector(".ord-obey, .mc-cta-primary") != null, "el Reactor muestra una acción primaria (orden activa o estado vacío)");
+  const deskZone = byText(".zone", /Desk/);
+  ok(deskZone != null, "existe la zona Desk en la navegación");
+  if (deskZone) {
+    deskZone.click();
+    ok(root.querySelector(".desk") != null, "Desk renderiza su vista al navegar a ella");
+    // Con datos: héroe (siguiente movimiento) + tabla densa. Sin datos: estado vacío.
+    // En cualquier caso el Desk ofrece UNA acción primaria.
+    ok(root.querySelector(".desk-hero, .desk-empty") != null, "el Desk muestra el héroe o el estado vacío");
+    ok(root.querySelector(".desk-act-primary") != null, "el Desk ofrece una acción primaria (Redactar contacto o Conseguir leads)");
   }
-} catch (e) { ok(false, "navegar a Reactor no debe lanzar: " + e.message); }
+} catch (e) { ok(false, "navegar al Desk no debe lanzar: " + e.message); }
+
+// ── 3b-2. El drawer de redacción de contacto abre y cierra ───────────────────
+try {
+  const go = root.querySelector(".desk-hero .desk-act-primary") || root.querySelector(".dr-go");
+  if (go) {
+    go.click();
+    const drawer = document.body.querySelector(".draft-overlay");
+    ok(drawer != null, "«Redactar contacto» abre el drawer de redacción");
+    ok(drawer && drawer.querySelector(".draft-message") != null, "el drawer muestra el primer mensaje");
+    if (drawer) { drawer.remove(); ok(document.body.querySelector(".draft-overlay") == null, "el drawer se cierra"); }
+  }
+} catch (e) { ok(false, "el drawer de redacción no debe lanzar: " + e.message); }
 
 // ── 3c. Tras importar, los recién importados SIEMPRE se ven (fix recent-imports)
 // Un lead solo-nombre+web queda 'unqualified' y el filtro por defecto lo ocultaría;
@@ -89,7 +102,7 @@ try {
   const bodyByText = (sel, re) => document.body.querySelectorAll(sel).find((t) => re.test(t.textContent));
   const UNIQUE = "Zzqq Import Unica 9173 Sl"; // nombre único: no colisiona con seed/Mallorca
 
-  // La app abre en el Reactor; para importar navegamos a Mapa (donde vive el feed)
+  // El Desk es el inicio; para importar navegamos a Mapa (donde vive el feed)
   const mapaZoneForImport = byText(".zone", /Mapa/);
   if (mapaZoneForImport) mapaZoneForImport.click();
 
@@ -180,7 +193,7 @@ try {
   // Editor (rol por defecto): nav primaria Reactor·Mapa, y alcanza Buscar (Captar) y CRM.
   await mount(root);
   const zoneNames = [...root.querySelectorAll(".zone")].map((n) => n.textContent.trim());
-  ok(zoneNames.some((t) => /Reactor/.test(t)) && zoneNames.some((t) => /Mapa/.test(t)), "editor ve la nav primaria (Reactor · Mapa)");
+  ok(zoneNames.some((t) => /Desk/.test(t)) && zoneNames.some((t) => /Mapa/.test(t)), "editor ve la nav primaria (Desk · Mapa)");
   const ed = paletteLabels();
   ok(ed.some((t) => /Ir a Buscar/.test(t)), "editor alcanza «Buscar» (Captar) por ⌘K — tiene discover");
   ok(ed.some((t) => /Ir a CRM/.test(t)), "editor alcanza «CRM» por ⌘K — tiene cap crm");

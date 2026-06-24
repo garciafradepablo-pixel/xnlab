@@ -170,7 +170,7 @@ export async function mount(rootEl) {
   await recompute();
   // Cada arranque parte del Reactor (sistema operativo de decisión) sin foco
   // residual de la sesión anterior. Igual que en un reload real: módulo limpio.
-  state.view = "reactor";
+  state.view = "desk";
   state.feedCmd = null;
   state.feedCmdText = "";
   const _savedImportIds = loadRecentImportIds();
@@ -936,11 +936,11 @@ function zonesForUser() {
     return [{ key: "map", label: "Mapa", views: [["cards", "Oportunidades"]] }];
   }
 
-  // Reactor: el sistema operativo de decisión. Primera superficie visible.
-  // Sin gate de permiso — quien puede entrar a la app ve el reactor.
-  const reactorZone = { key: "reactor", label: "Reactor", primary: true, views: [["reactor", "Reactor"]] };
+  // Desk: la superficie héroe de prospección. Primera superficie visible. Sin
+  // gate de permiso — quien puede entrar a la app ve el desk.
+  const reactorZone = { key: "desk", label: "Desk", primary: true, views: [["desk", "Desk"]] };
 
-  // Mapa: el feed principal de oportunidades. Siempre visible.
+  // Mapa: el feed completo de oportunidades. Siempre visible.
   const mapZone = { key: "map", label: "Mapa", primary: true, views: [["cards", "Oportunidades"]] };
 
   // Captar: descubrimiento activo (gated por permiso discover). Zona secundaria:
@@ -1189,7 +1189,8 @@ function securitySection() {
 
 function viewArea() {
   const area = el("section", { class: "view" });
-  if (state.view === "reactor") area.appendChild(reactorView());
+  if (state.view === "desk") area.appendChild(deskView());
+  else if (state.view === "reactor") area.appendChild(reactorView());
   else if (state.view === "today") area.appendChild(todayView());
   else if (state.view === "tasks") area.appendChild(tasksView());
   else if (state.view === "agenda") area.appendChild(agendaView());
@@ -2193,7 +2194,187 @@ function resolveOrder(leadId, outcome) {
   if (rec.orderIssuedAt) store.ledgerResolve(orderIdFor(leadId, rec.orderIssuedAt), outcome);
   const status = OUTCOME_STATUS[outcome];
   if (status) store.setStatus(leadId, status);
-  goView("reactor"); // la siguiente orden ya espera
+  goView("desk"); // el desk ya muestra la siguiente cuenta a trabajar
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DESK — la superficie héroe. Un desk de prospección con IA, legible y vendible:
+// (1) métrica viva, (2) EL siguiente movimiento (una cuenta, un acto), (3) la
+// lista densa de oportunidades (Linear/Attio), (4) track record honesto del
+// Ledger. Reusa el motor entero: decide() + buildPriorityList() + buildBrief().
+// ═══════════════════════════════════════════════════════════════════════════
+const DESK_ROWS = 12; // el desk enfoca las 12 mejores cuentas; el resto vive en Mapa
+function ociBand(oci) { return oci >= 70 ? "hot" : oci >= 50 ? "warm" : "cold"; }
+
+function deskView() {
+  const tracking = store.getTracking();
+  const now = Date.now();
+  const cons = state.config?.conservatism;
+  const items = (state.results?.all || [])
+    .filter((o) => o.scores)
+    .map((o) => ({ opp: o, decision: decide(o, o.scores || {}, cons != null ? { conservatism: cons } : {}) }))
+    .sort((a, b) => (b.decision.oci || 0) - (a.decision.oci || 0));
+
+  if (!items.length) return deskEmpty();
+
+  const live = items.length;
+  const hot = items.filter((d) => (d.decision.oci || 0) >= 70).length;
+  // El héroe usa buildPriorityList (motivo + riesgo reales del motor) para el top.
+  const priority = buildPriorityList({ actNow: items, tracking, now });
+  const top = priority[0] || null;
+
+  // Track record honesto, leído del Ledger (nunca inventado).
+  const orders = foldOrders(store.getLedger());
+  const contacted = orders.filter((o) => o.obeyedAt).length;
+  // Avance = orden resuelta con desenlace positivo (mismo criterio que el motor
+  // de autoridad: "avance" o "propuesta"). Nunca se infla.
+  const advanced = orders.filter((o) => o.resolvedAt && (o.outcome === "avance" || o.outcome === "propuesta")).length;
+
+  return el("div", { class: "desk" }, [
+    el("div", { class: "desk-bar" }, [
+      el("div", { class: "desk-metric" }, [
+        el("span", { class: "desk-metric-n", text: String(live) }),
+        el("span", { class: "desk-metric-l", text: live === 1 ? "oportunidad viva" : "oportunidades vivas" }),
+        hot ? el("span", { class: "desk-hot" }, [
+          el("span", { class: "desk-hot-dot" }),
+          el("span", { text: `${hot} caliente${hot === 1 ? "" : "s"}` }),
+        ]) : null,
+      ]),
+      el("button", { class: "desk-cmd", title: "Comandos (⌘K / Ctrl+K)", onClick: openCommand }, [
+        el("span", { class: "kbd", text: "⌘K" }),
+        el("span", { text: "Buscar o pedir…" }),
+      ]),
+    ]),
+
+    top ? deskHero(top) : null,
+
+    el("div", { class: "desk-table" }, [
+      el("div", { class: "desk-thead" }, [
+        el("span", { text: "Empresa" }),
+        el("span", { text: "Lectura" }),
+        el("span", { text: "Valor" }),
+        el("span", { class: "dt-r", text: "OCI" }),
+        el("span", { text: "" }),
+      ]),
+      // Desk = foco: las 12 mejores cuentas para trabajar. El resto vive en Mapa.
+      ...items.slice(0, DESK_ROWS).map((d) => deskRow(d)),
+      items.length > DESK_ROWS
+        ? el("button", { class: "desk-more", onClick: () => goView("cards") }, [
+            el("span", { text: `Ver las ${items.length} oportunidades en Mapa` }),
+            el("span", { class: "desk-more-arrow", text: "→" }),
+          ])
+        : null,
+    ]),
+
+    el("div", { class: "desk-track" }, [
+      el("span", { class: "dtrk-label", text: "Track record" }),
+      el("span", { class: "dtrk-v", text: `${contacted} contactada${contacted === 1 ? "" : "s"}` }),
+      el("span", { class: "dtrk-sep", text: "·" }),
+      el("span", { class: "dtrk-v", text: `${advanced} avanzaron` }),
+      el("span", { class: "dtrk-proof", text: contacted ? authorityLine(orders, now) : "Trabaja la primera cuenta y tu track record empieza aquí." }),
+    ]),
+  ]);
+}
+
+function deskHero(p) {
+  const band = ociBand(p.oci);
+  return el("div", { class: `desk-hero band-${band}` }, [
+    el("div", { class: "desk-hero-oci" }, [
+      el("div", { class: "desk-hero-oci-n", text: String(p.oci) }),
+      el("div", { class: "desk-hero-oci-l", text: "OCI" }),
+    ]),
+    el("div", { class: "desk-hero-label", text: "Siguiente movimiento" }),
+    el("div", { class: "desk-hero-co", text: p.company || "Sin nombre" }),
+    el("div", { class: "desk-hero-meta", text: [p.sector, p.city].filter(Boolean).join(" · ") || "sector y ubicación por confirmar" }),
+    p.motive ? el("div", { class: "desk-hero-motive", text: p.motive }) : null,
+    p.riskLine ? el("div", { class: "desk-hero-risk", text: `↑ ${p.riskLine}` }) : null,
+    el("div", { class: "desk-hero-actions" }, [
+      el("button", { class: "desk-act-primary", text: "Redactar contacto →", onClick: () => openDraft(p.leadId) }),
+      el("button", { class: "desk-act-ghost", text: "Ver ficha", onClick: () => openCase(p.leadId) }),
+    ]),
+  ]);
+}
+
+function deskRow(d) {
+  const { opp, decision } = d;
+  const oci = decision.oci || 0;
+  const band = ociBand(oci);
+  const row = el("div", { class: "desk-row", onClick: () => openCase(opp.id) }, [
+    el("div", { class: "dr-co" }, [
+      el("span", { text: opp.company || "Sin nombre" }),
+      el("small", { text: [opp.sector, opp.city].filter(Boolean).join(" · ") || "—" }),
+    ]),
+    el("span", { class: "dr-read", text: decision.decisionLabel || "—" }),
+    el("span", { class: "dr-tag", text: decision.strategicTag?.label || "—" }),
+    el("span", { class: `dr-oci ${band}`, text: String(oci) }),
+    el("button", {
+      class: "dr-go", title: "Redactar contacto", text: "→",
+      onClick: (e) => { e.stopPropagation(); openDraft(opp.id); },
+    }),
+  ]);
+  return row;
+}
+
+function deskEmpty() {
+  return el("div", { class: "desk desk-empty" }, [
+    el("div", { class: "desk-empty-icon", text: "⚡" }),
+    el("div", { class: "desk-empty-title", text: "Aún no hay oportunidades vivas" }),
+    el("div", { class: "desk-empty-sub", text: "Capta una primera tanda y el desk se llena con las cuentas a trabajar hoy." }),
+    (allow("discover") || allow("write"))
+      ? el("button", { class: "desk-act-primary", text: "⚡ Conseguir leads", onClick: () => goView("search") })
+      : null,
+  ]);
+}
+
+// Drawer de redacción: el "Redactar contacto" del desk. Saca el brief del motor
+// (buildBrief) y muestra el primer mensaje listo para copiar. Nada inventado:
+// si el motor no tiene ángulo, lo dice.
+function openDraft(leadId) {
+  if (document.body.querySelector(".draft-overlay")) return;
+  const opp = (state.results?.all || []).find((o) => o.id === leadId);
+  if (!opp) { flash("No encuentro esa oportunidad."); return; }
+  const decision = decide(opp, opp.scores || {}, state.config?.conservatism != null ? { conservatism: state.config.conservatism } : {});
+  const brief = buildBrief(opp, opp.scores || {}, decision);
+
+  const overlay = el("div", { class: "draft-overlay" });
+  const close = () => { document.removeEventListener("keydown", onKey); overlay.remove(); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+  document.addEventListener("keydown", onKey);
+
+  const copy = (text, label) => {
+    const done = () => flash(`${label} copiado.`);
+    if (navigator.clipboard?.writeText) navigator.clipboard.writeText(text).then(done).catch(done);
+    else done();
+  };
+
+  const panel = el("div", { class: "draft-panel" }, [
+    el("div", { class: "draft-head" }, [
+      el("div", {}, [
+        el("div", { class: "draft-kicker", text: `Contacto · ${brief.channel || "canal por confirmar"}` }),
+        el("div", { class: "draft-co", text: brief.name }),
+        el("div", { class: "draft-meta", text: `${[brief.sector, brief.city].filter(Boolean).join(" · ") || "—"} · OCI ${brief.oci}` }),
+      ]),
+      el("button", { class: "draft-x", text: "✕", onClick: close }),
+    ]),
+    el("div", { class: "draft-section" }, [
+      el("div", { class: "draft-label", text: "Ángulo de entrada" }),
+      el("div", { class: "draft-angle", text: brief.openingAngle || "Sin ángulo confirmado — conviene una observación concreta (web/marca/momento) antes de escribir." }),
+    ]),
+    el("div", { class: "draft-section" }, [
+      el("div", { class: "draft-label-row" }, [
+        el("span", { class: "draft-label", text: "Primer mensaje" }),
+        el("button", { class: "draft-copy", text: "Copiar", onClick: () => copy(brief.firstMessage, "Mensaje") }),
+      ]),
+      el("div", { class: "draft-message", text: brief.firstMessage }),
+    ]),
+    el("div", { class: "draft-foot" }, [
+      el("button", { class: "draft-act-ghost", text: "Copiar brief completo", onClick: () => copy(briefToText(brief), "Brief") }),
+      el("button", { class: "draft-act-primary", text: "Ver ficha →", onClick: () => { close(); openCase(leadId); } }),
+    ]),
+  ]);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
 }
 
 function reactorView() {

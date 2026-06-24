@@ -2296,6 +2296,119 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .mc-sysrow-dim { color: var(--ink-faint); }
 
 /* ============================================================================
+   DESK — superficie héroe. Lenguaje visual Linear/Attio: oscuro premium, denso,
+   jerárquico, teclado-first, micro-animación de 120ms. Vendible a primera vista.
+   ========================================================================== */
+.desk { max-width: 940px; margin: 0 auto; padding: 6px 0 48px; display: flex; flex-direction: column; gap: 22px; }
+
+/* Barra: métrica viva + entrada de comandos */
+.desk-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.desk-metric { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; }
+.desk-metric-n { font-size: 30px; font-weight: 800; letter-spacing: -0.04em; color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1; }
+.desk-metric-l { font-size: 14px; color: var(--ink-dim); }
+.desk-hot { display: inline-flex; align-items: center; gap: 7px; margin-left: 6px; padding: 4px 11px; font-size: 12px; font-weight: 600; color: var(--accent);
+  background: rgba(169,142,219,.10); border: 1px solid rgba(169,142,219,.28); border-radius: 999px; }
+.desk-hot-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 3px rgba(169,142,219,.20); animation: deskpulse 2s ease-in-out infinite; }
+@keyframes deskpulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+.desk-cmd { display: inline-flex; align-items: center; gap: 9px; padding: 8px 13px; font-size: 13px; color: var(--ink-faint);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 9px; transition: border-color .12s, color .12s; }
+.desk-cmd:hover { border-color: var(--line-2); color: var(--ink-dim); }
+.desk-cmd .kbd { font: 600 11px/1 var(--mono); padding: 3px 6px; color: var(--ink-faint); background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 5px; }
+
+/* HÉROE: el siguiente movimiento. Un mando, no una tarjeta. */
+.desk-hero { position: relative; padding: 26px 28px; border: 1px solid var(--line); border-radius: 18px; overflow: hidden;
+  background: linear-gradient(158deg, var(--panel-2), var(--panel) 70%); box-shadow: var(--sh-2), var(--hl); }
+.desk-hero::before { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(620px 220px at 88% -30%, rgba(169,142,219,.16), transparent 62%); }
+.desk-hero.band-cold::before { background: radial-gradient(620px 220px at 88% -30%, rgba(105,114,127,.12), transparent 62%); }
+.desk-hero > * { position: relative; }
+.desk-hero-label { font: 700 11px/1 var(--sans); letter-spacing: 0.2em; text-transform: uppercase; color: var(--accent); }
+.desk-hero.band-cold .desk-hero-label { color: var(--ink-faint); }
+.desk-hero-co { font-size: 30px; font-weight: 700; letter-spacing: -0.03em; color: var(--ink); margin-top: 13px; line-height: 1.08; }
+.desk-hero-meta { font-size: 13px; color: var(--ink-faint); margin-top: 4px; }
+.desk-hero-motive { font-size: 15px; line-height: 1.55; color: var(--ink-dim); margin-top: 15px; max-width: 58ch; }
+.desk-hero-risk { font-size: 13px; color: var(--yellow); margin-top: 9px; }
+.desk-hero-oci { position: absolute; top: 24px; right: 26px; text-align: right; }
+.desk-hero-oci-n { font-size: 36px; font-weight: 800; letter-spacing: -0.05em; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1; }
+.desk-hero.band-warm .desk-hero-oci-n { color: var(--ink); }
+.desk-hero.band-cold .desk-hero-oci-n { color: var(--ink-faint); }
+.desk-hero-oci-l { font: 700 10px/1 var(--sans); letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-faint); margin-top: 5px; }
+.desk-hero-actions { display: flex; gap: 10px; margin-top: 24px; }
+.desk-act-primary { padding: 12px 22px; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.01em;
+  color: #170f24; background: var(--accent); box-shadow: 0 6px 20px rgba(169,142,219,.28); transition: transform .12s, box-shadow .12s; }
+.desk-act-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 30px rgba(169,142,219,.40); }
+.desk-act-primary:active { transform: translateY(0); }
+.desk-act-ghost { padding: 12px 18px; border: 1px solid var(--line-2); border-radius: 10px; background: transparent; color: var(--ink-dim); font-size: 13px; font-weight: 600; transition: color .12s, border-color .12s; }
+.desk-act-ghost:hover { color: var(--ink); border-color: var(--ink-faint); }
+
+/* TABLA densa de oportunidades */
+.desk-table { border: 1px solid var(--line); border-radius: 13px; overflow: hidden; background: var(--panel); }
+.desk-thead, .desk-row { display: grid; grid-template-columns: 1.7fr 1.15fr 0.95fr 52px 36px; align-items: center; gap: 14px; padding: 0 16px; }
+.desk-thead { height: 38px; font: 600 11px/1 var(--sans); letter-spacing: 0.07em; text-transform: uppercase; color: var(--ink-faint);
+  background: var(--bg-2); border-bottom: 1px solid var(--line); }
+.desk-thead .dt-r { text-align: right; }
+.desk-row { height: 56px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
+.desk-row:last-child { border-bottom: none; }
+.desk-row:hover { background: var(--panel-2); }
+.dr-co { min-width: 0; }
+.dr-co > span { display: block; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-co small { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-read { font-size: 13px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dr-tag { justify-self: start; font-size: 11px; font-weight: 600; color: var(--ink-dim); padding: 3px 9px; border: 1px solid var(--line-2); border-radius: 999px; white-space: nowrap; }
+.dr-oci { text-align: right; font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.dr-oci.hot { color: var(--accent); } .dr-oci.warm { color: var(--ink); } .dr-oci.cold { color: var(--ink-faint); }
+.dr-go { justify-self: end; width: 28px; height: 28px; border-radius: 8px; border: 1px solid transparent; background: transparent; color: var(--ink-faint); font-size: 15px; transition: all .12s; }
+.desk-row:hover .dr-go { border-color: var(--line-2); color: var(--accent); background: var(--panel-3); }
+
+.desk-more { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; height: 46px;
+  background: var(--bg-2); border: none; border-top: 1px solid var(--line); color: var(--ink-faint); font-size: 12.5px; font-weight: 600;
+  letter-spacing: 0.01em; transition: color .12s, background .12s; }
+.desk-more:hover { color: var(--accent); background: var(--panel-2); }
+.desk-more-arrow { transition: transform .12s; }
+.desk-more:hover .desk-more-arrow { transform: translateX(3px); }
+
+/* TRACK RECORD honesto */
+.desk-track { display: flex; align-items: center; gap: 10px; padding: 0 4px; font-size: 12px; }
+.dtrk-label { font: 700 10px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+.dtrk-v { color: var(--ink-dim); font-weight: 600; font-variant-numeric: tabular-nums; }
+.dtrk-sep { color: var(--ink-faint); }
+.dtrk-proof { margin-left: auto; color: var(--accent); font-style: italic; }
+
+/* Estado vacío del desk */
+.desk-empty { align-items: center; text-align: center; padding-top: 80px; gap: 14px; }
+.desk-empty-icon { font-size: 34px; }
+.desk-empty-title { font-size: 19px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.desk-empty-sub { font-size: 14px; color: var(--ink-dim); max-width: 42ch; line-height: 1.5; }
+
+/* DRAWER de redacción de contacto — desliza desde la derecha */
+.draft-overlay { position: fixed; inset: 0; z-index: 60; background: rgba(6,8,11,.62); backdrop-filter: blur(3px);
+  display: flex; justify-content: flex-end; animation: draftfade .14s ease; }
+@keyframes draftfade { from { opacity: 0; } to { opacity: 1; } }
+.draft-panel { width: min(480px, 92vw); height: 100%; overflow-y: auto; background: var(--panel); border-left: 1px solid var(--line-2);
+  box-shadow: var(--sh-3); padding: 24px; display: flex; flex-direction: column; gap: 22px; animation: draftslide .2s cubic-bezier(.2,.8,.2,1); }
+@keyframes draftslide { from { transform: translateX(28px); opacity: .4; } to { transform: translateX(0); opacity: 1; } }
+.draft-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.draft-kicker { font: 700 11px/1 var(--sans); letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); }
+.draft-co { font-size: 22px; font-weight: 700; letter-spacing: -0.025em; color: var(--ink); margin-top: 8px; }
+.draft-meta { font-size: 12px; color: var(--ink-faint); margin-top: 3px; }
+.draft-x { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-faint); font-size: 14px; transition: all .12s; }
+.draft-x:hover { color: var(--ink); border-color: var(--line-2); }
+.draft-section { display: flex; flex-direction: column; gap: 9px; }
+.draft-label-row { display: flex; align-items: center; justify-content: space-between; }
+.draft-label { font: 700 10px/1 var(--sans); letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-faint); }
+.draft-angle { font-size: 14px; line-height: 1.55; color: var(--ink-dim); }
+.draft-message { font-size: 14px; line-height: 1.6; color: var(--ink); white-space: pre-wrap; padding: 16px; background: var(--bg-2);
+  border: 1px solid var(--line); border-radius: 11px; }
+.draft-copy { padding: 4px 11px; font-size: 11px; font-weight: 600; color: var(--accent); background: rgba(169,142,219,.10);
+  border: 1px solid rgba(169,142,219,.26); border-radius: 7px; transition: background .12s; }
+.draft-copy:hover { background: rgba(169,142,219,.18); }
+.draft-foot { margin-top: auto; display: flex; gap: 10px; padding-top: 8px; }
+.draft-act-ghost { flex: 1; padding: 11px; font-size: 12px; font-weight: 600; color: var(--ink-dim); background: transparent; border: 1px solid var(--line-2); border-radius: 9px; transition: all .12s; }
+.draft-act-ghost:hover { color: var(--ink); border-color: var(--ink-faint); }
+.draft-act-primary { flex: 1; padding: 11px; font-size: 12px; font-weight: 700; color: #170f24; background: var(--accent); border: none; border-radius: 9px; transition: opacity .12s; }
+.draft-act-primary:hover { opacity: .9; }
+
+/* ============================================================================
    Reactor V4 — La orden activa. UNA orden, un acto: OBEDECER.
    El bloque entero es un mando, no una tarjeta. Sin menú, sin alternativas.
    ========================================================================== */
