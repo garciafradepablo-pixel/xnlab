@@ -2350,6 +2350,20 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .desk-act-ghost { padding: 12px 18px; border: 1px solid var(--line-2); border-radius: 11px; background: #fff; color: var(--ink-dim); font-size: 13px; font-weight: 600; transition: color .14s, border-color .14s; }
 .desk-act-ghost:hover { color: var(--ink); border-color: var(--ink-faint); }
 
+/* EN SEGUIMIENTO: contactadas sin cerrar — dos cierres de un clic */
+.desk-followup { padding: 0; overflow: hidden; }
+.desk-fu-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 12px 18px; border-top: 1px solid var(--line); }
+.desk-fu-row:first-of-type { border-top: none; }
+.desk-fu-co { min-width: 0; }
+.desk-fu-co > span { display: block; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.desk-fu-co small { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 2px; }
+.desk-fu-actions { display: flex; gap: 8px; flex: 0 0 auto; }
+.desk-fu-yes, .desk-fu-no { padding: 7px 13px; font-size: 12px; font-weight: 600; border-radius: 8px; transition: transform .12s, filter .12s, color .12s, border-color .12s; white-space: nowrap; }
+.desk-fu-yes { color: #fff; background: var(--ok); border: 1px solid var(--ok); }
+.desk-fu-yes:hover { filter: brightness(1.06); transform: translateY(-1px); }
+.desk-fu-no { color: var(--ink-dim); background: #fff; border: 1px solid var(--line-2); }
+.desk-fu-no:hover { color: var(--ink); border-color: var(--ink-faint); }
+
 /* Bandeja vacía: el héroe celebra el día trabajado */
 .desk-cleared { align-items: flex-start; }
 .desk-cleared-mark { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
