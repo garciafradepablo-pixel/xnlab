@@ -1071,6 +1071,35 @@ function ensureHotkeys() {
   });
 }
 
+// Navegación por teclado del Desk (Linear-grade): ↑↓/j/k mueven la selección,
+// ↵ abre la ficha, C redacta el contacto. Manipula el DOM directamente (sin
+// re-render) para que sea fluido. Inactivo fuera del Desk o con un overlay abierto.
+let deskKeysBound = false;
+function ensureDeskKeys() {
+  if (deskKeysBound) return;
+  deskKeysBound = true;
+  document.addEventListener("keydown", (e) => {
+    if (state.view !== "desk" || !auth.currentUser()) return;
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+    if (document.body.querySelector(".draft-overlay, .cmd-overlay, .case-overlay, .modal")) return;
+    const tag = (e.target && e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select") return;
+    const rows = [...document.querySelectorAll(".desk-row")];
+    if (!rows.length) return;
+    let i = rows.findIndex((r) => r.classList.contains("sel"));
+    const k = e.key;
+    if (k === "ArrowDown" || k === "j") i = Math.min((i < 0 ? -1 : i) + 1, rows.length - 1);
+    else if (k === "ArrowUp" || k === "k") i = Math.max((i < 0 ? 0 : i) - 1, 0);
+    else if (k === "Enter") { (rows[i] || rows[0]).click(); return; }
+    else if (k === "c" || k === "C") { const b = (rows[i] || rows[0]).querySelector(".dr-go"); if (b) b.click(); return; }
+    else return;
+    e.preventDefault?.();
+    rows.forEach((r) => r.classList.remove("sel"));
+    const sel = rows[i];
+    if (sel) { sel.classList.add("sel"); sel.scrollIntoView({ block: "nearest" }); }
+  });
+}
+
 // ---- Search configuration panel --------------------------------------------
 
 function configPanel() {
@@ -2207,6 +2236,7 @@ const DESK_ROWS = 12; // el desk enfoca las 12 mejores cuentas; el resto vive en
 function ociBand(oci) { return oci >= 70 ? "hot" : oci >= 50 ? "warm" : "cold"; }
 
 function deskView() {
+  ensureDeskKeys();
   const tracking = store.getTracking();
   const now = Date.now();
   const cons = state.config?.conservatism;
@@ -2272,6 +2302,13 @@ function deskView() {
       el("span", { class: "dtrk-sep", text: "·" }),
       el("span", { class: "dtrk-v", text: `${advanced} avanzaron` }),
       el("span", { class: "dtrk-proof", text: contacted ? authorityLine(orders, now) : "Trabaja la primera cuenta y tu track record empieza aquí." }),
+    ]),
+
+    el("div", { class: "desk-keys" }, [
+      el("span", {}, [el("kbd", { text: "↑↓" }), el("span", { text: "navegar" })]),
+      el("span", {}, [el("kbd", { text: "↵" }), el("span", { text: "ficha" })]),
+      el("span", {}, [el("kbd", { text: "C" }), el("span", { text: "contacto" })]),
+      el("span", {}, [el("kbd", { text: "⌘K" }), el("span", { text: "comandos" })]),
     ]),
   ]);
 }
