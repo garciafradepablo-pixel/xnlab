@@ -1219,7 +1219,6 @@ function securitySection() {
 function viewArea() {
   const area = el("section", { class: "view" });
   if (state.view === "desk") area.appendChild(deskView());
-  else if (state.view === "reactor") area.appendChild(reactorView());
   else if (state.view === "today") area.appendChild(todayView());
   else if (state.view === "tasks") area.appendChild(tasksView());
   else if (state.view === "agenda") area.appendChild(agendaView());
@@ -2235,6 +2234,12 @@ function resolveOrder(leadId, outcome) {
 const DESK_ROWS = 12; // el desk enfoca las 12 mejores cuentas; el resto vive en Mapa
 function ociBand(oci) { return oci >= 70 ? "hot" : oci >= 50 ? "warm" : "cold"; }
 
+const DESK_GOAL = 5; // objetivo diario de contactos — el progreso que incita a trabajar
+function deskGreeting() {
+  const h = new Date().getHours();
+  return h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
+}
+
 function deskView() {
   ensureDeskKeys();
   const tracking = store.getTracking();
@@ -2249,26 +2254,24 @@ function deskView() {
 
   const live = items.length;
   const hot = items.filter((d) => (d.decision.oci || 0) >= 70).length;
-  // El héroe usa buildPriorityList (motivo + riesgo reales del motor) para el top.
   const priority = buildPriorityList({ actNow: items, tracking, now });
   const top = priority[0] || null;
 
   // Track record honesto, leído del Ledger (nunca inventado).
   const orders = foldOrders(store.getLedger());
   const contacted = orders.filter((o) => o.obeyedAt).length;
-  // Avance = orden resuelta con desenlace positivo (mismo criterio que el motor
-  // de autoridad: "avance" o "propuesta"). Nunca se infla.
   const advanced = orders.filter((o) => o.resolvedAt && (o.outcome === "avance" || o.outcome === "propuesta")).length;
+  const startToday = new Date(); startToday.setHours(0, 0, 0, 0);
+  const doneToday = orders.filter((o) => o.obeyedAt && new Date(o.obeyedAt).getTime() >= startToday.getTime()).length;
+
+  const firstName = (auth.currentUser()?.name || "").split(" ")[0] || "";
 
   return el("div", { class: "desk" }, [
-    el("div", { class: "desk-bar" }, [
-      el("div", { class: "desk-metric" }, [
-        el("span", { class: "desk-metric-n", text: String(live) }),
-        el("span", { class: "desk-metric-l", text: live === 1 ? "oportunidad viva" : "oportunidades vivas" }),
-        hot ? el("span", { class: "desk-hot" }, [
-          el("span", { class: "desk-hot-dot" }),
-          el("span", { text: `${hot} caliente${hot === 1 ? "" : "s"}` }),
-        ]) : null,
+    // Bloque cabecera: saludo + entrada de comandos
+    el("div", { class: "desk-head" }, [
+      el("div", {}, [
+        el("h1", { class: "desk-hello", text: firstName ? `${deskGreeting()}, ${firstName}` : deskGreeting() }),
+        el("div", { class: "desk-sub", text: `${live} oportunidades vivas. Enfoca, contacta, avanza.` }),
       ]),
       el("button", { class: "desk-cmd", title: "Comandos (⌘K / Ctrl+K)", onClick: openCommand }, [
         el("span", { class: "kbd", text: "⌘K" }),
@@ -2276,32 +2279,34 @@ function deskView() {
       ]),
     ]),
 
-    top ? deskHero(top) : null,
+    // BENTO superior: siguiente movimiento (grande) + panel de pulso
+    el("div", { class: "desk-bento" }, [
+      top ? deskHero(top) : null,
+      deskStats({ live, hot, contacted, advanced, doneToday, orders, now }),
+    ]),
 
-    el("div", { class: "desk-table" }, [
-      el("div", { class: "desk-thead" }, [
-        el("span", { text: "Empresa" }),
-        el("span", { text: "Lectura" }),
-        el("span", { text: "Valor" }),
-        el("span", { class: "dt-r", text: "OCI" }),
-        el("span", { text: "" }),
+    // Bloque lista: las cuentas a trabajar
+    el("div", { class: "desk-block desk-listblock" }, [
+      el("div", { class: "desk-block-head" }, [
+        el("span", { class: "desk-block-title", text: "Cuentas a trabajar" }),
+        el("span", { class: "desk-block-count", text: `Top ${Math.min(DESK_ROWS, live)} de ${live}` }),
       ]),
-      // Desk = foco: las 12 mejores cuentas para trabajar. El resto vive en Mapa.
-      ...items.slice(0, DESK_ROWS).map((d) => deskRow(d)),
+      el("div", { class: "desk-table" }, [
+        el("div", { class: "desk-thead" }, [
+          el("span", { text: "Empresa" }),
+          el("span", { text: "Lectura" }),
+          el("span", { text: "Valor" }),
+          el("span", { class: "dt-r", text: "OCI" }),
+          el("span", { text: "" }),
+        ]),
+        ...items.slice(0, DESK_ROWS).map((d) => deskRow(d)),
+      ]),
       items.length > DESK_ROWS
         ? el("button", { class: "desk-more", onClick: () => goView("cards") }, [
             el("span", { text: `Ver las ${items.length} oportunidades en Mapa` }),
             el("span", { class: "desk-more-arrow", text: "→" }),
           ])
         : null,
-    ]),
-
-    el("div", { class: "desk-track" }, [
-      el("span", { class: "dtrk-label", text: "Track record" }),
-      el("span", { class: "dtrk-v", text: `${contacted} contactada${contacted === 1 ? "" : "s"}` }),
-      el("span", { class: "dtrk-sep", text: "·" }),
-      el("span", { class: "dtrk-v", text: `${advanced} avanzaron` }),
-      el("span", { class: "dtrk-proof", text: contacted ? authorityLine(orders, now) : "Trabaja la primera cuenta y tu track record empieza aquí." }),
     ]),
 
     el("div", { class: "desk-keys" }, [
@@ -2315,12 +2320,11 @@ function deskView() {
 
 function deskHero(p) {
   const band = ociBand(p.oci);
-  return el("div", { class: `desk-hero band-${band}` }, [
-    el("div", { class: "desk-hero-oci" }, [
-      el("div", { class: "desk-hero-oci-n", text: String(p.oci) }),
-      el("div", { class: "desk-hero-oci-l", text: "OCI" }),
+  return el("div", { class: `desk-block desk-hero band-${band}` }, [
+    el("div", { class: "desk-hero-top" }, [
+      el("span", { class: "desk-hero-label", text: "● Siguiente movimiento" }),
+      el("span", { class: "desk-hero-oci-chip", text: `OCI ${p.oci}` }),
     ]),
-    el("div", { class: "desk-hero-label", text: "Siguiente movimiento" }),
     el("div", { class: "desk-hero-co", text: p.company || "Sin nombre" }),
     el("div", { class: "desk-hero-meta", text: [p.sector, p.city].filter(Boolean).join(" · ") || "sector y ubicación por confirmar" }),
     p.motive ? el("div", { class: "desk-hero-motive", text: p.motive }) : null,
@@ -2329,6 +2333,34 @@ function deskHero(p) {
       el("button", { class: "desk-act-primary", text: "Redactar contacto →", onClick: () => openDraft(p.leadId) }),
       el("button", { class: "desk-act-ghost", text: "Ver ficha", onClick: () => openCase(p.leadId) }),
     ]),
+  ]);
+}
+
+// Panel de pulso: cifras vivas + progreso del día (lo que incita a trabajar) +
+// prueba honesta del Ledger. Cada cifra es real, nunca inventada.
+function deskStats({ live, hot, contacted, advanced, doneToday, orders, now }) {
+  const pct = Math.max(0, Math.min(100, Math.round((doneToday / DESK_GOAL) * 100)));
+  const goalHit = doneToday >= DESK_GOAL;
+  const tile = (n, label, mod) => el("div", { class: `desk-tile ${mod || ""}` }, [
+    el("span", { class: "desk-tile-n", text: String(n) }),
+    el("span", { class: "desk-tile-l", text: label }),
+  ]);
+  return el("div", { class: "desk-block desk-stats" }, [
+    el("div", { class: "desk-stats-grid" }, [
+      tile(live, "Vivas"),
+      tile(hot, "Calientes", "hot"),
+      tile(contacted, "Contactadas"),
+      tile(advanced, "Avanzaron"),
+    ]),
+    el("div", { class: "desk-goal" }, [
+      el("div", { class: "desk-goal-top" }, [
+        el("span", { class: "desk-goal-label", text: "Hoy" }),
+        el("span", { class: "desk-goal-count", text: `${doneToday}/${DESK_GOAL}` }),
+      ]),
+      el("div", { class: "desk-goal-bar" }, [el("div", { class: `desk-goal-fill ${goalHit ? "hit" : ""}`, style: `width:${pct}%` })]),
+      el("div", { class: "desk-goal-note", text: goalHit ? "¡Objetivo del día hecho! 🔥" : doneToday ? `Te faltan ${DESK_GOAL - doneToday} para el objetivo.` : "Empieza por el siguiente movimiento." }),
+    ]),
+    el("div", { class: "desk-proof", text: contacted ? authorityLine(orders, now) : "Tu prueba de autoridad se construye con cada contacto." }),
   ]);
 }
 
@@ -2406,143 +2438,32 @@ function openDraft(leadId) {
       el("div", { class: "draft-message", text: brief.firstMessage }),
     ]),
     el("div", { class: "draft-foot" }, [
-      el("button", { class: "draft-act-ghost", text: "Copiar brief completo", onClick: () => copy(briefToText(brief), "Brief") }),
-      el("button", { class: "draft-act-primary", text: "Ver ficha →", onClick: () => { close(); openCase(leadId); } }),
+      el("button", { class: "draft-act-ghost", text: "Copiar brief", onClick: () => copy(briefToText(brief), "Brief") }),
+      el("button", { class: "draft-act-primary", text: "✓ Marcar contactado", onClick: () => { markContacted(leadId, decision); close(); } }),
     ]),
   ]);
   overlay.appendChild(panel);
   document.body.appendChild(overlay);
 }
 
-function reactorView() {
-  const opps = state.results?.all || [];
-  const tracking = store.getTracking();
-  const pulse = pipelinePulse(opps, tracking);
-  const model = feedModel();
-  const now = Date.now();
-  const today = ymd(new Date());
-
-  const actNow = (model.buckets.actNow || [])
-    .slice()
-    .sort((a, b) => (b.decision?.oci || 0) - (a.decision?.oci || 0));
-
-  const cronNew = state._cronNew?.length || 0;
-  const dueTasks = dueFollowupTasks(store.getTasks(), today);
-  const dueOpps = dueFollowups(opps, tracking);
-  const cooling = opps.filter((o) => {
-    const tr = tracking[o.id];
-    if (!tr || !["called", "follow_up", "interested"].includes(tr.status)) return false;
-    if (!tr.updatedAt) return false;
-    return Math.floor((now - new Date(tr.updatedAt).getTime()) / 86400000) > 7;
+// Registra un contacto REAL en el Ledger (emite la orden y la marca obedecida).
+// Esto cierra el bucle que antes solo escribía el Reactor huérfano: ahora el
+// "Track record" del Desk refleja tus acciones de verdad, no datos muertos.
+function markContacted(leadId, decision) {
+  const t = Date.now();
+  store.stampOrderIssued(leadId, t);
+  const rec = store.getRecord(leadId);
+  const oid = orderIdFor(leadId, rec.orderIssuedAt);
+  store.ledgerIssue(oid, {
+    leadId, at: t, oci: decision.oci || 0,
+    expectedOutcome: "avance", confidence: decision.oci || 0, expectedValue: null,
   });
-  const riskCount = dueTasks.length + dueOpps.length + cooling.length;
-  const killed = (model.buckets.killedNoise || []).length;
-
-  // Emisión de la orden activa (V4): UNA sola, la de mayor OCI (actNow viene
-  // ordenado desc). Antes de re-emitir, si la orden anterior quedó ignorada y el
-  // lead empeoró (escalada), se registra override-regret en el Ledger. Luego se
-  // estampa y se registra la emisión (ISSUED). Todo append-only.
-  //
-  // AVANCE DE ORDEN: la orden activa es la de mayor OCI cuya orden NO esté ya
-  // ejecutada. Así, tras resolver una, el Reactor pasa a la SIGUIENTE empresa —
-  // el loop corre todo el día y la evidencia del Ledger se acumula sola.
-  let topItem = null;
-  for (const item of actNow) {
-    if (!item.opp) continue;
-    if (deriveOrderStatus(tracking[item.opp.id] || {}, now).status !== "executed") { topItem = item; break; }
-  }
-  const allExecuted = actNow.length > 0 && topItem === null; // todo lo de hoy, hecho
-
-  // Override-regret (cobertura completa): CUALQUIER orden ignorada cuyo lead
-  // escaló se registra — no solo la que vuelve a ser #1. Idempotente: ledgerRegret
-  // deduplica. Se lee del snapshot `tracking` (antes de re-estampar el top).
-  for (const [lid, tr] of Object.entries(tracking)) {
-    if (tr && tr.orderIssuedAt && deriveOrderStatus(tr, now).status === "escalated") {
-      store.ledgerRegret(orderIdFor(lid, tr.orderIssuedAt));
-    }
-  }
-
-  if (topItem) {
-    const topId = topItem.opp.id;
-    store.stampOrderIssued(topId, now);
-    const rec = store.getRecord(topId);
-    const oci = topItem.decision?.oci || 0;
-    store.ledgerIssue(orderIdFor(topId, rec.orderIssuedAt), {
-      leadId: topId, at: now, oci,
-      expectedOutcome: "avance", // toda orden predice avance: por eso se emite
-      confidence: oci, // confianza = el propio índice del motor, no se inventa
-      expectedValue: null, // el valor realizado aún no se mide (V2)
-    });
-  }
-  // La orden activa = solo el lead elegido (el siguiente no ejecutado).
-  const priorities = buildPriorityList({ actNow: topItem ? [topItem] : [], tracking: store.getTracking(), now });
-  // El Ledger como evidencia: una línea honesta de prueba de autoridad.
-  const orders = foldOrders(store.getLedger());
-  const proofLine = authorityLine(orders, now);
-  const showRegret = hasOverrideRegret(orders);
-
-  // La orden ES la pantalla. Sin título redundante (la pestaña ya dice Reactor),
-  // sin panel de métricas. El contexto agregado vive plegado abajo.
-  const sections = [];
-
-  // ── La orden activa: UNA sola. No lista, no menú. ────────────────────────
-  if (priorities.length === 0) {
-    sections.push(el("div", { class: "mc-empty" }, [
-      el("div", { class: "mc-empty-label", text: allExecuted
-        ? "Todas las órdenes de hoy, ejecutadas. Buen trabajo."
-        : "Sin orden activa. Nada que ejecutar ahora." }),
-      el("button", {
-        class: "mc-cta-primary",
-        text: "VER MAPA DE OPORTUNIDADES",
-        onClick: () => goView("cards"),
-      }),
-    ]));
-  } else {
-    sections.push(renderActiveOrder(priorities[0]));
-  }
-
-  // ── Prueba de autoridad: UNA línea bajo la orden. La evidencia, no el
-  //    marketing. Y, si existe, la prueba de que ignorar costó. ─────────────
-  sections.push(el("div", { class: "ord-edge", text: proofLine }));
-  if (showRegret) {
-    sections.push(el("div", { class: "ord-regret", text: "Se ignoró una orden que posteriormente empeoró." }));
-  }
-
-  // ── Estado del sistema (plegado) ─────────────────────────────────────────
-  sections.push(el("hr", { class: "mc-divider" }));
-  sections.push(el("details", { class: "mc-system" }, [
-    el("summary", { class: "mc-system-sum", text: "Estado del sistema" }),
-    el("div", { class: "mc-system-body" }, [
-      el("div", { class: "mc-sysblock" }, [
-        el("span", { class: "mc-syslabel", text: "Dinero detectado" }),
-        el("div", { class: "mc-sysrows" }, [
-          el("div", { class: "mc-sysrow", text: `${actNow.length} movimiento${actNow.length === 1 ? "" : "s"} listo${actNow.length === 1 ? "" : "s"} para actuar` }),
-          pulse.valueTotal > 0 ? el("div", { class: "mc-sysrow", text: `${eurFmt(pulse.valueTotal)} en cartera potencial` }) : null,
-        ].filter(Boolean)),
-      ]),
-      el("div", { class: "mc-sysblock" }, [
-        el("span", { class: "mc-syslabel", text: "Actividad de la máquina" }),
-        el("div", { class: "mc-sysrows" }, [
-          cronNew > 0
-            ? el("div", { class: "mc-sysrow mc-sysrow-ok", text: `${cronNew} empresa${cronNew === 1 ? "" : "s"} captada${cronNew === 1 ? "" : "s"} sola${cronNew === 1 ? "" : "s"}` })
-            : el("div", { class: "mc-sysrow mc-sysrow-dim", text: "Sin captaciones nuevas desde el último acceso" }),
-          el("div", { class: "mc-sysrow", text: `${model.decided.length} evaluada${model.decided.length === 1 ? "" : "s"} · ${killed} descartada${killed === 1 ? "" : "s"}` }),
-        ]),
-      ]),
-      el("div", { class: "mc-sysblock" }, [
-        el("span", { class: "mc-syslabel", text: "Riesgos globales" }),
-        el("div", { class: "mc-sysrows" }, [
-          dueTasks.length > 0 ? el("div", { class: "mc-sysrow mc-sysrow-warn", text: `${dueTasks.length} seguimiento${dueTasks.length === 1 ? "" : "s"} vencido${dueTasks.length === 1 ? "" : "s"}` }) : null,
-          dueOpps.length > 0 ? el("div", { class: "mc-sysrow mc-sysrow-warn", text: `${dueOpps.length} hilo${dueOpps.length === 1 ? "" : "s"} sin segundo toque` }) : null,
-          cooling.length > 0 ? el("div", { class: "mc-sysrow mc-sysrow-warn", text: `${cooling.length} oportunidad${cooling.length === 1 ? "" : "es"} enfriándose` }) : null,
-          riskCount === 0 ? el("div", { class: "mc-sysrow mc-sysrow-ok", text: "Sin riesgos activos." }) : null,
-        ].filter(Boolean)),
-      ]),
-    ]),
-  ]));
-
-  return el("div", { class: "reactor-view" }, sections);
+  store.ledgerObey(oid);
+  store.setStatus(leadId, "contacted");
+  flash("✓ Contactado — registrado en tu track record.");
+  render();
 }
+
 
 function todayView() {
   const tracking = store.getTracking();
