@@ -2240,6 +2240,33 @@ function deskGreeting() {
   return h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
 }
 
+// Cuenta ascendente de las cifras del pulso — se ejecuta UNA vez por sesión (la
+// primera vez que se pinta el Desk), para que la entrada se sienta viva sin
+// re-animar en cada repintado del latido. Degrada a número final sin rAF.
+let deskCountedUp = false;
+function animateDeskCounts() {
+ try {
+  if (typeof document === "undefined" || typeof document.querySelectorAll !== "function") return;
+  const nodes = document.querySelectorAll(".desk [data-to]");
+  if (typeof requestAnimationFrame !== "function" || typeof performance === "undefined") {
+    nodes.forEach((n) => { n.textContent = n.dataset.to; n.removeAttribute("data-to"); });
+    return;
+  }
+  nodes.forEach((node) => {
+    const to = parseInt(node.dataset.to, 10) || 0;
+    node.removeAttribute("data-to");
+    if (to <= 0) { node.textContent = "0"; return; }
+    const start = performance.now(), dur = 650;
+    const tick = (t) => {
+      const k = Math.min(1, (t - start) / dur);
+      node.textContent = String(Math.round((1 - Math.pow(1 - k, 3)) * to));
+      if (k < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+ } catch { /* animación decorativa: nunca debe romper el render */ }
+}
+
 function deskView() {
   ensureDeskKeys();
   const tracking = store.getTracking();
@@ -2270,6 +2297,11 @@ function deskView() {
 
   const firstName = (auth.currentUser()?.name || "").split(" ")[0] || "";
 
+  // Anima las cifras del pulso solo en la primera pintada de la sesión.
+  const firstPaint = !deskCountedUp;
+  deskCountedUp = true;
+  if (firstPaint) setTimeout(animateDeskCounts, 40);
+
   return el("div", { class: "desk" }, [
     // Bloque cabecera: saludo + entrada de comandos
     el("div", { class: "desk-head" }, [
@@ -2288,7 +2320,7 @@ function deskView() {
     // BENTO superior: siguiente movimiento (grande) + panel de pulso
     el("div", { class: "desk-bento" }, [
       top ? deskHero(top) : deskCleared(doneToday),
-      deskStats({ live, hot, contacted, advanced, doneToday, orders, now }),
+      deskStats({ live, hot, contacted, advanced, doneToday, orders, now, firstPaint }),
     ]),
 
     // Bloque lista: la cola de cuentas a trabajar (las ya contactadas salen)
@@ -2362,13 +2394,14 @@ function deskHero(p) {
 
 // Panel de pulso: cifras vivas + progreso del día (lo que incita a trabajar) +
 // prueba honesta del Ledger. Cada cifra es real, nunca inventada.
-function deskStats({ live, hot, contacted, advanced, doneToday, orders, now }) {
+function deskStats({ live, hot, contacted, advanced, doneToday, orders, now, firstPaint }) {
   const pct = Math.max(0, Math.min(100, Math.round((doneToday / DESK_GOAL) * 100)));
   const goalHit = doneToday >= DESK_GOAL;
-  const tile = (n, label, mod) => el("div", { class: `desk-tile ${mod || ""}` }, [
-    el("span", { class: "desk-tile-n", text: String(n) }),
-    el("span", { class: "desk-tile-l", text: label }),
-  ]);
+  const tile = (n, label, mod) => {
+    const num = el("span", { class: "desk-tile-n", text: firstPaint && n > 0 ? "0" : String(n) });
+    if (firstPaint && n > 0) num.dataset.to = String(n);
+    return el("div", { class: `desk-tile ${mod || ""}` }, [num, el("span", { class: "desk-tile-l", text: label })]);
+  };
   return el("div", { class: "desk-block desk-stats" }, [
     el("div", { class: "desk-stats-grid" }, [
       tile(live, "Vivas"),
