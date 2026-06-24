@@ -68,7 +68,6 @@ h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .8px; color: va
 .brand { display: flex; flex-direction: column; position: relative; z-index: 1; }
 .head-actions { position: relative; z-index: 1; }
 .logo { font-weight: 700; letter-spacing: 2px; }
-.tagline { font-size: 12px; color: var(--ink-dim); }
 .head-actions { display: flex; gap: 12px; align-items: center; }
 .demo-badge {
   font-size: 11px; color: var(--accent); border: 1px solid var(--accent);
@@ -964,7 +963,6 @@ output { font-size: 12px; color: var(--accent); }
   body { font-size: 15px; }                 /* texto base un punto mayor */
   .app-head { flex-wrap: wrap; gap: 8px; padding: 12px 16px; }
   .head-actions { width: 100%; justify-content: space-between; }
-  .tagline { display: none; }                /* gana espacio en la barra */
   .tabs { padding: 0 12px; }
   .tab { padding: 12px 13px; font-size: 14px; }
   .view { padding: 16px 14px; }
@@ -2262,73 +2260,16 @@ button.nba.nba-btn:active { transform: translateY(1px); }
   display: flex; flex-direction: column;
 }
 
-/* Header: REACTOR + 3 estadísticas de peso */
-.mc-header { padding: 0 0 24px; display: flex; flex-direction: column; gap: 16px; }
-.mc-title {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.22em;
-  color: var(--ink-faint); text-transform: uppercase;
-}
-.mc-stats { display: flex; gap: 28px; flex-wrap: wrap; }
-.mc-stat-block { display: flex; flex-direction: column; gap: 2px; }
-.mc-stat-n {
-  font-size: 26px; font-weight: 700; letter-spacing: -0.03em;
-  color: var(--ink); font-variant-numeric: tabular-nums; line-height: 1;
-}
-.mc-stat-l { font-size: 11px; color: var(--ink-faint); letter-spacing: 0.02em; }
-.mc-stat-warn .mc-stat-n { color: #d98060; }
-.mc-stat-warn .mc-stat-l { color: #d98060; opacity: .7; }
-
 /* Separadores duros — sin redondeo, sin sombra */
 .mc-divider { border: none; border-top: 1px solid var(--line); margin: 0; }
 
-/* Bloque de prioridad */
-.mc-priority { padding: 20px 0; display: flex; flex-direction: column; gap: 8px; }
-
-/* Fila de cabecera: #N + empresa + OCI */
-.mc-priority-head { display: flex; align-items: baseline; gap: 10px; }
-.mc-rank {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
-  color: var(--ink-faint); min-width: 26px; font-variant-numeric: tabular-nums;
-}
-.mc-company {
-  font-size: 22px; font-weight: 700; letter-spacing: -0.025em;
-  color: var(--ink); flex: 1; line-height: 1.1;
-}
-.mc-priority-top .mc-company { color: var(--accent); }
-.mc-oci {
-  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
-  color: var(--ink-faint); font-variant-numeric: tabular-nums; white-space: nowrap;
-}
-.mc-oci::before { content: "OCI "; }
-.mc-priority-top .mc-oci { color: var(--accent); opacity: .8; }
-
-/* Motive: 1 línea, subdued */
-.mc-motive {
-  font-size: 13px; color: var(--ink-dim); padding-left: 36px;
-  letter-spacing: 0.01em; line-height: 1.4;
-}
-
-/* Risk: 1 línea, warning */
-.mc-risk {
-  font-size: 12px; color: #c07050; padding-left: 36px;
-  letter-spacing: 0.01em; line-height: 1.4;
-}
-.mc-risk::before { content: "↑ "; }
-
-/* CTAs */
+/* CTA del estado vacío (única superviviente de los CTAs MC) */
 .mc-cta-primary {
   margin-top: 8px; width: 100%; padding: 15px 24px; cursor: pointer;
   font-size: 13px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
   background: var(--accent); color: #000; border: none; border-radius: 6px;
 }
 .mc-cta-primary:hover { opacity: .88; }
-.mc-cta-sec {
-  margin-top: 4px; padding: 9px 16px; align-self: flex-start; cursor: pointer;
-  font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase;
-  background: transparent; color: var(--ink-dim);
-  border: 1px solid var(--line-2); border-radius: 5px;
-}
-.mc-cta-sec:hover { color: var(--ink); border-color: var(--ink-faint); }
 
 /* Estado vacío */
 .mc-empty { padding: 28px 0; display: flex; flex-direction: column; gap: 16px; }
