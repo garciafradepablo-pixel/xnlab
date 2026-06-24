@@ -2334,7 +2334,7 @@ function deskView() {
             el("div", { class: "desk-thead" }, [
               el("span", { text: "Empresa" }),
               el("span", { text: "Lectura" }),
-              el("span", { text: "Valor" }),
+              el("span", { text: "Fuerza" }),
               el("span", { class: "dt-r", text: "OCI" }),
               el("span", { text: "" }),
             ]),
@@ -2421,6 +2421,17 @@ function deskStats({ live, hot, contacted, advanced, doneToday, orders, now, fir
   ]);
 }
 
+// Fuerza dominante de un lead: qué dimensión (encaje/dolor/momento/acceso) lo
+// sostiene. Más informativa que el tag estratégico (que tiende a agruparse), y
+// enseña al vendedor POR QUÉ cada cuenta rankea. Null si ninguna destaca.
+const DOM_LABEL = { fit: "Encaje", pain: "Dolor", timing: "Momento", access: "Acceso" };
+function domStrength(decision) {
+  const dims = decision.dimensions || {};
+  let best = null, bv = -1;
+  for (const k of ["fit", "pain", "timing", "access"]) { const v = dims[k] || 0; if (v > bv) { bv = v; best = k; } }
+  return bv >= 50 ? DOM_LABEL[best] : null;
+}
+
 function deskRow(d) {
   const { opp, decision } = d;
   const oci = decision.oci || 0;
@@ -2431,7 +2442,7 @@ function deskRow(d) {
       el("small", { text: [opp.sector, opp.city].filter(Boolean).join(" · ") || "—" }),
     ]),
     el("span", { class: "dr-read", text: decision.decisionLabel || "—" }),
-    el("span", { class: "dr-tag", text: decision.strategicTag?.label || "—" }),
+    el("span", { class: "dr-tag", text: domStrength(decision) || decision.strategicTag?.label || "—" }),
     el("span", { class: `dr-oci ${band}`, text: String(oci) }),
     el("button", {
       class: "dr-go", title: "Redactar contacto", text: "→",
