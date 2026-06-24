@@ -2254,7 +2254,11 @@ function deskView() {
 
   const live = items.length;
   const hot = items.filter((d) => (d.decision.oci || 0) >= 70).length;
-  const priority = buildPriorityList({ actNow: items, tracking, now });
+  // Cola de trabajo: las cuentas AÚN sin tocar. Al marcar una contactada, sale de
+  // la cola y el Desk avanza a la siguiente — el bucle vivo que incita a trabajar.
+  const WORKED = new Set(["contacted", "called", "interested", "meeting_booked", "proposal", "won", "signed", "rejected", "lost"]);
+  const queue = items.filter((d) => !WORKED.has(tracking[d.opp.id]?.status));
+  const priority = buildPriorityList({ actNow: queue, tracking, now });
   const top = priority[0] || null;
 
   // Track record honesto, leído del Ledger (nunca inventado).
@@ -2271,7 +2275,9 @@ function deskView() {
     el("div", { class: "desk-head" }, [
       el("div", {}, [
         el("h1", { class: "desk-hello", text: firstName ? `${deskGreeting()}, ${firstName}` : deskGreeting() }),
-        el("div", { class: "desk-sub", text: `${live} oportunidades vivas. Enfoca, contacta, avanza.` }),
+        el("div", { class: "desk-sub", text: queue.length
+          ? `${queue.length} ${queue.length === 1 ? "cuenta espera" : "cuentas esperan"} tu movimiento · ${live} vivas.`
+          : `Bandeja vacía: trabajaste las ${live} cuentas vivas. 🔥` }),
       ]),
       el("button", { class: "desk-cmd", title: "Comandos (⌘K / Ctrl+K)", onClick: openCommand }, [
         el("span", { class: "kbd", text: "⌘K" }),
@@ -2281,29 +2287,31 @@ function deskView() {
 
     // BENTO superior: siguiente movimiento (grande) + panel de pulso
     el("div", { class: "desk-bento" }, [
-      top ? deskHero(top) : null,
+      top ? deskHero(top) : deskCleared(doneToday),
       deskStats({ live, hot, contacted, advanced, doneToday, orders, now }),
     ]),
 
-    // Bloque lista: las cuentas a trabajar
+    // Bloque lista: la cola de cuentas a trabajar (las ya contactadas salen)
     el("div", { class: "desk-block desk-listblock" }, [
       el("div", { class: "desk-block-head" }, [
         el("span", { class: "desk-block-title", text: "Cuentas a trabajar" }),
-        el("span", { class: "desk-block-count", text: `Top ${Math.min(DESK_ROWS, live)} de ${live}` }),
+        el("span", { class: "desk-block-count", text: queue.length ? `Top ${Math.min(DESK_ROWS, queue.length)} de ${queue.length}` : "0 en cola" }),
       ]),
-      el("div", { class: "desk-table" }, [
-        el("div", { class: "desk-thead" }, [
-          el("span", { text: "Empresa" }),
-          el("span", { text: "Lectura" }),
-          el("span", { text: "Valor" }),
-          el("span", { class: "dt-r", text: "OCI" }),
-          el("span", { text: "" }),
-        ]),
-        ...items.slice(0, DESK_ROWS).map((d) => deskRow(d)),
-      ]),
-      items.length > DESK_ROWS
+      queue.length
+        ? el("div", { class: "desk-table" }, [
+            el("div", { class: "desk-thead" }, [
+              el("span", { text: "Empresa" }),
+              el("span", { text: "Lectura" }),
+              el("span", { text: "Valor" }),
+              el("span", { class: "dt-r", text: "OCI" }),
+              el("span", { text: "" }),
+            ]),
+            ...queue.slice(0, DESK_ROWS).map((d) => deskRow(d)),
+          ])
+        : el("div", { class: "desk-queue-done", text: "No queda nada en cola. Capta una nueva tanda o revisa el Mapa." }),
+      queue.length > DESK_ROWS
         ? el("button", { class: "desk-more", onClick: () => goView("cards") }, [
-            el("span", { text: `Ver las ${items.length} oportunidades en Mapa` }),
+            el("span", { text: `Ver las ${live} oportunidades en Mapa` }),
             el("span", { class: "desk-more-arrow", text: "→" }),
           ])
         : null,
@@ -2314,6 +2322,22 @@ function deskView() {
       el("span", {}, [el("kbd", { text: "↵" }), el("span", { text: "ficha" })]),
       el("span", {}, [el("kbd", { text: "C" }), el("span", { text: "contacto" })]),
       el("span", {}, [el("kbd", { text: "⌘K" }), el("span", { text: "comandos" })]),
+    ]),
+  ]);
+}
+
+// Estado "bandeja vacía": no queda cuenta sin tocar. Celebra el progreso e
+// invita a captar más — mantiene vivo el bucle de trabajo.
+function deskCleared(doneToday) {
+  return el("div", { class: "desk-block desk-hero band-cold desk-cleared" }, [
+    el("div", { class: "desk-cleared-mark", text: "✓" }),
+    el("div", { class: "desk-hero-label", text: "Bandeja vacía" }),
+    el("div", { class: "desk-hero-co", text: doneToday ? `Trabajaste ${doneToday} ${doneToday === 1 ? "cuenta" : "cuentas"} hoy` : "Cola al día" }),
+    el("div", { class: "desk-hero-motive", text: "No queda ninguna cuenta sin tocar. Capta una nueva tanda para seguir avanzando." }),
+    el("div", { class: "desk-hero-actions" }, [
+      (allow("discover") || allow("write"))
+        ? el("button", { class: "desk-act-primary", text: "⚡ Conseguir más leads", onClick: () => goView("search") })
+        : el("button", { class: "desk-act-ghost", text: "Ver el Mapa", onClick: () => goView("cards") }),
     ]),
   ]);
 }
