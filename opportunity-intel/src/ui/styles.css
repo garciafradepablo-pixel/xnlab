@@ -2350,6 +2350,8 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .desk-row { height: 56px; border-bottom: 1px solid var(--line); cursor: pointer; transition: background .12s; }
 .desk-row:last-child { border-bottom: none; }
 .desk-row:hover { background: var(--panel-2); }
+.desk-row.sel { background: var(--panel-2); box-shadow: inset 2px 0 0 var(--accent); }
+.desk-row.sel .dr-go { border-color: var(--line-2); color: var(--accent); background: var(--panel-3); }
 .dr-co { min-width: 0; }
 .dr-co > span { display: block; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .dr-co small { display: block; font-size: 11px; color: var(--ink-faint); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -2373,6 +2375,12 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .dtrk-v { color: var(--ink-dim); font-weight: 600; font-variant-numeric: tabular-nums; }
 .dtrk-sep { color: var(--ink-faint); }
 .dtrk-proof { margin-left: auto; color: var(--accent); font-style: italic; }
+
+/* Pista de teclado — señal de herramienta seria, no de juguete */
+.desk-keys { display: flex; align-items: center; justify-content: center; gap: 18px; padding: 4px 0 2px; }
+.desk-keys > span { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; color: var(--ink-faint); }
+.desk-keys kbd { font: 600 10px/1 var(--mono); padding: 3px 6px; min-width: 18px; text-align: center; color: var(--ink-dim);
+  background: var(--bg-2); border: 1px solid var(--line-2); border-radius: 5px; }
 
 /* Estado vacío del desk */
 .desk-empty { align-items: center; text-align: center; padding-top: 80px; gap: 14px; }
