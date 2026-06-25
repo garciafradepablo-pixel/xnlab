@@ -671,6 +671,7 @@ export function exportState() {
       training: getTraining(),
       schedules: getSchedules(),
       posits: read(POSITS_KEY, []),
+      ledger: getLedger(), // el activo principal: track record append-only (ORDEN→OBEDIENCIA→RESULTADO)
       config: read(CONFIG_KEY, null),
     },
     null,
@@ -718,6 +719,25 @@ export function importState(json, { replace = false } = {}) {
       addedOutcomes++;
     }
     write(LEARN_KEY, existing);
+  }
+
+  // --- ledger (append-only: el activo principal; debe viajar y fusionarse) ---
+  const incomingLedger = Array.isArray(data.ledger) ? data.ledger : [];
+  if (replace) {
+    write(LEDGER_KEY, incomingLedger);
+  } else if (incomingLedger.length) {
+    const keyOf = (e) => `${e && e.orderId}|${e && e.type}`;
+    const byKey = new Map();
+    // Unión local + entrante, dedup por (orden, tipo) idempotente: el evento más
+    // antiguo de cada par gana — nunca se pierde ni se reescribe historia.
+    for (const e of [...getLedger(), ...incomingLedger]) {
+      if (!e || !e.orderId || !e.type) continue;
+      const k = keyOf(e);
+      const prev = byKey.get(k);
+      if (!prev || String(e.at || "") < String(prev.at || "")) byKey.set(k, e);
+    }
+    const merged = [...byKey.values()].sort((a, b) => String(a.at || "").localeCompare(String(b.at || "")));
+    write(LEDGER_KEY, merged);
   }
 
   // --- tracking ---

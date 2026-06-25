@@ -130,6 +130,19 @@ await (async function run() {
   ok(!viewerTriedToSave, "viewer: ni siquiera llama al servidor (corte de cortesía)");
   ok(server.srv.rev === revBefore, "viewer: el documento del servidor no cambia");
   server.remoteSaveState = origSave;
+
+  // ── El Ledger (activo principal) viaja en export/import y se fusiona append-only ──
+  store.ledgerIssue("ord_a", { leadId: "l1", at: "2026-01-01T00:00:00Z", oci: 60 });
+  const snap = store.exportState();
+  ok(snap.includes("ord_a"), "exportState incluye el Ledger (antes nunca salía del navegador)");
+  store.ledgerIssue("ord_b", { leadId: "l2", at: "2026-01-02T00:00:00Z", oci: 65 });
+  const res = store.importState(snap);
+  const ids = store.getLedger().map((e) => e.orderId);
+  ok(res.ok && ids.includes("ord_a") && ids.includes("ord_b"),
+    "el Ledger se fusiona: conserva el local y suma el entrante (sin perder track record)");
+  ok(store.getLedger().filter((e) => e.orderId === "ord_a" && e.type === "issued").length === 1,
+    "la fusión del Ledger no duplica eventos (dedup por orden+tipo)");
+
   // Restaura la sesión admin para no afectar a otras comprobaciones.
   globalThis.localStorage.setItem("oi:session", JSON.stringify({ name: "Tester", role: "admin", token: "tok-admin" }));
 

@@ -12,7 +12,7 @@
 //      verification, devil's advocate, notes, learning) folded away.
 // =============================================================================
 
-import { el, esc } from "./dom.js";
+import { el, esc, safeUrl } from "./dom.js";
 import {
   FILTER_BY_KEY,
   FILTERS,
@@ -215,7 +215,7 @@ function evidenceList(opp) {
   return el("ul", { class: "evidence" }, (opp.evidence || []).map((e) => {
     const f = FILTER_BY_KEY[e.filter];
     const src = e.url
-      ? `<a href="${esc(e.url)}" target="_blank" rel="noopener">${esc(e.source)}</a>`
+      ? `<a href="${esc(safeUrl(e.url))}" target="_blank" rel="noopener">${esc(e.source)}</a>`
       : esc(e.source);
     return el("li", {
       html: `<span class="ev-tier ev-tier-${e.tier}" title="Peso de la evidencia">T${e.tier}</span> <strong>${esc(f?.label || e.filter)}:</strong> ${esc(e.note)} <span class="ev-src">— ${src}</span>`,

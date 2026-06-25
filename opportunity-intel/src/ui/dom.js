@@ -13,6 +13,7 @@ export function el(tag, attrs = {}, children = []) {
     else if (k === "dataset") Object.assign(node.dataset, v);
     else if (k.startsWith("on") && typeof v === "function")
       node.addEventListener(k.slice(2).toLowerCase(), v);
+    else if (k === "href" || k === "src") node.setAttribute(k, safeUrl(v));
     else node.setAttribute(k, v);
   }
   for (const c of [].concat(children)) {
@@ -20,6 +21,15 @@ export function el(tag, attrs = {}, children = []) {
     node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
   }
   return node;
+}
+
+// Esquemas de URL peligrosos para un href/src: ejecutan código. Permitimos solo
+// navegación real (http/https/mailto/tel) y rutas relativas/ancla; lo demás se
+// neutraliza a "#". Cierra el XSS por URL importada sin romper enlaces legítimos.
+const DANGEROUS_SCHEME = /^\s*(javascript|data|vbscript|file):/i;
+export function safeUrl(v) {
+  const s = String(v ?? "");
+  return DANGEROUS_SCHEME.test(s) ? "#" : s;
 }
 
 export const $ = (sel, root = document) => root.querySelector(sel);
