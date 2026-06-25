@@ -79,6 +79,7 @@ import { deriveOrderStatus } from "../orders.js";
 import { orderIdFor, foldOrders, OUTCOME_STATUS } from "../ledger.js";
 import { authorityLine, hasOverrideRegret } from "../authority.js";
 import { buildBrief, briefToText, briefToMarkdown } from "../brief.js";
+import { detectSignals, primarySignal } from "../signals.js";
 import { parseLeads, rowToLeadInput, findDuplicates } from "../importer.js";
 import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
 import * as tasks from "../tasks.js";
@@ -2368,7 +2369,7 @@ function deskView() {
 
     // BENTO superior: siguiente movimiento (grande) + panel de pulso
     el("div", { class: "desk-bento" }, [
-      top ? deskHero(top) : deskCleared(doneToday),
+      top ? deskHero(top, primarySignal((opps.find((d) => d.opp.id === top.leadId) || {}).opp || {})) : deskCleared(doneToday),
       deskStats({ live, hot, contacted, advanced, doneToday, orders, now, firstPaint }),
     ]),
 
@@ -2434,7 +2435,7 @@ function deskCleared(doneToday) {
   ]);
 }
 
-function deskHero(p) {
+function deskHero(p, signal) {
   const band = ociBand(p.oci);
   return el("div", { class: `desk-block desk-hero band-${band}` }, [
     el("div", { class: "desk-hero-top" }, [
@@ -2443,7 +2444,15 @@ function deskHero(p) {
     ]),
     el("div", { class: "desk-hero-co", text: p.company || "Sin nombre" }),
     el("div", { class: "desk-hero-meta", text: [p.sector, p.city].filter(Boolean).join(" · ") || "sector y ubicación por confirmar" }),
-    p.motive ? el("div", { class: "desk-hero-motive", text: p.motive }) : null,
+    // Señal REAL detectada (con su fuente). Sustituye al motivo genérico cuando
+    // existe — esto es lo derivado de verdad, no tecleado a mano.
+    signal
+      ? el("div", { class: `desk-hero-signal ${signal.strength}` }, [
+          el("span", { class: "desk-hero-sig-dot" }),
+          el("span", { class: "desk-hero-sig-label", text: signal.label }),
+          el("span", { class: "desk-hero-sig-src", text: `· fuente: ${signal.source}` }),
+        ])
+      : (p.motive ? el("div", { class: "desk-hero-motive", text: p.motive }) : null),
     p.riskLine ? el("div", { class: "desk-hero-risk", text: `↑ ${p.riskLine}` }) : null,
     el("div", { class: "desk-hero-actions" }, [
       el("button", { class: "desk-act-primary", text: "Redactar contacto →", onClick: () => openDraft(p.leadId) }),
@@ -2578,6 +2587,7 @@ function openDraft(leadId) {
   if (!opp) { flash("No encuentro esa oportunidad."); return; }
   const decision = decide(opp, opp.scores || {}, state.config?.conservatism != null ? { conservatism: state.config.conservatism } : {});
   const brief = buildBrief(opp, opp.scores || {}, decision);
+  const sig = primarySignal(opp);
 
   const overlay = el("div", { class: "draft-overlay" });
   const close = () => { document.removeEventListener("keydown", onKey); overlay.remove(); };
@@ -2600,6 +2610,18 @@ function openDraft(leadId) {
       ]),
       el("button", { class: "draft-x", text: "✕", onClick: close }),
     ]),
+    sig
+      ? el("div", { class: "draft-section" }, [
+          el("div", { class: "draft-label", text: "Señal detectada" }),
+          el("div", { class: "draft-signal" }, [
+            el("span", { class: "draft-signal-dot" }),
+            el("span", { class: "draft-signal-label", text: sig.label }),
+          ]),
+          sig.url
+            ? el("a", { class: "draft-signal-src", href: sig.url, target: "_blank", rel: "noopener", text: `Fuente: ${sig.source} ↗` })
+            : el("div", { class: "draft-signal-src", text: `Fuente: ${sig.source}` }),
+        ])
+      : null,
     el("div", { class: "draft-section" }, [
       el("div", { class: "draft-label", text: "Ángulo de entrada" }),
       el("div", { class: "draft-angle", text: brief.openingAngle || "Sin ángulo confirmado — conviene una observación concreta (web/marca/momento) antes de escribir." }),

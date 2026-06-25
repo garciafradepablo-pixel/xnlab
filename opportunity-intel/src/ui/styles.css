@@ -2357,6 +2357,19 @@ button.nba.nba-btn:active { transform: translateY(1px); }
 .desk-hero-co { font-size: 28px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); margin-top: 16px; line-height: 1.08; }
 .desk-hero-meta { font-size: 13px; color: var(--ink-faint); margin-top: 4px; }
 .desk-hero-motive { font-size: 15px; line-height: 1.55; color: var(--ink-dim); margin-top: 14px; max-width: 48ch; }
+/* Señal real detectada (con fuente) en el héroe */
+.desk-hero-signal { display: inline-flex; align-items: center; gap: 8px; margin-top: 14px; padding: 7px 12px; border-radius: 10px;
+  background: #fff; border: 1px solid #e4ddf6; box-shadow: var(--sh-1); max-width: 100%; flex-wrap: wrap; align-self: flex-start; }
+.desk-hero-signal.strong { border-color: #cdbff2; background: var(--accent-soft); }
+.desk-hero-sig-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; box-shadow: 0 0 0 3px rgba(109,79,208,.16); }
+.desk-hero-sig-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+.desk-hero-sig-src { font-size: 12px; color: var(--ink-faint); font-style: italic; }
+/* Señal en el drawer de redacción */
+.draft-signal { display: inline-flex; align-items: center; gap: 9px; padding: 9px 13px; border-radius: 10px; background: var(--accent-soft); border: 1px solid #e4ddf6; }
+.draft-signal-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: 0 0 auto; box-shadow: 0 0 0 3px rgba(109,79,208,.16); }
+.draft-signal-label { font-size: 14px; font-weight: 600; color: var(--ink); }
+.draft-signal-src { display: inline-block; margin-top: 7px; font-size: 12px; color: var(--accent); font-style: italic; text-decoration: none; }
+.draft-signal-src:hover { text-decoration: underline; }
 .desk-hero-risk { font-size: 13px; color: var(--yellow); margin-top: 9px; font-weight: 600; }
 .desk-hero-actions { display: flex; gap: 10px; margin-top: auto; padding-top: 22px; }
 .desk-act-primary { padding: 12px 22px; border: none; border-radius: 11px; font-size: 13px; font-weight: 700; letter-spacing: 0.01em;
