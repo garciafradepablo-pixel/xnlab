@@ -596,10 +596,12 @@ function activeCandidates() {
 }
 
 function withSignalLever(o) {
+  // Solo añadimos la palanca cuando el lead NO tiene ya una (de seed, de alta
+  // manual o de una lectura real). Nunca pisamos evidencia más rica ni re-derivamos
+  // sobre la nuestra: si ya hay actionableLever, se respeta tal cual.
+  if (o.signals && o.signals.actionableLever) return o;
   const lever = signalLever(o);
   if (!lever) return o;
-  const cur = o.signals && o.signals.actionableLever;
-  if (cur && cur.level === "green") return o;
   return { ...o, signals: { ...(o.signals || {}), actionableLever: { level: lever.level, note: lever.note } } };
 }
 
