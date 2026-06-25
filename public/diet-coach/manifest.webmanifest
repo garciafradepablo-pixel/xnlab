@@ -1,0 +1,17 @@
+{
+  "name": "Diet Coach OS",
+  "short_name": "Diet Coach",
+  "description": "Planifica, ejecuta y registra tu dieta de volumen limpio. Local-first, sin backend.",
+  "start_url": "/diet-coach",
+  "scope": "/diet-coach",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b0d",
+  "theme_color": "#0b0b0d",
+  "categories": ["health", "lifestyle", "fitness"],
+  "icons": [
+    { "src": "/diet-coach/icon", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/diet-coach/icon", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/diet-coach/apple-icon", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ]
+}
