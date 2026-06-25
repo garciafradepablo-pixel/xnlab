@@ -25,7 +25,10 @@ const bare = opp({ strategicFit: "green" }, {
 const bb = brief(bare);
 ok(bb.thesis === null && bb.whyNow === null, "placeholders ('Por confirmar') → null, no se presentan como hechos");
 ok(Array.isArray(bb.unknowns) && bb.unknowns.length > 0, "lista 'qué no sabemos' a partir de los huecos del motor");
-ok(bb.firstMessage.includes("confirmar"), "sin ángulo real, el primer mensaje pide confirmar, no inventa gancho");
+// Motor estricto: un lead con buen encaje pero sin dolor/hueco queda 'demasiado
+// servido' → el primer mensaje FRENA ("no hay hueco") en vez de inventar gancho.
+// Si hubiera hueco pero faltara ángulo, pediría "confirmar". Ambos: no inventa.
+ok(/confirmar|no hay hueco/.test(bb.firstMessage), "sin hueco/ángulo real, el primer mensaje no inventa: frena o pide confirmar");
 
 // === Brief rico cuando hay narrativa + evidencia ===
 const rich = opp(Object.fromEntries(ALL.map((k) => [k, "green"])), {

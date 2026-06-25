@@ -2301,8 +2301,16 @@ function deskView() {
 
   if (!items.length) return deskEmpty();
 
-  const live = items.length;
-  const hot = items.filter((d) => (d.decision.oci || 0) >= 70).length;
+  // Estricto: el Desk NO pone el ojo en quien no es oportunidad — descartes y
+  // empresas ya óptimas (demasiado servidas, sin hueco). Solo donde hay algo que
+  // resolver. Las excluidas se cuentan, no se ocultan (transparencia).
+  const EXCLUDED = new Set(["KILL", "OVER_SERVED"]);
+  const opps = items.filter((d) => !EXCLUDED.has(d.decision.decision));
+  const excluded = items.length - opps.length;
+  if (!opps.length) return deskEmpty(excluded);
+
+  const live = opps.length;
+  const hot = opps.filter((d) => (d.decision.oci || 0) >= 70).length;
 
   // Track record honesto, leído del Ledger (nunca inventado).
   const orders = foldOrders(store.getLedger());
@@ -2317,7 +2325,7 @@ function deskView() {
   // desenlace sea "sin respuesta".
   const contactedIds = new Set(orders.filter((o) => o.obeyedAt).map((o) => o.leadId));
   const WORKED = new Set(["contacted", "called", "interested", "meeting_booked", "proposal", "proposal_sent", "follow_up", "won", "signed", "rejected", "lost", "no_answer"]);
-  const queue = items.filter((d) => !contactedIds.has(d.opp.id) && !WORKED.has(tracking[d.opp.id]?.status));
+  const queue = opps.filter((d) => !contactedIds.has(d.opp.id) && !WORKED.has(tracking[d.opp.id]?.status));
   const priority = buildPriorityList({ actNow: queue, tracking, now });
   const top = priority[0] || null;
 
@@ -2338,9 +2346,10 @@ function deskView() {
     el("div", { class: "desk-head" }, [
       el("div", {}, [
         el("h1", { class: "desk-hello", text: firstName ? `${deskGreeting()}, ${firstName}` : deskGreeting() }),
-        el("div", { class: "desk-sub", text: queue.length
-          ? `${queue.length} ${queue.length === 1 ? "cuenta espera" : "cuentas esperan"} tu movimiento · ${live} vivas.`
-          : `Bandeja vacía: trabajaste las ${live} cuentas vivas. 🔥` }),
+        el("div", { class: "desk-sub", text: (queue.length
+          ? `${queue.length} ${queue.length === 1 ? "cuenta espera" : "cuentas esperan"} tu movimiento · ${live} oportunidad${live === 1 ? "" : "es"}`
+          : `Bandeja vacía: trabajaste las ${live} oportunidades. 🔥`)
+          + (excluded ? ` · ${excluded} descartada${excluded === 1 ? "" : "s"} (ya óptimas / sin hueco)` : "") }),
       ]),
       el("div", { class: "desk-head-actions" }, [
         deskDatasetToggle(userLeadCount),
@@ -2521,8 +2530,21 @@ function deskFollowupRow(order) {
   ]);
 }
 
-function deskEmpty() {
+function deskEmpty(excluded = 0) {
   const isMine = state.dataset === "mine";
+  // Caso estricto: había cuentas, pero TODAS quedaron descartadas (ya óptimas /
+  // sin hueco). Es una respuesta honesta, no un vacío: ahí no hay nada que vender.
+  if (excluded > 0) {
+    return el("div", { class: "desk desk-empty" }, [
+      el("div", { class: "desk-empty-icon", text: "✓" }),
+      el("div", { class: "desk-empty-title", text: "Ninguna oportunidad real" }),
+      el("div", { class: "desk-empty-sub", text: `Las ${excluded} cuentas analizadas ya trabajan de forma óptima o no muestran un hueco accionable. No ponemos el ojo donde no hay nada que resolver.` }),
+      el("div", { class: "desk-empty-actions" }, [
+        el("button", { class: "desk-act-primary", text: "↥ Importar otra lista", onClick: openImport }),
+        isMine ? el("button", { class: "desk-act-ghost", text: "Ver el demo", onClick: () => setDataset("researched") }) : null,
+      ]),
+    ]);
+  }
   if (isMine) {
     return el("div", { class: "desk desk-empty" }, [
       el("div", { class: "desk-empty-icon", text: "↥" }),

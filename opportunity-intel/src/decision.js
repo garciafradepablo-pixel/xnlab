@@ -100,8 +100,10 @@ export const KILL_REASONS = {
 function killReasonsFor({ fit, pain, timing, access }, eq, scored, opp) {
   const out = [];
   const add = (code) => out.push({ code, label: KILL_REASONS[code] });
-  if (fit >= 65 && pain < 35 && timing < 35) add("over_served");
-  if (pain < 30) add("no_visible_pain");
+  // Demasiado servido / ya óptima: buen encaje pero sin hueco visible. Estricto —
+  // no exige también mal momento: si encaja bien y no hay dolor, ya está servida.
+  if (fit >= 60 && pain < 38) add("over_served");
+  if (pain < 32) add("no_visible_pain");
   if (timing < 30) add("no_timing");
   if (access < 30) add("no_access");
   if (eq.score < 25) add("weak_evidence");
@@ -269,7 +271,10 @@ export function decide(opp = {}, scored = {}, opts = {}) {
   const base = dims.fit * 0.28 + dims.pain * 0.30 + dims.timing * 0.22 + dims.access * 0.20;
   const confidenceFactor = 0.55 + 0.45 * (eq.score / 100);
   let oci = base * confidenceFactor - kRisk * 0.25;
-  if (killReasons.some((k) => k.code === "over_served")) oci = Math.min(oci, 38);
+  if (killReasons.some((k) => k.code === "over_served")) oci = Math.min(oci, 28);
+  // Gate estricto por dolor: sin hueco visible no hay oportunidad, por bueno que
+  // sea el encaje. Una empresa que ya trabaja de forma óptima NO es objetivo.
+  if (dims.pain < 35) oci = Math.min(oci, 30);
   if (dims.access < 30) oci = Math.min(oci, 42);
   oci = clamp(round(oci));
 
