@@ -34,6 +34,24 @@ ok(ws && /2017/.test(ws.label), "la etiqueta de web_stale incluye el año real l
 ok(ws && ws.url === "https://clinicavieja.com" && ws.source === "su web", "web_stale lleva la URL como cita");
 ok(ws && ws.strength === "indicative", "web_stale es indicio (el pie de copyright no es prueba férrea)");
 
+// web_stale también sale de la EVIDENCIA persistida por un enrich real (camino app):
+// store.applyVerifications deja source "Lectura de su web" + url. Es lo que vive
+// tras el recompute, así que es de donde sale web_stale en la app de verdad.
+const fromEvidence = detectSignals({
+  company: "Vieja2", website: "https://vieja2.com",
+  evidence: [{ source: "Lectura de su web", type: "web", url: "https://vieja2.com",
+    note: "Palanca de rediseño: web sin actualizar desde 2019 (7 años)." }],
+}, { year: YEAR });
+const we = fromEvidence.find((s) => s.key === "web_stale");
+ok(we != null && /2019/.test(we.label), "web_stale sale de la evidencia citada del enrich (camino real de la app)");
+ok(we && we.url === "https://vieja2.com", "web_stale desde evidencia conserva la url como cita");
+
+// Una nota tecleada a mano SIN lectura real (otra fuente, sin url http) NO dispara web_stale.
+ok(detectSignals({
+  company: "NoReal", website: "https://noreal.com",
+  evidence: [{ source: "Verificado por analista", note: "web antigua", url: "verificación-manual" }],
+}, { year: YEAR }).length === 0, "evidencia NO derivada de lectura web real → no inventa web_stale");
+
 // Web fresca y responsive → sin web_stale
 ok(detectSignals({
   company: "Y", website: "https://moderna.com",

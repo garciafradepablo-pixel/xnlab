@@ -34,10 +34,39 @@ function hasRealWebsite(opp) {
   return typeof w === "string" && /[a-z0-9-]+\.[a-z]{2,}/i.test(w);
 }
 
-/** Lectura de frescura web ya almacenada por un enrich REAL previo, si la hay. */
+/** Lectura de frescura web cruda, si un enrich la dejó en el lead (p. ej. tests). */
 function storedFreshness(opp) {
   const fr = opp.webFreshness || opp._webFreshness || null;
   return fr && fr.readable ? fr : null;
+}
+
+/**
+ * Evidencia derivada de una lectura REAL de su web, ya persistida por el
+ * enriquecimiento: store.applyVerifications deja una entrada con
+ * source "Lectura de su web" y la url real. Esto es lo que sobrevive al recompute,
+ * así que es de aquí de donde sale web_stale en la app real (no de un campo que
+ * nadie escribe). Exige url http real → nunca confunde una nota tecleada a mano.
+ */
+function webReadEvidence(opp) {
+  const ev = Array.isArray(opp.evidence) ? opp.evidence : [];
+  return ev.find((e) =>
+    e && e.source === "Lectura de su web" &&
+    typeof e.url === "string" && /^https?:\/\//i.test(e.url)) || null;
+}
+
+function staleSignal(note, url) {
+  const label = String(note || "")
+    .replace(/^Palanca de rediseño:\s*/i, "")
+    .replace(/\.$/, "") || "web con margen de mejora";
+  return {
+    key: "web_stale",
+    label,
+    strength: "indicative",
+    source: "su web",
+    url: url || null,
+    verified: true,
+    detail: note || null,
+  };
 }
 
 /**
@@ -65,23 +94,16 @@ export function detectSignals(opp = {}, opts = {}) {
     });
   }
 
-  // 2) Web obsoleta / no responsive — a partir de una lectura real (enrich-web).
-  const fr = storedFreshness(opp);
-  if (hasRealWebsite(opp) && fr) {
-    const lever = webLeverFromFreshness(fr, year);
-    if (lever) {
-      const label = lever.note
-        .replace(/^Palanca de rediseño:\s*/i, "")
-        .replace(/\.$/, "");
-      out.push({
-        key: "web_stale",
-        label,
-        strength: "indicative",
-        source: "su web",
-        url: typeof website === "string" ? website : null,
-        verified: true,
-        detail: lever.note,
-      });
+  // 2) Web obsoleta / no responsive — SIEMPRE a partir de una lectura REAL:
+  //    frescura cruda (si está) o, en la app, la evidencia citada del enrich.
+  if (hasRealWebsite(opp)) {
+    const fr = storedFreshness(opp);
+    if (fr) {
+      const lever = webLeverFromFreshness(fr, year);
+      if (lever) out.push(staleSignal(lever.note, typeof website === "string" ? website : null));
+    } else {
+      const we = webReadEvidence(opp);
+      if (we) out.push(staleSignal(we.note, we.url));
     }
   }
 
