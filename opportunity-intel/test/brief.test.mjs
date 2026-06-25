@@ -44,6 +44,16 @@ ok(rb.channel.includes("LinkedIn"), "canal recomendado a partir del decisor");
 ok(rb.firstMessage.includes("Marta"), "primer mensaje usa el nombre del decisor");
 ok(rb.evidence[0].confirmed === true, "evidencia con url marcada como confirmada");
 
+// === El primer mensaje arranca de una señal REAL observada en la URL ===
+const social = opp(Object.fromEntries(ALL.map((k) => [k, "green"])), {
+  website: "https://facebook.com/clinicanorte", decisionMaker: { name: "Marta Ruiz", role: "Directora" },
+});
+const sm = brief(social).firstMessage;
+ok(/redes/.test(sm) && /web propia/.test(sm), "el primer mensaje arranca de la señal observada (solo redes, sin web)");
+// no_web es AUSENCIA → no se afirma en frío (riesgo si sí tienen web sin registrar)
+const noWeb = opp(Object.fromEntries(ALL.map((k) => [k, "green"])), { decisionMaker: { name: "Ana" } });
+ok(!/no tenéis web|sin web propia/.test(brief(noWeb).firstMessage), "no_web (ausencia) NO se afirma en el primer mensaje");
+
 // === briefToText serializa sin romper ===
 const txt = briefToText(rb);
 ok(txt.includes("OPPORTUNITY BRIEF — Clínica Norte") && txt.includes("OCI"), "texto del brief legible");
