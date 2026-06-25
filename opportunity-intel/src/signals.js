@@ -39,13 +39,23 @@ function urlOf(opp) {
   return typeof w === "string" ? w : "";
 }
 
-// Una URL que NO es web propia: su única presencia es una red o un enlace social.
-// Observable en la propia URL — hueco real de captación, sin inferencia.
-const SOCIAL_HOST = /(facebook\.com|instagram\.com|twitter\.com|x\.com\/|linkedin\.com|tiktok\.com|wa\.me|whatsapp\.com|business\.site|linktr\.ee|beacons\.ai|t\.me\/)/i;
-// Constructores gratuitos: web real, pero en plataforma de bajo coste → margen claro.
-const FREE_HOST = /(wixsite\.com|\.wix\.com|weebly\.com|\.blogspot\.|wordpress\.com|\.jimdo|webnode\.|mystrikingly\.com|godaddysites\.com|sites\.google\.com|carrd\.co|\.glitch\.me|negocio\.site)/i;
+// Host de la URL (sin protocolo ni ruta). Aísla el dominio para no confundir un
+// segmento de ruta ("/x.com/…") ni un TLD ".site" legítimo con una red social.
+function hostOf(opp) {
+  const u = urlOf(opp).trim();
+  if (!u) return "";
+  return u.replace(/^[a-z][a-z0-9+.-]*:\/\//i, "").split(/[/?#]/)[0].toLowerCase();
+}
+
+// El host ES (o es subdominio de) una red/enlace social → sin web propia. Anclado
+// al final del host con frontera (^|.) para no caer en "netflix.com" ni rutas.
+const SOCIAL_HOST = /(^|\.)(facebook\.com|instagram\.com|twitter\.com|x\.com|linkedin\.com|tiktok\.com|wa\.me|whatsapp\.com|linktr\.ee|beacons\.ai|t\.me)$/i;
+// Constructores gratuitos (incl. Google "business.site"): web real, plataforma de
+// bajo coste → margen claro. Mismo anclaje de host para evitar falsos positivos.
+const FREE_HOST = /(^|\.)(wixsite\.com|wix\.com|weebly\.com|blogspot\.com|wordpress\.com|jimdo\.com|webnode\.com|mystrikingly\.com|godaddysites\.com|sites\.google\.com|carrd\.co|glitch\.me|business\.site|negocio\.site)$/i;
 // HTTP explícito (no HTTPS): hueco de seguridad/confianza, leído de la URL.
 const isInsecure = (u) => /^http:\/\//i.test(u);
+
 
 
 /** Lectura de frescura web cruda, si un enrich la dejó en el lead (p. ej. tests). */
@@ -108,7 +118,8 @@ export function detectSignals(opp = {}, opts = {}) {
     });
   } else {
     // 2) Solo redes / enlace social — sin web propia que controle. Observable.
-    if (SOCIAL_HOST.test(url)) {
+    const host = hostOf(opp);
+    if (SOCIAL_HOST.test(host)) {
       out.push({
         key: "social_only",
         label: "Solo redes, sin web propia",
@@ -118,7 +129,7 @@ export function detectSignals(opp = {}, opts = {}) {
         verified: true,
         detail: "Su única presencia es una red/enlace social: no controla una web propia.",
       });
-    } else if (FREE_HOST.test(url)) {
+    } else if (FREE_HOST.test(host)) {
       // 3) Web en constructor gratuito — margen claro de profesionalización.
       out.push({
         key: "free_host",

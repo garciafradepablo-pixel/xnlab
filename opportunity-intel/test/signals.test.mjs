@@ -83,9 +83,21 @@ ok(detectSignals({ company: "X", website: "https://buena.com" }, { year: YEAR })
 ok(detectSignals({ company: "X", website: "https://wixsite.com/x" }, { year: YEAR }).every((s) => s.key !== "no_https"),
   "una web en https no dispara no_https aunque sea gratuita");
 
+// === Falsos positivos: el anclaje al host evita confundir dominios legítimos ===
+ok(detectSignals({ company: "Sitio", website: "https://my-business.site" }, { year: YEAR }).length === 0,
+  "un .site legítimo (my-business.site) NO se confunde con red/gratuito");
+ok(detectSignals({ company: "Net", website: "https://netflix.com" }, { year: YEAR }).length === 0,
+  "netflix.com NO trip social_only por contener 'x.com'");
+ok(detectSignals({ company: "Path", website: "https://mishop.com/x.com/promo" }, { year: YEAR }).length === 0,
+  "una red en la RUTA (no en el host) no dispara social_only");
+ok(detectSignals({ company: "CoUk", website: "https://carrd.co.uk-tienda.com" }, { year: YEAR }).every((s) => s.key !== "free_host"),
+  "carrd.co.uk-tienda.com (host distinto) NO se marca free_host");
+ok(detectSignals({ company: "Real", website: "https://joesbar.business.site" }, { year: YEAR }).some((s) => s.key === "free_host"),
+  "un subdominio real de business.site SÍ es free_host");
+
 // === signalLever: alimenta la puntuación solo donde hay hueco real ===
 ok(signalLever({ company: "Solo nombre" }, { year: YEAR }).level === "green", "no_web → palanca 'green' (fuerte)");
-ok(signalLever({ company: "X", website: "http://x.com" }, { year: YEAR }).level === "yellow", "no_https → palanca 'yellow' (indicio)");
+ok(signalLever({ company: "X", website: "http://tienda-local.com" }, { year: YEAR }).level === "yellow", "no_https (web propia sin TLS) → palanca 'yellow' (indicio)");
 ok(signalLever({ company: "X", website: "https://buena.com" }, { year: YEAR }) === null, "web buena → SIN palanca (cero efecto en el score)");
 
 console.log(`\n${passed} passed, ${failed} failed`);
