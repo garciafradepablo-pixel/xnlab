@@ -14,6 +14,7 @@
 // =============================================================================
 
 import { FILTER_BY_KEY } from "./models.js";
+import { primarySignal } from "./signals.js";
 
 const PLACEHOLDER = /(por confirmar|por definir|por anticipar|por preparar|pendiente|sin verificar|completar tesis)/i;
 
@@ -22,6 +23,23 @@ function clean(s) {
   const t = String(s || "").trim();
   if (!t || PLACEHOLDER.test(t)) return null;
   return t;
+}
+
+// Convierte una señal REAL detectada en un gancho de apertura honesto (lo
+// OBSERVADO, no inventado). Es el ángulo más concreto posible: la propia brecha.
+function signalAngle(sig) {
+  if (!sig) return null;
+  switch (sig.key) {
+    // OJO: no_web se excluye a propósito. Es una señal de AUSENCIA ("no se le
+    // encuentra web"), no una observación directa de su URL — afirmarlo en un
+    // primer mensaje en frío sería arriesgado si sí tienen web sin registrar.
+    // Solo abrimos con lo que hemos VISTO en su propia URL (certeza real).
+    case "social_only": return "que vuestra presencia vive en redes, pero sin una web propia que controléis";
+    case "free_host": return "que vuestra web está en una plataforma genérica, con margen claro para subirla de nivel";
+    case "no_https": return "que vuestra web aún no va por HTTPS — un punto de confianza (y de buscadores) fácil de recuperar";
+    case "web_stale": return `${sig.label.charAt(0).toLowerCase()}${sig.label.slice(1)}`;
+    default: return null;
+  }
 }
 
 function recommendedChannel(opp) {
@@ -37,14 +55,20 @@ function recommendedChannel(opp) {
 // esencial, dice qué confirmar antes de escribir (no inventa un gancho falso).
 function buildFirstMessage(opp, decision) {
   const dm = opp.decisionMaker || {};
-  const angle = clean(opp.firstLever) || clean(opp.thesis);
   if (decision.decision === "KILL" || decision.decision === "OVER_SERVED") {
     return "No escribir todavía: no hay hueco que justifique el contacto.";
   }
+  const hi = dm.name ? `Hola ${String(dm.name).split(" ")[0]},` : "Hola,";
+  // Si hay una señal real detectada, el primer mensaje arranca de la OBSERVACIÓN
+  // (la brecha concreta) — el gancho más honesto y específico que existe.
+  const sigAngle = signalAngle(primarySignal(opp));
+  if (sigAngle) {
+    return `${hi} echando un ojo a ${opp.company || "vuestro proyecto"} vi ${sigAngle}. ¿Te viene bien que te cuente en 10 minutos cómo lo abordaríamos?`;
+  }
+  const angle = clean(opp.firstLever) || clean(opp.thesis);
   if (!angle) {
     return "Antes de escribir: confirmar una observación concreta (web/marca/momento). Sin ángulo real, no hay primer mensaje.";
   }
-  const hi = dm.name ? `Hola ${String(dm.name).split(" ")[0]},` : "Hola,";
   return `${hi} al ver ${opp.company || "vuestro proyecto"} me quedé con una idea concreta: ${angle.charAt(0).toLowerCase()}${angle.slice(1)}. ¿Te viene bien que te la cuente en 10 minutos?`;
 }
 
