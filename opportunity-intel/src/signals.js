@@ -34,6 +34,20 @@ function hasRealWebsite(opp) {
   return typeof w === "string" && /[a-z0-9-]+\.[a-z]{2,}/i.test(w);
 }
 
+function urlOf(opp) {
+  const w = opp.website || opp.web || "";
+  return typeof w === "string" ? w : "";
+}
+
+// Una URL que NO es web propia: su única presencia es una red o un enlace social.
+// Observable en la propia URL — hueco real de captación, sin inferencia.
+const SOCIAL_HOST = /(facebook\.com|instagram\.com|twitter\.com|x\.com\/|linkedin\.com|tiktok\.com|wa\.me|whatsapp\.com|business\.site|linktr\.ee|beacons\.ai|t\.me\/)/i;
+// Constructores gratuitos: web real, pero en plataforma de bajo coste → margen claro.
+const FREE_HOST = /(wixsite\.com|\.wix\.com|weebly\.com|\.blogspot\.|wordpress\.com|\.jimdo|webnode\.|mystrikingly\.com|godaddysites\.com|sites\.google\.com|carrd\.co|\.glitch\.me|negocio\.site)/i;
+// HTTP explícito (no HTTPS): hueco de seguridad/confianza, leído de la URL.
+const isInsecure = (u) => /^http:\/\//i.test(u);
+
+
 /** Lectura de frescura web cruda, si un enrich la dejó en el lead (p. ej. tests). */
 function storedFreshness(opp) {
   const fr = opp.webFreshness || opp._webFreshness || null;
@@ -79,7 +93,7 @@ function staleSignal(note, url) {
 export function detectSignals(opp = {}, opts = {}) {
   const year = opts.year || new Date().getFullYear();
   const out = [];
-  const website = opp.website || opp.web || null;
+  const url = urlOf(opp);
 
   // 1) Sin presencia web — hueco directo de captación digital. Observable sin red.
   if (!hasRealWebsite(opp)) {
@@ -92,15 +106,50 @@ export function detectSignals(opp = {}, opts = {}) {
       verified: true,
       detail: "No se le encuentra web propia: hueco directo de captación digital.",
     });
-  }
+  } else {
+    // 2) Solo redes / enlace social — sin web propia que controle. Observable.
+    if (SOCIAL_HOST.test(url)) {
+      out.push({
+        key: "social_only",
+        label: "Solo redes, sin web propia",
+        strength: "strong",
+        source: "su enlace",
+        url,
+        verified: true,
+        detail: "Su única presencia es una red/enlace social: no controla una web propia.",
+      });
+    } else if (FREE_HOST.test(url)) {
+      // 3) Web en constructor gratuito — margen claro de profesionalización.
+      out.push({
+        key: "free_host",
+        label: "Web en plataforma gratuita",
+        strength: "indicative",
+        source: "su web",
+        url,
+        verified: true,
+        detail: "Su web vive en un constructor gratuito: margen claro de profesionalización.",
+      });
+    }
 
-  // 2) Web obsoleta / no responsive — SIEMPRE a partir de una lectura REAL:
-  //    frescura cruda (si está) o, en la app, la evidencia citada del enrich.
-  if (hasRealWebsite(opp)) {
+    // 4) Sin HTTPS — hueco de seguridad/confianza (y de SEO). Leído de la URL.
+    if (isInsecure(url)) {
+      out.push({
+        key: "no_https",
+        label: "Web sin HTTPS",
+        strength: "indicative",
+        source: "su web",
+        url,
+        verified: true,
+        detail: "Su web no usa HTTPS: hueco de seguridad y confianza, penaliza en buscadores.",
+      });
+    }
+
+    // 5) Web obsoleta / no responsive — SIEMPRE a partir de una lectura REAL:
+    //    frescura cruda (si está) o, en la app, la evidencia citada del enrich.
     const fr = storedFreshness(opp);
     if (fr) {
       const lever = webLeverFromFreshness(fr, year);
-      if (lever) out.push(staleSignal(lever.note, typeof website === "string" ? website : null));
+      if (lever) out.push(staleSignal(lever.note, url || null));
     } else {
       const we = webReadEvidence(opp);
       if (we) out.push(staleSignal(we.note, we.url));
@@ -124,4 +173,22 @@ export function primarySignal(opp = {}, opts = {}) {
 /** ¿Tiene el lead al menos una señal real detectada? */
 export function hasRealSignal(opp = {}, opts = {}) {
   return detectSignals(opp, opts).length > 0;
+}
+
+// Señales web que alimentan la PUNTUACIÓN (no solo la UI). Un hueco web real es
+// una palanca de acción concreta — eso es exactamente lo que mide actionableLever.
+const LEVER_KEYS = new Set(["no_web", "social_only", "free_host", "no_https", "web_stale"]);
+
+/**
+ * Convierte la mejor señal web real en una palanca para el motor (actionableLever).
+ * Fuerte → "green", indicio → "yellow". Devuelve null si no hay señal web real,
+ * de modo que un lead sin hueco detectado NO se toca (cero efecto, cero invención).
+ * @returns {{level:"green"|"yellow", note:string, key:string}|null}
+ */
+export function signalLever(opp = {}, opts = {}) {
+  const webSignals = detectSignals(opp, opts).filter((s) => LEVER_KEYS.has(s.key));
+  if (!webSignals.length) return null;
+  const rank = (s) => (s.strength === "strong" ? 0 : 1);
+  const best = webSignals.sort((a, b) => rank(a) - rank(b))[0];
+  return { level: best.strength === "strong" ? "green" : "yellow", note: best.detail || best.label, key: best.key };
 }

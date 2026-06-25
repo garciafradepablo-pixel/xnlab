@@ -79,7 +79,7 @@ import { deriveOrderStatus } from "../orders.js";
 import { orderIdFor, foldOrders, OUTCOME_STATUS } from "../ledger.js";
 import { authorityLine, hasOverrideRegret } from "../authority.js";
 import { buildBrief, briefToText, briefToMarkdown } from "../brief.js";
-import { detectSignals, primarySignal } from "../signals.js";
+import { detectSignals, primarySignal, signalLever } from "../signals.js";
 import { parseLeads, rowToLeadInput, findDuplicates } from "../importer.js";
 import { operatorAnswer, OPERATOR_INTENTS, OPERATOR_LABELS, bucketize, parseCommand, applyCommand, commandAnswer, BUCKETS } from "../operator.js";
 import * as tasks from "../tasks.js";
@@ -585,10 +585,22 @@ function activeCandidates() {
   // Aplica las verificaciones manuales del analista antes de puntuar: los
   // huecos confirmados se vuelven evidencia citada y suben la puntuación.
   const verifications = store.getVerifications();
-  if (!Object.keys(verifications).length) return base;
-  return base.map((o) =>
-    verifications[o.id] ? store.applyVerifications(o, verifications[o.id]) : o
-  );
+  const withVerif = Object.keys(verifications).length
+    ? base.map((o) => (verifications[o.id] ? store.applyVerifications(o, verifications[o.id]) : o))
+    : base;
+  // Alimenta la PUNTUACIÓN con los huecos web REALES detectados (signals.js): un
+  // hueco observable (sin web, solo redes, gratuito, sin HTTPS, web obsoleta) es
+  // una palanca de acción concreta → actionableLever. Solo añade donde hay señal
+  // real y nunca pisa una palanca ya verificada más fuerte; el resto queda intacto.
+  return withVerif.map(withSignalLever);
+}
+
+function withSignalLever(o) {
+  const lever = signalLever(o);
+  if (!lever) return o;
+  const cur = o.signals && o.signals.actionableLever;
+  if (cur && cur.level === "green") return o;
+  return { ...o, signals: { ...(o.signals || {}), actionableLever: { level: lever.level, note: lever.note } } };
 }
 
 async function recompute() {
