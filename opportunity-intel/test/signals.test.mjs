@@ -3,7 +3,7 @@
 // con base verificable y su cita, y que NUNCA inventa: sin base real, [].
 // =============================================================================
 
-import { detectSignals, primarySignal, hasRealSignal } from "../src/signals.js";
+import { detectSignals, primarySignal, hasRealSignal, signalLever } from "../src/signals.js";
 
 let passed = 0, failed = 0;
 const ok = (c, m) => (c ? passed++ : (failed++, console.error("  ✗", m)));
@@ -69,6 +69,24 @@ const both = { company: "Sin Web SL", webFreshness: { readable: true, copyright_
 ok(primarySignal(both, { year: YEAR }).key === "no_web", "primarySignal prioriza la señal fuerte (no_web)");
 ok(hasRealSignal({ company: "Bar Paco" }, { year: YEAR }) === true, "hasRealSignal true cuando hay base real");
 ok(hasRealSignal({ company: "X", website: "https://ok.com" }, { year: YEAR }) === false, "hasRealSignal false sin base real");
+
+// === Detectores web observables (offline, leídos de la propia URL) ===
+const social = detectSignals({ company: "Bar", website: "https://facebook.com/barpaco" }, { year: YEAR });
+ok(social.some((s) => s.key === "social_only" && s.strength === "strong"), "URL de Facebook → 'social_only' (sin web propia)");
+ok(detectSignals({ company: "X", website: "https://barpaco.wixsite.com/home" }, { year: YEAR }).some((s) => s.key === "free_host"),
+  "wixsite.com → 'free_host' (constructor gratuito)");
+ok(detectSignals({ company: "X", website: "http://insegura.com" }, { year: YEAR }).some((s) => s.key === "no_https"),
+  "http:// (sin TLS) → 'no_https'");
+ok(detectSignals({ company: "X", website: "https://buena.com" }, { year: YEAR }).length === 0,
+  "https propia y normal → sin señales (no se fuerza un hueco)");
+// no_https + free no se confunden con una web buena
+ok(detectSignals({ company: "X", website: "https://wixsite.com/x" }, { year: YEAR }).every((s) => s.key !== "no_https"),
+  "una web en https no dispara no_https aunque sea gratuita");
+
+// === signalLever: alimenta la puntuación solo donde hay hueco real ===
+ok(signalLever({ company: "Solo nombre" }, { year: YEAR }).level === "green", "no_web → palanca 'green' (fuerte)");
+ok(signalLever({ company: "X", website: "http://x.com" }, { year: YEAR }).level === "yellow", "no_https → palanca 'yellow' (indicio)");
+ok(signalLever({ company: "X", website: "https://buena.com" }, { year: YEAR }) === null, "web buena → SIN palanca (cero efecto en el score)");
 
 console.log(`\n${passed} passed, ${failed} failed`);
 if (failed) process.exit(1);
