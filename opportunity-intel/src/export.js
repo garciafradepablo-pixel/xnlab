@@ -24,7 +24,10 @@ const offerLabel = (key) => {
 // ---- CSV --------------------------------------------------------------------
 
 function csvCell(v) {
-  const s = v == null ? "" : String(v);
+  let s = v == null ? "" : String(v);
+  // Anti-inyección de fórmulas: una celda que empieza por = + - @ (o tab/CR) la
+  // ejecutaría Excel/Sheets al abrir el CSV. Se neutraliza con un apóstrofo guía.
+  if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
   return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
 }
 
