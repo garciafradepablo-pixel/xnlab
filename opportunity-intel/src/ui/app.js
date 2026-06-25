@@ -575,9 +575,12 @@ function purgeWeakUserLeads() {
 }
 
 function activeCandidates() {
-  // Dataset base + tanda real de Mallorca (investigada, siempre presente) +
-  // leads añadidos por el usuario (siempre presentes, son suyos).
-  const base = (state.dataset === "researched" ? RESEARCHED : SEED).concat(MALLORCA).concat(store.getUserLeads());
+  // "Mi lista": trabaja SOLO tus leads importados — tu pipeline real, sin demo.
+  // En otro caso: dataset base + tanda real de Mallorca + tus leads añadidos.
+  const userLeads = store.getUserLeads();
+  const base = state.dataset === "mine"
+    ? userLeads
+    : (state.dataset === "researched" ? RESEARCHED : SEED).concat(MALLORCA).concat(userLeads);
   // Aplica las verificaciones manuales del analista antes de puntuar: los
   // huecos confirmados se vuelven evidencia citada y suben la puntuación.
   const verifications = store.getVerifications();
@@ -709,8 +712,8 @@ function header() {
       ]),
     ]),
     el("div", { class: "head-actions" }, [
-      state.dataset !== "researched"
-        ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Conecta fuentes reales (ver README)." })
+      state.dataset !== "mine"
+        ? el("span", { class: "demo-badge", text: "DATOS DEMO", title: "Dataset de ejemplo. Importa tu lista o conecta una fuente real para trabajar datos de verdad." })
         : null,
       userChip(),
       syncBadge(),
@@ -2240,6 +2243,25 @@ function deskGreeting() {
   return h < 6 ? "Buenas noches" : h < 13 ? "Buenos días" : h < 21 ? "Buenas tardes" : "Buenas noches";
 }
 
+// Conmutador de origen: "Mi lista" (tu pipeline importado, datos reales) vs
+// "Demo" (dataset de muestra). Honesto: el demo se etiqueta como demo.
+function setDataset(key) {
+  if (state.dataset === key) return;
+  state.dataset = key;
+  state.feedCmd = null; state.feedCmdText = "";
+  recompute().then(render).catch(render);
+}
+function deskDatasetToggle(mineCount) {
+  const isMine = state.dataset === "mine";
+  const tab = (key, label, active) => el("button", {
+    class: `desk-ds ${active ? "active" : ""}`, text: label, onClick: () => setDataset(key),
+  });
+  return el("div", { class: "desk-ds-wrap", title: "Origen de los datos" }, [
+    tab("mine", mineCount ? `Mi lista · ${mineCount}` : "Mi lista", isMine),
+    tab("researched", "Demo", !isMine),
+  ]);
+}
+
 // Cuenta ascendente de las cifras del pulso — se ejecuta UNA vez por sesión (la
 // primera vez que se pinta el Desk), para que la entrada se sienta viva sin
 // re-animar en cada repintado del latido. Degrada a número final sin rAF.
@@ -2304,6 +2326,7 @@ function deskView() {
   const inProgress = orders.filter((o) => o.obeyedAt && !o.resolvedAt);
 
   const firstName = (auth.currentUser()?.name || "").split(" ")[0] || "";
+  const userLeadCount = store.getUserLeads().length;
 
   // Anima las cifras del pulso solo en la primera pintada de la sesión.
   const firstPaint = !deskCountedUp;
@@ -2319,9 +2342,18 @@ function deskView() {
           ? `${queue.length} ${queue.length === 1 ? "cuenta espera" : "cuentas esperan"} tu movimiento · ${live} vivas.`
           : `Bandeja vacía: trabajaste las ${live} cuentas vivas. 🔥` }),
       ]),
-      el("button", { class: "desk-cmd", title: "Comandos (⌘K / Ctrl+K)", onClick: openCommand }, [
-        el("span", { class: "kbd", text: "⌘K" }),
-        el("span", { text: "Buscar o pedir…" }),
+      el("div", { class: "desk-head-actions" }, [
+        deskDatasetToggle(userLeadCount),
+        (allow("write") || allow("discover"))
+          ? el("button", { class: "desk-import", title: "Importar tu lista (CSV de Apollo/Clay/HubSpot)", onClick: openImport }, [
+              el("span", { class: "desk-import-ic", text: "↥" }),
+              el("span", { text: "Importar" }),
+            ])
+          : null,
+        el("button", { class: "desk-cmd", title: "Comandos (⌘K / Ctrl+K)", onClick: openCommand }, [
+          el("span", { class: "kbd", text: "⌘K" }),
+          el("span", { text: "Buscar o pedir…" }),
+        ]),
       ]),
     ]),
 
@@ -2490,13 +2522,28 @@ function deskFollowupRow(order) {
 }
 
 function deskEmpty() {
+  const isMine = state.dataset === "mine";
+  if (isMine) {
+    return el("div", { class: "desk desk-empty" }, [
+      el("div", { class: "desk-empty-icon", text: "↥" }),
+      el("div", { class: "desk-empty-title", text: "Trae tu pipeline" }),
+      el("div", { class: "desk-empty-sub", text: "Pega tu lista (CSV de Apollo/Clay/HubSpot, o nombres por línea). El motor la prioriza, te dice a quién contactar primero y por qué, y te redacta el primer mensaje." }),
+      el("div", { class: "desk-empty-actions" }, [
+        el("button", { class: "desk-act-primary", text: "↥ Importar mi lista", onClick: openImport }),
+        el("button", { class: "desk-act-ghost", text: "Ver el demo", onClick: () => setDataset("researched") }),
+      ]),
+    ]);
+  }
   return el("div", { class: "desk desk-empty" }, [
     el("div", { class: "desk-empty-icon", text: "⚡" }),
     el("div", { class: "desk-empty-title", text: "Aún no hay oportunidades vivas" }),
-    el("div", { class: "desk-empty-sub", text: "Capta una primera tanda y el desk se llena con las cuentas a trabajar hoy." }),
-    (allow("discover") || allow("write"))
-      ? el("button", { class: "desk-act-primary", text: "⚡ Conseguir leads", onClick: () => goView("search") })
-      : null,
+    el("div", { class: "desk-empty-sub", text: "Trae tu lista para trabajar tu pipeline real, o capta una primera tanda." }),
+    el("div", { class: "desk-empty-actions" }, [
+      el("button", { class: "desk-act-primary", text: "↥ Importar mi lista", onClick: openImport }),
+      (allow("discover") || allow("write"))
+        ? el("button", { class: "desk-act-ghost", text: "⚡ Conseguir leads", onClick: () => goView("search") })
+        : null,
+    ]),
   ]);
 }
 
@@ -2952,22 +2999,24 @@ function openImport() {
       added++;
     }
     close();
+    if (!added) {
+      // Todo eran duplicados (o filas vacías): no cambiamos de contexto.
+      recompute().then(render);
+      flash("No había leads nuevos que importar (todo eran duplicados).");
+      return;
+    }
+    // Persiste los ids para restaurar el foco tras reload (sobrevive al refresco).
+    saveRecentImportIds(importedIds);
+    state.recentImportIds = importedIds;
+    // Trae tu lista: pasa a TU pipeline y re-puntúa SOLO tus leads (no el demo),
+    // luego aterriza en el Desk. El motor prioriza tu lista real. Honesto y vendible.
+    state.dataset = "mine";
+    state.feedCmd = null;
+    state.feedCmdText = "";
     recompute().then(() => {
-      if (!added) {
-        // Todo eran duplicados (o filas vacías): no creamos foco engañoso.
-        render();
-        flash("No había leads nuevos que importar (todo eran duplicados).");
-        return;
-      }
-      // Persiste los ids para restaurar el foco tras reload (sobrevive al refresco).
-      saveRecentImportIds(importedIds);
-      // Foco temporal "Recién importados": muestra EXACTAMENTE lo recién pegado,
-      // aunque sea 'unqualified'. El usuario vuelve al feed normal con "✕ quitar foco".
-      state.recentImportIds = importedIds;
-      state.feedCmd = { kind: "recent", ids: importedIds, label: "Recién importados" };
-      state.feedCmdText = "Recién importados";
+      state.view = "desk";
       render();
-      flash(`Importadas ${added} oportunidad${added === 1 ? "" : "es"} — mostrando recién importadas.`);
+      flash(`Importadas ${added} oportunidad${added === 1 ? "" : "es"} — trabajando tu lista.`);
     });
   }
 

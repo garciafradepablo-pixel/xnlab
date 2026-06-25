@@ -94,11 +94,10 @@ try {
   }
 } catch (e) { ok(false, "el drawer de redacción no debe lanzar: " + e.message); }
 
-// ── 3c. Tras importar, los recién importados SIEMPRE se ven (fix recent-imports)
-// Un lead solo-nombre+web queda 'unqualified' y el filtro por defecto lo ocultaría;
-// el foco temporal "Recién importados" debe mostrarlo igualmente.
+// ── 3c. Importar trae TU lista: tras importar, el Desk pasa a «Mi lista» y la
+// cuenta importada queda lista para trabajar (reposicionamiento "trae tu lista").
 try {
-  const flush = async (n = 10) => { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); };
+  const flush = async (n = 20) => { for (let i = 0; i < n; i++) await new Promise((r) => setTimeout(r, 0)); };
   const bodyByText = (sel, re) => document.body.querySelectorAll(sel).find((t) => re.test(t.textContent));
   const UNIQUE = "Zzqq Import Unica 9173 Sl"; // nombre único: no colisiona con seed/Mallorca
 
@@ -119,17 +118,22 @@ try {
     primary.click();
     await flush();
 
-    const banner = root.querySelector(".focus-banner");
-    ok(banner != null && /Recién importados/.test(banner.textContent), "tras importar se activa el foco «Recién importados»");
-    const card = root.querySelectorAll(".card").find((c) => new RegExp(UNIQUE).test(c.textContent));
-    ok(card != null, "el lead recién importado (unqualified) es visible en el feed pese al filtro por defecto");
+    // Nuevo comportamiento: aterriza en el Desk, en modo «Mi lista».
+    ok(root.querySelector(".desk") != null, "tras importar se aterriza en el Desk");
+    const active = root.querySelector(".desk-ds.active");
+    ok(active != null && /Mi lista/.test(active.textContent), "el Desk pasa a «Mi lista» (tu pipeline real)");
+    const names = [...root.querySelectorAll(".desk-hero-co, .dr-co")].map((n) => n.textContent);
+    ok(names.some((t) => new RegExp(UNIQUE).test(t)), "la cuenta importada aparece en el Desk lista para trabajar");
 
-    // Volver al feed normal con "✕ quitar foco" (no debe dejar el foco pegado).
-    const clear = root.querySelectorAll(".focus-banner .focus-x").find((b) => /quitar foco/.test(b.textContent));
-    ok(clear != null, "el foco «Recién importados» ofrece salida con ✕ quitar foco");
-    if (clear) { clear.click(); ok(root.querySelector(".focus-banner") == null, "quitar foco vuelve al feed normal"); }
+    // Restaura el demo + Mapa para no contaminar los tests siguientes.
+    const demoTab = root.querySelectorAll(".desk-ds").find((b) => /Demo/.test(b.textContent));
+    if (demoTab) demoTab.click();
+    await flush();
+    const mapaBack = byText(".zone", /Mapa/);
+    if (mapaBack) mapaBack.click();
+    await flush();
   }
-} catch (e) { ok(false, "el flujo de import → foco recién importados no debe lanzar: " + e.message); }
+} catch (e) { ok(false, "el flujo de import → Mi lista no debe lanzar: " + e.message); }
 
 // ── 4. Abrir un caso a pantalla completa (código nuevo) y cerrarlo ────────────
 try {

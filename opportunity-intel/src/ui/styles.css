@@ -2318,6 +2318,22 @@ button.nba.nba-btn:active { transform: translateY(1px); }
   opacity: 0; transform: translateY(8px); animation: deskRise .4s ease forwards; }
 .desk-hello { font-size: 26px; font-weight: 800; letter-spacing: -0.03em; color: var(--ink); margin: 0; }
 .desk-sub { font-size: 14px; color: var(--ink-dim); margin-top: 4px; }
+.desk-head-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Conmutador de origen: Mi lista / Demo (segmented control) */
+.desk-ds-wrap { display: inline-flex; padding: 3px; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; }
+.desk-ds { padding: 6px 12px; font-size: 12px; font-weight: 600; color: var(--ink-faint); background: transparent; border: none; border-radius: 7px; transition: color .12s, background .12s, box-shadow .12s; white-space: nowrap; }
+.desk-ds:hover { color: var(--ink-dim); }
+.desk-ds.active { color: var(--accent); background: #fff; box-shadow: var(--sh-1); }
+
+/* Importar: acción de primera clase — trae tu lista */
+.desk-import { display: inline-flex; align-items: center; gap: 7px; padding: 9px 14px; font-size: 13px; font-weight: 600; color: var(--ink-dim);
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--sh-1); transition: border-color .12s, color .12s, box-shadow .12s; white-space: nowrap; }
+.desk-import:hover { border-color: var(--accent); color: var(--accent); box-shadow: var(--sh-2); }
+.desk-import-ic { font-size: 14px; }
+
+.desk-empty-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
 .desk-cmd { display: inline-flex; align-items: center; gap: 9px; padding: 9px 14px; font-size: 13px; color: var(--ink-dim);
   background: var(--panel); border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--sh-1);
   transition: border-color .14s, color .14s, box-shadow .14s; white-space: nowrap; }
